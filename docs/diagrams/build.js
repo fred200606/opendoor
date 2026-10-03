@@ -4,7 +4,7 @@ const {
   AlignmentType, HeadingLevel, ImageRun, PageBreak, LevelFormat, BorderStyle, Footer, PageNumber,
 } = require("docx");
 
-const OUTDIR = require("path").resolve(__dirname, "..").split("\\").join("/") + "/"; // project root (parent of diagrams/)
+const OUTDIR = require("path").resolve(__dirname, "..").split("\\").join("/") + "/"; // docs/ (parent of diagrams/)
 const GOLD = "BF9000", DARK = "434343", FONT = "Arial";
 const W = 10080; // content width (Letter, 0.75in margins)
 
@@ -118,7 +118,7 @@ C.push(brk());
 C.push(H1("Executive Summary"));
 C.push(P("Persons with disabilities (PWDs) remain largely excluded from the Philippine workforce: of about 1.9 million working-age Filipinos with a disability, only around 353,000 were in the labor force in January 2022 (Rappler, 2023). Republic Act No. 7277 already requires reasonable accommodation, yet the information a PWD job seeker needs to act on that right is scattered across systems that do not exchange data. Accommodation details are buried in free-text postings on separate job boards, employer legitimacy is checked by hand against DTI and SEC registry websites, the accessibility of a workplace's surroundings is looked up separately on maps, and no system records whether advertised accommodations were actually delivered after hire."));
 C.push(P("**OpenDoor** integrates these sources into one web application aligned with **SDG 8, Target 8.5** (full and productive employment and decent work for all, including persons with disabilities). Candidates record their accommodation needs once and see job postings ranked by how many needs each one meets (\"Meets 4 of 5 of your needs\"). Employers post jobs with structured accommodation fields and move applicants through a server-enforced status workflow. After hire, candidates rate each advertised accommodation, producing an anonymous **accommodation trust score** that is published only after three responses."));
-C.push(P("The final architecture uses an **API Gateway** (Node.js/Express) as the single entry point for a **React** single-page application. Behind the gateway, the **Core Service** (Laravel 11, Sanctum, MySQL 8) owns users, profiles, postings, matching, applications, feedback and moderation. An **Accessibility Insights Service** (Node.js) is a mashup that combines the posting's address and accommodations from the Core Service with three external REST APIs – OpenStreetMap **Nominatim** (geocoding), the **Overpass API** (wheelchair-tagged places nearby) and the **PSGC API** (official Philippine location codes) – into a normalized \"Workplace Accessibility Snapshot\". A **Business Registry Service** exposes a WSDL-described **SOAP 1.1** interface that simulates a legacy DTI/SEC registry; the Core Service calls it with XML and WS-Security credentials during employer verification and maps the XML result to JSON."));
+C.push(P("The final architecture uses an **API Gateway** (Node.js/Express) as the single entry point for a **React** single-page application. Behind the gateway, the **Core Service** (Laravel 13, Sanctum, MySQL 8) owns users, profiles, postings, matching, applications, feedback and moderation. An **Accessibility Insights Service** (Node.js) is a mashup that combines the posting's address and accommodations from the Core Service with three external REST APIs – OpenStreetMap **Nominatim** (geocoding), the **Overpass API** (wheelchair-tagged places nearby) and the **PSGC API** (official Philippine location codes) – into a normalized \"Workplace Accessibility Snapshot\". A **Business Registry Service** exposes a WSDL-described **SOAP 1.1** interface that simulates a legacy DTI/SEC registry; the Core Service calls it with XML and WS-Security credentials during employer verification and maps the XML result to JSON."));
 C.push(P("All services are deployed to the cloud: the React app on Vercel and the gateway, services and MySQL on Railway, with only the gateway exposed publicly and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
 C.push(note("[[Update the final paragraph with the measured results (test pass rate, JMeter P95 and error rate, SUS score) once testing is complete.]]"));
 C.push(brk());
@@ -161,7 +161,7 @@ C.push(P("**Included in scope:**"));
 C.push(...bullets([
   "Public area, Candidate, Employer and Admin portals in one React application (13 functional modules, M1–M13, as defined in the OpenDoor Modules and Features Specification).",
   "API Gateway with routing, CORS, rate limiting, request IDs, timeouts and a uniform error envelope.",
-  "Core Service (Laravel 11 + MySQL 8): authentication and roles, candidate and company profiles, job postings with structured accommodations, search/filter/matching, application workflow, feedback and trust score, dashboards, in-app notifications, moderation, master data.",
+  "Core Service (Laravel 13 + MySQL 8): authentication and roles, candidate and company profiles, job postings with structured accommodations, search/filter/matching, application workflow, feedback and trust score, dashboards, in-app notifications, moderation, master data.",
   "Accessibility Insights Service: Workplace Accessibility Snapshot (mashup) and PSGC location lookup with caching.",
   "Business Registry Service: SOAP 1.1 operation `VerifyBusinessRegistration` with a published WSDL, used in employer verification.",
   "Postman collection, JMeter test plan, GitHub Actions workflow, and cloud deployment.",
@@ -227,7 +227,7 @@ C.push(H2("3.3 Architectural Decisions"));
 C.push(...table(["Decision", "Choice", "Rationale"], [
   ["Architecture style", "API Gateway + a small number of services (service-based architecture), not a single monolith and not fine-grained microservices", "Integration concerns (external APIs, legacy SOAP) are isolated in their own services so that their failures and rate limits cannot break core hiring features. The hiring domain (users, postings, applications, feedback) stays in one Core Service because it is strongly transactional – for example, feedback must check the application status and update the trust score atomically. This keeps the system realistic for a student team."],
   ["Single entry point", "API Gateway (Node.js 22 + Express + http-proxy-middleware)", "One public URL for the client; central CORS, rate limiting, request IDs, timeouts and error format; the internal services stay on a private network. Express is lightweight and well suited to proxying."],
-  ["Core Service", "Laravel 11, Sanctum, Eloquent, MySQL 8", "Already the team's IPT stack. Sanctum issues API tokens for an SPA on a different domain; Policies, Form Requests and backed enums give clean authorization, validation and the status state machine."],
+  ["Core Service", "Laravel 13, Sanctum, Eloquent, MySQL 8", "Already the team's IPT stack. Sanctum issues API tokens for an SPA on a different domain; Policies, Form Requests and backed enums give clean authorization, validation and the status state machine."],
   ["Service boundaries", "Core (hiring domain) · Insights (geographic mashup) · Business Registry (legacy)", "Boundaries follow data ownership and failure isolation: each service owns one data store and one integration concern."],
   ["Synchronous protocol", "REST/JSON over HTTPS for client, gateway and service-to-service calls", "Simple, widely supported, easy to test with Postman and JMeter."],
   ["Legacy protocol", "SOAP 1.1 with WSDL and WS-Security UsernameToken", "Represents how government and enterprise registries commonly expose services; demonstrates XML contracts, schema-typed messages and SOAP faults. Implemented with PHP's built-in SoapServer/SoapClient."],
@@ -239,7 +239,7 @@ C.push(H2("3.4 Component / Service Inventory"));
 C.push(...table(["Component / Service", "Responsibility", "Technology", "Port / URL", "Depends On"], [
   ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI; calls the gateway only", "React 18, Vite, React Router, Axios, AuthContext", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
   ["API Gateway", "Single entry point; routing; CORS; rate limiting; X-Request-ID; timeouts; uniform error envelope; health check", "Node.js 22, Express, http-proxy-middleware, express-rate-limit", "Public: [[https://opendoor-gateway.up.railway.app]] (dev :8080)", "Core Service, Insights Service"],
-  ["Core Service", "Auth and roles, profiles, postings, matching, applications and status workflow, feedback and trust score, dashboards, notifications, moderation, master data", "PHP 8.3, Laravel 11, Sanctum, Eloquent", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service"],
+  ["Core Service", "Auth and roles, profiles, postings, matching, applications and status workflow, feedback and trust score, dashboards, notifications, moderation, master data", "PHP 8.3, Laravel 13, Sanctum, Eloquent", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service"],
   ["Accessibility Insights Service", "Workplace Accessibility Snapshot mashup; PSGC location lookup; caching and throttling", "Node.js 22, Express, Axios, mysql2", "insights.railway.internal:8002 (dev :8002)", "Core Service (internal API), Nominatim, Overpass, PSGC, MySQL insights_cache"],
   ["Business Registry Service (legacy)", "SOAP 1.1 `VerifyBusinessRegistration`; WSDL; simulated DTI/SEC records", "PHP 8.3 SoapServer, SQLite", "registry.railway.internal:8003/soap, WSDL at /soap?wsdl (dev :8003)", "registry.db"],
   ["MySQL – opendoor_core", "Users, profiles, employers, postings, accommodations, applications, feedback, notifications, reports", "MySQL 8 (Railway managed)", "mysql.railway.internal:3306", "–"],
@@ -314,7 +314,7 @@ Request:  { "cover_note": "I have 3 years of encoding experience.",
 Response 201:
 { "id": 318, "job_posting_id": 42, "status": "pending",
   "created_at": "2026-10-02T09:15:04+08:00" }`));
-C.push(P("**Submit feedback** – `POST /api/applications/318/feedback` (only when status is `hired` and at least 30 days after `hired_at`; one per application). Ratings map to Delivered = 1, Partially = 0.5, Not delivered = 0."));
+C.push(P("**Submit feedback** – `POST /api/applications/318/feedback` (only when status is `hired`, from calendar day 30 after the hire date in Asia/Manila time – e.g. hired on 1 October, feedback opens on 31 October; one per application). Ratings map to Delivered = 1, Partially = 0.5, Not delivered = 0."));
 C.push(...code(`
 Request:  { "items": [ { "accommodation_id": 1, "rating": "delivered" },
                        { "accommodation_id": 9, "rating": "partial" } ],
@@ -412,13 +412,24 @@ C.push(...code(`
 <soapenv:Fault>
   <faultcode>soapenv:Client.Authentication</faultcode>
   <faultstring>Invalid WS-Security credentials</faultstring>
+</soapenv:Fault>
+
+<!-- Fault example: invalid input (empty number, unknown RegistryType, bad format) -->
+<soapenv:Fault>
+  <faultcode>soapenv:Client.Validation</faultcode>
+  <faultstring>RegistrationNumber is required and must be 5-20 letters or digits</faultstring>
 </soapenv:Fault>`));
+C.push(...table(["Fault code", "Raised when", "Core Service mapping"], [
+  ["`soapenv:Client.Authentication`", "WS-Security header missing or wrong username/password", "502 `REGISTRY_AUTH_FAILED` (configuration problem, logged)"],
+  ["`soapenv:Client.Validation`", "Request fails validation: missing/empty `RegistrationNumber`, `RegistryType` not DTI/SEC, missing `BusinessName`", "422 `REGISTRY_INVALID_REQUEST`"],
+  ["`soapenv:Server`", "Unexpected registry error (e.g., database unavailable)", "502 `REGISTRY_UNAVAILABLE`"],
+], [2600, 4280, 3200], { size: 16 }));
 C.push(P("**How the contract is used.** The Core Service sends the employer's `business_reg_no`, `registry_type` and `company_name`. The response is mapped to JSON and stored in a `registry_checks` record (status, registered name, match score, checked time). `NameMatchScore` is a normalized similarity (0–1) between the submitted and registered names. The administrator sees the result and decides; a `NOT_FOUND`, `EXPIRED` or `CANCELLED` status or a score below 0.80 is highlighted. Client faults (bad input, bad credentials) become HTTP 422/502 with codes `REGISTRY_INVALID_REQUEST`/`REGISTRY_AUTH_FAILED`; server faults or a 5-second timeout become HTTP 502 `REGISTRY_UNAVAILABLE`, and the employer stays in the manual review queue."));
 
 C.push(H2("4.4 External REST API"));
 C.push(...table(["Provider", "Purpose", "Authentication", "Data Used", "Failure / Fallback Handling"], [
-  ["OpenStreetMap Nominatim (`/search`)", "Geocode a job posting's address to latitude/longitude", "None; identifying `User-Agent` and contact email required by usage policy", "`lat`, `lon`, `display_name`, `importance`", "Max 1 request/second (throttled queue); results cached 30 days; on error or timeout (5 s) fall back to the PSGC city centroid stored in cache, mark source `degraded`"],
-  ["Overpass API (`/api/interpreter`)", "Find OSM elements tagged `wheelchair=yes|limited` within 500 m (transit stops, toilets, parking, entrances)", "None (fair-use limits)", "`elements[].tags` (`amenity`, `public_transport`, `highway`, `wheelchair`, `name`), `lat`, `lon`", "Cached 24 h; on 429/504 or timeout (8 s) return the last cached result with `stale:true`, or omit the nearby section and mark source `unavailable`"],
+  ["OpenStreetMap Nominatim (`/search`)", "Geocode a job posting's address to latitude/longitude", "None; identifying `User-Agent` and contact email required by usage policy", "`lat`, `lon`, `display_name`, `importance`", "Max 1 request/second (throttled queue); results cached 30 days; on error or timeout (5 s) fall back to the PSGC city centroid (`precision: \"city\"`), mark source `unavailable`"],
+  ["Overpass API (`/api/interpreter`)", "Find OSM elements tagged `wheelchair=yes|limited` within 500 m (transit stops, toilets, parking, entrances)", "None (fair-use limits)", "`elements[].tags` (`amenity`, `public_transport`, `highway`, `wheelchair`, `name`), `lat`, `lon`", "Cached 24 h; on 429/504 or timeout (8 s) return the last cached result and mark source `stale`, or omit the nearby section and mark source `unavailable`"],
   ["PSGC API (psgc.gitlab.io/api)", "Official Philippine regions, provinces, cities/municipalities for location pickers and normalization", "None", "`code`, `name`, `regionCode`, `provinceCode`, `isCity`", "Lists cached 7 days (data rarely changes); a seeded copy of the NCR and major cities list is used if the API is unreachable"],
 ], [1800, 2000, 1700, 2100, 2480], { size: 16 }));
 
@@ -432,6 +443,14 @@ C.push(...numbered([
   "**Transform.** OSM tags are mapped to four PWD-relevant categories (Accessible transit stops, Accessible toilets, Accessible parking, Other accessible places); distances are computed with the haversine formula; duplicates are removed; `limited` is reported separately from `yes`; the nearest three items per category are kept.",
   "**Combine.** The result merges the employer's own claims (advertised physical-access accommodations), the community verification (trust score and per-accommodation breakdown) and the independent map data, plus a `sources` object that tells the client which parts are live, cached or unavailable.",
 ]));
+C.push(P("**OSM tag → category mapping** used in the Transform step (rules are checked top to bottom; the first match wins; only elements tagged `wheelchair=yes` or `wheelchair=limited` are kept):"));
+C.push(...table(["Snapshot category", "OSM tags that qualify", "Shown to the user as"], [
+  ["`transit_stops`", "`public_transport=*`, `highway=bus_stop`, `railway=station|halt|tram_stop`, `amenity=bus_station`", "Accessible transit stops (e.g., \"Quezon Ave. MRT Station – 220 m away, wheelchair accessible\")"],
+  ["`toilets`", "`amenity=toilets`, or any element with `toilets:wheelchair=yes`", "Accessible toilets"],
+  ["`parking`", "`amenity=parking` (with `capacity:disabled` when present)", "Accessible parking"],
+  ["`other`", "Any other element with a `wheelchair` tag (shops, malls, offices, entrances)", "Other accessible places"],
+], [1900, 4880, 3300], { size: 16 }));
+C.push(P("Each item keeps `name` (or null), `wheelchair` (`yes` / `limited`) and `distance_m` (haversine distance in whole metres). Elements are de-duplicated by OSM id; ways use their `center` coordinates."));
 C.push(...code(`
 {
   "job_posting_id": 42,
@@ -451,7 +470,7 @@ C.push(...code(`
   "disclaimer": "Map data from OpenStreetMap contributors (ODbL); coverage may be incomplete.",
   "generated_at": "2026-10-02T10:05:40+08:00"
 }`));
-C.push(P("A second transformation happens inside the Core Service: the **matching engine** joins `candidate_accommodation` and `job_posting_accommodation` (Eloquent `withCount`) to compute `match.met`, orders full matches first and then partial matches by count, and applies keyword, category and extra accommodation filters on top. The **trust score** transformation converts ratings to values (Delivered = 1, Partially = 0.5, Not delivered = 0) and computes Σ item ratings ÷ number of rated items × 100%."));
+C.push(P("A second transformation happens inside the Core Service: the **matching engine** joins `candidate_accommodation` and `job_posting_accommodation` (Eloquent `withCount`) to compute `match.met`, orders full matches first and then partial matches by count, and applies keyword, category and extra accommodation filters on top. The **trust score** transformation converts ratings to values (Delivered = 1, Partially = 0.5, Not delivered = 0) and computes Σ item ratings ÷ number of rated items × 100, rounded to a whole percentage (e.g. 86%)."));
 C.push(brk());
 
 // ---------- 5 Integration flow ----------
@@ -481,9 +500,10 @@ C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior
   ["409", "ALREADY_APPLIED / FEEDBACK_EXISTS", "Core", "Duplicate application or second feedback for the same application"],
   ["422", "VALIDATION_FAILED", "Core", "Form Request validation fails; field errors returned in `errors`"],
   ["422", "INVALID_STATUS_TRANSITION", "Core", "Transition not allowed by the ApplicationStatus enum (e.g., Rejected → Hired, Pending → Hired)"],
-  ["422", "POSTING_CLOSED / FEEDBACK_NOT_OPEN", "Core", "Applying to a closed posting; feedback before 30 days after hire"],
+  ["422", "POSTING_CLOSED / FEEDBACK_NOT_OPEN", "Core", "Applying to a closed posting; feedback before calendar day 30 after the hire date (Asia/Manila)"],
   ["429", "RATE_LIMITED", "Gateway, Core", "Over 120 requests/min per IP at the gateway, or over 5 login attempts/min; `Retry-After` header sent"],
-  ["502", "REGISTRY_UNAVAILABLE / REGISTRY_AUTH_FAILED", "Core", "SOAP fault or connection failure; employer remains in the manual review queue"],
+  ["422", "REGISTRY_INVALID_REQUEST", "Core", "Registry returned `Client.Validation` (e.g., malformed registration number); the employer is asked to correct it"],
+  ["502", "REGISTRY_UNAVAILABLE / REGISTRY_AUTH_FAILED", "Core", "`Server` / `Client.Authentication` fault, connection failure or 5-second timeout; employer remains in the manual review queue"],
   ["502", "UPSTREAM_ERROR", "Gateway", "Downstream service refused the connection or returned an invalid response"],
   ["503", "SERVICE_UNAVAILABLE", "Gateway", "Health check shows the target service down (e.g., sleeping free-tier instance)"],
   ["504", "UPSTREAM_TIMEOUT", "Gateway", "Core > 10 s, Insights > 15 s"],
@@ -595,7 +615,7 @@ opendoor/
 ├─ frontend/                    React SPA (Vite)
 ├─ gateway/                     Node.js Express API Gateway
 ├─ services/
-│  ├─ core-api/                 Laravel 11 Core Service
+│  ├─ core-api/                 Laravel 13 Core Service
 │  ├─ insights-service/         Node.js mashup service
 │  └─ business-registry-soap/   PHP SoapServer + WSDL + seed data
 ├─ tests/
@@ -619,22 +639,31 @@ C.push(...table(["Stage", "Trigger", "Steps"], [
   ["Post-deploy smoke test", "After deploy on `main`", "Newman runs the smoke folder (health, login, search, snapshot) against the production gateway; failure marks the run red and the team rolls back with Railway/Vercel \"redeploy previous\"."],
 ], [1800, 2400, 5880], { size: 16 }));
 C.push(H2("8.5 Environment and Startup Instructions"));
-C.push(P("Full instructions are in the repository README. Summary for local development (no real secret values shown):"));
+C.push(P("Full instructions are in the repository README. Local development runs every component natively (PHP 8.3+, Composer, Node.js 22, MySQL 8); Docker is used only by the CI pipeline and the Railway images. Summary (no real secret values shown):"));
 C.push(...code(`
 # 1. Clone and copy environment files
 git clone <repository-url> opendoor && cd opendoor
 cp services/core-api/.env.example services/core-api/.env      # repeat for each component
 
-# 2. Start everything with Docker (MySQL, core, insights, registry, gateway)
-docker compose up -d --build
-docker compose exec core-api php artisan key:generate
-docker compose exec core-api php artisan migrate --seed
+# 2. Create the databases once (MySQL 8): opendoor_core and insights_cache, each with its own user
+mysql -u root -p < docs/setup/create-databases.sql
 
-# 3. Start the React client
-cd frontend && npm ci && npm run dev        # http://localhost:5173  (VITE_API_URL=http://localhost:8080/api)
+# 3. Core Service (Laravel)                       http://localhost:8001
+cd services/core-api && composer install && php artisan key:generate
+php artisan migrate --seed && php artisan serve --port=8001
 
-# 4. Run tests
-docker compose exec core-api php artisan test
+# 4. Business Registry (SOAP)                     http://localhost:8003/soap?wsdl
+cd services/business-registry-soap && php seed.php && php -S localhost:8003 -t public
+
+# 5. Insights Service and API Gateway             http://localhost:8002, http://localhost:8080
+cd services/insights-service && npm ci && npm run dev
+cd gateway && npm ci && npm run dev
+
+# 6. React client                                 http://localhost:5173  (VITE_API_URL=http://localhost:8080/api)
+cd frontend && npm ci && npm run dev
+
+# 7. Run tests
+cd services/core-api && php artisan test
 npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json`));
 C.push(brk());
 
@@ -718,7 +747,7 @@ C.push(H1("12. References"));
   "Department of Labor and Employment. (n.d.). PhilJobNet and PESO Employment Information System. Retrieved September 28, 2026, from https://philjobnet.gov.ph/",
   "Express.js. (n.d.). Express 4.x API reference. https://expressjs.com/",
   "GitHub. (n.d.). GitHub Actions documentation. https://docs.github.com/actions",
-  "Laravel. (n.d.). Laravel 11.x documentation: Sanctum, Authorization, Validation. https://laravel.com/docs/11.x",
+  "Laravel. (n.d.). Laravel 13.x documentation: Sanctum, Authorization, Validation. https://laravel.com/docs/13.x",
   "National Privacy Commission. (2016). Implementing rules and regulations of Republic Act No. 10173, known as the Data Privacy Act of 2012. https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/",
   "OASIS. (2006). Web Services Security UsernameToken Profile 1.1. https://docs.oasis-open.org/wss/v1.1/",
   "OpenStreetMap Foundation. (n.d.). Nominatim usage policy. https://operations.osmfoundation.org/policies/nominatim/",
@@ -863,7 +892,7 @@ C.push(...table(["Element", "Configuration"], [
 C.push(H2("Appendix E - Repository structure / deployment notes"));
 C.push(P("Repository structure: Section 8.3. Additional deployment notes:"));
 C.push(...bullets([
-  "`docker-compose.yml` defines `mysql`, `core-api`, `insights-service`, `business-registry-soap`, `gateway` and a `mock-external` server for CI so tests never depend on public Nominatim/Overpass.",
+  "Local development runs natively (Section 8.5). `docker-compose.yml` is used only in CI: it defines `mysql`, `core-api`, `insights-service`, `business-registry-soap`, `gateway` and a `mock-external` server so tests never depend on public Nominatim/Overpass.",
   "Railway: one project, five services plus MySQL; only `gateway` has a public domain; services reference each other with `${{service.RAILWAY_PRIVATE_DOMAIN}}` variables.",
   "Laravel production: `php artisan config:cache route:cache`, `migrate --force` on release, queue driver `sync` (no worker needed in v1.0).",
   "Seeders: categories (about 10 industries), RA 7277-based accommodation types, one administrator, demo candidate/employer accounts, sample feedback that publishes a trust score, and sample DTI/SEC records in `registry.db`.",
@@ -875,7 +904,7 @@ C.push(P("**Core Service data model** (MySQL `opendoor_core`). Accommodations ar
 C.push(...table(["Table", "Key Fields", "Notes"], [
   ["users", "id, name, email, password, role, is_active, consented_at, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent"],
   ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
-  ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, verified_at, trust_score, feedback_count", "Trust score null until 3 responses"],
+  ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, verified_at, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
   ["registry_checks", "id, employer_id, status, registered_name, name_match_score, checked_at, raw_response (XML)", "Result of SOAP verification calls"],
   ["categories / accommodations", "id, name / id, name, group, description, is_retired", "Admin-managed lists"],
   ["job_postings", "id, employer_id, category_id, title, description, address, location_psgc, employment_type, work_setup, interview_format, status, closes_at, is_approved, deleted_at", "Soft deletes; full-text index on title and description"],
@@ -884,6 +913,29 @@ C.push(...table(["Table", "Key Fields", "Notes"], [
   ["applications", "id, job_posting_id, candidate_profile_id, status, cover_note, interview_request, hired_at, hire_confirmed_by", "Unique (job_posting_id, candidate_profile_id)"],
   ["feedback / feedback_items", "id, application_id, comments, is_hidden / id, feedback_id, accommodation_id, rating", "One feedback per application; one rating per advertised accommodation"],
   ["notifications, reports, saved_jobs", "Laravel notifications; id, reporter_id, job_posting_id, reason, status; candidate_profile_id, job_posting_id", "In-app notices; moderation; bookmarks"],
+], [2300, 4900, 2880], { size: 16 }));
+C.push(P("**Enumerated values** (stored as MySQL `ENUM` columns or PHP backed enums; the same values appear in the API and in `docs/openapi.yaml`):"));
+C.push(...table(["Field", "Allowed values"], [
+  ["users.role", "`candidate`, `employer`, `admin`"],
+  ["employers.registry_type", "`DTI`, `SEC`"],
+  ["registry_checks.status", "`ACTIVE`, `EXPIRED`, `CANCELLED`, `NOT_FOUND`, `ERROR`"],
+  ["accommodations.group", "`physical_access`, `communication`, `work_arrangement`, `assistive_technology`, `support`"],
+  ["job_postings.employment_type", "`full_time`, `part_time`, `contract`, `internship`"],
+  ["job_postings.work_setup", "`onsite`, `hybrid`, `remote`"],
+  ["job_postings.interview_format", "`online`, `onsite`"],
+  ["job_postings.status", "`draft`, `pending_approval`, `open`, `closed`"],
+  ["applications.status", "`pending`, `reviewed`, `hired`, `rejected`, `withdrawn`"],
+  ["applications.hire_confirmed_by", "`employer`, `candidate`"],
+  ["feedback_items.rating", "`delivered` (1), `partial` (0.5), `not_delivered` (0)"],
+  ["reports.status", "`open`, `dismissed`, `actioned`"],
+  ["Snapshot `sources.*`", "`ok`, `cached`, `stale`, `unavailable`"],
+], [3000, 7080], { kv: true, size: 16 }));
+C.push(P("**Insights Service cache** (MySQL `insights_cache`, owned only by the Insights Service) and **Business Registry** data (SQLite, owned only by the registry):"));
+C.push(...table(["Table", "Key Fields", "Expiry / Notes"], [
+  ["geocode_cache", "address_hash (PK), query, lat, lon, precision (`street` / `city`), fetched_at", "30 days"],
+  ["overpass_cache", "key (PK, `lat,lon,radius` rounded to 4 decimals), payload (JSON), fetched_at", "24 hours; expired rows may be served as `stale` when Overpass fails"],
+  ["psgc_cache", "key (PK: `regions`, `provinces:{code}`, `cities:{code}`), payload (JSON), fetched_at", "7 days; bundled NCR + major cities JSON as fallback"],
+  ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by a script; includes EXPIRED and CANCELLED samples"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("[[Insert the ERD image and any additional screenshots here.]]"));
 

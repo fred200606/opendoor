@@ -7,7 +7,7 @@ opendoor/
 ├─ frontend/                    React 18 + Vite SPA (existing UI goes here)
 ├─ gateway/                     Node.js 22 + Express API Gateway
 ├─ services/
-│  ├─ core-api/                 Laravel 11 Core Service
+│  ├─ core-api/                 Laravel 13 Core Service
 │  ├─ insights-service/         Node.js 22 + Express mashup service
 │  └─ business-registry-soap/   PHP 8.3 SoapServer + WSDL + SQLite seed
 ├─ tests/
@@ -15,7 +15,7 @@ opendoor/
 │  └─ jmeter/                   opendoor-matching.jmx + tokens.csv
 ├─ docs/                        SIA documentation, diagrams, openapi.yaml
 ├─ .github/workflows/ci.yml
-├─ docker-compose.yml
+├─ docker-compose.yml          CI only (local dev runs natively)
 └─ README.md
 ```
 
@@ -25,7 +25,7 @@ opendoor/
 |---|---|---|---|---|
 | React SPA | Public area + Candidate/Employer/Admin portals | React 18, Vite, React Router, Axios, AuthContext | 5173 | Vercel (public) |
 | API Gateway | Single entry; routing; CORS; rate limit (120 req/min/IP); X-Request-ID; timeouts; error envelope; `/api/health` | Express, http-proxy-middleware, express-rate-limit | 8080 | Railway public domain (only public backend) |
-| Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.3, Laravel 11, Sanctum, Eloquent | 8001 | `core-api.railway.internal:8001` (private) |
+| Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.3, Laravel 13, Sanctum, Eloquent | 8001 | `core-api.railway.internal:8001` (private) |
 | Insights Service | Workplace Accessibility Snapshot mashup; PSGC location lists; caching/throttling | Express, Axios, mysql2 | 8002 | `insights.railway.internal:8002` (private) |
 | Business Registry | SOAP 1.1 `VerifyBusinessRegistration`, WSDL at `/soap?wsdl`; simulated DTI/SEC records | PHP SoapServer, SQLite | 8003 | `registry.railway.internal:8003` (private) |
 | MySQL 8 | Schemas `opendoor_core` (Core user) and `insights_cache` (Insights user) | Railway managed | 3306 | `mysql.railway.internal:3306` |

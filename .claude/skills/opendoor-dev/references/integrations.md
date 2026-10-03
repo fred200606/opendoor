@@ -13,7 +13,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
 - `NameMatchScore`: normalize both names (uppercase, strip punctuation and suffixes like INC., CORP., CO.), then similarity (e.g. `similar_text` percentage / 100, or Levenshtein-based), rounded to 2 dp.
 - Implementation: PHP `SoapServer` with the WSDL file; handler class reads `registry.db` via PDO; validate the UsernameToken before processing.
 
-**Core side (Laravel):** a `BusinessRegistryClient` service class wrapping `SoapClient` (`REGISTRY_WSDL_URL`, `connection_timeout` 5, `exceptions => true`, `trace => true` in non-production) that adds the WS-Security header with `SoapHeader`, maps the response to an array/DTO, stores a `registry_checks` row (raw XML in `raw_response`), and converts `SoapFault` → `REGISTRY_AUTH_FAILED` / `REGISTRY_INVALID_REQUEST` / `REGISTRY_UNAVAILABLE` (502). Bind it in a service provider so tests can fake it.
+**Core side (Laravel):** a `BusinessRegistryClient` service class wrapping `SoapClient` (`REGISTRY_WSDL_URL`, `connection_timeout` 5, `exceptions => true`, `trace => true` in non-production) that adds the WS-Security header with `SoapHeader`, maps the response to an array/DTO, stores a `registry_checks` row (raw XML in `raw_response`), and converts faults: `Client.Authentication` → 502 `REGISTRY_AUTH_FAILED`; `Client.Validation` → 422 `REGISTRY_INVALID_REQUEST`; `Server` fault, connection error or timeout → 502 `REGISTRY_UNAVAILABLE` (store a `registry_checks` row with status `ERROR`). Bind it in a service provider so tests can fake it.
 
 ## 2. Accessibility Insights Service (mashup) – `services/insights-service`
 
@@ -21,7 +21,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
 
 1. **Core** – `GET ${CORE_INTERNAL_URL}/internal/job-postings/{id}/summary` with `X-Service-Key` (timeout 3 s). 404 → return 404 (posting not open).
 2. **PSGC** – resolve `psgc_code` to `City, Province, Region` label (cache 7 days).
-3. **Nominatim** – `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1` with header `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`; max 1 request/second (queue); timeout 5 s; cache 30 days. On failure fall back to the city centroid, `precision: "city"`.
+3. **Nominatim** – `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1` with header `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`; max 1 request/second (queue); timeout 5 s; cache 30 days. On failure fall back to the city centroid, `precision: "city"`, and report `sources.nominatim: "unavailable"`.
 4. **Overpass** – POST to `${OVERPASS_URL}` (timeout 8 s, cache 24 h):
    ```
    [out:json][timeout:8];
@@ -29,7 +29,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
      way(around:500,LAT,LON)["wheelchair"~"yes|limited"]; );
    out center tags 50;
    ```
-5. **Transform** – map OSM tags to categories:
+5. **Transform** – map OSM tags to categories (checked top to bottom, first match wins; same table as SIA doc 4.5):
    - `transit_stops`: `public_transport=*`, `highway=bus_stop`, `railway=station|halt|tram_stop`, `amenity=bus_station`
    - `toilets`: `amenity=toilets` or `toilets:wheelchair=yes`
    - `parking`: `amenity=parking` (incl. `capacity:disabled`)

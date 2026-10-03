@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 0 – Setup
 - **In progress:** –
-- **Next step:** (in `C:\dev\opendoor`) `git init` + first commit, then apply the rule updates to the skill references and SIA doc (Phase 0 checklist).
+- **Next step:** Monorepo folders, README, `.env.example` files, DB setup script (`docs/setup/create-databases.sql`), OpenAPI draft.
 - **Blockers:** Location of the existing UI code is unknown (ask the user for the path).
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -34,9 +34,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 0 – Setup
 - [x] Move project out of OneDrive (copied to `C:\dev\opendoor` on 2026-10-03)
-- [ ] `git init`; first commit
-- [ ] Apply rule updates (see Decisions 2026-10-03) to `opendoor-dev` references + SIA doc (via `opendoor-sia-docs`), incl. Laravel version
-- [ ] Monorepo folders; move docx + `diagrams/` into `docs/`
+- [x] `git init`; first commit (cf38aae)
+- [x] Apply rule updates (see Decisions 2026-10-03) to `opendoor-dev` references + SIA doc (via `opendoor-sia-docs`), incl. Laravel version
+- [ ] Monorepo folders (docx + diagrams already moved to `docs/`)
 - [ ] `.gitignore`, `README.md`, `.env.example` for every component
 - [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users)
 - [ ] `docs/openapi.yaml` draft from the API contract
@@ -116,7 +116,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- –
+- SIA doc 8.5 now references `docs/setup/create-databases.sql`, registry `seed.php` and `public/` – create these with those exact names.
 
 ## Session log (newest first)
 

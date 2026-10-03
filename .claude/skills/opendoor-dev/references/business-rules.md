@@ -32,13 +32,13 @@ These are enforced on the server and covered by feature tests.
 
 ## Feedback and trust score
 
-- Only an application with status `hired` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only when `now() >= hired_at + 30 days` (422 `FEEDBACK_NOT_OPEN`). Compare in `Asia/Manila` (`APP_TIMEZONE=Asia/Manila`).
+- Only an application with status `hired` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the hire date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= hired_at->timezone('Asia/Manila')->startOfDay()->addDays(30)` – hired on 1 Oct (any time) → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
 - The form lists the accommodations the posting advertised at the time of hire; one rating per item.
 - Values: delivered = 1, partial = 0.5, not_delivered = 0.
-- `trust_score = round(sum(values) / count(rated items) * 100, 0)` across all non-hidden feedback for the employer; store on `employers.trust_score` and `feedback_count` (number of feedback responses).
+- `trust_score = round(sum(values) / count(rated items) * 100)` → a **whole percentage 0–100** (integer, e.g. `86`; PHP `round()` half away from zero) across all non-hidden feedback items for the employer; store on `employers.trust_score` and `feedback_count` (number of non-hidden feedback responses). The API returns an integer, the UI shows `86%`.
 - Recalculate in an observer when feedback is saved or hidden/unhidden.
 - Publish only when `feedback_count >= 3`; otherwise return `published:false, score:null`.
-- Per-accommodation breakdown uses the same formula per accommodation ("Sign language interpreter: 1 of 3 delivered").
+- Per-accommodation breakdown returns counts (`delivered`, `partial`, `not_delivered`, `of`); if a percentage is shown it uses the same whole-% formula per accommodation ("Sign language interpreter: 1 of 3 delivered").
 - Employers never see individual responses or authors.
 
 ## Employer verification

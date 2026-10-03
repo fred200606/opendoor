@@ -39,12 +39,15 @@ Load: 50 threads, 60 s ramp-up, 10 loops on `GET /api/job-postings?match=1&page=
 
 Secrets only in GitHub Actions secrets / Railway / Vercel variables.
 
-## Local startup
+## Local startup (native – Docker is not used locally; it is only for CI and Railway images)
 
 ```
 cp <each component>/.env.example <each component>/.env
-docker compose up -d --build
-docker compose exec core-api php artisan key:generate
-docker compose exec core-api php artisan migrate --seed
-cd frontend && npm ci && npm run dev    # VITE_API_URL=http://localhost:8080/api
+mysql -u root -p < docs/setup/create-databases.sql            # once: opendoor_core, insights_cache + users
+cd services/core-api && composer install && php artisan key:generate && php artisan migrate --seed && php artisan serve --port=8001
+cd services/business-registry-soap && php seed.php && php -S localhost:8003 -t public
+cd services/insights-service && npm ci && npm run dev         # :8002
+cd gateway && npm ci && npm run dev                           # :8080
+cd frontend && npm ci && npm run dev                          # :5173, VITE_API_URL=http://localhost:8080/api
 ```
+Same steps as SIA doc section 8.5 and the README.
