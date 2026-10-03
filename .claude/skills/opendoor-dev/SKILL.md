@@ -1,0 +1,74 @@
+---
+name: opendoor-dev
+description: Development guide for OpenDoor, the PWD job-matching platform built for the SIA 1 (Systems Integration and Architecture) and IPT final projects. Use for ANY coding, scaffolding, debugging, testing or deployment work in this repository - React frontend, Node.js API gateway, Laravel Core Service, Accessibility Insights mashup service, SOAP Business Registry, MySQL schema, Postman/JMeter tests, GitHub Actions, Railway/Vercel deployment - and whenever wiring the existing UI to the API. Keeps the code consistent with the approved SIA documentation (architecture, endpoints, error codes, business rules, security).
+---
+
+# OpenDoor development guide
+
+OpenDoor lets persons with disabilities (PWDs) find jobs by the workplace **accommodations** they need, and lets hired PWDs verify, accommodation by accommodation, whether the employer delivered. The same system is submitted for two courses:
+
+- **IPT** – requires a React frontend, a Laravel REST API and a MySQL database with full CRUD, role-based auth, search, filtering and status workflow.
+- **SIA 1** – additionally requires an API gateway, service-to-service calls, external REST APIs, a mashup, a SOAP/XML legacy component, Postman + JMeter testing, CI/CD and cloud deployment.
+
+The approved design is in `OpenDoor_SIA1_Final_Project_Documentation.docx` (repo root, or `docs/` after restructuring). **The code must match that document.** If an implementation needs to deviate (new endpoint, renamed field, changed rule), say so explicitly and remind the user to update the documentation with the `opendoor-sia-docs` skill.
+
+## Non-negotiable rules
+
+1. **Keep the stack.** React (Vite) · Node.js 22 + Express gateway · Laravel 11 + Sanctum + MySQL 8 Core Service · Node.js + Express Insights Service · PHP 8.3 SoapServer registry. Do not introduce other frameworks, languages or databases without asking.
+2. **The client only talks to the gateway** (`VITE_API_URL`). Never call Core, Insights, the registry or external APIs from React.
+3. **Each service owns its data.** No service reads another service's database. Insights gets posting data only through Core's `/internal/*` endpoints.
+4. **Authorization is enforced on the server** (auth:sanctum → role middleware → Laravel Policy). React `ProtectedRoute` is only navigation.
+5. **One error envelope everywhere** with an application error code and `request_id` (see `references/api-contract.md`). Never return HTML error pages or stack traces.
+6. **External and legacy calls never block hiring.** Always use timeouts, cache, and degrade gracefully.
+7. **No secrets in the repo.** Only `.env.example` with placeholders. Never print real secrets in chat, logs or docs.
+8. **Accessibility is a requirement** (WCAG 2.1 AA) for every UI change - see `references/conventions.md`.
+9. **Privacy (RA 10173):** match on accommodation needs, never on disability type; employers see a candidate's needs only through an application to their own posting; feedback is anonymous and the trust score is hidden until 3 responses.
+
+## Progress tracking (every task)
+
+Sessions can be cut off by usage limits. Before working, read `PROGRESS.md` and check `git status` / `git log`; never redo `[x]` items or re-ask recorded decisions. Write the step to "In progress" before starting it; after finishing, tick it, update "Next step" and commit. Full rules: `CLAUDE.md` → "Progress protocol". To resume an interrupted session use the `opendoor-continue` skill.
+
+## Where to look
+
+Read only the reference file(s) the task needs:
+
+| Task | Read |
+|---|---|
+| Repo layout, services, ports, env vars, request flow | `references/architecture.md` |
+| Any endpoint, request/response shape, error code | `references/api-contract.md` |
+| Migrations, models, relationships, seeders | `references/data-model.md` |
+| Status workflow, matching, trust score, feedback window, permissions | `references/business-rules.md` |
+| SOAP registry, Insights mashup, Nominatim/Overpass/PSGC | `references/integrations.md` |
+| Postman, JMeter, PHPUnit/Jest, CI/CD, deployment | `references/testing-devops.md` |
+| Code style, Git workflow, React/Laravel patterns, accessibility | `references/conventions.md` |
+
+## Build order
+
+Build in this order so each phase can be tested with real data from the previous one. Write the Postman requests for each module as you build it, not at the end.
+
+| Phase | Build | Done when |
+|---|---|---|
+| 0. Setup | Monorepo folders, `.gitignore`, `.env.example` files, `docker-compose.yml`, OpenAPI draft (`docs/openapi.yaml`), README | `docker compose up` starts MySQL and empty services |
+| 1. Foundation | Core: M1 Auth, M11 master data + seeders; Gateway routing + health + error envelope; React AppLayout, routing, ProtectedRoute | Each role can register/log in through the gateway and lands in its own portal |
+| 2. Employer side | M3 Company profile, M4 Job postings (with structured accommodations) | Employer creates/edits/closes postings |
+| 3. Candidate side | M2 Profile + needs, M5 Search/filter/"Matches my needs" | Candidate sees postings ranked by needs met |
+| 4. Applications | M6 Application and status workflow | An application moves through every allowed status |
+| 5. Verification | M7 Feedback and trust score | Score appears after 3 responses |
+| 6. Legacy integration | Business Registry SOAP service + `PATCH /admin/employers/{id}/verify` | Admin registry check stores a result; faults handled |
+| 7. Mashup | Insights Service + `/internal/*` endpoints in Core + PSGC picker | Snapshot shows on job details; degrades when a source is down |
+| 8. Administration | M10 Moderation, M8 Dashboards, M9 Notifications | Admin verifies, moderates, sees analytics |
+| 9. Release | M12/M13 extras, CI/CD, deployment, Newman smoke, JMeter, WCAG audit | Deployed, tested, audited |
+
+## Wiring the existing UI
+
+The team already has UI screens. When connecting a screen:
+1. Find the endpoint(s) in `references/api-contract.md` and use the exact field names.
+2. Go through the single Axios instance (`frontend/src/api/client.js`) that adds the Bearer token, handles 401 (log out) and maps 422 `errors` to fields.
+3. Screens that need data the IPT UI may not have: Accessibility Snapshot section on job details, PSGC location picker (postings, profiles, company), registry-check result on the admin employer-verification page, `sources` status messages when snapshot parts are unavailable.
+4. Keep the UI's existing look; fix only accessibility problems you find.
+
+## Open decisions (confirm with the user before relying on them)
+
+- Business Registry is a **simulated** DTI/SEC registry with seeded data (no real DTI/SEC API exists).
+- The gateway is Node.js/Express (could be swapped if the team prefers all-PHP).
+- Project location: the repo currently sits in OneDrive; moving it to a non-synced folder (e.g. `C:\dev\opendoor`) is recommended before installing `node_modules`/`vendor`.

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files (only .env.example is committed)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output
+dist/
+build/
+coverage/
+.vite/
+
+# Laravel runtime
+services/core-api/storage/*.key
+services/core-api/storage/logs/*
+services/core-api/bootstrap/cache/*.php
+services/core-api/public/storage
+.phpunit.result.cache
+.phpunit.cache/
+
+# Business Registry runtime database (seed script is committed instead)
+services/business-registry-soap/data/*.db
+
+# Test results
+tests/jmeter/results*.jtl
+tests/jmeter/report/
+tests/jmeter/tokens.csv
+newman/
+tests/postman/reports/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+~$*.docx
+
+# Claude Code local settings
+.claude/settings.local.json
