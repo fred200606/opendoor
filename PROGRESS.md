@@ -36,9 +36,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Move project out of OneDrive (copied to `C:\dev\opendoor` on 2026-10-03)
 - [x] `git init`; first commit (cf38aae)
 - [x] Apply rule updates (see Decisions 2026-10-03) to `opendoor-dev` references + SIA doc (via `opendoor-sia-docs`), incl. Laravel version
-- [ ] Monorepo folders (docx + diagrams already moved to `docs/`)
-- [ ] `.gitignore`, `README.md`, `.env.example` for every component
-- [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users)
+- [x] Monorepo folders; docx + diagrams moved to `docs/`
+- [x] `.gitignore`, `README.md`, `.env.example` for every component (local `.env` files generated with random secrets)
+- [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users) – script `docs/setup/create-databases.sql` ready; **user must run it** (root password needed)
 - [ ] `docs/openapi.yaml` draft from the API contract
 - [ ] GitHub remote created and pushed
 
