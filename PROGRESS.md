@@ -39,7 +39,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Monorepo folders; docx + diagrams moved to `docs/`
 - [x] `.gitignore`, `README.md`, `.env.example` for every component (local `.env` files generated with random secrets)
 - [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users) – script `docs/setup/create-databases.sql` ready; **user must run it** (root password needed)
-- [ ] `docs/openapi.yaml` draft from the API contract
+- [x] `docs/openapi.yaml` draft from the API contract (Redocly lint: valid)
 - [ ] GitHub remote created and pushed
 
 ### Phase 1 – Foundation

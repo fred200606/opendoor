@@ -1,0 +1,1538 @@
+openapi: 3.1.0
+info:
+  title: OpenDoor API
+  version: 0.1.0-draft
+  summary: PWD job matching by workplace accommodations, with post-hire verification.
+  description: |
+    Public API exposed by the OpenDoor API Gateway. The React client only calls these paths.
+    The gateway routes `/api/insights/*` to the Insights Service and every other `/api/*` path to the Core Service.
+    `/internal/*` paths are service-to-service only and are **never** routed by the gateway (404).
+
+    **Errors** use one envelope everywhere (`Error`); 422 validation errors add Laravel's `errors` object (`ValidationError`).
+    Every response carries an `X-Request-ID` header (UUID v4) that also appears as `error.request_id`.
+
+    **Lists** are paginated, 12 per page (`?page=`).
+
+    Draft generated from the SIA documentation (section 4 and Appendix A). Keep it identical to
+    `.claude/skills/opendoor-dev/references/api-contract.md`; once implementation starts, this file wins.
+servers:
+  - url: http://localhost:8080/api
+    description: Local gateway
+  - url: https://{gateway}/api
+    description: Production gateway (Railway)
+    variables:
+      gateway:
+        default: opendoor-gateway.up.railway.app
+tags:
+  - name: Gateway
+  - name: M1 Auth
+  - name: M2 Candidate profile
+  - name: M3 Company
+  - name: M4 Job postings
+  - name: M5 Search and matching
+  - name: M6 Applications
+  - name: M7 Feedback and trust score
+  - name: M8 Dashboards
+  - name: M9 Notifications
+  - name: M10 Moderation
+  - name: M11 Master data
+  - name: M12 Saved jobs
+  - name: Insights
+  - name: Internal
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------------------------------------------------------- Gateway
+  /health:
+    get:
+      tags: [Gateway]
+      summary: Gateway health with downstream service status
+      security: []
+      responses:
+        '200':
+          description: Gateway is up (services may be degraded)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, services]
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  services:
+                    type: object
+                    properties:
+                      core: { $ref: '#/components/schemas/ServiceHealth' }
+                      insights: { $ref: '#/components/schemas/ServiceHealth' }
+
+  # ---------------------------------------------------------------- M1 Auth
+  /register:
+    post:
+      tags: [M1 Auth]
+      summary: Register a candidate or employer (admins never self-register)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation, role, consent]
+              properties:
+                name: { type: string, maxLength: 255 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string }
+                role: { type: string, enum: [candidate, employer] }
+                consent:
+                  type: boolean
+                  const: true
+                  description: Data privacy consent (RA 10173); stored as `consented_at`.
+      responses:
+        '201':
+          description: Registered and logged in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /login:
+    post:
+      tags: [M1 Auth]
+      summary: Log in and receive a Sanctum token (5 attempts per minute)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /logout:
+    post:
+      tags: [M1 Auth]
+      summary: Revoke the current token
+      responses:
+        '204': { description: Logged out }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /me:
+    get:
+      tags: [M1 Auth]
+      summary: Current user and role
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /me/password:
+    put:
+      tags: [M1 Auth]
+      summary: Change password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string }
+      responses:
+        '204': { description: Password changed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ---------------------------------------------------------------- M2 Candidate profile
+  /candidate/profile:
+    get:
+      tags: [M2 Candidate profile]
+      summary: Own candidate profile including accommodation needs
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [M2 Candidate profile]
+      summary: Update own candidate profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidateProfileInput' }
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateProfile' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /candidate/accommodations:
+    put:
+      tags: [M2 Candidate profile]
+      summary: Replace the candidate's accommodation needs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accommodation_ids]
+              properties:
+                accommodation_ids:
+                  type: array
+                  items: { type: integer }
+      responses:
+        '200':
+          description: Saved needs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Accommodation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /candidate/resume:
+    post:
+      tags: [M2 Candidate profile]
+      summary: Upload résumé (PDF only, size-limited)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [resume]
+              properties:
+                resume: { type: string, format: binary }
+      responses:
+        '200':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resume_url: { type: string }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ---------------------------------------------------------------- M3 Company
+  /employer/company:
+    get:
+      tags: [M3 Company]
+      summary: Own company profile
+      responses:
+        '200':
+          description: Company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [M3 Company]
+      summary: Create or update own company profile (changing business_reg_no clears verification)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+          application/json:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+      responses:
+        '200':
+          description: Saved company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /employers/{id}:
+    get:
+      tags: [M3 Company]
+      summary: Public employer page (company, verified badge, open postings, trust score)
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Public employer
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EmployerPublic'
+                  - type: object
+                    properties:
+                      open_postings:
+                        type: array
+                        items: { $ref: '#/components/schemas/JobPosting' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/employers/{id}/verify:
+    patch:
+      tags: [M3 Company]
+      summary: Run a SOAP registry check, or approve / reject an employer
+      description: |
+        `check` calls the legacy Business Registry (SOAP) and stores a `registry_checks` row.
+        The registry result never approves automatically; the admin decides with `approve` or `reject`.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [check, approve, reject] }
+                reason: { type: string, description: Required when action is reject }
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registry: { $ref: '#/components/schemas/RegistryResult' }
+                  verified_at: { type: [string, 'null'], format: date-time }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '502': { $ref: '#/components/responses/RegistryError' }
+
+  # ---------------------------------------------------------------- M4 Job postings
+  /employer/job-postings:
+    get:
+      tags: [M4 Job postings]
+      summary: Own postings (all statuses) with applicant counts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/JobPostingStatus' }
+      responses:
+        '200':
+          description: Own postings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/JobPosting'
+                        - type: object
+                          properties:
+                            applicants_count: { type: integer }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+  /job-postings:
+    get:
+      tags: [M5 Search and matching]
+      summary: Search open postings; "Matches my needs" mode for candidates with saved needs
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          description: Keyword (title, description, company name)
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: integer }
+        - name: accommodations[]
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: integer }
+        - name: match
+          in: query
+          description: 1 = rank by the logged-in candidate's needs (full matches first, then by met desc)
+          schema: { type: integer, enum: [0, 1] }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [best, newest, closing], default: best }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Postings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/JobPosting' }
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/PageMeta'
+                      - type: object
+                        properties:
+                          match_mode: { type: boolean }
+    post:
+      tags: [M4 Job postings]
+      summary: Create a posting (draft, or submit for approval)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobPostingInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /job-postings/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [M5 Search and matching]
+      summary: Posting details (+ `match` for candidates with needs)
+      security: [{}, { bearerAuth: [] }]
+      responses:
+        '200':
+          description: Posting
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [M4 Job postings]
+      summary: Update own posting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JobPostingInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [M4 Job postings]
+      summary: Soft-delete own posting
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /job-postings/{id}/status:
+    patch:
+      tags: [M4 Job postings]
+      summary: Open or close own posting
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [open, closed] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/job-postings/{id}/approve:
+    patch:
+      tags: [M4 Job postings]
+      summary: Approve (pending_approval → open) or reject a posting
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [approve, reject] }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- M6 Applications
+  /job-postings/{id}/applications:
+    post:
+      tags: [M6 Applications]
+      summary: Apply to an open posting
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cover_note: { type: string, maxLength: 2000 }
+                interview_request: { type: string, maxLength: 1000 }
+      responses:
+        '201':
+          description: Applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  job_posting_id: { type: integer }
+                  status: { $ref: '#/components/schemas/ApplicationStatus' }
+                  created_at: { type: string, format: date-time }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /applications:
+    get:
+      tags: [M6 Applications]
+      summary: Own applications (candidate) or applications to own postings (employer)
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ApplicationStatus' }
+        - name: job_posting_id
+          in: query
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Application' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+  /applications/{id}:
+    get:
+      tags: [M6 Applications]
+      summary: Application details (employer opening a pending application marks it reviewed)
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Application
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /applications/{id}/status:
+    patch:
+      tags: [M6 Applications]
+      summary: Change application status (see the status workflow)
+      description: |
+        Allowed: pending→reviewed (employer), pending/reviewed→withdrawn (candidate),
+        reviewed→rejected (employer), reviewed→hired (employer or candidate). Anything else → 422 INVALID_STATUS_TRANSITION.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [reviewed, hired, rejected, withdrawn] }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ---------------------------------------------------------------- M7 Feedback
+  /applications/{id}/feedback-form:
+    get:
+      tags: [M7 Feedback and trust score]
+      summary: Accommodations to rate (those advertised at the time of hire)
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Form
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  opens_on: { type: string, format: date, description: Calendar day 30 after the hire date (Asia/Manila) }
+                  is_open: { type: boolean }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accommodation_id: { type: integer }
+                        name: { type: string }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /applications/{id}/feedback:
+    post:
+      tags: [M7 Feedback and trust score]
+      summary: Submit feedback once, from calendar day 30 after hire (Asia/Manila)
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [accommodation_id, rating]
+                    properties:
+                      accommodation_id: { type: integer }
+                      rating: { $ref: '#/components/schemas/FeedbackRating' }
+                comments: { type: string, maxLength: 2000 }
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  application_id: { type: integer }
+                  items_rated: { type: integer }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /employers/{id}/trust-score:
+    get:
+      tags: [M7 Feedback and trust score]
+      summary: Employer trust score (published only from 3 responses)
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Trust score
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TrustScore' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- M8 Dashboards
+  /candidate/dashboard:
+    get:
+      tags: [M8 Dashboards]
+      summary: Candidate summary (applications by status, matches, pending feedback)
+      responses:
+        '200': { $ref: '#/components/responses/Dashboard' }
+  /employer/dashboard:
+    get:
+      tags: [M8 Dashboards]
+      summary: Employer summary (postings, applicants, trust score, verification)
+      responses:
+        '200': { $ref: '#/components/responses/Dashboard' }
+  /admin/dashboard:
+    get:
+      tags: [M8 Dashboards]
+      summary: Admin analytics (users, postings, verification queue, reports)
+      responses:
+        '200': { $ref: '#/components/responses/Dashboard' }
+
+  # ---------------------------------------------------------------- M9 Notifications
+  /notifications:
+    get:
+      tags: [M9 Notifications]
+      summary: Own notifications (unread count in meta)
+      parameters: [{ $ref: '#/components/parameters/Page' }]
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notification' }
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/PageMeta'
+                      - type: object
+                        properties:
+                          unread_count: { type: integer }
+  /notifications/{id}/read:
+    patch:
+      tags: [M9 Notifications]
+      summary: Mark one notification read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Marked read }
+  /notifications/read-all:
+    patch:
+      tags: [M9 Notifications]
+      summary: Mark all notifications read
+      responses:
+        '204': { description: Marked read }
+
+  # ---------------------------------------------------------------- M10 Moderation
+  /admin/users:
+    get:
+      tags: [M10 Moderation]
+      summary: List users
+      parameters:
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+        - name: q
+          in: query
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+  /admin/users/{id}/suspend:
+    patch:
+      tags: [M10 Moderation]
+      summary: Suspend (revokes all tokens) or reactivate a user
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [suspended]
+              properties:
+                suspended: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+  /job-postings/{id}/reports:
+    post:
+      tags: [M10 Moderation]
+      summary: Report a posting
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '201':
+          description: Reported
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+  /admin/reports:
+    get:
+      tags: [M10 Moderation]
+      summary: List reports
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ReportStatus' }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Report' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+  /admin/reports/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get:
+      tags: [M10 Moderation]
+      summary: Report details
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+    patch:
+      tags: [M10 Moderation]
+      summary: Dismiss or act on a report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [dismissed, actioned] }
+                note: { type: string }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+  /admin/feedback/{id}/hide:
+    patch:
+      tags: [M10 Moderation]
+      summary: Hide or unhide a feedback response (recomputes the trust score)
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hidden]
+              properties:
+                hidden: { type: boolean }
+      responses:
+        '204': { description: Updated }
+
+  # ---------------------------------------------------------------- M11 Master data
+  /categories:
+    get:
+      tags: [M11 Master data]
+      summary: Job categories
+      security: []
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+  /accommodations:
+    get:
+      tags: [M11 Master data]
+      summary: Accommodation types grouped (retired ones excluded)
+      security: []
+      responses:
+        '200':
+          description: Accommodations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        group: { $ref: '#/components/schemas/AccommodationGroup' }
+                        label: { type: string }
+                        items:
+                          type: array
+                          items: { $ref: '#/components/schemas/Accommodation' }
+  /admin/categories:
+    post:
+      tags: [M11 Master data]
+      summary: Create category
+      requestBody: { $ref: '#/components/requestBodies/CategoryInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/categories/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put:
+      tags: [M11 Master data]
+      summary: Update category
+      requestBody: { $ref: '#/components/requestBodies/CategoryInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+    delete:
+      tags: [M11 Master data]
+      summary: Delete category (only if unused)
+      responses:
+        '204': { description: Deleted }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/accommodations:
+    post:
+      tags: [M11 Master data]
+      summary: Create accommodation type
+      requestBody: { $ref: '#/components/requestBodies/AccommodationInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Accommodation' }
+  /admin/accommodations/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put:
+      tags: [M11 Master data]
+      summary: Update accommodation type
+      requestBody: { $ref: '#/components/requestBodies/AccommodationInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Accommodation' }
+    delete:
+      tags: [M11 Master data]
+      summary: Delete if unused, otherwise retire (is_retired = true)
+      responses:
+        '200':
+          description: Retired (was in use)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Accommodation' }
+        '204': { description: Deleted }
+
+  # ---------------------------------------------------------------- M12 Saved jobs
+  /candidate/saved-jobs:
+    get:
+      tags: [M12 Saved jobs]
+      summary: Saved postings
+      responses:
+        '200':
+          description: Saved postings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/JobPosting' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+  /candidate/saved-jobs/{jobId}:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [M12 Saved jobs]
+      summary: Save a posting
+      responses:
+        '201': { description: Saved }
+    delete:
+      tags: [M12 Saved jobs]
+      summary: Remove a saved posting
+      responses:
+        '204': { description: Removed }
+
+  # ---------------------------------------------------------------- Insights (routed to Insights Service)
+  /insights/job-postings/{id}:
+    get:
+      tags: [Insights]
+      summary: Workplace Accessibility Snapshot (mashup of Core, PSGC, Nominatim, Overpass)
+      description: Returns 200 even when some sources fail; see `sources`.
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Snapshot' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /insights/locations/{level}:
+    get:
+      tags: [Insights]
+      summary: PSGC location lists for pickers
+      security: []
+      parameters:
+        - name: level
+          in: path
+          required: true
+          schema: { type: string, enum: [regions, provinces, cities] }
+        - name: parent
+          in: query
+          description: Region code (for provinces, or cities of NCR) or province code (for cities)
+          schema: { type: string }
+      responses:
+        '200':
+          description: Locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LocationItem' }
+
+  # ---------------------------------------------------------------- Internal (not routed by gateway)
+  /internal/job-postings/{id}/summary:
+    servers:
+      - url: http://localhost:8001
+        description: Core Service directly (private network only)
+    get:
+      tags: [Internal]
+      summary: Posting summary for the Insights Service (service key only; 404 if not open)
+      security: [{ serviceKey: [] }]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InternalPostingSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Laravel Sanctum personal access token
+    serviceKey:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+
+  requestBodies:
+    CategoryInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string, maxLength: 100 }
+    AccommodationInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, group]
+            properties:
+              name: { type: string, maxLength: 150 }
+              group: { $ref: '#/components/schemas/AccommodationGroup' }
+              description: { type: [string, 'null'] }
+              is_retired: { type: boolean }
+
+  responses:
+    Unauthenticated:
+      description: Missing, invalid or revoked token (UNAUTHENTICATED)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Wrong role, policy denied (FORBIDDEN) or suspended account (ACCOUNT_SUSPENDED)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: NOT_FOUND
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: ALREADY_APPLIED or FEEDBACK_EXISTS
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationFailed:
+      description: |
+        VALIDATION_FAILED (with field `errors`), or a business rule: INVALID_STATUS_TRANSITION,
+        POSTING_CLOSED, FEEDBACK_NOT_OPEN, REGISTRY_INVALID_REQUEST
+      content:
+        application/json:
+          schema:
+            anyOf:
+              - $ref: '#/components/schemas/ValidationError'
+              - $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: RATE_LIMITED (Retry-After header set)
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    RegistryError:
+      description: REGISTRY_UNAVAILABLE or REGISTRY_AUTH_FAILED (legacy SOAP registry)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Dashboard:
+      description: Role-specific summary
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+
+  schemas:
+    # ---------- enums (identical to SIA doc Appendix F)
+    Role: { type: string, enum: [candidate, employer, admin] }
+    RegistryType: { type: string, enum: [DTI, SEC] }
+    RegistryStatus: { type: string, enum: [ACTIVE, EXPIRED, CANCELLED, NOT_FOUND, ERROR] }
+    AccommodationGroup: { type: string, enum: [physical_access, communication, work_arrangement, assistive_technology, support] }
+    EmploymentType: { type: string, enum: [full_time, part_time, contract, internship] }
+    WorkSetup: { type: string, enum: [onsite, hybrid, remote] }
+    InterviewFormat: { type: string, enum: [online, onsite] }
+    JobPostingStatus: { type: string, enum: [draft, pending_approval, open, closed] }
+    ApplicationStatus: { type: string, enum: [pending, reviewed, hired, rejected, withdrawn] }
+    HireConfirmedBy: { type: string, enum: [employer, candidate] }
+    FeedbackRating:
+      type: string
+      enum: [delivered, partial, not_delivered]
+      description: Values 1 / 0.5 / 0 in the trust score formula
+    ReportStatus: { type: string, enum: [open, dismissed, actioned] }
+    SourceStatus: { type: string, enum: [ok, cached, stale, unavailable] }
+    ErrorCode:
+      type: string
+      enum:
+        - BAD_REQUEST
+        - UNAUTHENTICATED
+        - FORBIDDEN
+        - ACCOUNT_SUSPENDED
+        - NOT_FOUND
+        - ALREADY_APPLIED
+        - FEEDBACK_EXISTS
+        - VALIDATION_FAILED
+        - INVALID_STATUS_TRANSITION
+        - POSTING_CLOSED
+        - FEEDBACK_NOT_OPEN
+        - REGISTRY_INVALID_REQUEST
+        - RATE_LIMITED
+        - REGISTRY_UNAVAILABLE
+        - REGISTRY_AUTH_FAILED
+        - UPSTREAM_ERROR
+        - SERVICE_UNAVAILABLE
+        - UPSTREAM_TIMEOUT
+
+    # ---------- errors
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: { $ref: '#/components/schemas/ErrorCode' }
+            message: { type: string }
+            request_id: { type: string, format: uuid }
+    ValidationError:
+      type: object
+      required: [message, error, errors]
+      properties:
+        message: { type: string, example: The given data was invalid. }
+        error:
+          type: object
+          properties:
+            code: { type: string, const: VALIDATION_FAILED }
+            request_id: { type: string, format: uuid }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    # ---------- common
+    PageMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        per_page: { type: integer, const: 12 }
+        total: { type: integer }
+        last_page: { type: integer }
+    ServiceHealth: { type: string, enum: [up, down] }
+    Location:
+      type: object
+      properties:
+        psgc_code: { type: [string, 'null'] }
+        label: { type: [string, 'null'], example: 'Quezon City, NCR' }
+    LocationItem:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        level: { type: string, enum: [region, province, city, municipality] }
+
+    # ---------- users and profiles
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/Role' }
+        is_active: { type: boolean }
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+    CandidateProfileInput:
+      type: object
+      properties:
+        headline: { type: string, maxLength: 255 }
+        skills:
+          type: array
+          items: { type: string }
+        experience: { type: string }
+        location_psgc: { type: [string, 'null'], maxLength: 10 }
+        disability_type: { type: [string, 'null'], description: Optional; never used for matching }
+        show_disability: { type: boolean, default: false }
+    CandidateProfile:
+      allOf:
+        - $ref: '#/components/schemas/CandidateProfileInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            location: { $ref: '#/components/schemas/Location' }
+            resume_url: { type: [string, 'null'] }
+            accommodations:
+              type: array
+              items: { $ref: '#/components/schemas/Accommodation' }
+    CompanyInput:
+      type: object
+      required: [company_name, business_reg_no, registry_type, industry, address]
+      properties:
+        company_name: { type: string }
+        business_reg_no: { type: string }
+        registry_type: { $ref: '#/components/schemas/RegistryType' }
+        industry: { type: string }
+        address: { type: string }
+        location_psgc: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        logo: { type: string, format: binary }
+    Company:
+      allOf:
+        - $ref: '#/components/schemas/EmployerPublic'
+        - type: object
+          properties:
+            business_reg_no: { type: string }
+            registry_type: { $ref: '#/components/schemas/RegistryType' }
+            verified_at: { type: [string, 'null'], format: date-time }
+            verification_rejected_reason: { type: [string, 'null'] }
+    EmployerSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        company_name: { type: string }
+        verified: { type: boolean }
+    EmployerPublic:
+      allOf:
+        - $ref: '#/components/schemas/EmployerSummary'
+        - type: object
+          properties:
+            industry: { type: string }
+            address: { type: string }
+            location: { $ref: '#/components/schemas/Location' }
+            description: { type: [string, 'null'] }
+            logo_url: { type: [string, 'null'] }
+            trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
+    RegistryResult:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/RegistryStatus' }
+        registered_name: { type: [string, 'null'] }
+        name_match: { type: [number, 'null'], minimum: 0, maximum: 1 }
+        checked_at: { type: string, format: date-time }
+
+    # ---------- master data
+    Category:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    Accommodation:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        group: { $ref: '#/components/schemas/AccommodationGroup' }
+        description: { type: [string, 'null'] }
+        is_retired: { type: boolean }
+        note: { type: [string, 'null'], description: Only on a posting's accommodations }
+
+    # ---------- postings
+    JobPostingInput:
+      type: object
+      required: [title, description, category_id, address, employment_type, work_setup, interview_format, closes_at, accommodations]
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string }
+        category_id: { type: integer }
+        address: { type: string }
+        location_psgc: { type: [string, 'null'] }
+        employment_type: { $ref: '#/components/schemas/EmploymentType' }
+        work_setup: { $ref: '#/components/schemas/WorkSetup' }
+        interview_format: { $ref: '#/components/schemas/InterviewFormat' }
+        closes_at: { type: string, format: date }
+        accommodations:
+          type: array
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: { type: integer }
+              note: { type: [string, 'null'], maxLength: 255 }
+        submit: { type: boolean, description: 'true = send for admin approval; false = save as draft' }
+    Match:
+      type: object
+      properties:
+        met: { type: integer }
+        total: { type: integer }
+        missing:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              name: { type: string }
+    TrustScoreSummary:
+      type: object
+      properties:
+        published: { type: boolean }
+        score: { type: [integer, 'null'], minimum: 0, maximum: 100, description: Whole percentage; null below 3 responses }
+        based_on: { type: integer }
+    TrustScore:
+      allOf:
+        - $ref: '#/components/schemas/TrustScoreSummary'
+        - type: object
+          properties:
+            breakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  accommodation_id: { type: integer }
+                  name: { type: string }
+                  delivered: { type: integer }
+                  partial: { type: integer }
+                  not_delivered: { type: integer }
+                  of: { type: integer }
+    JobPosting:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        employer: { $ref: '#/components/schemas/EmployerSummary' }
+        category: { $ref: '#/components/schemas/Category' }
+        address: { type: string }
+        location: { $ref: '#/components/schemas/Location' }
+        employment_type: { $ref: '#/components/schemas/EmploymentType' }
+        work_setup: { $ref: '#/components/schemas/WorkSetup' }
+        interview_format: { $ref: '#/components/schemas/InterviewFormat' }
+        status: { $ref: '#/components/schemas/JobPostingStatus' }
+        closes_at: { type: string, format: date }
+        accommodations:
+          type: array
+          items: { $ref: '#/components/schemas/Accommodation' }
+        match:
+          description: Only for logged-in candidates with saved needs
+          oneOf:
+            - $ref: '#/components/schemas/Match'
+            - type: 'null'
+        trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
+        created_at: { type: string, format: date-time }
+
+    # ---------- applications
+    Application:
+      type: object
+      properties:
+        id: { type: integer }
+        job_posting: { $ref: '#/components/schemas/JobPosting' }
+        candidate:
+          description: Visible to the employer only for applications to its own postings
+          type: object
+          properties:
+            name: { type: string }
+            headline: { type: string }
+            accommodations:
+              type: array
+              items: { $ref: '#/components/schemas/Accommodation' }
+        status: { $ref: '#/components/schemas/ApplicationStatus' }
+        cover_note: { type: [string, 'null'] }
+        interview_request: { type: [string, 'null'] }
+        hired_at: { type: [string, 'null'], format: date-time }
+        hire_confirmed_by:
+          oneOf:
+            - $ref: '#/components/schemas/HireConfirmedBy'
+            - type: 'null'
+        feedback_opens_on: { type: [string, 'null'], format: date }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    # ---------- notifications and moderation
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, example: application_status_changed }
+        data: { type: object, additionalProperties: true }
+        read_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    Report:
+      type: object
+      properties:
+        id: { type: integer }
+        job_posting_id: { type: integer }
+        reason: { type: string }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        created_at: { type: string, format: date-time }
+
+    # ---------- insights
+    NearbyPlace:
+      type: object
+      properties:
+        name: { type: [string, 'null'] }
+        wheelchair: { type: string, enum: ['yes', limited] }
+        distance_m: { type: integer }
+    Snapshot:
+      type: object
+      properties:
+        job_posting_id: { type: integer }
+        location:
+          type: object
+          properties:
+            psgc_code: { type: [string, 'null'] }
+            label: { type: [string, 'null'] }
+            lat: { type: [number, 'null'] }
+            lon: { type: [number, 'null'] }
+            precision: { type: [string, 'null'], enum: [street, city, null] }
+        employer_claims:
+          type: object
+          description: Advertised accommodation names keyed by group
+          additionalProperties:
+            type: array
+            items: { type: string }
+        community_verification:
+          description: null when the trust score is not published
+          oneOf:
+            - type: object
+              properties:
+                trust_score: { type: integer }
+                based_on: { type: integer }
+                breakdown:
+                  type: array
+                  items: { type: object, additionalProperties: true }
+            - type: 'null'
+        nearby_accessible:
+          oneOf:
+            - type: object
+              properties:
+                radius_m: { type: integer, const: 500 }
+                transit_stops: { type: array, items: { $ref: '#/components/schemas/NearbyPlace' } }
+                toilets: { type: array, items: { $ref: '#/components/schemas/NearbyPlace' } }
+                parking: { type: array, items: { $ref: '#/components/schemas/NearbyPlace' } }
+                other: { type: array, items: { $ref: '#/components/schemas/NearbyPlace' } }
+            - type: 'null'
+        sources:
+          type: object
+          properties:
+            core: { $ref: '#/components/schemas/SourceStatus' }
+            psgc: { $ref: '#/components/schemas/SourceStatus' }
+            nominatim: { $ref: '#/components/schemas/SourceStatus' }
+            overpass: { $ref: '#/components/schemas/SourceStatus' }
+        disclaimer: { type: string }
+        generated_at: { type: string, format: date-time }
+    InternalPostingSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        address: { type: string }
+        psgc_code: { type: [string, 'null'] }
+        accommodations:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              name: { type: string }
+              group: { $ref: '#/components/schemas/AccommodationGroup' }
+        trust_score:
+          allOf:
+            - $ref: '#/components/schemas/TrustScoreSummary'
+            - type: object
+              properties:
+                breakdown:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      accommodation_id: { type: integer }
+                      delivered: { type: integer }
+                      of: { type: integer }

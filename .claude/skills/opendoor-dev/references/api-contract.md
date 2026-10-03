@@ -3,13 +3,13 @@
 Base URL (client): `${VITE_API_URL}` = `{GATEWAY}/api`. JSON only. Protected routes need `Authorization: Bearer <sanctum token>`. Lists are paginated, 12 per page (`?page=`), returning `{ data: [...], meta: { current_page, per_page, total, ... } }`.
 
 Access: P = public, C = candidate, E = employer, A = admin, S = internal service key, any = any logged-in user.
-When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins once it exists; keep them in sync.
+When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (it exists since Phase 0 – validate with `npx @redocly/cli lint docs/openapi.yaml`); keep them in sync.
 
 ## Endpoints
 
 | Module | Method | Path | Access | Purpose |
 |---|---|---|---|---|
-| Gateway | GET | /health | P | `{status, services:{core, insights}}` |
+| Gateway | GET | /health | P | `{status:'ok'|'degraded', services:{core:'up'|'down', insights:'up'|'down'}}` |
 | M1 Auth | POST | /register | P | `{name,email,password,password_confirmation,role:'candidate'|'employer',consent:true}` → 201 `{user, token}` |
 | M1 Auth | POST | /login | P | `{email,password}` → 200 `{token, user:{id,name,email,role}}` (rate-limited 5/min) |
 | M1 Auth | POST | /logout | any | revoke token → 204 |
@@ -21,7 +21,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins on
 | M3 Company | GET, PUT | /employer/company | E | `{company_name,business_reg_no,registry_type:'DTI'|'SEC',industry,address,location_psgc,description,logo?}` |
 | M3 Company | GET | /employers/{id} | P | public page: company, verified, open postings, trust score |
 | M3 Company | PATCH | /admin/employers/{id}/verify | A | `{action:'check'|'approve'|'reject', reason?}` → `{registry:{status,registered_name,name_match,checked_at}, verified_at}` |
-| M4 Postings | GET | /employer/job-postings | E | own postings with applicant counts |
+| M4 Postings | GET | /employer/job-postings | E | own postings (`?status=`) with `applicants_count` |
 | M4 Postings | POST | /job-postings | E | `{title,description,category_id,address,location_psgc,employment_type,work_setup,interview_format,closes_at,accommodations:[{id,note?}],submit:bool}` → 201 |
 | M4 Postings | PUT, DELETE | /job-postings/{id} | E owner | update / soft-delete |
 | M4 Postings | PATCH | /job-postings/{id}/status | E owner | `{status:'open'|'closed'}` |
@@ -30,19 +30,19 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins on
 | M5 Search | GET | /job-postings/{id} | P | details (+ `match` for C) |
 | M5/M11 | GET | /categories, /accommodations | P | filter options (accommodations grouped) |
 | M6 Applications | POST | /job-postings/{id}/applications | C | `{cover_note?, interview_request?}` → 201 `{id,job_posting_id,status:'pending',created_at}` |
-| M6 Applications | GET | /applications, /applications/{id} | C own / E own postings | `?status=` filter |
+| M6 Applications | GET | /applications, /applications/{id} | C own / E own postings | `?status=&job_posting_id=`; includes `feedback_opens_on` (date) when hired |
 | M6 Applications | PATCH | /applications/{id}/status | C / E | `{status:'reviewed'|'hired'|'rejected'|'withdrawn'}` |
-| M7 Feedback | GET | /applications/{id}/feedback-form | C (hired) | `{items:[{accommodation_id,name}]}` |
+| M7 Feedback | GET | /applications/{id}/feedback-form | C (hired) | `{opens_on, is_open, items:[{accommodation_id,name}]}` |
 | M7 Feedback | POST | /applications/{id}/feedback | C (hired, ≥30 days) | `{items:[{accommodation_id,rating:'delivered'|'partial'|'not_delivered'}],comments?}` → 201 |
 | M7 Feedback | GET | /employers/{id}/trust-score | P | `{published, score, based_on, breakdown:[{accommodation_id,name,delivered,partial,not_delivered,of}]}` |
 | M8 Dashboards | GET | /candidate/dashboard, /employer/dashboard, /admin/dashboard | C / E / A | summaries |
-| M9 Notifications | GET | /notifications | C, E | list (unread count in meta) |
+| M9 Notifications | GET | /notifications | C, E | list (`meta.unread_count`) |
 | M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | mark read |
 | M10 Moderation | GET | /admin/users | A | `?role=&q=` |
 | M10 Moderation | PATCH | /admin/users/{id}/suspend | A | `{suspended:bool}` (revokes tokens) |
 | M10 Moderation | POST | /job-postings/{id}/reports | C | `{reason}` |
-| M10 Moderation | GET, PATCH | /admin/reports, /admin/reports/{id} | A | review / dismiss / act |
-| M10 Moderation | PATCH | /admin/feedback/{id}/hide | A | hide comment (recomputes score) |
+| M10 Moderation | GET, PATCH | /admin/reports, /admin/reports/{id} | A | `?status=`; PATCH `{status:'dismissed'|'actioned', note?}` |
+| M10 Moderation | PATCH | /admin/feedback/{id}/hide | A | `{hidden:bool}` hide/unhide a response (recomputes score) |
 | M11 Master data | POST, PUT, DELETE | /admin/categories/{id?}, /admin/accommodations/{id?} | A | delete only if unused; accommodations are retired, not deleted, when in use |
 | M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
