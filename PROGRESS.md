@@ -7,8 +7,8 @@
 
 - **Current phase:** Phase 0 – Setup
 - **In progress:** –
-- **Next step:** Monorepo folders, README, `.env.example` files, DB setup script (`docs/setup/create-databases.sql`), OpenAPI draft.
-- **Blockers:** Location of the existing UI code is unknown (ask the user for the path).
+- **Next step:** Phase 1 – Core: `composer create-project laravel/laravel` (13.x) into `services/core-api` (keep our `.env.example`), install Sanctum, `APP_TIMEZONE=Asia/Manila`.
+- **Blockers:** User must run the DB setup SQL (root password) before Core migrations.
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
@@ -16,6 +16,8 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-03 – No existing UI code: scaffold a fresh React (Vite) app in `frontend/` (WCAG 2.1 AA from the start).
+- 2026-10-03 – GitHub: private repo `fred200606/opendoor`; git uses `gh auth git-credential` (plain push hung on a hidden prompt).
 - 2026-10-03 – Business Registry SOAP service is a **simulated** DTI/SEC registry with seeded data.
 - 2026-10-03 – API gateway: Node.js/Express (confirmed).
 - 2026-10-03 – Core Service uses the **latest Laravel** release, not 11; replace "Laravel 11" in the skill and SIA doc.
@@ -40,7 +42,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] `.gitignore`, `README.md`, `.env.example` for every component (local `.env` files generated with random secrets)
 - [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users) – script `docs/setup/create-databases.sql` ready; **user must run it** (root password needed)
 - [x] `docs/openapi.yaml` draft from the API contract (Redocly lint: valid)
-- [ ] GitHub remote created and pushed
+- [x] GitHub remote created and pushed (private `fred200606/opendoor`, branches `main` + `develop`)
 
 ### Phase 1 – Foundation
 - [ ] Core: Laravel project + Sanctum + `APP_TIMEZONE=Asia/Manila`
@@ -50,7 +52,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Core: M11 public lists + admin CRUD (retire instead of delete)
 - [ ] Core: feature tests for M1, M11
 - [ ] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests
-- [ ] Frontend: existing UI copied into `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect
+- [ ] Frontend: fresh React (Vite) app in `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect
 - [ ] Frontend: register + login pages wired through the gateway
 - [ ] Postman: folders 01 Auth, 02 Master Data
 
@@ -120,6 +122,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-03 – Phase 0 done except DB creation (user runs SQL). Rule updates applied to skill + SIA doc; docs moved to `docs/`; OpenAPI draft; repo pushed.
 - 2026-10-03 – Resolved all pending decisions; copied project to `C:\dev\opendoor`. Continue there.
 
 - 2026-10-03 – Created skills (`opendoor-dev`, `opendoor-sia-docs`, `opendoor-continue`), `CLAUDE.md` and this file. No application code yet.
