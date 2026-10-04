@@ -5,7 +5,7 @@ React 19 + Vite single-page app: public area plus Candidate, Employer and Admin 
 | Path | What |
 |---|---|
 | `src/api/client.js` | The one Axios instance: adds the Bearer token, turns every failure into an `ApiError` (`status`, `code`, `message`, `requestId`, `fieldErrors`), logs out on 401 |
-| `src/api/*.js` | One module per resource (`auth.js`, later `jobs.js`, `profile.js`, …) |
+| `src/api/*.js` | One module per resource: `auth`, `jobs`, `profile` (candidate + company), `applications` (+ feedback), `insights`, `account` (dashboards, notifications), `masterData`, `admin` |
 | `src/auth/` | `AuthContext` (`user`, `role`, `login`, `register`, `logout`), `ProtectedRoute role="…"`, `homeFor(role)` → `/{role}/dashboard` |
 | `src/components/Page.jsx` | Every screen starts with `<Page title>`: sets the document title and moves focus to the `<h1>` after navigation |
 
