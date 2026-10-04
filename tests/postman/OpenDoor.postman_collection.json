@@ -58,6 +58,38 @@
     {
       "key": "accommodationId",
       "value": ""
+    },
+    {
+      "key": "employer2Token",
+      "value": ""
+    },
+    {
+      "key": "employerId",
+      "value": ""
+    },
+    {
+      "key": "postingCategoryId",
+      "value": ""
+    },
+    {
+      "key": "postingClosesAt",
+      "value": ""
+    },
+    {
+      "key": "accA",
+      "value": ""
+    },
+    {
+      "key": "accB",
+      "value": ""
+    },
+    {
+      "key": "accC",
+      "value": ""
+    },
+    {
+      "key": "jobPostingId",
+      "value": ""
     }
   ],
   "item": [
@@ -1640,6 +1672,1354 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Employer & Postings",
+      "description": "M3 company + M4 postings: T02, T07, T08, approval workflow and visibility. Cleans up after itself.",
+      "item": [
+        {
+          "name": "Pick a category for the posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('postingCategoryId', pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pick three accommodation types",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/accommodations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "accommodations"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date(Date.now() + 30 * 86400000);",
+                  "pm.collectionVariables.set('postingClosesAt', d.toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().data.flatMap((g) => g.items.map((i) => i.id));",
+                  "pm.test('at least three active types', () => pm.expect(ids.length).to.be.at.least(3));",
+                  "['accA', 'accB', 'accC'].forEach((k, i) => pm.collectionVariables.set(k, ids[i]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employer reads own company → registration data visible",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "company"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('has registration fields and the verified badge', () => {",
+                  "  pm.expect(c).to.include.keys('business_reg_no', 'registry_type', 'verified_at', 'verification_rejected_reason');",
+                  "  pm.expect(c.registry_type).to.be.oneOf(['DTI', 'SEC']);",
+                  "  pm.expect(c.verified).to.eql(true);",
+                  "});",
+                  "pm.collectionVariables.set('employerId', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Candidate cannot edit a company → 403",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Not mine\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public employer page hides registration data",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employers/{{employerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employers",
+                "{{employerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const e = pm.response.json();",
+                  "pm.test('no private fields', () => { pm.expect(e).to.not.have.property('business_reg_no'); pm.expect(e).to.not.have.property('verification_rejected_reason'); });",
+                  "pm.test('open postings are listed', () => pm.expect(e.open_postings).to.be.an('array'));",
+                  "pm.test('trust score is published only from 3 responses', () => {",
+                  "  if (e.trust_score.published) pm.expect(e.trust_score.based_on).to.be.at.least(3);",
+                  "  else pm.expect(e.trust_score.score).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T02 Employer creates a posting with 3 accommodations and notes → 201",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const p = pm.response.json();",
+                  "pm.test('status is pending_approval', () => pm.expect(p.status).to.eql('pending_approval'));",
+                  "pm.test('3 accommodations stored with notes', () => {",
+                  "  pm.expect(p.accommodations).to.have.lengthOf(3);",
+                  "  pm.expect(p.accommodations.map((a) => a.note)).to.include('Ramp at the main entrance');",
+                  "});",
+                  "",
+                  "pm.test('matches the JobPosting shape', () => {",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score');",
+                  "  pm.expect(p.employer).to.have.keys('id', 'company_name', 'verified');",
+                  "  pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');",
+                  "});",
+                  "pm.collectionVariables.set('jobPostingId', p.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guests cannot see an unapproved posting → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T07 Unknown posting id → 404 with request_id",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in the second demo employer → employer2Token",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employer2Email}}\",\n  \"password\": \"{{demoPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns a token and the user', () => {",
+                  "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(body.user).to.be.jsonSchema({",
+                  "  type: 'object',",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  properties: {",
+                  "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "  },",
+                  "  additionalProperties: false",
+                  "});",
+                  "});",
+                  "pm.test('role is employer', () => pm.expect(body.user.role).to.eql('employer'));",
+                  "pm.collectionVariables.set('employer2Token', body.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T08 Employer A updates Employer B's posting → 403",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A submitted posting cannot go back to draft → 422 errors.submit",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.submit is present', () => pm.expect(body.errors).to.have.property('submit'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "An unapproved posting cannot be opened → 422 errors.status",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"open\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.status is present', () => pm.expect(body.errors).to.have.property('status'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin queue lists the new posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('pending posting is in the queue', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin rejects without a reason → 422 errors.reason",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{jobPostingId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{jobPostingId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.reason is present', () => pm.expect(body.errors).to.have.property('reason'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin rejects with a reason → draft",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{jobPostingId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{jobPostingId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"reason\": \"Please add the working hours.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('back to draft with the reason', () => {",
+                  "  pm.expect(pm.response.json().status).to.eql('draft');",
+                  "  pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner sees the rejection reason",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('reason visible to the owner', () => pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner resubmits → pending_approval, reason cleared",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Monday to Friday, 9:00 to 17:00.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('waiting for approval again', () => { pm.expect(pm.response.json().status).to.eql('pending_approval'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin approves → open",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{jobPostingId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{jobPostingId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('posting is open', () => pm.expect(pm.response.json().status).to.eql('open'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guests now see the open posting (no rejection_reason)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('matches the JobPosting shape', () => {",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score');",
+                  "  pm.expect(p.employer).to.have.keys('id', 'company_name', 'verified');",
+                  "  pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');",
+                  "});",
+                  "pm.test('no private field for guests', () => pm.expect(pm.response.json()).to.not.have.property('rejection_reason'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public employer page lists the posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employers/{{employerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employers",
+                "{{employerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('posting is listed', () => pm.expect(pm.response.json().open_postings.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner closes the posting",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('closed', () => pm.expect(pm.response.json().status).to.eql('closed'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner reopens the approved posting",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"open\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('open again', () => pm.expect(pm.response.json().status).to.eql('open'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employer lists own postings",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "job-postings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('paginated by 12', () => pm.expect(body.meta.per_page).to.eql(12));",
+                  "pm.test('only own postings', () => body.data.forEach((p) => pm.expect(p.employer.id).to.eql(pm.collectionVariables.get('employerId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner deletes the posting → 204 (cleanup)",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deleted posting is gone → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
                 ]
               }
             }

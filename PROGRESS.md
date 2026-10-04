@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 2 – Employer side
+- **Current phase:** Phase 3 – Candidate side
 - **In progress:** –
-- **Next step:** Phase 2 – Postman folder 03 Employer & Postings in `tests/postman/build-collection.mjs` (company GET/PUT, T02 create posting with 3 accommodations, edit, T08 other employer → 403, close/reopen rules, admin approve/reject, public visibility 404 for drafts, T07 unknown id → 404); run with Newman. That completes Phase 2.
+- **Next step:** Phase 3 – Core M2 candidate profile: `candidate_profiles` (+ `location_label`) + `candidate_accommodation` (FK restrictOnDelete on accommodations), `CandidateProfile` model, `GET/PUT /candidate/profile` (404 or empty until created – frontend handles both), `PUT /candidate/accommodations`, `POST /candidate/resume` (PDF ≤ 5 MB, served through the gateway like logos), privacy rules (disability never used for matching, hidden unless `show_disability`). Screens exist – wire-check `/candidate/profile` live.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -77,7 +77,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: admin posting approval (`GET /admin/job-postings`, `PATCH …/approve`; 7 tests; live check of `/admin/job-postings`)
 - [x] Core: Policies + feature tests (owner-only) – JobPostingPolicy, T08 covered
 - [x] Frontend: company profile, my postings, create/edit posting screens wired – live-checked 2026-10-04 (create, edit, delete, company-required message)
-- [ ] Postman: folder 03
+- [x] Postman: folder 03 (25 requests: T02, T07, T08, approval workflow, visibility; whole collection 54 requests / 259 assertions pass)
 
 ### Phase 3 – Candidate side
 - [ ] Core: M2 profile + accommodation needs + resume upload
@@ -147,6 +147,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – Postman 03 Employer & Postings done (cleans up after itself). **Phase 2 complete.**
 - 2026-10-04 – Admin posting approval done; live check (reject with reason, approve → public employer page) found focus lost after list reloads → app-wide focus rescue.
 - 2026-10-04 – M4 postings done (CRUD, accommodations + notes, status rules, soft delete, auto-close, demo postings); live UI check found + fixed dialog focus loss after deleting a row and a dead error-summary link.
 - 2026-10-04 – M3 company profile done (employers table, GET/PUT company with logo, public page + logo route, demo companies); frontend sends `location_label`; live UI check incl. logo upload through the gateway.

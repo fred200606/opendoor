@@ -320,6 +320,242 @@ pm.test('new accommodation is listed', () => pm.expect(pm.response.json().data.m
   }),
 ]);
 
+// ---------------------------------------------------------------- 03 Employer & Postings
+
+const postingBody = (overrides = {}) => ({
+  title: 'Postman Data Encoder',
+  description: 'Created by the Postman run. Encode records.',
+  category_id: '{{postingCategoryId}}',
+  address: '25 Scout Tobias St.',
+  location_psgc: null,
+  location_label: 'Quezon City, Metro Manila',
+  employment_type: 'full_time',
+  work_setup: 'onsite',
+  interview_format: 'online',
+  closes_at: '{{postingClosesAt}}',
+  accommodations: [
+    { id: '{{accA}}', note: 'Ramp at the main entrance' },
+    { id: '{{accB}}', note: 'Ground floor' },
+    { id: '{{accC}}', note: null },
+  ],
+  submit: true,
+  ...overrides,
+});
+
+// Postman sends {{vars}} as strings; the API needs integers for ids.
+const INT_IDS = `
+const body = JSON.parse(pm.request.body.raw);
+['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });
+body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));
+body.closes_at = pm.variables.replaceIn(body.closes_at);
+pm.request.body.raw = JSON.stringify(body);`;
+
+const postingShape = `
+pm.test('matches the JobPosting shape', () => {
+  const p = pm.response.json();
+  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score');
+  pm.expect(p.employer).to.have.keys('id', 'company_name', 'verified');
+  pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');
+});`;
+
+const employerPostings = folder('03 Employer & Postings', 'M3 company + M4 postings: T02, T07, T08, approval workflow and visibility. Cleans up after itself.', [
+  request('Pick a category for the posting', {
+    path: '/categories',
+    tests: `${status(200)}\npm.collectionVariables.set('postingCategoryId', pm.response.json().data[0].id);`,
+  }),
+  request('Pick three accommodation types', {
+    path: '/accommodations',
+    prerequest: `
+const d = new Date(Date.now() + 30 * 86400000);
+pm.collectionVariables.set('postingClosesAt', d.toISOString().slice(0, 10));`,
+    tests: `
+${status(200)}
+const ids = pm.response.json().data.flatMap((g) => g.items.map((i) => i.id));
+pm.test('at least three active types', () => pm.expect(ids.length).to.be.at.least(3));
+['accA', 'accB', 'accC'].forEach((k, i) => pm.collectionVariables.set(k, ids[i]));`,
+  }),
+  request('Employer reads own company → registration data visible', {
+    path: '/employer/company',
+    auth: bearer('employerToken'),
+    tests: `
+${status(200)}
+const c = pm.response.json();
+pm.test('has registration fields and the verified badge', () => {
+  pm.expect(c).to.include.keys('business_reg_no', 'registry_type', 'verified_at', 'verification_rejected_reason');
+  pm.expect(c.registry_type).to.be.oneOf(['DTI', 'SEC']);
+  pm.expect(c.verified).to.eql(true);
+});
+pm.collectionVariables.set('employerId', c.id);`,
+  }),
+  request('Candidate cannot edit a company → 403', {
+    method: 'PUT',
+    path: '/employer/company',
+    auth: bearer('candidateToken'),
+    body: { company_name: 'Not mine' },
+    tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+  }),
+  request('Public employer page hides registration data', {
+    path: '/employers/{{employerId}}',
+    tests: `
+${status(200)}
+const e = pm.response.json();
+pm.test('no private fields', () => { pm.expect(e).to.not.have.property('business_reg_no'); pm.expect(e).to.not.have.property('verification_rejected_reason'); });
+pm.test('open postings are listed', () => pm.expect(e.open_postings).to.be.an('array'));
+pm.test('trust score is published only from 3 responses', () => {
+  if (e.trust_score.published) pm.expect(e.trust_score.based_on).to.be.at.least(3);
+  else pm.expect(e.trust_score.score).to.eql(null);
+});`,
+  }),
+  request('T02 Employer creates a posting with 3 accommodations and notes → 201', {
+    method: 'POST',
+    path: '/job-postings',
+    auth: bearer('employerToken'),
+    prerequest: INT_IDS,
+    body: postingBody(),
+    tests: `
+${status(201)}
+const p = pm.response.json();
+pm.test('status is pending_approval', () => pm.expect(p.status).to.eql('pending_approval'));
+pm.test('3 accommodations stored with notes', () => {
+  pm.expect(p.accommodations).to.have.lengthOf(3);
+  pm.expect(p.accommodations.map((a) => a.note)).to.include('Ramp at the main entrance');
+});
+${postingShape}
+pm.collectionVariables.set('jobPostingId', p.id);`,
+  }),
+  request('Guests cannot see an unapproved posting → 404', {
+    path: '/job-postings/{{jobPostingId}}',
+    tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+  }),
+  request('T07 Unknown posting id → 404 with request_id', {
+    path: '/job-postings/999999',
+    tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+  }),
+  request('Log in the second demo employer → employer2Token', {
+    method: 'POST',
+    path: '/login',
+    body: { email: '{{employer2Email}}', password: '{{demoPassword}}' },
+    tests: authResponse('employer', 'employer2Token'),
+  }),
+  request("T08 Employer A updates Employer B's posting → 403", {
+    method: 'PUT',
+    path: '/job-postings/{{jobPostingId}}',
+    auth: bearer('employer2Token'),
+    prerequest: INT_IDS,
+    body: postingBody({ title: 'Hijacked' }),
+    tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+  }),
+  request('A submitted posting cannot go back to draft → 422 errors.submit', {
+    method: 'PUT',
+    path: '/job-postings/{{jobPostingId}}',
+    auth: bearer('employerToken'),
+    prerequest: INT_IDS,
+    body: postingBody({ submit: false }),
+    tests: fieldError('submit'),
+  }),
+  request('An unapproved posting cannot be opened → 422 errors.status', {
+    method: 'PATCH',
+    path: '/job-postings/{{jobPostingId}}/status',
+    auth: bearer('employerToken'),
+    body: { status: 'open' },
+    tests: fieldError('status'),
+  }),
+  request('Admin queue lists the new posting', {
+    path: '/admin/job-postings',
+    auth: bearer('adminToken'),
+    tests: `
+${status(200)}
+pm.test('pending posting is in the queue', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));`,
+  }),
+  request('Admin rejects without a reason → 422 errors.reason', {
+    method: 'PATCH',
+    path: '/admin/job-postings/{{jobPostingId}}/approve',
+    auth: bearer('adminToken'),
+    body: { action: 'reject' },
+    tests: fieldError('reason'),
+  }),
+  request('Admin rejects with a reason → draft', {
+    method: 'PATCH',
+    path: '/admin/job-postings/{{jobPostingId}}/approve',
+    auth: bearer('adminToken'),
+    body: { action: 'reject', reason: 'Please add the working hours.' },
+    tests: `
+${status(200)}
+pm.test('back to draft with the reason', () => {
+  pm.expect(pm.response.json().status).to.eql('draft');
+  pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.');
+});`,
+  }),
+  request('Owner sees the rejection reason', {
+    path: '/job-postings/{{jobPostingId}}',
+    auth: bearer('employerToken'),
+    tests: `${status(200)}\npm.test('reason visible to the owner', () => pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.'));`,
+  }),
+  request('Owner resubmits → pending_approval, reason cleared', {
+    method: 'PUT',
+    path: '/job-postings/{{jobPostingId}}',
+    auth: bearer('employerToken'),
+    prerequest: INT_IDS,
+    body: postingBody({ description: 'Created by the Postman run. Monday to Friday, 9:00 to 17:00.' }),
+    tests: `
+${status(200)}
+pm.test('waiting for approval again', () => { pm.expect(pm.response.json().status).to.eql('pending_approval'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });`,
+  }),
+  request('Admin approves → open', {
+    method: 'PATCH',
+    path: '/admin/job-postings/{{jobPostingId}}/approve',
+    auth: bearer('adminToken'),
+    body: { action: 'approve' },
+    tests: `${status(200)}\npm.test('posting is open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+  }),
+  request('Guests now see the open posting (no rejection_reason)', {
+    path: '/job-postings/{{jobPostingId}}',
+    tests: `
+${status(200)}
+${postingShape}
+pm.test('no private field for guests', () => pm.expect(pm.response.json()).to.not.have.property('rejection_reason'));`,
+  }),
+  request('Public employer page lists the posting', {
+    path: '/employers/{{employerId}}',
+    tests: `
+${status(200)}
+pm.test('posting is listed', () => pm.expect(pm.response.json().open_postings.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));`,
+  }),
+  request('Owner closes the posting', {
+    method: 'PATCH',
+    path: '/job-postings/{{jobPostingId}}/status',
+    auth: bearer('employerToken'),
+    body: { status: 'closed' },
+    tests: `${status(200)}\npm.test('closed', () => pm.expect(pm.response.json().status).to.eql('closed'));`,
+  }),
+  request('Owner reopens the approved posting', {
+    method: 'PATCH',
+    path: '/job-postings/{{jobPostingId}}/status',
+    auth: bearer('employerToken'),
+    body: { status: 'open' },
+    tests: `${status(200)}\npm.test('open again', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+  }),
+  request('Employer lists own postings', {
+    path: '/employer/job-postings',
+    auth: bearer('employerToken'),
+    tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('paginated by 12', () => pm.expect(body.meta.per_page).to.eql(12));
+pm.test('only own postings', () => body.data.forEach((p) => pm.expect(p.employer.id).to.eql(pm.collectionVariables.get('employerId'))));`,
+  }),
+  request('Owner deletes the posting → 204 (cleanup)', {
+    method: 'DELETE',
+    path: '/job-postings/{{jobPostingId}}',
+    auth: bearer('employerToken'),
+    tests: status(204),
+  }),
+  request('Deleted posting is gone → 404', {
+    path: '/job-postings/{{jobPostingId}}',
+    tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+  }),
+]);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -330,10 +566,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData],
+  item: [auth, masterData, employerPostings],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));
