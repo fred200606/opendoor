@@ -7,8 +7,8 @@
 
 - **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Core: users / categories / accommodations migrations + seeders (read `references/data-model.md`). Migrations can be written and tested on SQLite; running them on MySQL needs the DB setup SQL.
-- **Blockers:** User must run the DB setup SQL (root password) before Core migrations.
+- **Next step:** Phase 1 – Core: users / categories / accommodations migrations + seeders (read `references/data-model.md`). Local MySQL is ready (`php artisan migrate` works).
+- **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
@@ -42,7 +42,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Apply rule updates (see Decisions 2026-10-03) to `opendoor-dev` references + SIA doc (via `opendoor-sia-docs`), incl. Laravel version
 - [x] Monorepo folders; docx + diagrams moved to `docs/`
 - [x] `.gitignore`, `README.md`, `.env.example` for every component (local `.env` files generated with random secrets)
-- [ ] Create MySQL databases `opendoor_core`, `insights_cache` (+ users) – script `docs/setup/create-databases.sql` ready; **user must run it** (root password needed)
+- [x] Create MySQL databases `opendoor_core`, `opendoor_core_test`, `insights_cache` (+ users) – done 2026-10-04, passwords match local `.env` files
 - [x] `docs/openapi.yaml` draft from the API contract (Redocly lint: valid)
 - [x] GitHub remote created and pushed (private `fred200606/opendoor`, branches `main` + `develop`)
 
@@ -125,6 +125,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – User ran DB setup; both service users connect; Core default migrations ran on MySQL. Phase 0 complete.
 - 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user. Error envelope + request IDs done.
 - 2026-10-03 – Phase 0 done except DB creation (user runs SQL). Rule updates applied to skill + SIA doc; docs moved to `docs/`; OpenAPI draft; repo pushed.
 - 2026-10-03 – Resolved all pending decisions; copied project to `C:\dev\opendoor`. Continue there.
