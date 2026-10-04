@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 1 – Foundation
-- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 6 – admin portal: `/admin/dashboard`, `/admin/employers` (+ `/:id`: registry check via SOAP, approve/reject with reason, highlight status≠ACTIVE or name_match<0.80), `/admin/job-postings` (approve/reject), `/admin/users` (suspend/reactivate), `/admin/reports` (dismiss/action), `/admin/feedback` (hide/unhide), `/admin/master-data` (categories + accommodations CRUD, retire/restore).
+- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 7 – `/notifications` page (mark read / all read, link to related item) and `/account` (change password + display settings stored locally), then step 8 – OpenAPI additions (admin list endpoints, dashboard shapes), PROGRESS checklist, live browser check.
 - **Next step:** Phase 1 – Frontend: Login + Register pages (replace `ComingSoon` in `src/App.jsx`): labelled inputs, 422 `fieldErrors` linked via `aria-describedby`, error summary, consent checkbox + role choice, `ACCOUNT_SUSPENDED`/429 messages, redirect to `state.from` or `homeFor(role)`, guests-only routes, 'session expired' notice (`state.reason`). Tests with `fakeApi`.
 - **Blockers:** –
 

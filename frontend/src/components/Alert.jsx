@@ -23,13 +23,18 @@ export default function Alert({ type = 'info', title, children, live, requestId,
   );
 }
 
-/** Shows an ApiError in plain language with its reference id (for support). */
+/**
+ * Shows an ApiError in plain language with its reference id (for support). A 422 that is not
+ * tied to a form field (e.g. "category is in use") shows the server's field messages instead
+ * of the generic "The given data was invalid."
+ */
 export function ApiErrorAlert({ error, title }) {
   if (!error) return null;
+  const details = Object.values(error.fieldErrors ?? {}).map((messages) => (Array.isArray(messages) ? messages[0] : messages));
 
   return (
     <Alert type="error" live="assertive" title={title} requestId={error.requestId}>
-      <p>{error.message}</p>
+      {details.length > 0 ? details.map((message) => <p key={message}>{message}</p>) : <p>{error.message}</p>}
     </Alert>
   );
 }

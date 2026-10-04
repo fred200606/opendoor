@@ -4,7 +4,6 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx';
 import AppLayout from './components/AppLayout.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CandidateApplicationPage from './pages/candidate/CandidateApplicationPage.jsx';
 import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage.jsx';
@@ -12,6 +11,14 @@ import CandidateProfilePage from './pages/candidate/CandidateProfilePage.jsx';
 import FeedbackPage from './pages/candidate/FeedbackPage.jsx';
 import MyApplicationsPage from './pages/candidate/MyApplicationsPage.jsx';
 import SavedJobsPage from './pages/candidate/SavedJobsPage.jsx';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
+import AdminEmployerPage from './pages/admin/AdminEmployerPage.jsx';
+import AdminEmployersPage from './pages/admin/AdminEmployersPage.jsx';
+import AdminFeedbackPage from './pages/admin/AdminFeedbackPage.jsx';
+import AdminMasterDataPage from './pages/admin/AdminMasterDataPage.jsx';
+import AdminPostingsPage from './pages/admin/AdminPostingsPage.jsx';
+import AdminReportsPage from './pages/admin/AdminReportsPage.jsx';
+import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import ApplicantsPage from './pages/employer/ApplicantsPage.jsx';
 import CompanyProfilePage from './pages/employer/CompanyProfilePage.jsx';
 import EmployerApplicationPage from './pages/employer/EmployerApplicationPage.jsx';
@@ -58,7 +65,14 @@ export default function App() {
           <Route path="trust-score" element={<EmployerTrustScorePage />} />
         </Route>
         <Route path="admin" element={<ProtectedRoute role="admin" />}>
-          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="employers" element={<AdminEmployersPage />} />
+          <Route path="employers/:id" element={<AdminEmployerPage />} />
+          <Route path="job-postings" element={<AdminPostingsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="feedback" element={<AdminFeedbackPage />} />
+          <Route path="master-data" element={<AdminMasterDataPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

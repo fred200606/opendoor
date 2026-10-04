@@ -65,7 +65,7 @@ describe('LoginPage', () => {
   test('a logged-in user visiting /login goes to their portal', async () => {
     const { location } = renderApp('/login', { as: 'admin' });
 
-    await screen.findByRole('heading', { level: 1, name: 'Welcome, OpenDoor Admin' });
+    await screen.findByRole('heading', { level: 1, name: 'Administration' });
     expect(location()).toBe('/admin/dashboard');
   });
 });

@@ -926,3 +926,60 @@ main:focus {
   color: #7a4100;
   font-weight: 600;
 }
+
+/* ---------- admin */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-bar .field {
+  flex: 1 1 14rem;
+}
+
+.filter-bar .button {
+  margin-bottom: 1.25rem;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 1rem;
+  margin-top: 1rem;
+}
+
+.inline-form .field {
+  flex: 1 1 16rem;
+}
+
+.inline-form .button {
+  margin-bottom: 1.25rem;
+}
+
+.admin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.quote {
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--divider);
+  background: var(--surface);
+  white-space: pre-line;
+}
