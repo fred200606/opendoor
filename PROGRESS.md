@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 1 – Foundation
+- **Current phase:** Phase 2 – Employer side
 - **In progress:** –
-- **Next step:** Phase 1 – Postman folders 01 Auth, 02 Master Data. Then Phase 2 backend (M3 company, M4 postings) – the employer screens already exist; wire-check them as each endpoint lands.
+- **Next step:** Phase 2 – Core M3 company profile: `employers` + `registry_checks` migrations, `Employer` model (relations, `location_psgc`), `GET/PUT /employer/company` (multipart logo, 404 until created, reg-no change clears `verified_at`), `GET /employers/{id}` public page. The screens already exist (`/employer/company`, `/employers/:id`) – wire-check them live.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Postman collection is generated from `tests/postman/build-collection.mjs`; demo password only via `--env-var demoPassword`. Gateway upstream URLs default to `127.0.0.1` (Windows `localhost` → IPv6 fallback adds ~200 ms).
 - 2026-10-04 – Contract additions made for the screens (all in `docs/openapi.yaml`): `GET /admin/employers`, `/admin/employers/{id}`, `/admin/job-postings`, `/admin/feedback`; dashboard schemas (Candidate/Employer/AdminDashboard); `Notification.data.message/url`; `JobPosting.rejection_reason` (owner/admin); `Report.job_posting` in admin lists; `GET /employer/company` 404 until created; résumé PDF ≤ 5 MB; logo PNG/JPG/WebP ≤ 2 MB.
 - 2026-10-04 – M13 display settings (text size, high contrast, reduced motion) are stored in the browser (`opendoor.display`) until an endpoint for `users.display_prefs` exists. Notifications use `data.message` + optional in-app `data.url`.
 - 2026-10-04 – User asked to build all frontend screens now (ahead of the backend phases). Screens follow `docs/openapi.yaml`; those whose endpoints are not built yet show the API error until their backend phase is done.
@@ -65,7 +66,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests (23 tests; live smoke with Core OK)
 - [x] Frontend: fresh React (Vite) app in `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect (14 Vitest tests; live check through gateway + Core OK)
 - [x] Frontend: register + login pages wired through the gateway (error summary, consent, suspended/rate-limit messages)
-- [ ] Postman: folders 01 Auth, 02 Master Data
+- [x] Postman: folders 01 Auth, 02 Master Data (generator `build-collection.mjs`; 29 requests, 143 assertions pass with Newman)
 
 ### Phase 2 – Employer side
 - [ ] Core: M3 company profile (+ `registry_type`, `location_psgc`)
@@ -129,6 +130,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
 - Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
@@ -140,6 +142,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – Postman 01 Auth + 02 Master Data done and passing with Newman. **Phase 1 complete.**
 - 2026-10-04 – Live browser check (Vite → gateway → Core): register with server errors, profile with real accommodation groups, admin master data CRUD, dialogs/focus, axe 0 violations on register/profile/master data, no sideways scroll at 360 px + 150% text + high contrast. Fixed h1 focus on first load under StrictMode.
 - 2026-10-04 – All frontend screens built (public, candidate, employer, admin, notifications, account) against OpenAPI; 87 Vitest tests; OpenAPI extended for admin lists + dashboards.
 - 2026-10-04 – Frontend scaffold done (API client, AuthContext, ProtectedRoute, accessible layout); browser check via Playwright through gateway + Core found and fixed logout→/login redirect race.
