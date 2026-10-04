@@ -84,7 +84,7 @@ class ErrorEnvelopeTest extends TestCase
 
     public function test_unauthenticated_request_returns_401_envelope(): void
     {
-        $this->assertEnvelope($this->getJson('/api/user'), 401, 'UNAUTHENTICATED');
+        $this->assertEnvelope($this->getJson('/api/me'), 401, 'UNAUTHENTICATED');
     }
 
     public function test_forbidden_returns_403_envelope(): void

@@ -99,6 +99,7 @@ paths:
     post:
       tags: [M1 Auth]
       summary: Log in and receive a Sanctum token (5 attempts per minute)
+      description: Wrong email or password → 422 with `errors.email` (same answer for unknown emails). A suspended account → 403 `ACCOUNT_SUSPENDED`, only after the password is correct. Limit is per email + IP.
       security: []
       requestBody:
         required: true
@@ -141,6 +142,7 @@ paths:
     put:
       tags: [M1 Auth]
       summary: Change password
+      description: New password must differ from the current one. All of the user's other tokens are revoked; the token used for this request stays valid.
       requestBody:
         required: true
         content:

@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Core M1: `POST /register` (consent required, role candidate|employer), `POST /login` (rate limit, `ACCOUNT_SUSPENDED`), `POST /logout`, `GET /me`, `PUT /me/password`; `role:` middleware alias. Read `api-contract.md` M1 + `business-rules.md` permissions first.
+- **Next step:** Phase 1 – Core M11: public `GET /categories`, `GET /accommodations` (grouped, active only), admin CRUD `/admin/categories`, `/admin/accommodations` (delete only if unused; retire accommodations instead) + feature tests. Read `api-contract.md` M11 + `docs/openapi.yaml` first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – M1 details: emails stored lower-case; wrong credentials → 422 `errors.email` (same for unknown email); `ACCOUNT_SUSPENDED` only after a correct password; login limit 5/min per email+IP; password change must differ and revokes the user's other tokens; single JSON resources are not wrapped in `data` (`JsonResource::withoutWrapping()`), paginated lists still are. Documented in `docs/openapi.yaml`.
 - 2026-10-04 – Demo accounts: `admin@`, `candidate@`, `candidate2@`, `employer@`, `employer2@opendoor.test`, all with `DEMO_PASSWORD`. `DemoUserSeeder` refuses to run without it (min 8 chars).
 - 2026-10-04 – Edited Laravel's default users migration in place (nothing deployed yet). `role`, `is_active`, `consented_at` are not mass-assignable (set via `forceFill`). Migrations hard-code enum values; PHP enums `UserRole`, `AccommodationGroup` are used in app code.
 - 2026-10-04 – Added error code `SERVER_ERROR` (HTTP 500, generic message) – the contract had no code for unexpected errors. Added to `api-contract.md` and `docs/openapi.yaml`.
@@ -52,9 +53,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: Laravel project (13.34) + Sanctum (`install:api`, `HasApiTokens`) + `APP_TIMEZONE=Asia/Manila`
 - [x] Core: error envelope + `ApiException` + request-ID logging (`ApiErrorRenderer`, `AssignRequestId`; 11 feature tests)
 - [x] Core: users / categories / accommodations migrations + seeders (admin, demo users via `DEMO_PASSWORD`) – 11 categories, 18 accommodations, 5 demo accounts; 8 tests
-- [ ] Core: M1 register / login / logout / me / password + role middleware + login rate limit
+- [x] Core: M1 register / login / logout / me / password + role middleware + login rate limit (also `active` middleware)
 - [ ] Core: M11 public lists + admin CRUD (retire instead of delete)
-- [ ] Core: feature tests for M1, M11
+- [ ] Core: feature tests for M1, M11 (M1 done: 23 tests in `tests/Feature/Auth`)
 - [ ] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests
 - [ ] Frontend: fresh React (Vite) app in `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect
 - [ ] Frontend: register + login pages wired through the gateway
@@ -128,6 +129,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – M1 auth done (register/login/logout/me/password, `role` + `active` middleware, login throttle); live smoke test on MySQL with demo admin OK. 44 tests pass.
 - 2026-10-04 – Users/categories/accommodations migrations, models, factories, seeders done; `migrate:fresh --seed` on local MySQL OK. 21 tests pass.
 - 2026-10-04 – User ran DB setup; both service users connect; Core default migrations ran on MySQL. Phase 0 complete.
 - 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user. Error envelope + request IDs done.
