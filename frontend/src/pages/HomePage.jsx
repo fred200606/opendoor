@@ -9,11 +9,11 @@ export default function HomePage() {
         hired employees confirm whether those accommodations were really provided.
       </p>
       <p className="actions">
-        <Link to="/register" className="button">
-          Create an account
+        <Link to="/jobs" className="button">
+          Browse jobs
         </Link>
-        <Link to="/login" className="button button--secondary">
-          Log in
+        <Link to="/register" className="button button--secondary">
+          Create an account
         </Link>
       </p>
     </Page>

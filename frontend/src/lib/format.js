@@ -27,7 +27,8 @@ export function formatDateTime(value) {
 /** 220 → '220 m away', 1450 → '1.5 km away' (distances as text, never only on a map). */
 export function formatDistance(metres) {
   if (metres == null) return '';
-  return metres < 1000 ? `${Math.round(metres)} m away` : `${(metres / 1000).toFixed(1)} km away`;
+  // Math.round avoids toFixed's binary rounding (1450 m → '1.5 km', not '1.4 km').
+  return metres < 1000 ? `${Math.round(metres)} m away` : `${Math.round(metres / 100) / 10} km away`;
 }
 
 export function plural(count, one, many = `${one}s`) {
