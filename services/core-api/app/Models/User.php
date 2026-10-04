@@ -46,6 +46,12 @@ class User extends Authenticatable
         ];
     }
 
+    /** @return HasOne<CandidateProfile, $this> */
+    public function candidateProfile(): HasOne
+    {
+        return $this->hasOne(CandidateProfile::class);
+    }
+
     /** @return HasOne<Employer, $this> */
     public function employer(): HasOne
     {

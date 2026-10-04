@@ -5,9 +5,8 @@ namespace App\Http\Requests\Postings;
 use App\Enums\EmploymentType;
 use App\Enums\InterviewFormat;
 use App\Enums\WorkSetup;
-use App\Models\Accommodation;
 use App\Models\JobPosting;
-use Closure;
+use App\Rules\UsableAccommodation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -43,27 +42,16 @@ class JobPostingRequest extends FormRequest
             // 'today' is evaluated in APP_TIMEZONE (Asia/Manila).
             'closes_at' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
             'accommodations' => ['present', 'array', 'max:30'],
-            'accommodations.*.id' => ['required', 'integer', 'distinct', $this->usableAccommodation($posting)],
+            'accommodations.*.id' => ['required', 'integer', 'distinct', new UsableAccommodation($this->attachedIds($posting))],
             'accommodations.*.note' => ['nullable', 'string', 'max:255'],
             'submit' => ['sometimes', 'boolean'],
         ];
     }
 
-    /**
-     * Active accommodation types only; a type retired after it was attached may stay on that posting.
-     */
-    private function usableAccommodation(?JobPosting $posting): Closure
+    /** @return list<int> */
+    private function attachedIds(?JobPosting $posting): array
     {
-        $alreadyAttached = $posting ? $posting->accommodations()->pluck('accommodations.id')->all() : [];
-
-        return function (string $attribute, mixed $value, Closure $fail) use ($alreadyAttached) {
-            $accommodation = Accommodation::find($value);
-            if (! $accommodation) {
-                $fail('This accommodation type does not exist.');
-            } elseif ($accommodation->is_retired && ! in_array($accommodation->id, $alreadyAttached, true)) {
-                $fail("“{$accommodation->name}” is no longer offered as an option.");
-            }
-        };
+        return $posting ? $posting->accommodations()->pluck('accommodations.id')->all() : [];
     }
 
     /**

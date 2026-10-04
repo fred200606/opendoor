@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 3 – Candidate side
-- **In progress:** –
+- **In progress:** Phase 3 – Core M2 candidate profile: code + 18 tests committed (110 Core tests pass). Remaining: (1) live UI check of the résumé upload + signed link on `/candidate/profile` (needs + profile save already verified live); (2) OpenAPI: GET /candidate/profile always 200 (created on first access), `location_label`, `GET /resumes/{id}` signed route, resume_url = 30-min signed gateway link; (3) tick the M2 item.
 - **Next step:** Phase 3 – Core M2 candidate profile: `candidate_profiles` (+ `location_label`) + `candidate_accommodation` (FK restrictOnDelete on accommodations), `CandidateProfile` model, `GET/PUT /candidate/profile` (404 or empty until created – frontend handles both), `PUT /candidate/accommodations`, `POST /candidate/resume` (PDF ≤ 5 MB, served through the gateway like logos), privacy rules (disability never used for matching, hidden unless `show_disability`). Screens exist – wire-check `/candidate/profile` live.
 - **Blockers:** –
 
@@ -147,6 +147,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – M2 candidate profile backend done (profiles, needs, résumé with signed links, DemoCandidateSeeder, shared UsableAccommodation rule); stopped at the usage limit before the live résumé check.
 - 2026-10-04 – Postman 03 Employer & Postings done (cleans up after itself). **Phase 2 complete.**
 - 2026-10-04 – Admin posting approval done; live check (reject with reason, approve → public employer page) found focus lost after list reloads → app-wide focus rescue.
 - 2026-10-04 – M4 postings done (CRUD, accommodations + notes, status rules, soft delete, auto-close, demo postings); live UI check found + fixed dialog focus loss after deleting a row and a dead error-summary link.

@@ -4,11 +4,13 @@ use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
+use App\Http\Controllers\Candidate\ProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Employer\CompanyController;
 use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\JobPostingController;
+use App\Http\Controllers\ResumeController;
 use Illuminate\Support\Facades\Route;
 
 // M1 Auth – public
@@ -26,11 +28,22 @@ Route::get('employers/{employer}/logo', [EmployerController::class, 'logo']);
 // M4 Job postings – details are public for open postings (owners and admins also see drafts)
 Route::get('job-postings/{jobPosting}', [JobPostingController::class, 'show']);
 
+// M2 Résumé – temporary signed link (relative signature: valid through the gateway)
+Route::get('resumes/{candidateProfile}', [ResumeController::class, 'show'])->middleware('signed:relative')->name('resumes.show');
+
 // Any logged-in, non-suspended user
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [MeController::class, 'show']);
     Route::put('me/password', [MeController::class, 'updatePassword']);
+
+    // Candidate
+    Route::middleware('role:candidate')->prefix('candidate')->group(function () {
+        Route::get('profile', [ProfileController::class, 'show']);
+        Route::put('profile', [ProfileController::class, 'update']);
+        Route::put('accommodations', [ProfileController::class, 'updateNeeds']);
+        Route::post('resume', [ProfileController::class, 'uploadResume']);
+    });
 
     // Employer
     Route::middleware('role:employer')->prefix('employer')->group(function () {
