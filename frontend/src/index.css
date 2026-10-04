@@ -460,3 +460,245 @@ main:focus {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* ---------- badges and tags */
+
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.badge--success { color: var(--success); background: var(--success-bg); }
+.badge--danger { color: var(--danger); background: var(--danger-bg); }
+.badge--warning { color: #7a4100; background: #fff8e6; }
+.badge--info { color: var(--primary-dark); background: #eef5fc; }
+.badge--neutral { color: var(--text); background: var(--surface); }
+.badge--muted { color: var(--text-muted); background: var(--surface); }
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 0.875rem;
+}
+
+.tag--more {
+  color: var(--text-muted);
+}
+
+/* ---------- cards, lists, tables */
+
+.card,
+.job-card {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.job-card__title {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.job-card__employer,
+.job-card__meta {
+  margin: 0 0 0.25rem;
+}
+
+.job-card__meta,
+.job-card__footer {
+  color: var(--text-muted);
+}
+
+.job-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.5rem;
+}
+
+.table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+
+.table th,
+.table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  border-bottom: 2px solid var(--border);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.empty-state {
+  padding: 1.5rem;
+  border: 2px dashed var(--divider);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.empty-state__title {
+  font-weight: 700;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.empty-state p {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.pagination__status {
+  margin: 0;
+}
+
+/* ---------- trust score and match */
+
+.trust-card {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.trust-card--compact {
+  padding: 0.75rem 1rem;
+}
+
+.trust-card__title {
+  font-size: 1.25rem;
+}
+
+.trust-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--success);
+  margin-right: 0.25rem;
+}
+
+.trust-card__basis {
+  color: var(--text-muted);
+}
+
+.match {
+  margin: 0.5rem 0;
+}
+
+.match__missing {
+  margin-top: 0.5rem;
+}
+
+.match__missing p,
+.match__missing ul {
+  margin-bottom: 0.25rem;
+}
+
+/* ---------- pickers */
+
+.accommodation-picker__group {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+.accommodation-picker__group > legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.accommodation-picker__desc,
+.accommodation-picker__note {
+  margin-left: 2.125rem;
+}
+
+.location-picker {
+  display: grid;
+  gap: 0 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+/* ---------- dialog */
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.dialog__title {
+  font-size: 1.375rem;
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.button--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.button--danger:hover {
+  background: #8f1c13;
+  border-color: #8f1c13;
+}

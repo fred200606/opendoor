@@ -1,0 +1,64 @@
+import { plural } from '../lib/format.js';
+
+const MIN_RESPONSES = 3;
+
+/**
+ * Employer trust score: share of advertised accommodations that hired employees confirmed as
+ * delivered. Published only from 3 responses. `breakdown` (optional) lists each accommodation.
+ */
+export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false }) {
+  const Heading = `h${headingLevel}`;
+  const basedOn = trustScore?.based_on ?? 0;
+
+  if (!trustScore?.published) {
+    return (
+      <section className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label="Trust score">
+        {!compact && <Heading className="trust-card__title">Trust score</Heading>}
+        <p>
+          <strong>Not published yet.</strong> A score appears after {MIN_RESPONSES} hired employees have rated this employer
+          ({basedOn} of {MIN_RESPONSES} so far).
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label="Trust score">
+      {!compact && <Heading className="trust-card__title">Trust score</Heading>}
+      <p className="trust-card__score">
+        <span className="trust-card__value">{trustScore.score}%</span> of promised accommodations were delivered
+      </p>
+      <p className="trust-card__basis">Based on {plural(basedOn, 'response')} from employees hired through OpenDoor.</p>
+
+      {breakdown?.length > 0 && (
+        <table className="table trust-card__table">
+          <caption>Each accommodation, as rated by hired employees</caption>
+          <thead>
+            <tr>
+              <th scope="col">Accommodation</th>
+              <th scope="col">Delivered</th>
+              <th scope="col">Partly</th>
+              <th scope="col">Not delivered</th>
+            </tr>
+          </thead>
+          <tbody>
+            {breakdown.map((row) => (
+              <tr key={row.accommodation_id}>
+                <th scope="row">
+                  {row.name}
+                  <span className="field__hint">
+                    {' '}
+                    ({row.delivered} of {row.of} delivered)
+                  </span>
+                </th>
+                <td>{row.delivered}</td>
+                <td>{row.partial}</td>
+                <td>{row.not_delivered}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,40 @@
+// Dates are shown in Philippine time, as the business rules (feedback window, closing dates) use it.
+const TIME_ZONE = 'Asia/Manila';
+
+const dateFormat = new Intl.DateTimeFormat('en-PH', { timeZone: TIME_ZONE, year: 'numeric', month: 'long', day: 'numeric' });
+const dateTimeFormat = new Intl.DateTimeFormat('en-PH', {
+  timeZone: TIME_ZONE,
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+/** '2026-10-31' or an ISO timestamp → '31 October 2026'. Date-only strings are not shifted. */
+export function formatDate(value) {
+  if (!value) return '';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00+08:00`) : new Date(value);
+  return Number.isNaN(date.getTime()) ? value : dateFormat.format(date);
+}
+
+export function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : dateTimeFormat.format(date);
+}
+
+/** 220 → '220 m away', 1450 → '1.5 km away' (distances as text, never only on a map). */
+export function formatDistance(metres) {
+  if (metres == null) return '';
+  return metres < 1000 ? `${Math.round(metres)} m away` : `${(metres / 1000).toFixed(1)} km away`;
+}
+
+export function plural(count, one, many = `${one}s`) {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+/** Today's date in Manila as 'YYYY-MM-DD' (for date inputs' min). */
+export function todayInManila() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(new Date());
+}

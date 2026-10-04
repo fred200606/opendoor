@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 1 – Foundation
-- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 2 – UI kit (Pagination, StatusBadge, EmptyState, ConfirmDialog, AccommodationPicker, LocationPicker, TrustScoreCard, MatchBadge) + API modules per resource + enum labels.
+- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 3 – public + candidate job search (`/jobs`, `/candidate/jobs`: keyword debounce, category, accommodation filters, match mode, sort, URL query state, aria-live count) and job details (`/jobs/:id`, `/candidate/jobs/:id`: accommodations + notes, MatchBadge, TrustScoreCard, Accessibility Snapshot with `sources` messages, apply form, save, report), public employer page `/employers/:id`.
 - **Next step:** Phase 1 – Frontend: Login + Register pages (replace `ComingSoon` in `src/App.jsx`): labelled inputs, 422 `fieldErrors` linked via `aria-describedby`, error summary, consent checkbox + role choice, `ACCOUNT_SUSPENDED`/429 messages, redirect to `state.from` or `homeFor(role)`, guests-only routes, 'session expired' notice (`state.reason`). Tests with `fakeApi`.
 - **Blockers:** –
 
