@@ -15,6 +15,8 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => tokenStore.get());
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState(() => (tokenStore.get() ? 'loading' : 'ready'));
+  // Where GuestRoute sends the user right after login/register ({ pathname, state }).
+  const [afterLogin, setAfterLogin] = useState(null);
 
   const clearSession = useCallback(() => {
     tokenStore.clear();
@@ -22,11 +24,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  const startSession = useCallback(({ token: newToken, user: newUser }) => {
+  const startSession = useCallback(({ token: newToken, user: newUser }, redirectTo) => {
     tokenStore.set(newToken);
     setToken(newToken);
     setUser(newUser);
     setStatus('ready');
+    setAfterLogin(redirectTo ? redirectTo(newUser) : null);
     return newUser;
   }, []);
 
@@ -61,9 +64,16 @@ export function AuthProvider({ children }) {
     };
   }, [clearSession]);
 
-  const login = useCallback(async (credentials) => startSession(await authApi.login(credentials)), [startSession]);
+  /** `redirectTo(user)` → { pathname, state? } chooses where to go next (default: the role's portal). */
+  const login = useCallback(
+    async (credentials, redirectTo) => startSession(await authApi.login(credentials), redirectTo),
+    [startSession],
+  );
 
-  const register = useCallback(async (details) => startSession(await authApi.register(details)), [startSession]);
+  const register = useCallback(
+    async (details, redirectTo) => startSession(await authApi.register(details), redirectTo),
+    [startSession],
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -72,12 +82,13 @@ export function AuthProvider({ children }) {
       // The token is dropped locally either way.
     }
     clearSession();
+    setAfterLogin(null);
     setStatus('signedOut'); // ProtectedRoute sends the user home instead of to /login
   }, [clearSession]);
 
   const value = useMemo(
-    () => ({ user, role: user?.role ?? null, token, status, login, register, logout }),
-    [user, token, status, login, register, logout],
+    () => ({ user, role: user?.role ?? null, token, status, afterLogin, login, register, logout }),
+    [user, token, status, afterLogin, login, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

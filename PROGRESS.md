@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 1 – Foundation
-- **In progress:** –
+- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 2 – UI kit (Pagination, StatusBadge, EmptyState, ConfirmDialog, AccommodationPicker, LocationPicker, TrustScoreCard, MatchBadge) + API modules per resource + enum labels.
 - **Next step:** Phase 1 – Frontend: Login + Register pages (replace `ComingSoon` in `src/App.jsx`): labelled inputs, 422 `fieldErrors` linked via `aria-describedby`, error summary, consent checkbox + role choice, `ACCOUNT_SUSPENDED`/429 messages, redirect to `state.from` or `homeFor(role)`, guests-only routes, 'session expired' notice (`state.reason`). Tests with `fakeApi`.
 - **Blockers:** –
 
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – User asked to build all frontend screens now (ahead of the backend phases). Screens follow `docs/openapi.yaml`; those whose endpoints are not built yet show the API error until their backend phase is done.
 - 2026-10-04 – Frontend: React 19 + React Router 7 + Vite 8 (latest, like Laravel). Lint with oxlint + `jsx-a11y` (template default, replaces ESLint); `prefer-tag-over-role` off (`<output>` has uneven screen-reader support). Vitest + Testing Library for unit tests. Token in `localStorage` (`opendoor.token`). Portal landing = `/{role}/dashboard`; logout → home, expired token → `/login`.
 - 2026-10-04 – Gateway: Express 4 + http-proxy-middleware 4 (ESM). Paths forwarded unchanged → Insights must serve `/api/insights/*` and `GET /health`. Gateway drops upstream CORS headers (Laravel sends `*`). New env `TRUST_PROXY` (1 on Railway). Own upstream timeout (httpxy `proxyTimeout` can't be told apart from a reset).
 - 2026-10-04 – M11: "in use" is detected by FK `restrictOnDelete` (all future FKs to categories/accommodations must use it); category in use → 422 `errors.category`; accommodation in use → retired, 200. Added `GET /admin/accommodations` (incl. retired). `accommodations.name` max 150 (OpenAPI).
@@ -61,7 +62,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: feature tests for M1, M11 (`tests/Feature/Auth`, `tests/Feature/MasterData`)
 - [x] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests (23 tests; live smoke with Core OK)
 - [x] Frontend: fresh React (Vite) app in `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect (14 Vitest tests; live check through gateway + Core OK)
-- [ ] Frontend: register + login pages wired through the gateway
+- [x] Frontend: register + login pages wired through the gateway (error summary, consent, suspended/rate-limit messages)
 - [ ] Postman: folders 01 Auth, 02 Master Data
 
 ### Phase 2 – Employer side
