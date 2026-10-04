@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 1 – Foundation
-- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 8 – OpenAPI additions (admin list endpoints, dashboard shapes, Notification.data, rejection_reason, Report.job_posting, 404 for /employer/company, upload limits), PROGRESS checklist + decisions, live browser check through gateway + Core.
-- **Next step:** Phase 1 – Frontend: Login + Register pages (replace `ComingSoon` in `src/App.jsx`): labelled inputs, 422 `fieldErrors` linked via `aria-describedby`, error summary, consent checkbox + role choice, `ACCOUNT_SUSPENDED`/429 messages, redirect to `state.from` or `homeFor(role)`, guests-only routes, 'session expired' notice (`state.reason`). Tests with `fakeApi`.
+- **In progress:** –
+- **Next step:** Phase 1 – Postman folders 01 Auth, 02 Master Data. Then Phase 2 backend (M3 company, M4 postings) – the employer screens already exist; wire-check them as each endpoint lands.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Contract additions made for the screens (all in `docs/openapi.yaml`): `GET /admin/employers`, `/admin/employers/{id}`, `/admin/job-postings`, `/admin/feedback`; dashboard schemas (Candidate/Employer/AdminDashboard); `Notification.data.message/url`; `JobPosting.rejection_reason` (owner/admin); `Report.job_posting` in admin lists; `GET /employer/company` 404 until created; résumé PDF ≤ 5 MB; logo PNG/JPG/WebP ≤ 2 MB.
 - 2026-10-04 – M13 display settings (text size, high contrast, reduced motion) are stored in the browser (`opendoor.display`) until an endpoint for `users.display_prefs` exists. Notifications use `data.message` + optional in-app `data.url`.
 - 2026-10-04 – User asked to build all frontend screens now (ahead of the backend phases). Screens follow `docs/openapi.yaml`; those whose endpoints are not built yet show the API error until their backend phase is done.
 - 2026-10-04 – Frontend: React 19 + React Router 7 + Vite 8 (latest, like Laravel). Lint with oxlint + `jsx-a11y` (template default, replaces ESLint); `prefer-tag-over-role` off (`<output>` has uneven screen-reader support). Vitest + Testing Library for unit tests. Token in `localStorage` (`opendoor.token`). Portal landing = `/{role}/dashboard`; logout → home, expired token → `/login`.
@@ -71,33 +72,33 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Core: M4 postings CRUD, structured accommodations with notes, draft → pending_approval → open → closed, soft delete, auto-close command
 - [ ] Core: admin posting approval
 - [ ] Core: Policies + feature tests (owner-only)
-- [ ] Frontend: company profile, my postings, create/edit posting screens wired
+- [ ] Frontend: company profile, my postings, create/edit posting screens wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 03
 
 ### Phase 3 – Candidate side
 - [ ] Core: M2 profile + accommodation needs + resume upload
 - [ ] Core: M5 search, category/accommodation filters, matching (`withCount`, ordering, `missing`), sort, pagination
 - [ ] Core: feature tests for matching order and privacy rules
-- [ ] Frontend: profile, find jobs (match mode, aria-live count), job details wired
+- [ ] Frontend: profile, find jobs (match mode, aria-live count), job details wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 04
 
 ### Phase 4 – Applications
 - [ ] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change
 - [ ] Core: feature tests for every allowed + disallowed transition, duplicate apply, closed posting
-- [ ] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired
+- [ ] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 05
 
 ### Phase 5 – Verification (feedback + trust score)
 - [ ] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown
 - [ ] Core: feature tests for math, threshold, window
-- [ ] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page
+- [ ] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 06
 
 ### Phase 6 – Legacy SOAP integration
 - [ ] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults
 - [ ] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping
 - [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check
-- [ ] Frontend: admin employer verification screen shows registry result
+- [ ] Frontend: admin employer verification screen shows registry result – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 08 (registry part)
 
 ### Phase 7 – Mashup (Insights)
@@ -107,14 +108,14 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Insights: Overpass client + cache; tag→category transform; haversine
 - [ ] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing)
 - [ ] Gateway: `/api/insights/*` route verified
-- [ ] Frontend: Accessibility Snapshot section + PSGC location picker
+- [ ] Frontend: Accessibility Snapshot section + PSGC location picker – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 07
 
 ### Phase 8 – Administration
 - [ ] Core: M10 users (suspend → revoke tokens), reports, feedback hide
 - [ ] Core: M8 dashboards (candidate, employer, admin analytics)
 - [ ] Core: M9 notifications list / read / read-all
-- [ ] Frontend: admin screens, dashboards, notification bell wired
+- [ ] Frontend: admin screens, dashboards, notification bell wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 09 negative + security cases
 
 ### Phase 9 – Release
@@ -128,6 +129,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
 - Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
@@ -138,6 +140,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – All frontend screens built (public, candidate, employer, admin, notifications, account) against OpenAPI; 87 Vitest tests; OpenAPI extended for admin lists + dashboards.
 - 2026-10-04 – Frontend scaffold done (API client, AuthContext, ProtectedRoute, accessible layout); browser check via Playwright through gateway + Core found and fixed logout→/login redirect race.
 - 2026-10-04 – Gateway done (routing, CORS, rate limit, request ID, timeouts, health, /internal blocked); 23 Jest tests; live smoke with Core found and fixed Laravel `*` CORS leak.
 - 2026-10-04 – M11 master data done (public lists, admin CRUD, delete-or-retire verified on MySQL). Core part of Phase 1 complete; 59 tests pass.

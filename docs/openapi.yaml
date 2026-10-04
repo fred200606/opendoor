@@ -217,7 +217,7 @@ paths:
   /candidate/resume:
     post:
       tags: [M2 Candidate profile]
-      summary: Upload résumé (PDF only, size-limited)
+      summary: Upload résumé (PDF only, max 5 MB)
       requestBody:
         required: true
         content:
@@ -250,9 +250,11 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Company' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     put:
       tags: [M3 Company]
       summary: Create or update own company profile (changing business_reg_no clears verification)
+      description: GET answers 404 until the profile exists. With a logo the body is multipart; clients send it as POST with `_method=PUT` (Laravel method spoofing).
       requestBody:
         required: true
         content:
@@ -286,6 +288,46 @@ paths:
                       open_postings:
                         type: array
                         items: { $ref: '#/components/schemas/JobPosting' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/employers:
+    get:
+      tags: [M3 Company]
+      summary: Employer verification queue (admin)
+      parameters:
+        - name: status
+          in: query
+          description: pending = not verified and not rejected
+          schema: { type: string, enum: [pending, verified, rejected], default: pending }
+        - name: q
+          in: query
+          description: Company name or registration number
+          schema: { type: string }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Employers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminEmployer' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/employers/{id}:
+    get:
+      tags: [M3 Company]
+      summary: One employer with owner and latest registry check (admin)
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: Employer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminEmployer' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
   /admin/employers/{id}/verify:
     patch:
@@ -465,6 +507,31 @@ paths:
               schema: { $ref: '#/components/schemas/JobPosting' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/job-postings:
+    get:
+      tags: [M4 Job postings]
+      summary: Postings by status for approval (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/JobPostingStatus'
+            default: pending_approval
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Postings (with description, accommodations and notes)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/JobPosting' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /admin/job-postings/{id}/approve:
     patch:
       tags: [M4 Job postings]
@@ -660,19 +727,31 @@ paths:
       tags: [M8 Dashboards]
       summary: Candidate summary (applications by status, matches, pending feedback)
       responses:
-        '200': { $ref: '#/components/responses/Dashboard' }
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CandidateDashboard' }
   /employer/dashboard:
     get:
       tags: [M8 Dashboards]
       summary: Employer summary (postings, applicants, trust score, verification)
       responses:
-        '200': { $ref: '#/components/responses/Dashboard' }
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmployerDashboard' }
   /admin/dashboard:
     get:
       tags: [M8 Dashboards]
       summary: Admin analytics (users, postings, verification queue, reports)
       responses:
-        '200': { $ref: '#/components/responses/Dashboard' }
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminDashboard' }
 
   # ---------------------------------------------------------------- M9 Notifications
   /notifications:
@@ -831,6 +910,31 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Report' }
+  /admin/feedback:
+    get:
+      tags: [M10 Moderation]
+      summary: Feedback responses for moderation (anonymous – no author)
+      parameters:
+        - name: employer_id
+          in: query
+          schema: { type: integer }
+        - name: hidden
+          in: query
+          schema: { type: integer, enum: [0, 1] }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Feedback responses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdminFeedback' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /admin/feedback/{id}/hide:
     patch:
       tags: [M10 Moderation]
@@ -1148,13 +1252,6 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
-    Dashboard:
-      description: Role-specific summary
-      content:
-        application/json:
-          schema:
-            type: object
-            additionalProperties: true
 
   schemas:
     # ---------- enums (identical to SIA doc Appendix F)
@@ -1294,7 +1391,7 @@ components:
         address: { type: string }
         location_psgc: { type: [string, 'null'] }
         description: { type: [string, 'null'] }
-        logo: { type: string, format: binary }
+        logo: { type: string, format: binary, description: 'PNG, JPG or WebP, max 2 MB' }
     Company:
       allOf:
         - $ref: '#/components/schemas/EmployerPublic'
@@ -1426,6 +1523,7 @@ components:
             - $ref: '#/components/schemas/Match'
             - type: 'null'
         trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
+        rejection_reason: { type: [string, 'null'], description: Only for the owning employer and admins }
         created_at: { type: string, format: date-time }
 
     # ---------- applications
@@ -1461,7 +1559,12 @@ components:
       properties:
         id: { type: string, format: uuid }
         type: { type: string, example: application_status_changed }
-        data: { type: object, additionalProperties: true }
+        data:
+          type: object
+          additionalProperties: true
+          properties:
+            message: { type: string, description: Plain-language text shown to the user }
+            url: { type: string, description: 'Optional in-app path, e.g. /candidate/applications/11' }
         read_at: { type: [string, 'null'], format: date-time }
         created_at: { type: string, format: date-time }
     Report:
@@ -1469,9 +1572,118 @@ components:
       properties:
         id: { type: integer }
         job_posting_id: { type: integer }
+        job_posting:
+          description: Included in admin lists
+          type: object
+          properties:
+            id: { type: integer }
+            title: { type: string }
+            employer: { $ref: '#/components/schemas/EmployerSummary' }
         reason: { type: string }
         status: { $ref: '#/components/schemas/ReportStatus' }
         created_at: { type: string, format: date-time }
+
+    # ---------- administration
+    AdminEmployer:
+      allOf:
+        - $ref: '#/components/schemas/Company'
+        - type: object
+          properties:
+            owner:
+              type: object
+              properties:
+                id: { type: integer }
+                name: { type: string }
+                email: { type: string, format: email }
+            latest_registry_check:
+              oneOf:
+                - $ref: '#/components/schemas/RegistryResult'
+                - type: 'null'
+    AdminFeedback:
+      type: object
+      description: One anonymous feedback response (no candidate data)
+      properties:
+        id: { type: integer }
+        employer: { $ref: '#/components/schemas/EmployerSummary' }
+        job_title: { type: string }
+        is_hidden: { type: boolean }
+        comments: { type: [string, 'null'] }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              accommodation_id: { type: integer }
+              name: { type: string }
+              rating: { $ref: '#/components/schemas/FeedbackRating' }
+        created_at: { type: string, format: date-time }
+
+    # ---------- dashboards (M8)
+    ApplicationCounts:
+      type: object
+      description: Number of applications per ApplicationStatus
+      properties:
+        pending: { type: integer }
+        reviewed: { type: integer }
+        hired: { type: integer }
+        rejected: { type: integer }
+        withdrawn: { type: integer }
+    PostingCounts:
+      type: object
+      description: Number of postings per JobPostingStatus
+      properties:
+        draft: { type: integer }
+        pending_approval: { type: integer }
+        open: { type: integer }
+        closed: { type: integer }
+    CandidateDashboard:
+      type: object
+      properties:
+        applications: { $ref: '#/components/schemas/ApplicationCounts' }
+        needs_count: { type: integer, description: Saved accommodation needs }
+        matching_jobs: { type: integer, description: Open postings that meet all saved needs }
+        feedback_due:
+          type: array
+          items:
+            type: object
+            properties:
+              application_id: { type: integer }
+              job_title: { type: string }
+              company_name: { type: string }
+              opens_on: { type: string, format: date }
+              is_open: { type: boolean }
+    EmployerDashboard:
+      type: object
+      properties:
+        company:
+          type: object
+          properties:
+            exists: { type: boolean }
+            verified: { type: boolean }
+            verification_rejected_reason: { type: [string, 'null'] }
+        postings: { $ref: '#/components/schemas/PostingCounts' }
+        applications: { $ref: '#/components/schemas/ApplicationCounts' }
+        trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
+    AdminDashboard:
+      type: object
+      properties:
+        users:
+          type: object
+          properties:
+            candidate: { type: integer }
+            employer: { type: integer }
+            admin: { type: integer }
+            suspended: { type: integer }
+        postings: { $ref: '#/components/schemas/PostingCounts' }
+        applications: { $ref: '#/components/schemas/ApplicationCounts' }
+        verification_queue: { type: integer, description: Employers waiting for verification }
+        open_reports: { type: integer }
+        feedback:
+          type: object
+          properties:
+            responses: { type: integer }
+            hidden: { type: integer }
+        published_trust_scores: { type: integer, description: Employers with at least 3 responses }
 
     # ---------- insights
     NearbyPlace:
