@@ -11,6 +11,20 @@ React 19 + Vite single-page app: public area plus Candidate, Employer and Admin 
 
 `ProtectedRoute` is navigation only – the server enforces every permission.
 
+## Screens
+
+| Area | Paths |
+|---|---|
+| Public | `/`, `/login`, `/register`, `/jobs`, `/jobs/:id`, `/employers/:id` |
+| Candidate | `/candidate/dashboard`, `/candidate/profile`, `/candidate/jobs`, `/candidate/jobs/:id`, `/candidate/applications`, `/candidate/applications/:id`, `/candidate/applications/:id/feedback`, `/candidate/saved-jobs` |
+| Employer | `/employer/dashboard`, `/employer/company`, `/employer/jobs`, `/employer/jobs/new`, `/employer/jobs/:id/edit`, `/employer/jobs/:id/applicants`, `/employer/applications/:id`, `/employer/trust-score` |
+| Admin | `/admin/dashboard`, `/admin/employers`, `/admin/employers/:id`, `/admin/job-postings`, `/admin/users`, `/admin/reports`, `/admin/feedback`, `/admin/master-data` |
+| Any logged-in user | `/notifications`, `/account` (password, display settings) |
+
+Every screen follows `docs/openapi.yaml`. Screens whose endpoints are not built yet show the API error until their backend phase lands.
+
+To audit a page with axe in the browser console during `npm run dev`: load `/node_modules/axe-core/axe.min.js` and run `axe.run()`.
+
 Accessibility (WCAG 2.1 AA) is checked on every change: skip link, focus on route change, visible focus, contrast ≥ 4.5:1, labels on every input, usable at 360 px and 200% zoom. `oxlint` runs the `jsx-a11y` rules.
 
 ## Local setup

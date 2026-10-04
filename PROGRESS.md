@@ -140,6 +140,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – Live browser check (Vite → gateway → Core): register with server errors, profile with real accommodation groups, admin master data CRUD, dialogs/focus, axe 0 violations on register/profile/master data, no sideways scroll at 360 px + 150% text + high contrast. Fixed h1 focus on first load under StrictMode.
 - 2026-10-04 – All frontend screens built (public, candidate, employer, admin, notifications, account) against OpenAPI; 87 Vitest tests; OpenAPI extended for admin lists + dashboards.
 - 2026-10-04 – Frontend scaffold done (API client, AuthContext, ProtectedRoute, accessible layout); browser check via Playwright through gateway + Core found and fixed logout→/login redirect race.
 - 2026-10-04 – Gateway done (routing, CORS, rate limit, request ID, timeouts, health, /internal blocked); 23 Jest tests; live smoke with Core found and fixed Laravel `*` CORS leak.

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-
-let isFirstPage = true;
+import { useLocation } from 'react-router-dom';
 
 /**
  * Every screen starts with <Page title="…">. It sets the document title and, after client-side
@@ -8,16 +7,14 @@ let isFirstPage = true;
  */
 export default function Page({ title, children, className = '' }) {
   const headingRef = useRef(null);
+  // The router's first entry has key 'default': leave the browser's normal start position on a
+  // fresh page load (also safe under StrictMode's double effects).
+  const { key } = useLocation();
 
   useEffect(() => {
     document.title = `${title} – OpenDoor`;
-
-    if (isFirstPage) {
-      isFirstPage = false; // Leave the browser's normal start position on the initial load.
-      return;
-    }
-    headingRef.current?.focus();
-  }, [title]);
+    if (key !== 'default') headingRef.current?.focus();
+  }, [title, key]);
 
   return (
     <div className={`page ${className}`.trim()}>
