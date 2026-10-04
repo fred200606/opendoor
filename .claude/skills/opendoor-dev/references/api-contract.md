@@ -44,6 +44,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M10 Moderation | GET, PATCH | /admin/reports, /admin/reports/{id} | A | `?status=`; PATCH `{status:'dismissed'|'actioned', note?}` |
 | M10 Moderation | PATCH | /admin/feedback/{id}/hide | A | `{hidden:bool}` hide/unhide a response (recomputes score) |
 | M11 Master data | POST, PUT, DELETE | /admin/categories/{id?}, /admin/accommodations/{id?} | A | delete only if unused; accommodations are retired, not deleted, when in use |
+| M11 Master data | GET | /admin/accommodations | A | all types incl. retired (to restore via PUT `is_retired:false`) |
 | M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
 | Insights | GET | /insights/locations/{regions|provinces|cities}?parent= | P | `[{code,name,level}]` |

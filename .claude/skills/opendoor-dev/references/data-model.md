@@ -22,6 +22,8 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 | reports | id, reporter_id FK users, job_posting_id, reason, status enum(open, dismissed, actioned), timestamps | – |
 | saved_jobs | candidate_profile_id, job_posting_id, timestamps | composite PK |
 
+**Foreign keys to master data** (`category_id`, every `accommodation_id`) use `restrictOnDelete()`: the admin delete endpoints rely on the FK error to detect "in use" (`App\Support\ForeignKeys`).
+
 **Model naming:** use `JobPosting` / `job_postings` (Laravel already uses `jobs` for queues). `ApplicationStatus` is a PHP backed enum cast on `Application`.
 
 **Relationships:** User hasOne CandidateProfile | Employer; Employer hasMany JobPostings, RegistryChecks; JobPosting belongsToMany Accommodation (withPivot note); CandidateProfile belongsToMany Accommodation; JobPosting hasMany Applications; Application hasOne Feedback; Feedback hasMany FeedbackItems.

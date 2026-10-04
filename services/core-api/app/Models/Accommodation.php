@@ -16,6 +16,11 @@ class Accommodation extends Model
     /** @use HasFactory<AccommodationFactory> */
     use HasFactory;
 
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'is_retired' => false,
+    ];
+
     /**
      * @return array<string, string>
      */

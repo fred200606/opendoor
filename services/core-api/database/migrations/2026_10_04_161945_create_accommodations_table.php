@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('accommodations', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 120)->unique();
+            $table->string('name', 150)->unique();
             $table->enum('group', ['physical_access', 'communication', 'work_arrangement', 'assistive_technology', 'support']);
             $table->string('description')->nullable();
             // Retired accommodations stay linked to old postings/needs/feedback but are hidden from new forms.

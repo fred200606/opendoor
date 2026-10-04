@@ -23,7 +23,7 @@ class UserModelTest extends TestCase
         ]);
 
         $this->assertNull($user->role);
-        $this->assertNull($user->is_active);
+        $this->assertTrue($user->is_active); // model default, not the requested false
         $this->assertNull($user->consented_at);
     }
 

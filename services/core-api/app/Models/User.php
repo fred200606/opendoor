@@ -23,6 +23,11 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'is_active' => true,
+    ];
+
     /**
      * Get the attributes that should be cast.
      *

@@ -915,10 +915,26 @@ paths:
     delete:
       tags: [M11 Master data]
       summary: Delete category (only if unused)
+      description: A category still referenced by job postings → 422 with `errors.category`.
       responses:
         '204': { description: Deleted }
         '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/accommodations:
+    get:
+      tags: [M11 Master data]
+      summary: All accommodation types, including retired ones (admin list for restoring)
+      responses:
+        '200':
+          description: Accommodations ordered by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Accommodation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [M11 Master data]
       summary: Create accommodation type
