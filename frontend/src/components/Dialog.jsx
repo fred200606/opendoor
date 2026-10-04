@@ -15,7 +15,9 @@ export default function Dialog({ title, onClose, children, actions }) {
 
     return () => {
       if (dialog.open) dialog.close();
-      opener?.focus?.();
+      // The opener may be gone (e.g. the deleted row's button); then start again at the page heading.
+      const target = opener?.isConnected ? opener : document.querySelector('main h1');
+      target?.focus?.();
     };
   }, []);
 

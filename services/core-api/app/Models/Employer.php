@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * verified_at, verification_rejected_reason, trust_score and feedback_count are not fillable:
@@ -42,6 +43,12 @@ class Employer extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** @return HasMany<JobPosting, $this> */
+    public function jobPostings(): HasMany
+    {
+        return $this->hasMany(JobPosting::class);
     }
 
     public function isVerified(): bool

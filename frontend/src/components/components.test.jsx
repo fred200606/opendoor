@@ -163,6 +163,23 @@ describe('Pagination and ConfirmDialog', () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
+  test('closing a dialog whose opener was removed moves focus to the page heading', () => {
+    const page = (row, dialog) => (
+      <main>
+        <h1 tabIndex={-1}>Job postings</h1>
+        {row && <button type="button">Delete Data Encoder</button>}
+        {dialog && <ConfirmDialog title="Delete?" confirmLabel="Delete" onConfirm={() => {}} onClose={() => {}} />}
+      </main>
+    );
+    const { rerender } = render(page(true, false));
+    screen.getByRole('button', { name: 'Delete Data Encoder' }).focus(); // the user clicked it
+    rerender(page(true, true));
+    // The row (and its button) disappears together with the dialog.
+    rerender(page(false, false));
+
+    expect(screen.getByRole('heading', { name: 'Job postings' })).toHaveFocus();
+  });
+
   test('dialog is labelled by its title and Escape closes it', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();

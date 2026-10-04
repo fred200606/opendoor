@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\ApiException;
 use App\Http\Resources\EmployerPublicResource;
+use App\Http\Resources\JobPostingResource;
 use App\Models\Employer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -16,8 +17,9 @@ class EmployerController extends Controller
     {
         return response()->json([
             ...(new EmployerPublicResource($employer))->resolve(),
-            // Filled in with M4 job postings (open + approved only).
-            'open_postings' => [],
+            'open_postings' => JobPostingResource::collection(
+                $employer->jobPostings()->visible()->with(JobPostingController::RELATIONS)->orderBy('closes_at')->get(),
+            )->resolve(),
         ]);
     }
 

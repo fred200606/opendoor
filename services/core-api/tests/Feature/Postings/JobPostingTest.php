@@ -1,0 +1,309 @@
+<?php
+
+namespace Tests\Feature\Postings;
+
+use App\Enums\JobPostingStatus;
+use App\Models\Accommodation;
+use App\Models\Category;
+use App\Models\Employer;
+use App\Models\JobPosting;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class JobPostingTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Employer $employer;
+
+    private Category $category;
+
+    /** @var list<Accommodation> */
+    private array $accommodations;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->employer = Employer::factory()->verified()->create();
+        $this->category = Category::factory()->create(['name' => 'Administrative']);
+        $this->accommodations = Accommodation::factory()->count(3)->create()->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function payload(array $overrides = []): array
+    {
+        return [
+            'title' => 'Data Encoder',
+            'description' => 'Encode records for the admin team.',
+            'category_id' => $this->category->id,
+            'address' => '25 Scout Tobias St.',
+            'location_psgc' => '1381300000',
+            'location_label' => 'Quezon City, NCR',
+            'employment_type' => 'full_time',
+            'work_setup' => 'onsite',
+            'interview_format' => 'online',
+            'closes_at' => now()->addMonth()->toDateString(),
+            'accommodations' => [
+                ['id' => $this->accommodations[0]->id, 'note' => 'Ramp at the main entrance'],
+                ['id' => $this->accommodations[1]->id, 'note' => '  '],
+                ['id' => $this->accommodations[2]->id],
+            ],
+            'submit' => true,
+            ...$overrides,
+        ];
+    }
+
+    private function actingAsOwner(): void
+    {
+        Sanctum::actingAs($this->employer->user);
+    }
+
+    // ---------- create
+
+    public function test_t02_employer_submits_a_posting_with_three_accommodations_and_notes(): void
+    {
+        $this->actingAsOwner();
+
+        $response = $this->postJson('/api/job-postings', $this->payload());
+
+        $response->assertCreated()
+            ->assertJsonPath('status', 'pending_approval')
+            ->assertJsonPath('employer', ['id' => $this->employer->id, 'company_name' => $this->employer->company_name, 'verified' => true])
+            ->assertJsonPath('category', ['id' => $this->category->id, 'name' => 'Administrative'])
+            ->assertJsonPath('location', ['psgc_code' => '1381300000', 'label' => 'Quezon City, NCR'])
+            ->assertJsonPath('closes_at', now()->addMonth()->toDateString())
+            ->assertJsonCount(3, 'accommodations')
+            ->assertJsonPath('accommodations.0.note', 'Ramp at the main entrance')
+            ->assertJsonPath('accommodations.1.note', null)
+            ->assertJsonPath('match', null)
+            ->assertJsonPath('rejection_reason', null);
+
+        $posting = JobPosting::sole();
+        $this->assertFalse($posting->is_approved);
+        $this->assertSame(3, $posting->accommodations()->count());
+    }
+
+    public function test_save_as_draft(): void
+    {
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload(['submit' => false]))
+            ->assertCreated()
+            ->assertJsonPath('status', 'draft');
+    }
+
+    public function test_status_and_approval_cannot_be_set_by_the_employer(): void
+    {
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload(['status' => 'open', 'is_approved' => true]))
+            ->assertCreated()
+            ->assertJsonPath('status', 'pending_approval');
+
+        $this->assertFalse(JobPosting::sole()->is_approved);
+    }
+
+    public function test_a_company_profile_is_required_first(): void
+    {
+        Sanctum::actingAs(User::factory()->employer()->create());
+
+        $this->postJson('/api/job-postings', $this->payload())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['company' => 'Create your company profile before posting a job.']);
+    }
+
+    public function test_input_is_validated(): void
+    {
+        $this->actingAsOwner();
+        $retired = Accommodation::factory()->retired()->create(['name' => 'Fax relay']);
+
+        $this->postJson('/api/job-postings', [
+            'category_id' => 999,
+            'employment_type' => 'freelance',
+            'work_setup' => 'moon',
+            'closes_at' => now()->subDay()->toDateString(),
+            'accommodations' => [['id' => $retired->id], ['id' => $this->accommodations[0]->id], ['id' => $this->accommodations[0]->id]],
+        ])->assertUnprocessable()->assertJsonValidationErrors([
+            'title', 'description', 'category_id', 'address', 'employment_type', 'work_setup', 'interview_format',
+            'closes_at' => 'The closing date cannot be in the past.',
+            'accommodations.0.id' => '“Fax relay” is no longer offered as an option.',
+            'accommodations.1.id' => 'Each accommodation can be listed only once.',
+        ]);
+    }
+
+    public function test_only_employers_create_postings(): void
+    {
+        Sanctum::actingAs(User::factory()->candidate()->create());
+        $this->postJson('/api/job-postings', $this->payload())->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+    }
+
+    // ---------- update
+
+    public function test_editing_an_open_posting_sends_it_back_for_approval(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create(['rejection_reason' => null]);
+        $this->actingAsOwner();
+
+        $this->putJson("/api/job-postings/{$posting->id}", $this->payload(['title' => 'Senior Data Encoder']))
+            ->assertOk()
+            ->assertJsonPath('title', 'Senior Data Encoder')
+            ->assertJsonPath('status', 'pending_approval');
+
+        $this->assertFalse($posting->fresh()->is_approved);
+    }
+
+    public function test_resubmitting_clears_the_rejection_reason(): void
+    {
+        $posting = JobPosting::factory()->for($this->employer)->create(['rejection_reason' => 'Add the working hours.']);
+        $this->actingAsOwner();
+
+        $this->getJson("/api/job-postings/{$posting->id}")->assertJsonPath('rejection_reason', 'Add the working hours.');
+        $this->putJson("/api/job-postings/{$posting->id}", $this->payload())
+            ->assertOk()
+            ->assertJsonPath('rejection_reason', null);
+    }
+
+    public function test_a_submitted_posting_cannot_go_back_to_draft(): void
+    {
+        $posting = JobPosting::factory()->pending()->for($this->employer)->create();
+        $this->actingAsOwner();
+
+        $this->putJson("/api/job-postings/{$posting->id}", $this->payload(['submit' => false]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('submit');
+    }
+
+    public function test_a_retired_accommodation_may_stay_on_its_posting(): void
+    {
+        $posting = JobPosting::factory()->for($this->employer)->create();
+        $posting->accommodations()->attach($this->accommodations[0]->id, ['note' => 'Ramp']);
+        $this->accommodations[0]->update(['is_retired' => true]);
+        $this->actingAsOwner();
+
+        $this->putJson("/api/job-postings/{$posting->id}", $this->payload())->assertOk();
+    }
+
+    public function test_t08_employer_cannot_change_another_employers_posting(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
+        Sanctum::actingAs(Employer::factory()->create()->user);
+
+        $this->putJson("/api/job-postings/{$posting->id}", $this->payload())->assertForbidden()->assertJsonPath('error.code', 'FORBIDDEN');
+        $this->patchJson("/api/job-postings/{$posting->id}/status", ['status' => 'closed'])->assertForbidden();
+        $this->deleteJson("/api/job-postings/{$posting->id}")->assertForbidden();
+
+        $this->assertSame(JobPostingStatus::Open, $posting->fresh()->status);
+    }
+
+    // ---------- open / close / delete
+
+    public function test_owner_closes_and_reopens_an_approved_posting(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
+        $this->actingAsOwner();
+
+        $this->patchJson("/api/job-postings/{$posting->id}/status", ['status' => 'closed'])->assertOk()->assertJsonPath('status', 'closed');
+        $this->patchJson("/api/job-postings/{$posting->id}/status", ['status' => 'open'])->assertOk()->assertJsonPath('status', 'open');
+    }
+
+    public function test_unapproved_or_expired_postings_cannot_be_opened(): void
+    {
+        $this->actingAsOwner();
+        $pending = JobPosting::factory()->pending()->for($this->employer)->create();
+        $expired = JobPosting::factory()->closed()->for($this->employer)->create(['closes_at' => now()->subDay()->toDateString()]);
+
+        $this->patchJson("/api/job-postings/{$pending->id}/status", ['status' => 'open'])->assertUnprocessable()->assertJsonValidationErrors('status');
+        $this->patchJson("/api/job-postings/{$expired->id}/status", ['status' => 'open'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status' => 'The closing date has passed. Change the closing date and submit the posting again.']);
+        $this->patchJson("/api/job-postings/{$pending->id}/status", ['status' => 'draft'])->assertUnprocessable();
+    }
+
+    public function test_delete_is_a_soft_delete_that_hides_the_posting(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
+        $this->actingAsOwner();
+
+        $this->deleteJson("/api/job-postings/{$posting->id}")->assertNoContent();
+
+        $this->assertSoftDeleted($posting);
+        $this->getJson("/api/job-postings/{$posting->id}")->assertNotFound();
+    }
+
+    // ---------- visibility
+
+    public function test_guests_see_open_approved_postings_only(): void
+    {
+        $open = JobPosting::factory()->open()->for($this->employer)->create();
+        $draft = JobPosting::factory()->for($this->employer)->create(['rejection_reason' => 'Secret note']);
+
+        $this->getJson("/api/job-postings/{$open->id}")->assertOk()->assertJsonMissingPath('rejection_reason');
+        $this->getJson("/api/job-postings/{$draft->id}")->assertNotFound()->assertJsonPath('error.code', 'NOT_FOUND');
+        $this->getJson('/api/job-postings/999999')->assertNotFound();
+    }
+
+    public function test_owner_and_admin_see_unpublished_postings(): void
+    {
+        $draft = JobPosting::factory()->for($this->employer)->create();
+
+        $this->getJson("/api/job-postings/{$draft->id}", ['Authorization' => 'Bearer '.$this->employer->user->createToken('t')->plainTextToken])
+            ->assertOk()->assertJsonPath('status', 'draft');
+
+        $admin = User::factory()->admin()->create();
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/job-postings/{$draft->id}", ['Authorization' => 'Bearer '.$admin->createToken('t')->plainTextToken])->assertOk();
+
+        $other = Employer::factory()->create()->user;
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/job-postings/{$draft->id}", ['Authorization' => 'Bearer '.$other->createToken('t')->plainTextToken])->assertNotFound();
+    }
+
+    public function test_employer_lists_own_postings_in_every_status(): void
+    {
+        JobPosting::factory()->for($this->employer)->create();
+        JobPosting::factory()->open()->for($this->employer)->create();
+        JobPosting::factory()->open()->create(); // someone else's
+        $this->actingAsOwner();
+
+        $this->getJson('/api/employer/job-postings')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.per_page', 12);
+        $this->getJson('/api/employer/job-postings?status=open')->assertJsonCount(1, 'data')->assertJsonPath('data.0.status', 'open');
+    }
+
+    public function test_public_employer_page_lists_open_postings_only(): void
+    {
+        JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Visible']);
+        JobPosting::factory()->pending()->for($this->employer)->create(['title' => 'Hidden']);
+        JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Deleted'])->delete();
+
+        $this->getJson("/api/employers/{$this->employer->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'open_postings')
+            ->assertJsonPath('open_postings.0.title', 'Visible');
+    }
+
+    // ---------- auto-close
+
+    public function test_expired_open_postings_close_automatically(): void
+    {
+        $expired = JobPosting::factory()->open()->create(['closes_at' => now()->subDay()->toDateString()]);
+        $lastDay = JobPosting::factory()->open()->create(['closes_at' => now()->toDateString()]);
+        $draft = JobPosting::factory()->create(['closes_at' => now()->subDay()->toDateString()]);
+
+        Artisan::call('postings:close-expired');
+
+        $this->assertSame(JobPostingStatus::Closed, $expired->fresh()->status);
+        $this->assertSame(JobPostingStatus::Open, $lastDay->fresh()->status);
+        $this->assertSame(JobPostingStatus::Draft, $draft->fresh()->status);
+    }
+}

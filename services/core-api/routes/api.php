@@ -6,7 +6,9 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Employer\CompanyController;
+use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
+use App\Http\Controllers\JobPostingController;
 use Illuminate\Support\Facades\Route;
 
 // M1 Auth – public
@@ -21,6 +23,9 @@ Route::get('accommodations', [AccommodationController::class, 'index']);
 Route::get('employers/{employer}', [EmployerController::class, 'show']);
 Route::get('employers/{employer}/logo', [EmployerController::class, 'logo']);
 
+// M4 Job postings – details are public for open postings (owners and admins also see drafts)
+Route::get('job-postings/{jobPosting}', [JobPostingController::class, 'show']);
+
 // Any logged-in, non-suspended user
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
@@ -31,6 +36,15 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('role:employer')->prefix('employer')->group(function () {
         Route::get('company', [CompanyController::class, 'show']);
         Route::put('company', [CompanyController::class, 'update']);
+        Route::get('job-postings', [PostingController::class, 'index']);
+    });
+
+    // M4 Job postings – an employer manages only its own (JobPostingPolicy)
+    Route::middleware('role:employer')->group(function () {
+        Route::post('job-postings', [JobPostingController::class, 'store']);
+        Route::put('job-postings/{jobPosting}', [JobPostingController::class, 'update']);
+        Route::delete('job-postings/{jobPosting}', [JobPostingController::class, 'destroy']);
+        Route::patch('job-postings/{jobPosting}/status', [JobPostingController::class, 'updateStatus']);
     });
 
     // Admin

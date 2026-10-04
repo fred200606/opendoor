@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 2 – Employer side
 - **In progress:** –
-- **Next step:** Phase 2 – Core M4 postings: `job_postings` (soft deletes, status enum, closes_at, is_approved, rejection_reason, location_label, index(status, category_id), fulltext(title, description)) + `job_posting_accommodation` (note; FKs restrictOnDelete), `JobPosting` model + policy, `POST/PUT/DELETE /job-postings`, `GET /job-postings/{id}`, `PATCH /job-postings/{id}/status`, `GET /employer/job-postings` (applicants_count later), auto-close command; fill `open_postings` on `GET /employers/{id}`. Screens exist – wire-check live.
+- **Next step:** Phase 2 – Core admin posting approval: `GET /admin/job-postings?status=` (default pending_approval, with description + accommodations) and `PATCH /admin/job-postings/{id}/approve` (`approve` → open + is_approved; `reject` → draft + `rejection_reason`, reason required), tests; then wire-check `/admin/job-postings` live; then Postman folder 03.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – M4: company profile required to post (422 `errors.company`); `submit` defaults to false; `submit:true` on create or edit → `pending_approval` + not approved (editing an open posting is re-approved); `submit:false` only for drafts; close/reopen rules; unpublished postings 404 for non-owners; daily `postings:close-expired` 00:05 Manila; retired accommodations may stay on postings that already had them. Admin reject → back to `draft` with `rejection_reason` (next step).
 - 2026-10-04 – M3: clients send `location_label` with `location_psgc` (Core stores the label; PSGC data stays in Insights). Logos are stored on Core's private disk and served via `GET /api/employers/{id}/logo`; `logo_url` is built from `PUBLIC_API_URL` (the gateway). `unique(registry_type, business_reg_no)`; changing number/type clears `verified_at`; any save after a rejection clears the reason (back to the queue). `registry_checks` table is built in Phase 6 with the SOAP client.
 - 2026-10-04 – Postman collection is generated from `tests/postman/build-collection.mjs`; demo password only via `--env-var demoPassword`. Gateway upstream URLs default to `127.0.0.1` (Windows `localhost` → IPv6 fallback adds ~200 ms).
 - 2026-10-04 – Contract additions made for the screens (all in `docs/openapi.yaml`): `GET /admin/employers`, `/admin/employers/{id}`, `/admin/job-postings`, `/admin/feedback`; dashboard schemas (Candidate/Employer/AdminDashboard); `Notification.data.message/url`; `JobPosting.rejection_reason` (owner/admin); `Report.job_posting` in admin lists; `GET /employer/company` 404 until created; résumé PDF ≤ 5 MB; logo PNG/JPG/WebP ≤ 2 MB.
@@ -71,10 +72,10 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 2 – Employer side
 - [x] Core: M3 company profile (+ `registry_type`, `location_psgc`, `location_label`, logo via `/employers/{id}/logo`) – 13 tests; live check of `/employer/company` + `/employers/:id` OK
-- [ ] Core: M4 postings CRUD, structured accommodations with notes, draft → pending_approval → open → closed, soft delete, auto-close command
+- [x] Core: M4 postings CRUD, structured accommodations with notes, draft → pending_approval → open → closed, soft delete, auto-close command (19 tests; DemoPostingSeeder)
 - [ ] Core: admin posting approval
-- [ ] Core: Policies + feature tests (owner-only)
-- [ ] Frontend: company profile, my postings, create/edit posting screens wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Core: Policies + feature tests (owner-only) – JobPostingPolicy, T08 covered
+- [x] Frontend: company profile, my postings, create/edit posting screens wired – live-checked 2026-10-04 (create, edit, delete, company-required message)
 - [ ] Postman: folder 03
 
 ### Phase 3 – Candidate side
@@ -133,7 +134,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
-- `GET /employers/{id}` returns `open_postings: []` until M4 exists.
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
 - Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
@@ -146,6 +146,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – M4 postings done (CRUD, accommodations + notes, status rules, soft delete, auto-close, demo postings); live UI check found + fixed dialog focus loss after deleting a row and a dead error-summary link.
 - 2026-10-04 – M3 company profile done (employers table, GET/PUT company with logo, public page + logo route, demo companies); frontend sends `location_label`; live UI check incl. logo upload through the gateway.
 - 2026-10-04 – Postman 01 Auth + 02 Master Data done and passing with Newman. **Phase 1 complete.**
 - 2026-10-04 – Live browser check (Vite → gateway → Core): register with server errors, profile with real accommodation groups, admin master data CRUD, dialogs/focus, axe 0 violations on register/profile/master data, no sideways scroll at 360 px + 150% text + high contrast. Fixed h1 focus on first load under StrictMode.

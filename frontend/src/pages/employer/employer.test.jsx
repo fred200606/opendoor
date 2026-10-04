@@ -144,6 +144,19 @@ describe('PostingFormPage', () => {
     expect(calls.find((call) => call.key === 'POST /job-postings').data.submit).toBe(false);
   });
 
+  test('without a company profile the employer is linked to set it up', async () => {
+    const { user } = renderApp('/employer/jobs/new', {
+      as: 'employer',
+      routes: { ...routes, 'POST /job-postings': () => validationError({ company: ['Create your company profile before posting a job.'] }) },
+    });
+
+    await fillRequired(user);
+    await user.click(screen.getByRole('button', { name: 'Submit for approval' }));
+
+    expect(await screen.findByRole('link', { name: 'Set up your company profile' })).toHaveAttribute('href', '/employer/company');
+    expect(screen.queryByText('There is a problem')).not.toBeInTheDocument();
+  });
+
   test('editing loads the posting and shows a rejection reason', async () => {
     renderApp('/employer/jobs/42/edit', {
       as: 'employer',

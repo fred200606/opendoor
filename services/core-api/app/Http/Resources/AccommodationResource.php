@@ -22,6 +22,8 @@ class AccommodationResource extends JsonResource
             'group' => $this->group,
             'description' => $this->description,
             'is_retired' => $this->is_retired,
+            // Only on a posting's accommodations.
+            'note' => $this->whenPivotLoaded('job_posting_accommodation', fn () => $this->pivot->note),
         ];
     }
 }

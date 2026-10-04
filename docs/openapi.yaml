@@ -450,6 +450,7 @@ paths:
     post:
       tags: [M4 Job postings]
       summary: Create a posting (draft, or submit for approval)
+      description: Requires the employer's company profile (otherwise 422 with `errors.company`). `submit` defaults to false (draft). Accommodation types must be active.
       requestBody:
         required: true
         content:
@@ -468,6 +469,7 @@ paths:
     get:
       tags: [M5 Search and matching]
       summary: Posting details (+ `match` for candidates with needs)
+      description: Public for open, approved postings. Owners and admins also see their other statuses; for anyone else an unpublished posting is 404 (its existence is not revealed).
       security: [{}, { bearerAuth: [] }]
       responses:
         '200':
@@ -479,6 +481,7 @@ paths:
     put:
       tags: [M4 Job postings]
       summary: Update own posting
+      description: "`submit: true` sends the posting (back) to `pending_approval` and clears `rejection_reason` – also for an open posting, so changed accommodation claims are re-approved. `submit: false` is only allowed while the posting is a draft (otherwise 422 `errors.submit`). An accommodation type retired after it was attached may stay."
       requestBody:
         required: true
         content:
@@ -495,6 +498,7 @@ paths:
     delete:
       tags: [M4 Job postings]
       summary: Soft-delete own posting
+      description: The posting leaves search and the employer page; applications already received are kept.
       responses:
         '204': { description: Deleted }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -502,6 +506,7 @@ paths:
     patch:
       tags: [M4 Job postings]
       summary: Open or close own posting
+      description: open → closed at any time; closed → open only if approved and the closing date has not passed. Other changes → 422 `errors.status`. A daily job (`postings:close-expired`, 00:05 Asia/Manila) closes open postings after `closes_at`.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true

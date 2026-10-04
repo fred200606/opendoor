@@ -19,7 +19,7 @@ These are enforced on the server and covered by feature tests.
 
 ## Posting lifecycle
 
-`draft → pending_approval → open → closed` (admin approval moves pending_approval → open; reject keeps it out with a reason). Only `open` + approved + not soft-deleted postings appear in search, matching and the Insights snapshot. Postings auto-close after `closes_at` (scheduled command). Closed postings stop accepting applications. An employer manages only its own postings (JobPostingPolicy).
+`draft → pending_approval → open → closed` (admin approval moves pending_approval → open; reject keeps it out with a reason). Only `open` + approved + not soft-deleted postings appear in search, matching and the Insights snapshot. Postings auto-close after `closes_at` (`postings:close-expired`, daily 00:05 Manila). An employer needs a company profile to post. `submit:true` (create or edit) → `pending_approval` and `is_approved=false` – editing an open posting sends it back for approval; `submit:false` only while still a draft. Owner may close an open posting and reopen a closed one if approved and before `closes_at`. Unpublished postings are 404 for everyone except the owner and admins. Closed postings stop accepting applications. An employer manages only its own postings (JobPostingPolicy).
 
 ## Matching ("Matches my needs")
 

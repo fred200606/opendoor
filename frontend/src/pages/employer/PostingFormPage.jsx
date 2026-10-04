@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createPosting, getJob, updatePosting } from '../../api/jobs.js';
 import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
@@ -54,7 +54,10 @@ function PostingForm({ categories, groups, job }) {
   const accommodationsError =
     form.fieldErrors.accommodations ??
     Object.entries(form.fieldErrors).find(([key]) => key.startsWith('accommodations.'))?.[1];
-  const summaryErrors = Object.fromEntries(Object.entries(form.fieldErrors).filter(([key]) => !key.startsWith('accommodations.')));
+  // `company` is not a field on this form: it is shown as its own message with a link (below).
+  const summaryErrors = Object.fromEntries(
+    Object.entries(form.fieldErrors).filter(([key]) => !key.startsWith('accommodations.') && key !== 'company'),
+  );
   if (accommodationsError) summaryErrors.accommodations = accommodationsError;
 
   async function save(submit) {
@@ -99,6 +102,13 @@ function PostingForm({ categories, groups, job }) {
         provide – hired employees will rate whether you delivered it.
       </p>
 
+      {form.fieldErrors.company && (
+        <Alert type="error" live="assertive" title="Your company profile is missing">
+          <p>
+            {form.fieldErrors.company[0]} <Link to="/employer/company">Set up your company profile</Link>
+          </p>
+        </Alert>
+      )}
       <ErrorSummary errors={summaryErrors} fields={FIELDS} />
       <ApiErrorAlert error={form.formError} title="The posting was not saved" />
 
