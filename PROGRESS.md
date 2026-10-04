@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 0 – Setup
+- **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Core: `composer create-project laravel/laravel` (13.x) into `services/core-api` (keep our `.env.example`), install Sanctum, `APP_TIMEZONE=Asia/Manila`.
+- **Next step:** Phase 1 – Core: error envelope (`ApiException`, exception rendering in `bootstrap/app.php` for 401/403/404/422/429/500 per `references/api-contract.md`) + request-ID middleware/log context.
 - **Blockers:** User must run the DB setup SQL (root password) before Core migrations.
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Removed the Laravel Boost `CLAUDE.md`/`AGENTS.md` that the Laravel 13 skeleton ships in `services/core-api` (generic install instructions that conflict with the project instructions).
 - 2026-10-03 – No existing UI code: scaffold a fresh React (Vite) app in `frontend/` (WCAG 2.1 AA from the start).
 - 2026-10-03 – GitHub: private repo `fred200606/opendoor`; git uses `gh auth git-credential` (plain push hung on a hidden prompt).
 - 2026-10-03 – Business Registry SOAP service is a **simulated** DTI/SEC registry with seeded data.
@@ -45,7 +46,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] GitHub remote created and pushed (private `fred200606/opendoor`, branches `main` + `develop`)
 
 ### Phase 1 – Foundation
-- [ ] Core: Laravel project + Sanctum + `APP_TIMEZONE=Asia/Manila`
+- [x] Core: Laravel project (13.34) + Sanctum (`install:api`, `HasApiTokens`) + `APP_TIMEZONE=Asia/Manila`
 - [ ] Core: error envelope + `ApiException` + request-ID logging
 - [ ] Core: users / categories / accommodations migrations + seeders (admin, demo users via `DEMO_PASSWORD`)
 - [ ] Core: M1 register / login / logout / me / password + role middleware + login rate limit
@@ -122,6 +123,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user.
 - 2026-10-03 – Phase 0 done except DB creation (user runs SQL). Rule updates applied to skill + SIA doc; docs moved to `docs/`; OpenAPI draft; repo pushed.
 - 2026-10-03 – Resolved all pending decisions; copied project to `C:\dev\opendoor`. Continue there.
 
