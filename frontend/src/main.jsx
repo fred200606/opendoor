@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './auth/AuthContext.jsx';
 import './index.css';
+import { applyDisplayPrefs, loadDisplayPrefs } from './lib/displayPrefs.js';
+
+applyDisplayPrefs(loadDisplayPrefs());
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

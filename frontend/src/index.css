@@ -983,3 +983,71 @@ main:focus {
   background: var(--surface);
   white-space: pre-line;
 }
+
+/* ---------- notifications */
+
+.notifications-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.notification-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-list li {
+  padding: 0.75rem 0 0.75rem 0.75rem;
+  border-bottom: 1px solid var(--divider);
+  border-left: 4px solid transparent;
+}
+
+.notification-list .notification--unread {
+  border-left-color: var(--primary);
+  background: #f5f9fd;
+}
+
+.notification__text {
+  margin: 0.25rem 0;
+}
+
+/* ---------- M13 display settings (data attributes on <html>, see lib/displayPrefs.js) */
+
+:root[data-text-size='125'] {
+  font-size: 125%;
+}
+
+:root[data-text-size='150'] {
+  font-size: 150%;
+}
+
+:root[data-contrast='high'] {
+  --text: #000000;
+  --text-muted: #1f1f1f;
+  --border: #000000;
+  --divider: #000000;
+  --primary: #003a75;
+  --primary-dark: #00264d;
+  --surface: #ffffff;
+  --focus: #000000;
+}
+
+:root[data-contrast='high'] :focus-visible {
+  outline-width: 4px;
+}
+
+:root[data-contrast='high'] a {
+  text-decoration-thickness: 2px;
+}
+
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

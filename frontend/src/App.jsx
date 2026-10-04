@@ -11,6 +11,8 @@ import CandidateProfilePage from './pages/candidate/CandidateProfilePage.jsx';
 import FeedbackPage from './pages/candidate/FeedbackPage.jsx';
 import MyApplicationsPage from './pages/candidate/MyApplicationsPage.jsx';
 import SavedJobsPage from './pages/candidate/SavedJobsPage.jsx';
+import AccountPage from './pages/account/AccountPage.jsx';
+import NotificationsPage from './pages/account/NotificationsPage.jsx';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import AdminEmployerPage from './pages/admin/AdminEmployerPage.jsx';
 import AdminEmployersPage from './pages/admin/AdminEmployersPage.jsx';
@@ -73,6 +75,11 @@ export default function App() {
           <Route path="reports" element={<AdminReportsPage />} />
           <Route path="feedback" element={<AdminFeedbackPage />} />
           <Route path="master-data" element={<AdminMasterDataPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="account" element={<AccountPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
