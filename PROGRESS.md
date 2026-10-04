@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Core: users / categories / accommodations migrations + seeders (read `references/data-model.md`). Local MySQL is ready (`php artisan migrate` works).
+- **Next step:** Phase 1 – Core M1: `POST /register` (consent required, role candidate|employer), `POST /login` (rate limit, `ACCOUNT_SUSPENDED`), `POST /logout`, `GET /me`, `PUT /me/password`; `role:` middleware alias. Read `api-contract.md` M1 + `business-rules.md` permissions first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,8 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Demo accounts: `admin@`, `candidate@`, `candidate2@`, `employer@`, `employer2@opendoor.test`, all with `DEMO_PASSWORD`. `DemoUserSeeder` refuses to run without it (min 8 chars).
+- 2026-10-04 – Edited Laravel's default users migration in place (nothing deployed yet). `role`, `is_active`, `consented_at` are not mass-assignable (set via `forceFill`). Migrations hard-code enum values; PHP enums `UserRole`, `AccommodationGroup` are used in app code.
 - 2026-10-04 – Added error code `SERVER_ERROR` (HTTP 500, generic message) – the contract had no code for unexpected errors. Added to `api-contract.md` and `docs/openapi.yaml`.
 - 2026-10-04 – Removed the Laravel Boost `CLAUDE.md`/`AGENTS.md` that the Laravel 13 skeleton ships in `services/core-api` (generic install instructions that conflict with the project instructions).
 - 2026-10-03 – No existing UI code: scaffold a fresh React (Vite) app in `frontend/` (WCAG 2.1 AA from the start).
@@ -49,7 +51,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 1 – Foundation
 - [x] Core: Laravel project (13.34) + Sanctum (`install:api`, `HasApiTokens`) + `APP_TIMEZONE=Asia/Manila`
 - [x] Core: error envelope + `ApiException` + request-ID logging (`ApiErrorRenderer`, `AssignRequestId`; 11 feature tests)
-- [ ] Core: users / categories / accommodations migrations + seeders (admin, demo users via `DEMO_PASSWORD`)
+- [x] Core: users / categories / accommodations migrations + seeders (admin, demo users via `DEMO_PASSWORD`) – 11 categories, 18 accommodations, 5 demo accounts; 8 tests
 - [ ] Core: M1 register / login / logout / me / password + role middleware + login rate limit
 - [ ] Core: M11 public lists + admin CRUD (retire instead of delete)
 - [ ] Core: feature tests for M1, M11
@@ -120,11 +122,13 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Demo seed data still missing: candidate profiles/needs (Phase 3), employers + postings with Metro Manila addresses (Phase 2), hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
 - SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
 - SIA doc 8.5 now references `docs/setup/create-databases.sql`, registry `seed.php` and `public/` – create these with those exact names.
 
 ## Session log (newest first)
 
+- 2026-10-04 – Users/categories/accommodations migrations, models, factories, seeders done; `migrate:fresh --seed` on local MySQL OK. 21 tests pass.
 - 2026-10-04 – User ran DB setup; both service users connect; Core default migrations ran on MySQL. Phase 0 complete.
 - 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user. Error envelope + request IDs done.
 - 2026-10-03 – Phase 0 done except DB creation (user runs SQL). Rule updates applied to skill + SIA doc; docs moved to `docs/`; OpenAPI draft; repo pushed.
