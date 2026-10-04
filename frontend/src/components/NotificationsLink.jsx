@@ -18,12 +18,15 @@ export default function NotificationsLink() {
   }, [location.pathname]);
 
   return (
-    <NavLink to="/notifications" className="notifications-link">
+    <NavLink
+      to="/notifications"
+      className="notifications-link"
+      aria-label={unread > 0 ? `Notifications, ${unread} unread` : undefined}
+    >
       Notifications
       {unread > 0 && (
-        <span className="count-badge">
+        <span className="count-badge" aria-hidden="true">
           {unread}
-          <span className="visually-hidden"> unread</span>
         </span>
       )}
     </NavLink>
