@@ -57,7 +57,7 @@ describe('role routing', () => {
     renderAt('/candidate/dashboard');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Welcome, Ana Reyes' })).toBeInTheDocument();
-    expect(screen.getByText(/logged in as employer/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Job postings' })).toHaveAttribute('href', '/employer/jobs');
   });
 
   test('an expired token is dropped and the guest view is shown', async () => {

@@ -909,3 +909,20 @@ main:focus {
 .card > h2 {
   font-size: 1.375rem;
 }
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.needs-list__ok {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.needs-list__missing {
+  color: #7a4100;
+  font-weight: 600;
+}

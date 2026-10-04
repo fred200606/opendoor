@@ -10,7 +10,7 @@ export function fakeApi(routes) {
 
   api.defaults.adapter = async (config) => {
     const key = `${config.method.toUpperCase()} ${config.url}`;
-    calls.push({ key, config, data: config.data ? JSON.parse(config.data) : undefined });
+    calls.push({ key, config, data: typeof config.data === 'string' ? JSON.parse(config.data) : config.data });
 
     const route = routes[key];
     const [status, data, headers = {}] = route ? await route(config) : [404, { error: { code: 'NOT_FOUND', message: 'Not found', request_id: 'test-id' } }];

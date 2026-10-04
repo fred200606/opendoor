@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 1 – Foundation
-- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 5 – employer portal: `/employer/dashboard`, `/employer/company` (company form + logo, verification status), `/employer/jobs` (list by status, open/close, delete), `/employer/jobs/new` + `/:id/edit` (posting form with accommodations + notes, save draft / submit), `/employer/jobs/:id/applicants`, `/employer/applications/:id` (candidate needs, reject/hire), `/employer/trust-score`.
+- **In progress:** Frontend for ALL screens (user request 2026-10-04), built against `docs/openapi.yaml`. Steps: (1) login/register + form kit, (2) UI kit + API modules, (3) job search/details/snapshot, (4) candidate portal, (5) employer portal, (6) admin portal, (7) notifications + account. Now: step 6 – admin portal: `/admin/dashboard`, `/admin/employers` (+ `/:id`: registry check via SOAP, approve/reject with reason, highlight status≠ACTIVE or name_match<0.80), `/admin/job-postings` (approve/reject), `/admin/users` (suspend/reactivate), `/admin/reports` (dismiss/action), `/admin/feedback` (hide/unhide), `/admin/master-data` (categories + accommodations CRUD, retire/restore).
 - **Next step:** Phase 1 – Frontend: Login + Register pages (replace `ComingSoon` in `src/App.jsx`): labelled inputs, 422 `fieldErrors` linked via `aria-describedby`, error summary, consent checkbox + role choice, `ACCOUNT_SUSPENDED`/429 messages, redirect to `state.from` or `homeFor(role)`, guests-only routes, 'session expired' notice (`state.reason`). Tests with `fakeApi`.
 - **Blockers:** –
 
@@ -127,7 +127,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8).
+- Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 - SIA doc endpoint list needs the new `GET /admin/accommodations` (admin list incl. retired) – update with `opendoor-sia-docs`.
