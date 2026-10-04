@@ -8,7 +8,7 @@
 | gateway | Jest + supertest | routing, request ID, CORS, rate limit, timeout/unavailable envelopes, `/internal` blocked |
 | insights-service | Jest + nock | snapshot with all sources ok, each source failing (`sources` flags), cache hit, tag→category mapping, haversine, PSGC fallback |
 | business-registry-soap | PHP script/PHPUnit + `xmllint` | WSDL valid, ACTIVE / NOT_FOUND / EXPIRED responses, auth fault |
-| frontend | ESLint, build, axe (e.g. `@axe-core/cli` or Playwright + axe) | no critical accessibility violations on main pages |
+| frontend | oxlint (with `jsx-a11y`), Vitest + Testing Library, build, axe (e.g. `@axe-core/cli` or Playwright + axe) | auth/routing logic, API client errors; no critical accessibility violations on main pages |
 
 ## Postman collection (`tests/postman/`)
 

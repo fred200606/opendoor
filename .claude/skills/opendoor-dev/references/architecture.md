@@ -4,7 +4,7 @@
 
 ```
 opendoor/
-├─ frontend/                    React 18 + Vite SPA (existing UI goes here)
+├─ frontend/                    React 19 + Vite SPA
 ├─ gateway/                     Node.js 22 + Express API Gateway
 ├─ services/
 │  ├─ core-api/                 Laravel 13 Core Service
@@ -23,7 +23,7 @@ opendoor/
 
 | Component | Responsibility | Tech | Local port | Production host |
 |---|---|---|---|---|
-| React SPA | Public area + Candidate/Employer/Admin portals | React 18, Vite, React Router, Axios, AuthContext | 5173 | Vercel (public) |
+| React SPA | Public area + Candidate/Employer/Admin portals | React 19, Vite, React Router 7, Axios, AuthContext | 5173 | Vercel (public) |
 | API Gateway | Single entry; routing; CORS; rate limit (120 req/min/IP); X-Request-ID; timeouts; error envelope; `/api/health` | Express, http-proxy-middleware, express-rate-limit | 8080 | Railway public domain (only public backend) |
 | Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.3, Laravel 13, Sanctum, Eloquent | 8001 | `core-api.railway.internal:8001` (private) |
 | Insights Service | Workplace Accessibility Snapshot mashup; PSGC location lists; caching/throttling | Express, Axios, mysql2 | 8002 | `insights.railway.internal:8002` (private) |

@@ -1,0 +1,247 @@
+/* OpenDoor base styles – WCAG 2.1 AA: text contrast ≥ 4.5:1, UI borders ≥ 3:1, visible focus,
+   readable at 200% zoom and 360 px width. Contrast ratios are noted against --bg (#ffffff). */
+
+:root {
+  --text: #1f2328; /* 15.8:1 */
+  --text-muted: #57606a; /* 6.4:1 */
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --border: #6e7781; /* 4.6:1 – input borders */
+  --divider: #d0d7de; /* decorative only */
+  --primary: #0b5cad; /* 6.6:1; white on it 6.6:1 */
+  --primary-dark: #08457f;
+  --danger: #b42318; /* 6.5:1 */
+  --danger-bg: #fef3f2;
+  --success: #116329; /* 7.4:1 */
+  --success-bg: #effaf3;
+  --focus: #0b5cad;
+
+  --radius: 6px;
+  --space: 1rem;
+  --max-width: 72rem;
+
+  color-scheme: light;
+  font-family: system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: contents;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0 0 0.75rem;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h1:focus {
+  outline: none; /* focused programmatically on navigation, not by the user */
+}
+
+p {
+  margin: 0 0 1rem;
+  max-width: 70ch;
+}
+
+a {
+  color: var(--primary);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--primary-dark);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- layout */
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space);
+}
+
+main {
+  flex: 1;
+  padding-top: 2rem;
+  padding-bottom: 3rem;
+}
+
+main:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space);
+  top: -10rem;
+  z-index: 10;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: #ffffff;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: var(--space);
+  color: #ffffff;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--divider);
+  background: var(--bg);
+}
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.brand {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-list a[aria-current='page'] {
+  font-weight: 700;
+}
+
+.nav-role {
+  color: var(--text-muted);
+}
+
+.site-footer {
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 1.5rem 0 0.5rem;
+}
+
+.lead {
+  font-size: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.loading {
+  color: var(--text-muted);
+}
+
+/* ---------- buttons */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem; /* 44 px touch target */
+  padding: 0.5rem 1.25rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: #ffffff;
+}
+
+.button--secondary {
+  background: var(--bg);
+  color: var(--primary);
+}
+
+.button--secondary:hover {
+  background: var(--surface);
+  color: var(--primary-dark);
+}
+
+.button--small {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.875rem;
+}
+
+.button--link {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.button--link:hover {
+  background: none;
+  color: var(--primary-dark);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
