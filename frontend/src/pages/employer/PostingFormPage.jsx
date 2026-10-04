@@ -41,6 +41,7 @@ function PostingForm({ categories, groups, job }) {
     category_id: job?.category?.id ? String(job.category.id) : '',
     address: job?.address ?? '',
     location_psgc: job?.location?.psgc_code ?? null,
+    location_label: job?.location?.label ?? null,
     employment_type: job?.employment_type ?? '',
     work_setup: job?.work_setup ?? '',
     interview_format: job?.interview_format ?? '',
@@ -64,6 +65,7 @@ function PostingForm({ categories, groups, job }) {
         category_id: values.category_id ? Number(values.category_id) : null,
         address: values.address,
         location_psgc: values.location_psgc,
+        location_label: values.location_label,
         employment_type: values.employment_type,
         work_setup: values.work_setup,
         interview_format: values.interview_format,
@@ -126,7 +128,7 @@ function PostingForm({ categories, groups, job }) {
           legend="City or municipality"
           value={form.values.location_psgc}
           currentLabel={job?.location?.label}
-          onChange={(code) => form.setValue('location_psgc', code)}
+          onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
           error={form.fieldErrors.location_psgc}
         />
         <TextField label="Applications close on" type="date" required min={todayInManila()} error={form.fieldErrors.closes_at} {...form.bind('closes_at')} />

@@ -56,6 +56,7 @@ describe('CandidateProfilePage', () => {
       skills: ['Excel', 'Filing'],
       experience: '3 years',
       location_psgc: '1381300000',
+      location_label: 'Quezon City, NCR',
       disability_type: 'Deaf',
       show_disability: false,
     });

@@ -8,6 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -43,6 +44,12 @@ class User extends Authenticatable
             'consented_at' => 'datetime',
             'display_prefs' => 'array',
         ];
+    }
+
+    /** @return HasOne<Employer, $this> */
+    public function employer(): HasOne
+    {
+        return $this->hasOne(Employer::class);
     }
 
     public function hasRole(UserRole ...$roles): bool

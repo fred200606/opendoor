@@ -116,6 +116,7 @@ function ProfileSection({ profile }) {
     skills: (profile.skills ?? []).join(', '),
     experience: profile.experience ?? '',
     location_psgc: profile.location_psgc ?? null,
+    location_label: profile.location?.label ?? null,
     disability_type: profile.disability_type ?? '',
     show_disability: Boolean(profile.show_disability),
   });
@@ -132,6 +133,7 @@ function ProfileSection({ profile }) {
           .filter(Boolean),
         experience: values.experience,
         location_psgc: values.location_psgc,
+        location_label: values.location_label,
         disability_type: values.disability_type || null,
         show_disability: values.disability_type ? values.show_disability : false,
       }),
@@ -152,7 +154,7 @@ function ProfileSection({ profile }) {
           legend="Where you live"
           value={form.values.location_psgc}
           currentLabel={profile.location?.label}
-          onChange={(code) => form.setValue('location_psgc', code)}
+          onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
           error={form.fieldErrors.location_psgc}
         />
 

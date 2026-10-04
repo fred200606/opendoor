@@ -8,4 +8,16 @@ return [
     */
     'demo_password' => env('DEMO_PASSWORD'),
 
+    /*
+    | Public base URL of the API as the browser sees it (the gateway), used to build
+    | file links such as logo_url. The client never talks to Core directly.
+    */
+    'public_api_url' => rtrim((string) env('PUBLIC_API_URL', 'http://localhost:8080/api'), '/'),
+
+    /*
+    | Upload limits (kilobytes), shared with the frontend and docs/openapi.yaml.
+    */
+    'logo_max_kb' => 2048,
+    'resume_max_kb' => 5120,
+
 ];

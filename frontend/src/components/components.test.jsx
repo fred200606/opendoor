@@ -139,7 +139,7 @@ describe('LocationPicker', () => {
     await user.selectOptions(await screen.findByLabelText('City or municipality'), 'Quezon City');
 
     expect(screen.queryByLabelText('Province')).not.toBeInTheDocument();
-    expect(onChange).toHaveBeenLastCalledWith('1381300000', 'Quezon City');
+    expect(onChange).toHaveBeenLastCalledWith('1381300000', 'Quezon City, National Capital Region (NCR)');
   });
 
   test('shows the saved location until the user changes it', () => {

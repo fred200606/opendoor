@@ -62,19 +62,25 @@ function VerificationStatus({ company }) {
   );
 }
 
-function CompanyForm({ company, onSaved }) {
-  const [saved, setSaved] = useState(false);
-  const [logoError, setLogoError] = useState(null);
-  const form = useApiForm({
+/** Company (API) → form values. */
+function formValues(company) {
+  return {
     company_name: company?.company_name ?? '',
     business_reg_no: company?.business_reg_no ?? '',
     registry_type: company?.registry_type ?? '',
     industry: company?.industry ?? '',
     address: company?.address ?? '',
     location_psgc: company?.location?.psgc_code ?? null,
+    location_label: company?.location?.label ?? null,
     description: company?.description ?? '',
     logo: null,
-  });
+  };
+}
+
+function CompanyForm({ company, onSaved }) {
+  const [saved, setSaved] = useState(false);
+  const [logoError, setLogoError] = useState(null);
+  const form = useApiForm(formValues(company));
 
   const regNoChanged = company?.verified_at && form.values.business_reg_no !== company.business_reg_no;
 
@@ -93,6 +99,7 @@ function CompanyForm({ company, onSaved }) {
     const result = await form.submit((values) => saveCompany({ ...values, description: values.description || null, logo: values.logo ?? undefined }));
     if (result) {
       onSaved(result);
+      form.setValues(formValues(result)); // show what was stored (e.g. the normalized registration number)
       setSaved(true);
     }
   }
@@ -127,7 +134,7 @@ function CompanyForm({ company, onSaved }) {
           legend="City or municipality"
           value={form.values.location_psgc}
           currentLabel={company?.location?.label}
-          onChange={(code) => form.setValue('location_psgc', code)}
+          onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
           error={form.fieldErrors.location_psgc}
         />
         <TextArea label="About the company" hint="Optional. Include how you support employees with disabilities." error={form.fieldErrors.description} {...form.bind('description')} />

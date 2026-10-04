@@ -6,8 +6,9 @@ const isNcr = (code) => code === NCR_CODE || code?.startsWith('13');
 
 /**
  * PSGC location picker: region → province → city/municipality (NCR has no provinces).
- * `value` is the chosen city/municipality PSGC code; `currentLabel` shows the saved location
- * until the user changes it. Lists come from the Insights Service (cached PSGC data).
+ * `value` is the chosen city/municipality PSGC code; onChange(code, label) also gives a display label
+ * ("Quezon City, National Capital Region (NCR)") for Core to store. `currentLabel` shows the saved
+ * location until the user changes it. Lists come from the Insights Service (cached PSGC data).
  */
 export default function LocationPicker({ value, currentLabel, onChange, error, legend = 'Location', id = 'location_psgc' }) {
   const baseId = useId();
@@ -121,7 +122,8 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
               value={value ?? ''}
               onChange={(event) => {
                 const city = cities.find((item) => item.code === event.target.value);
-                onChange(event.target.value || null, city?.name);
+                const names = [city?.name, provinces.find((item) => item.code === province)?.name, regions.find((item) => item.code === region)?.name];
+                onChange(event.target.value || null, city ? names.filter(Boolean).join(', ') : null);
               }}
             >
               <option value="">Choose a city or municipality</option>

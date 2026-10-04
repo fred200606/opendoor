@@ -56,7 +56,7 @@ Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/a
 
 - **frontend:** `VITE_API_URL`
 - **gateway:** `PORT`, `CORE_URL`, `INSIGHTS_URL`, `CORS_ALLOWED_ORIGIN` (comma-separated list allowed), `RATE_LIMIT_PER_MIN`, `TRUST_PROXY` (0 locally, 1 on Railway)
-- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders)
+- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `PUBLIC_API_URL` (gateway URL for file links such as `logo_url`), `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders)
 - **insights-service:** `PORT`, `CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_URL`, `OVERPASS_URL`, `PSGC_URL`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_HOST`, `CACHE_DB_NAME=insights_cache`, `CACHE_DB_USER`, `CACHE_DB_PASSWORD`
 - **business-registry-soap:** `PORT`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`
 

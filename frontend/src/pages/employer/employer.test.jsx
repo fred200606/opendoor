@@ -39,6 +39,8 @@ describe('CompanyProfilePage', () => {
 
     expect(await screen.findByText('Your company profile is saved.')).toBeInTheDocument();
     expect(screen.getByText('Waiting for verification')).toBeInTheDocument();
+    // The form now shows the stored values (the API normalizes the registration number).
+    expect(screen.getByLabelText(/Business registration number/)).toHaveValue('DTI-123456');
     expect(calls.find((call) => call.key === 'PUT /employer/company').data).toEqual({
       company_name: 'Kalinga Foods Inc.',
       business_reg_no: 'CS201912345',
@@ -46,6 +48,7 @@ describe('CompanyProfilePage', () => {
       industry: 'Food',
       address: '1 Ayala Ave.',
       location_psgc: null,
+      location_label: null,
       description: null,
     });
   });
@@ -117,6 +120,7 @@ describe('PostingFormPage', () => {
       category_id: 1,
       address: '123 Quezon Ave.',
       location_psgc: null,
+      location_label: null,
       employment_type: 'part_time',
       work_setup: 'hybrid',
       interview_format: 'online',

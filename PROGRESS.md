@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 2 – Employer side
 - **In progress:** –
-- **Next step:** Phase 2 – Core M3 company profile: `employers` + `registry_checks` migrations, `Employer` model (relations, `location_psgc`), `GET/PUT /employer/company` (multipart logo, 404 until created, reg-no change clears `verified_at`), `GET /employers/{id}` public page. The screens already exist (`/employer/company`, `/employers/:id`) – wire-check them live.
+- **Next step:** Phase 2 – Core M4 postings: `job_postings` (soft deletes, status enum, closes_at, is_approved, rejection_reason, location_label, index(status, category_id), fulltext(title, description)) + `job_posting_accommodation` (note; FKs restrictOnDelete), `JobPosting` model + policy, `POST/PUT/DELETE /job-postings`, `GET /job-postings/{id}`, `PATCH /job-postings/{id}/status`, `GET /employer/job-postings` (applicants_count later), auto-close command; fill `open_postings` on `GET /employers/{id}`. Screens exist – wire-check live.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – M3: clients send `location_label` with `location_psgc` (Core stores the label; PSGC data stays in Insights). Logos are stored on Core's private disk and served via `GET /api/employers/{id}/logo`; `logo_url` is built from `PUBLIC_API_URL` (the gateway). `unique(registry_type, business_reg_no)`; changing number/type clears `verified_at`; any save after a rejection clears the reason (back to the queue). `registry_checks` table is built in Phase 6 with the SOAP client.
 - 2026-10-04 – Postman collection is generated from `tests/postman/build-collection.mjs`; demo password only via `--env-var demoPassword`. Gateway upstream URLs default to `127.0.0.1` (Windows `localhost` → IPv6 fallback adds ~200 ms).
 - 2026-10-04 – Contract additions made for the screens (all in `docs/openapi.yaml`): `GET /admin/employers`, `/admin/employers/{id}`, `/admin/job-postings`, `/admin/feedback`; dashboard schemas (Candidate/Employer/AdminDashboard); `Notification.data.message/url`; `JobPosting.rejection_reason` (owner/admin); `Report.job_posting` in admin lists; `GET /employer/company` 404 until created; résumé PDF ≤ 5 MB; logo PNG/JPG/WebP ≤ 2 MB.
 - 2026-10-04 – M13 display settings (text size, high contrast, reduced motion) are stored in the browser (`opendoor.display`) until an endpoint for `users.display_prefs` exists. Notifications use `data.message` + optional in-app `data.url`.
@@ -69,7 +70,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folders 01 Auth, 02 Master Data (generator `build-collection.mjs`; 29 requests, 143 assertions pass with Newman)
 
 ### Phase 2 – Employer side
-- [ ] Core: M3 company profile (+ `registry_type`, `location_psgc`)
+- [x] Core: M3 company profile (+ `registry_type`, `location_psgc`, `location_label`, logo via `/employers/{id}/logo`) – 13 tests; live check of `/employer/company` + `/employers/:id` OK
 - [ ] Core: M4 postings CRUD, structured accommodations with notes, draft → pending_approval → open → closed, soft delete, auto-close command
 - [ ] Core: admin posting approval
 - [ ] Core: Policies + feature tests (owner-only)
@@ -130,6 +131,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
+- Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
+- `GET /employers/{id}` returns `open_postings: []` until M4 exists.
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
 - Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
@@ -142,6 +146,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – M3 company profile done (employers table, GET/PUT company with logo, public page + logo route, demo companies); frontend sends `location_label`; live UI check incl. logo upload through the gateway.
 - 2026-10-04 – Postman 01 Auth + 02 Master Data done and passing with Newman. **Phase 1 complete.**
 - 2026-10-04 – Live browser check (Vite → gateway → Core): register with server errors, profile with real accommodation groups, admin master data CRUD, dialogs/focus, axe 0 violations on register/profile/master data, no sideways scroll at 360 px + 150% text + high contrast. Fixed h1 focus on first load under StrictMode.
 - 2026-10-04 – All frontend screens built (public, candidate, employer, admin, notifications, account) against OpenAPI; 87 Vitest tests; OpenAPI extended for admin lists + dashboards.
