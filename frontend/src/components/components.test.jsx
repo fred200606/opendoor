@@ -10,6 +10,7 @@ import MatchBadge from './MatchBadge.jsx';
 import Pagination from './Pagination.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
+import { useFocusRescue } from '../hooks/useFocusRescue.js';
 
 const groups = [
   {
@@ -148,6 +149,34 @@ describe('LocationPicker', () => {
 
     expect(screen.getByText(/Quezon City, NCR/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Change location' })).toBeInTheDocument();
+  });
+});
+
+describe('useFocusRescue', () => {
+  function List() {
+    const [items, setItems] = useState(['Data Encoder', 'Web Developer']);
+    useFocusRescue('main');
+    return (
+      <main id="main">
+        <h1 tabIndex={-1}>Postings</h1>
+        {items.map((item) => (
+          // Removed later, like a row after a reload.
+          <button key={item} type="button" onClick={() => setTimeout(() => setItems((all) => all.filter((x) => x !== item)), 10)}>
+            Approve {item}
+          </button>
+        ))}
+      </main>
+    );
+  }
+
+  test('focus moves to the heading when the focused button is removed after an update', async () => {
+    const user = userEvent.setup();
+    render(<List />);
+
+    await user.click(screen.getByRole('button', { name: 'Approve Data Encoder' }));
+
+    await vi.waitFor(() => expect(screen.getByRole('heading', { name: 'Postings' })).toHaveFocus());
+    expect(screen.queryByRole('button', { name: 'Approve Data Encoder' })).not.toBeInTheDocument();
   });
 });
 

@@ -51,5 +51,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::apiResource('categories', Admin\CategoryController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('accommodations', Admin\AccommodationController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::get('job-postings', [Admin\PostingApprovalController::class, 'index'])->name('job-postings.index');
+        Route::patch('job-postings/{jobPosting}/approve', [Admin\PostingApprovalController::class, 'review'])->name('job-postings.review');
     });
 });

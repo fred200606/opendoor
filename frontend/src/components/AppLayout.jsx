@@ -2,11 +2,13 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { NAVIGATION } from '../auth/navigation.js';
 import { ROLE_LABELS, homeFor } from '../auth/roles.js';
+import { useFocusRescue } from '../hooks/useFocusRescue.js';
 import NotificationsLink from './NotificationsLink.jsx';
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const links = NAVIGATION[user?.role ?? 'guest'];
+  useFocusRescue('main');
 
   return (
     <>

@@ -529,6 +529,7 @@ paths:
     get:
       tags: [M4 Job postings]
       summary: Postings by status for approval (admin)
+      description: The pending queue is sorted oldest first.
       parameters:
         - name: status
           in: query
@@ -554,6 +555,7 @@ paths:
     patch:
       tags: [M4 Job postings]
       summary: Approve (pending_approval → open) or reject a posting
+      description: Only postings in `pending_approval` can be reviewed (otherwise 422 `errors.action`). `approve` → open + approved (not when `closes_at` has passed). `reject` needs a `reason` → back to `draft` with `rejection_reason`, which the employer sees; resubmitting clears it.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
