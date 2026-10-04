@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Core: error envelope (`ApiException`, exception rendering in `bootstrap/app.php` for 401/403/404/422/429/500 per `references/api-contract.md`) + request-ID middleware/log context.
+- **Next step:** Phase 1 – Core: users / categories / accommodations migrations + seeders (read `references/data-model.md`). Migrations can be written and tested on SQLite; running them on MySQL needs the DB setup SQL.
 - **Blockers:** User must run the DB setup SQL (root password) before Core migrations.
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Added error code `SERVER_ERROR` (HTTP 500, generic message) – the contract had no code for unexpected errors. Added to `api-contract.md` and `docs/openapi.yaml`.
 - 2026-10-04 – Removed the Laravel Boost `CLAUDE.md`/`AGENTS.md` that the Laravel 13 skeleton ships in `services/core-api` (generic install instructions that conflict with the project instructions).
 - 2026-10-03 – No existing UI code: scaffold a fresh React (Vite) app in `frontend/` (WCAG 2.1 AA from the start).
 - 2026-10-03 – GitHub: private repo `fred200606/opendoor`; git uses `gh auth git-credential` (plain push hung on a hidden prompt).
@@ -47,7 +48,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 1 – Foundation
 - [x] Core: Laravel project (13.34) + Sanctum (`install:api`, `HasApiTokens`) + `APP_TIMEZONE=Asia/Manila`
-- [ ] Core: error envelope + `ApiException` + request-ID logging
+- [x] Core: error envelope + `ApiException` + request-ID logging (`ApiErrorRenderer`, `AssignRequestId`; 11 feature tests)
 - [ ] Core: users / categories / accommodations migrations + seeders (admin, demo users via `DEMO_PASSWORD`)
 - [ ] Core: M1 register / login / logout / me / password + role middleware + login rate limit
 - [ ] Core: M11 public lists + admin CRUD (retire instead of delete)
@@ -119,11 +120,12 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
 - SIA doc 8.5 now references `docs/setup/create-databases.sql`, registry `seed.php` and `public/` – create these with those exact names.
 
 ## Session log (newest first)
 
-- 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user.
+- 2026-10-04 – Core scaffolded: Laravel 13.34 + Sanctum in `services/core-api`, timezone Asia/Manila, default tests pass (SQLite in-memory). DB creation still waits on the user. Error envelope + request IDs done.
 - 2026-10-03 – Phase 0 done except DB creation (user runs SQL). Rule updates applied to skill + SIA doc; docs moved to `docs/`; OpenAPI draft; repo pushed.
 - 2026-10-03 – Resolved all pending decisions; copied project to `C:\dev\opendoor`. Continue there.
 

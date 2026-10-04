@@ -94,6 +94,7 @@ Snapshot shape: see `integrations.md`.
 | 409 | ALREADY_APPLIED, FEEDBACK_EXISTS | Core |
 | 422 | VALIDATION_FAILED, INVALID_STATUS_TRANSITION, POSTING_CLOSED, FEEDBACK_NOT_OPEN, REGISTRY_INVALID_REQUEST | Core |
 | 429 | RATE_LIMITED (with `Retry-After`) | Gateway, Core login |
+| 500 | SERVER_ERROR (unexpected error; generic message, no details) | any |
 | 502 | REGISTRY_UNAVAILABLE, REGISTRY_AUTH_FAILED, UPSTREAM_ERROR | Core, Gateway |
 | 503 | SERVICE_UNAVAILABLE | Gateway |
 | 504 | UPSTREAM_TIMEOUT | Gateway |
