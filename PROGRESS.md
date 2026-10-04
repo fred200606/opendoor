@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 1 – Foundation
 - **In progress:** –
-- **Next step:** Phase 1 – Gateway (`gateway/`): Express app with routing `/api/insights/*` → Insights, `/api/*` → Core, `/internal/*` → 404, CORS, rate limit 120/min, X-Request-ID, timeouts, error envelope, `/api/health` + Jest tests. Read `architecture.md` + `testing-devops.md` first; check what `gateway/` already contains.
+- **Next step:** Phase 1 – Frontend: fresh React (Vite) app in `frontend/` (check folder first) with React Router, Axios client (`src/api/client.js`, `VITE_API_URL=http://localhost:8080/api`), AuthContext, ProtectedRoute, role redirect. Read `conventions.md` (React + accessibility) first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-04 – Gateway: Express 4 + http-proxy-middleware 4 (ESM). Paths forwarded unchanged → Insights must serve `/api/insights/*` and `GET /health`. Gateway drops upstream CORS headers (Laravel sends `*`). New env `TRUST_PROXY` (1 on Railway). Own upstream timeout (httpxy `proxyTimeout` can't be told apart from a reset).
 - 2026-10-04 – M11: "in use" is detected by FK `restrictOnDelete` (all future FKs to categories/accommodations must use it); category in use → 422 `errors.category`; accommodation in use → retired, 200. Added `GET /admin/accommodations` (incl. retired). `accommodations.name` max 150 (OpenAPI).
 - 2026-10-04 – M1 details: emails stored lower-case; wrong credentials → 422 `errors.email` (same for unknown email); `ACCOUNT_SUSPENDED` only after a correct password; login limit 5/min per email+IP; password change must differ and revokes the user's other tokens; single JSON resources are not wrapped in `data` (`JsonResource::withoutWrapping()`), paginated lists still are. Documented in `docs/openapi.yaml`.
 - 2026-10-04 – Demo accounts: `admin@`, `candidate@`, `candidate2@`, `employer@`, `employer2@opendoor.test`, all with `DEMO_PASSWORD`. `DemoUserSeeder` refuses to run without it (min 8 chars).
@@ -57,7 +58,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: M1 register / login / logout / me / password + role middleware + login rate limit (also `active` middleware)
 - [x] Core: M11 public lists + admin CRUD (retire instead of delete) – plus `GET /admin/accommodations`
 - [x] Core: feature tests for M1, M11 (`tests/Feature/Auth`, `tests/Feature/MasterData`)
-- [ ] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests
+- [x] Gateway: routing, CORS, rate limit, X-Request-ID, timeouts, `/api/health`, `/internal` blocked + Jest tests (23 tests; live smoke with Core OK)
 - [ ] Frontend: fresh React (Vite) app in `frontend/`; Axios client, AuthContext, ProtectedRoute, role redirect
 - [ ] Frontend: register + login pages wired through the gateway
 - [ ] Postman: folders 01 Auth, 02 Master Data
@@ -124,6 +125,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 - SIA doc endpoint list needs the new `GET /admin/accommodations` (admin list incl. retired) – update with `opendoor-sia-docs`.
 - Demo seed data still missing: candidate profiles/needs (Phase 3), employers + postings with Metro Manila addresses (Phase 2), hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
 - SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
@@ -131,6 +133,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-04 – Gateway done (routing, CORS, rate limit, request ID, timeouts, health, /internal blocked); 23 Jest tests; live smoke with Core found and fixed Laravel `*` CORS leak.
 - 2026-10-04 – M11 master data done (public lists, admin CRUD, delete-or-retire verified on MySQL). Core part of Phase 1 complete; 59 tests pass.
 - 2026-10-04 – M1 auth done (register/login/logout/me/password, `role` + `active` middleware, login throttle); live smoke test on MySQL with demo admin OK. 44 tests pass.
 - 2026-10-04 – Users/categories/accommodations migrations, models, factories, seeders done; `migrate:fresh --seed` on local MySQL OK. 21 tests pass.

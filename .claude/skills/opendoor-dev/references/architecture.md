@@ -41,7 +41,7 @@ External REST APIs (called only by Insights): Nominatim `https://nominatim.opens
 | `/api/*` (everything else) | Core Service | 10 s |
 | `/internal/*` | **never routed** (404 at gateway) | – |
 
-The gateway forwards `Authorization` unchanged (it does not validate tokens), adds `X-Request-ID` (UUID v4) if missing, adds `X-Forwarded-For`, and redacts `Authorization` / `X-Service-Key` in logs.
+Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/api/insights/*` and `GET /health`). Upstream `Access-Control-*` headers are dropped – the gateway alone decides CORS. The gateway forwards `Authorization` unchanged (it does not validate tokens), adds `X-Request-ID` (UUID v4) if missing, adds `X-Forwarded-For`, and redacts `Authorization` / `X-Service-Key` in logs.
 
 ## Service-to-service calls
 
@@ -55,7 +55,7 @@ The gateway forwards `Authorization` unchanged (it does not validate tokens), ad
 ## Environment variables (names only — values live in .env / Railway / Vercel / GitHub secrets)
 
 - **frontend:** `VITE_API_URL`
-- **gateway:** `PORT`, `CORE_URL`, `INSIGHTS_URL`, `CORS_ALLOWED_ORIGIN`, `RATE_LIMIT_PER_MIN`
+- **gateway:** `PORT`, `CORE_URL`, `INSIGHTS_URL`, `CORS_ALLOWED_ORIGIN` (comma-separated list allowed), `RATE_LIMIT_PER_MIN`, `TRUST_PROXY` (0 locally, 1 on Railway)
 - **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders)
 - **insights-service:** `PORT`, `CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_URL`, `OVERPASS_URL`, `PSGC_URL`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_HOST`, `CACHE_DB_NAME=insights_cache`, `CACHE_DB_USER`, `CACHE_DB_PASSWORD`
 - **business-registry-soap:** `PORT`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`
