@@ -26,15 +26,33 @@ export default function FeedbackPage() {
   return (
     <Page title="Rate your accommodations">
       <AsyncContent state={state} label="Loading the feedback form">
-        {(form) =>
-          form.is_open ? (
-            <FeedbackForm applicationId={id} items={form.items} />
-          ) : (
-            <Alert type="info" title="Not open yet">
-              <p>You can rate the accommodations from {formatDate(form.opens_on)}, 30 days after your hire date.</p>
-            </Alert>
-          )
-        }
+        {(form) => {
+          if (form.submitted) {
+            return (
+              <Alert type="info" title="Already rated">
+                <p>You have already rated the accommodations for this job. Each hire can be rated once. Thank you.</p>
+                <p>
+                  <Link to="/candidate/applications">Back to my applications</Link>
+                </p>
+              </Alert>
+            );
+          }
+          if (!form.is_open) {
+            return (
+              <Alert type="info" title="Not open yet">
+                <p>You can rate the accommodations from {formatDate(form.opens_on)}, 30 days after your hire date.</p>
+              </Alert>
+            );
+          }
+          if (form.items.length === 0) {
+            return (
+              <Alert type="info" title="Nothing to rate">
+                <p>The job posting listed no accommodations when you were hired, so there is nothing to rate.</p>
+              </Alert>
+            );
+          }
+          return <FeedbackForm applicationId={id} items={form.items} />;
+        }}
       </AsyncContent>
     </Page>
   );
@@ -44,7 +62,11 @@ function FeedbackForm({ applicationId, items }) {
   const form = useApiForm({ ratings: {}, comments: '' });
   const [done, setDone] = useState(false);
 
-  const fieldIds = Object.fromEntries(items.map((item, index) => [`items.${index}.rating`, { id: `rating-${item.accommodation_id}` }]));
+  const fieldIds = {
+    // "Rate every accommodation" from the server points at the first question.
+    items: { id: `rating-${items[0].accommodation_id}` },
+    ...Object.fromEntries(items.map((item, index) => [`items.${index}.rating`, { id: `rating-${item.accommodation_id}` }])),
+  };
 
   async function handleSubmit(event) {
     event.preventDefault();

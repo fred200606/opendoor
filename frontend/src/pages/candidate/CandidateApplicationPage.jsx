@@ -129,7 +129,9 @@ function FeedbackPrompt({ application }) {
   return (
     <section className="card" aria-labelledby="feedback-title">
       <h2 id="feedback-title">Rate your accommodations</h2>
-      {isOpen ? (
+      {application.feedback_submitted ? (
+        <p>You have rated the accommodations for this job. Thank you – your answers are anonymous.</p>
+      ) : isOpen ? (
         <>
           <p>Tell other job seekers whether the employer provided the accommodations it promised. Your answers are anonymous.</p>
           <Link className="button" to={`/candidate/applications/${application.id}/feedback`}>

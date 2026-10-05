@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
-- **In progress:** –
-- **Next step:** Phase 5 frontend: FeedbackPage uses `submitted` (show "already rated" instead of the form) and handles an empty item list; candidate application page uses `feedback_submitted` ("Rated" instead of the link); Vitest; then live check (log in as `candidate2@` → hired Chat Support application → rate; employer@ trust score page 79% with breakdown; job details + employer page cards). Then Postman 06.
+- **In progress:** Phase 5 – live check of feedback + trust score (frontend changes committed; Vitest 98 pass).
+- **Next step:** Live check: start Core (`php artisan serve`), gateway, Vite; log in as `candidate2@` → hired Chat Support application → rate (form, validation, thank-you, then "Already rated"); employer@ trust score page (published, breakdown); job details + employer page cards; axe. Then tick the Phase 5 frontend item and do Postman 06.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)

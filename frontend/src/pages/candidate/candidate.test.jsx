@@ -142,12 +142,25 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     });
     expect(await screen.findByText(/You can rate the accommodations from February 1, 2099/)).toBeInTheDocument();
   });
+
+  test('hired and already rated: no feedback link', async () => {
+    renderApp('/candidate/applications/11', {
+      as: 'candidate',
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'hired', feedback_opens_on: '2026-02-01', feedback_submitted: true }],
+      },
+    });
+
+    expect(await screen.findByText(/You have rated the accommodations for this job/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Rate accommodations' })).not.toBeInTheDocument();
+  });
 });
 
 describe('FeedbackPage', () => {
   const form = {
     opens_on: '2026-02-01',
     is_open: true,
+    submitted: false,
     items: [
       { accommodation_id: 1, name: 'Wheelchair-accessible entrance' },
       { accommodation_id: 5, name: 'Sign language interpreter' },
@@ -200,6 +213,26 @@ describe('FeedbackPage', () => {
     });
 
     expect(await screen.findByText(/from January 31, 2099/)).toBeInTheDocument();
+  });
+
+  test('an earlier response shows "Already rated" instead of the form', async () => {
+    renderApp('/candidate/applications/11/feedback', {
+      as: 'candidate',
+      routes: { 'GET /applications/11/feedback-form': () => [200, { ...form, submitted: true }] },
+    });
+
+    expect(await screen.findByText('Already rated')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Submit ratings' })).not.toBeInTheDocument();
+  });
+
+  test('a posting without accommodations has nothing to rate', async () => {
+    renderApp('/candidate/applications/11/feedback', {
+      as: 'candidate',
+      routes: { 'GET /applications/11/feedback-form': () => [200, { ...form, items: [] }] },
+    });
+
+    expect(await screen.findByText('Nothing to rate')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Submit ratings' })).not.toBeInTheDocument();
   });
 
   test('server validation for an item is linked to its question', async () => {
