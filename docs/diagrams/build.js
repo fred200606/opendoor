@@ -267,6 +267,7 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "GET", "/api/applications/{id}/feedback-form", "Accommodations to rate (those advertised at the time of hire)", "→ {opens_on, is_open, submitted, items:[{accommodation_id,name}]}"],
   ["Core", "POST", "/api/applications/{id}/feedback", "Submit per-accommodation feedback", "{items:[{accommodation_id,rating}],comments} → 201"],
   ["Core", "GET", "/api/employers/{id}/trust-score", "Score, count and breakdown (breakdown empty until published)", "→ {published, score, based_on, breakdown[]}"],
+  ["Core", "GET", "/api/admin/employers, /api/admin/employers/{id}", "Verification queue; one employer with its latest registry check", "→ AdminEmployer"],
   ["Core", "PATCH", "/api/admin/employers/{id}/verify", "Run registry check, approve or reject", "{action:'check'|'approve'|'reject', reason} → 200 {registry, verified_at}"],
   ["Core", "GET, POST, PUT, DELETE", "/api/admin/categories, /api/admin/accommodations", "Manage master data", "→ category / accommodation"],
   ["Core (internal)", "GET", "/internal/job-postings/{id}/summary", "Posting data for the Insights Service (not routed by gateway)", "X-Service-Key → {address, psgc_code, accommodations, trust_score}"],
@@ -383,7 +384,7 @@ SOAPAction: "urn:opendoor:registry:v1#VerifyBusinessRegistration"
   </soapenv:Header>
   <soapenv:Body>
     <reg:VerifyBusinessRegistrationRequest>
-      <reg:RegistrationNumber>CS201912345</reg:RegistrationNumber>
+      <reg:RegistrationNumber>CS201800777</reg:RegistrationNumber>
       <reg:RegistryType>SEC</reg:RegistryType>
       <reg:BusinessName>Bright Path BPO Inc.</reg:BusinessName>
     </reg:VerifyBusinessRegistrationRequest>
@@ -417,10 +418,10 @@ C.push(...code(`
 </soapenv:Fault>`));
 C.push(...table(["Fault code", "Raised when", "Core Service mapping"], [
   ["`soapenv:Client.Authentication`", "WS-Security header missing or wrong username/password", "502 `REGISTRY_AUTH_FAILED` (configuration problem, logged)"],
-  ["`soapenv:Client.Validation`", "Request fails validation: missing/empty `RegistrationNumber`, `RegistryType` not DTI/SEC, missing `BusinessName`", "422 `REGISTRY_INVALID_REQUEST`"],
+  ["`soapenv:Client.Validation`", "Request fails validation: `RegistrationNumber` not 5–20 letters or digits (hyphens and spaces are ignored, so `CS-2018-00777` matches), `RegistryType` not DTI/SEC, missing `BusinessName`", "422 `REGISTRY_INVALID_REQUEST`"],
   ["`soapenv:Server`", "Unexpected registry error (e.g., database unavailable)", "502 `REGISTRY_UNAVAILABLE`"],
 ], [2600, 4280, 3200], { size: 16 }));
-C.push(P("**How the contract is used.** The Core Service sends the employer's `business_reg_no`, `registry_type` and `company_name`. The response is mapped to JSON and stored in a `registry_checks` record (status, registered name, match score, checked time). `NameMatchScore` is a normalized similarity (0–1) between the submitted and registered names. The administrator sees the result and decides; a `NOT_FOUND`, `EXPIRED` or `CANCELLED` status or a score below 0.80 is highlighted. Client faults (bad input, bad credentials) become HTTP 422/502 with codes `REGISTRY_INVALID_REQUEST`/`REGISTRY_AUTH_FAILED`; server faults or a 5-second timeout become HTTP 502 `REGISTRY_UNAVAILABLE`, and the employer stays in the manual review queue."));
+C.push(P("**How the contract is used.** The Core Service sends the employer's `business_reg_no`, `registry_type` and `company_name`. The response is mapped to JSON and stored in a `registry_checks` record (the number and registry type that were checked, status, registered name, match score, the XML answer, the administrator and the time; the request itself is never stored because it carries the password). `NameMatchScore` is a normalized similarity (0–1) between the submitted and registered names (upper case, punctuation and trailing INC./CORP./CO. removed, then PHP `similar_text`); for `NOT_FOUND` the API returns `name_match: null`. A check is shown only while the employer's number and type are unchanged. The administrator sees the result and decides; a `NOT_FOUND`, `EXPIRED` or `CANCELLED` status or a score below 0.80 is highlighted. Client faults (bad input, bad credentials) become HTTP 422/502 with codes `REGISTRY_INVALID_REQUEST`/`REGISTRY_AUTH_FAILED`; server faults, connection errors or a 5-second timeout become HTTP 502 `REGISTRY_UNAVAILABLE` and are stored as an `ERROR` check, and the employer stays in the manual review queue."));
 
 C.push(H2("4.4 External REST API"));
 C.push(...table(["Provider", "Purpose", "Authentication", "Data Used", "Failure / Fallback Handling"], [
@@ -907,7 +908,7 @@ C.push(...table(["Table", "Key Fields", "Notes"], [
   ["users", "id, name, email, password, role, is_active, consented_at, display_prefs, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent"],
   ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, location_label, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
   ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, location_label, description, logo_path, verified_at, verification_rejected_reason, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
-  ["registry_checks", "id, employer_id, status, registered_name, name_match_score, checked_at, raw_response (XML)", "Result of SOAP verification calls"],
+  ["registry_checks", "id, employer_id, business_reg_no, registry_type, status, registered_name, name_match_score, raw_response (XML answer), checked_by, checked_at", "Every SOAP verification call; `ERROR` when the registry could not answer"],
   ["categories / accommodations", "id, name / id, name, group, description, is_retired", "Admin-managed lists"],
   ["job_postings", "id, employer_id, category_id, title, description, address, location_psgc, location_label, employment_type, work_setup, interview_format, status, closes_at, is_approved, rejection_reason, deleted_at", "Soft deletes; indexes (status, category_id) and (employer_id, status); MySQL full-text index on title and description (keyword search currently uses a case-insensitive LIKE)"],
   ["job_posting_accommodation", "job_posting_id, accommodation_id, note", "Pivot: accommodations provided"],
@@ -938,7 +939,7 @@ C.push(...table(["Table", "Key Fields", "Expiry / Notes"], [
   ["geocode_cache", "address_hash (PK), query, lat, lon, precision (`street` / `city`), fetched_at", "30 days"],
   ["overpass_cache", "key (PK, `lat,lon,radius` rounded to 4 decimals), payload (JSON), fetched_at", "24 hours; expired rows may be served as `stale` when Overpass fails"],
   ["psgc_cache", "key (PK: `regions`, `provinces:{code}`, `cities:{code}`), payload (JSON), fetched_at", "7 days; bundled NCR + major cities JSON as fallback"],
-  ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by a script; includes EXPIRED and CANCELLED samples"],
+  ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by `seed.php`: the two demo employers and three other businesses (ACTIVE), two EXPIRED and two CANCELLED samples"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("[[Insert the ERD image and any additional screenshots here.]]"));
 

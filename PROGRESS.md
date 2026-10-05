@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 6 – Legacy SOAP integration
+- **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Close Phase 6: sync the SIA documentation with `opendoor-sia-docs` (see Known issues: `registry_checks` columns, `name_match` null, seeded registry numbers vs the 4.3 sample, `GET /admin/employers*` in 4.1/Appendix A if missing, 7.2 folder 08). The `xmllint` WSDL check stays for CI (Phase 9). Then Phase 7 – Core `/internal/job-postings/{id}/summary` + ServiceKey middleware.
+- **Next step:** Phase 7 – Core `/internal/job-postings/{id}/summary` (separate route file, `ServiceKey` middleware with `hash_equals` on `X-Service-Key` = `SERVICE_KEY_INSIGHTS`, not under auth:sanctum; 404 unless open + approved; shape in SIA Appendix B / OpenAPI) + tests incl. T16 (no key → 401). Read `integrations.md` §2 + OpenAPI internal schema first. (Phase 6 leaves only the `xmllint` WSDL check, which goes into CI in Phase 9.)
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -142,7 +142,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- SIA doc not yet synced for Phase 6: `registry_checks` gains `business_reg_no`, `registry_type` (Appendix data model); `name_match` null for NOT_FOUND/ERROR; seeded registry records (8.5 / 4.3 sample uses "Bright Path BPO Inc." CS201912345 – the seed has CS201912345 = KALINGA FOODS, INC. and Bright Path = CS201800777). Sync with `opendoor-sia-docs` at the end of Phase 6.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
 - Gateway limit 120 req/min per IP: one Newman run is now 125 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
@@ -155,6 +154,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – SIA doc synced for Phase 6 (4.1 admin employer list, 4.3 sample number = seeded CS201800777, normalization, ERROR checks, data model + registry seed); PDF 41 pages, no blank pages. **Phase 6 complete except the CI `xmllint` check.**
 - 2026-10-06 – Postman 08 Admin & SOAP Registry done (T14/T15 against the running registry); Phase 6 code complete, SIA doc sync next.
 - 2026-10-06 – Admin verification screen live-checked against the real SOAP registry (12 checks pass, incl. registry down); demo data reset (Kalinga pending, no checks).
 - 2026-10-06 – Registry SOAP service done (39 checks); Core `BusinessRegistryClient` + `registry_checks` + admin employer queue/verify done (14 tests, 272 Core tests pass). Ran /doctor (user settings only: 3 unused plugins + 2 skills off, auto mode default).
