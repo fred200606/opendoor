@@ -6,7 +6,7 @@
 node tests/postman/build-collection.mjs
 ```
 
-Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search · 05 Applications (06–09 are added with their backend phases). Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
+Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search · 05 Applications · 06 Feedback & Trust Score (07–09 are added with their backend phases). Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
 
 ## Run with Newman
 
@@ -18,7 +18,7 @@ npx newman run tests/postman/OpenDoor.postman_collection.json `
   --env-var "demoPassword=<DEMO_PASSWORD from services/core-api/.env>"
 ```
 
-Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker compose service `gateway`), `production` (Railway gateway). The run creates a throwaway candidate (`pm-candidate-<timestamp>@opendoor.test`, which also gets a profile, two needs and a résumé) and a category/accommodation and two postings that it deletes again. Folder 05 leaves one hired application (on its deleted posting) and in-app notifications for the demo employer – applications are never deleted. Demo profiles are only read, never changed.
+Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker compose service `gateway`), `production` (Railway gateway). The run creates a throwaway candidate (`pm-candidate-<timestamp>@opendoor.test`, which also gets a profile, two needs and a résumé) and a category/accommodation and two postings that it deletes again. Folder 05 leaves one hired application (on its deleted posting) and in-app notifications for the demo employer – applications are never deleted. Demo profiles are only read, never changed. Folder 06 (T10) rates the seeded hire of `candidate2@` at `employer2@` – the 3rd response that publishes that trust score. On a freshly seeded database it expects 201; on later runs 409 `FEEDBACK_EXISTS` (the score checks still run). Re-seed from scratch (`php artisan migrate:fresh --seed`) to see the 201 again.
 
 Run Newman from the **repo root**: folder 04 uploads `tests/postman/fixtures/cv.pdf` and `not-a-pdf.pdf` by that relative path.
 

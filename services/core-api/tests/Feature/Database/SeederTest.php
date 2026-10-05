@@ -42,7 +42,7 @@ class SeederTest extends TestCase
         $formerEmployees = collect(DemoFeedbackSeeder::HIRES)->filter(fn ($hire) => str_starts_with($hire['email'], 'former'))->count();
         $this->assertSame(count(DemoUserSeeder::ACCOUNTS) + $formerEmployees, User::count());
         $this->assertSame(count(DemoFeedbackSeeder::HIRES), Application::where('status', 'hired')->count());
-        $this->assertSame(3, Feedback::count());
+        $this->assertSame(5, Feedback::count());
     }
 
     public function test_the_first_demo_employer_has_a_published_trust_score(): void
@@ -53,10 +53,14 @@ class SeederTest extends TestCase
         // (3.5 + 3.5 + 2.5) of 12 rated items = 79.17 %.
         $this->assertSame(['published' => true, 'score' => 79, 'based_on' => 3], $employer->fresh()->trustScoreSummary());
 
+        // employer2@: 2 responses; the open hire of candidate2@ would be the 3rd (Postman T10).
+        $employer2 = User::where('email', 'employer2@opendoor.test')->firstOrFail()->employer;
+        $this->assertSame(['published' => false, 'score' => null, 'based_on' => 2], $employer2->fresh()->trustScoreSummary());
         $open = Application::whereHas('candidateProfile.user', fn ($user) => $user->where('email', 'candidate2@opendoor.test'))->sole();
+        $this->assertSame($employer2->id, $open->jobPosting->employer_id);
         $this->assertTrue($open->isFeedbackOpen());
         $this->assertFalse($open->feedback()->exists());
-        $this->assertSame(4, $open->accommodationsAtHire()->count());
+        $this->assertSame(3, $open->accommodationsAtHire()->count());
     }
 
     public function test_accommodations_cover_every_group_and_are_active(): void

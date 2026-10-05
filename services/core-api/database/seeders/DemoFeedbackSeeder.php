@@ -15,21 +15,21 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Hired applications and feedback so the first demo employer has a published trust score
- * (run after DemoPostingSeeder and DemoCandidateSeeder). Idempotent by email + posting.
+ * Hired applications and feedback (run after DemoPostingSeeder and DemoCandidateSeeder).
+ * Idempotent by email + posting.
  *
- * The three former employees are seed-only accounts with a random password (nobody logs in as
- * them). candidate2@ gets a hire whose feedback window is open but not used yet, so the form can
- * be tried live.
+ * - employer@: 3 responses, so the trust score is published (79%).
+ * - employer2@: 2 responses (not published yet) and a hire of candidate2@ whose feedback window
+ *   is open but unused: the 3rd response publishes the score (Postman T10, or try it in the UI).
+ *
+ * The former employees are seed-only accounts with a random password (nobody logs in as them).
  */
 class DemoFeedbackSeeder extends Seeder
 {
-    private const EMPLOYER = 'employer@opendoor.test';
-
-    /** @var list<array{name: string, email: string, posting: string, hired_days_ago: int, ratings: array<string, string>|null}> */
+    /** @var list<array{employer: string, name: string, email: string, posting: string, hired_days_ago: int, ratings: array<string, string>|null}> */
     public const HIRES = [
         [
-            'name' => 'Liza Mendoza', 'email' => 'former1@opendoor.test', 'posting' => 'Data Encoder', 'hired_days_ago' => 120,
+            'employer' => 'employer@opendoor.test', 'name' => 'Liza Mendoza', 'email' => 'former1@opendoor.test', 'posting' => 'Data Encoder', 'hired_days_ago' => 120,
             'ratings' => [
                 'Wheelchair-accessible entrance' => 'delivered',
                 'Accessible restroom' => 'delivered',
@@ -38,7 +38,7 @@ class DemoFeedbackSeeder extends Seeder
             ],
         ],
         [
-            'name' => 'Carlo Bautista', 'email' => 'former2@opendoor.test', 'posting' => 'Data Encoder', 'hired_days_ago' => 90,
+            'employer' => 'employer@opendoor.test', 'name' => 'Carlo Bautista', 'email' => 'former2@opendoor.test', 'posting' => 'Data Encoder', 'hired_days_ago' => 90,
             'ratings' => [
                 'Wheelchair-accessible entrance' => 'delivered',
                 'Accessible restroom' => 'delivered',
@@ -47,7 +47,7 @@ class DemoFeedbackSeeder extends Seeder
             ],
         ],
         [
-            'name' => 'Grace Ramos', 'email' => 'former3@opendoor.test', 'posting' => 'Customer Support Associate (Chat)', 'hired_days_ago' => 75,
+            'employer' => 'employer@opendoor.test', 'name' => 'Grace Ramos', 'email' => 'former3@opendoor.test', 'posting' => 'Customer Support Associate (Chat)', 'hired_days_ago' => 75,
             'ratings' => [
                 'Hybrid work' => 'delivered',
                 'Sign language interpreter' => 'not_delivered',
@@ -55,20 +55,33 @@ class DemoFeedbackSeeder extends Seeder
                 'Flexible hours' => 'partial',
             ],
         ],
-        // Demo candidate: hired 45 days ago, rating still to give.
-        ['name' => 'Juan Dela Cruz', 'email' => 'candidate2@opendoor.test', 'posting' => 'Customer Support Associate (Chat)', 'hired_days_ago' => 45, 'ratings' => null],
+        [
+            'employer' => 'employer2@opendoor.test', 'name' => 'Rosa Aquino', 'email' => 'former4@opendoor.test', 'posting' => 'Quality Control Assistant', 'hired_days_ago' => 140,
+            'ratings' => [
+                'Elevator or ground-floor workspace' => 'delivered',
+                'Adjustable workstation' => 'not_delivered',
+                'Written or captioned meetings' => 'delivered',
+            ],
+        ],
+        [
+            'employer' => 'employer2@opendoor.test', 'name' => 'Mark Santiago', 'email' => 'former5@opendoor.test', 'posting' => 'Quality Control Assistant', 'hired_days_ago' => 140,
+            'ratings' => [
+                'Elevator or ground-floor workspace' => 'delivered',
+                'Adjustable workstation' => 'partial',
+                'Written or captioned meetings' => 'delivered',
+            ],
+        ],
+        // Demo candidate: hired 45 days ago, rating still to give (the 3rd response for employer2@).
+        ['employer' => 'employer2@opendoor.test', 'name' => 'Juan Dela Cruz', 'email' => 'candidate2@opendoor.test', 'posting' => 'Quality Control Assistant', 'hired_days_ago' => 45, 'ratings' => null],
     ];
 
     public function run(): void
     {
-        $employer = User::where('email', self::EMPLOYER)->first()?->employer;
-        if (! $employer) {
-            return;
-        }
         $accommodations = Accommodation::pluck('id', 'name');
 
         foreach (self::HIRES as $hire) {
-            $posting = $employer->jobPostings()->where('title', $hire['posting'])->first();
+            $employer = User::where('email', $hire['employer'])->first()?->employer;
+            $posting = $employer?->jobPostings()->where('title', $hire['posting'])->first();
             $profile = $this->candidate($hire['name'], $hire['email']);
             if (! $posting || ! $profile) {
                 continue;

@@ -60,8 +60,9 @@ const NO_AUTH = { type: 'noauth' };
 /**
  * `url` replaces `{{baseUrl}}${path}` (e.g. a link returned by the API). `files` sends multipart
  * form data: { field: 'tests/postman/fixtures/…' } – paths are relative to the repo root (Newman's cwd).
+ * `raw` sends a JSON body as written, e.g. '{{payload}}' set by the pre-request script.
  */
-function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, body, files, tests, prerequest, description }) {
+function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, body, raw, files, tests, prerequest, description }) {
   const item = {
     name,
     request: {
@@ -83,9 +84,9 @@ function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, body, f
       return { key, value };
     });
   }
-  if (body !== undefined) {
+  if (body !== undefined || raw !== undefined) {
     item.request.header.push({ key: 'Content-Type', value: 'application/json' });
-    item.request.body = { mode: 'raw', raw: JSON.stringify(body, null, 2), options: { raw: { language: 'json' } } };
+    item.request.body = { mode: 'raw', raw: raw ?? JSON.stringify(body, null, 2), options: { raw: { language: 'json' } } };
   }
   if (prerequest) item.event.push({ listen: 'prerequest', script: { type: 'text/javascript', exec: prerequest.trim().split('\n') } });
   if (tests) item.event.push({ listen: 'test', script: { type: 'text/javascript', exec: tests.trim().split('\n') } });
@@ -943,6 +944,195 @@ pm.test('the hired application is listed', () => pm.expect(pm.response.json().da
   ],
 );
 
+// ---------------------------------------------------------------- 06 Feedback & Trust Score
+
+/** True when an earlier run already rated candidate2's hire (409 instead of 201 / 422 validation). */
+const FEEDBACK_GIVEN = `const given = pm.collectionVariables.get('feedbackGiven') === 'true';`;
+
+/** T10 body from the stored form: captioned meetings partly delivered, the rest delivered (score 78). */
+const FEEDBACK_BODY = `
+const items = JSON.parse(pm.collectionVariables.get('feedbackItems') || '[]');
+const rating = (name) => (name === 'Written or captioned meetings' ? 'partial' : 'delivered');
+pm.collectionVariables.set('feedbackPayload', JSON.stringify({
+  items: items.map((i) => ({ accommodation_id: i.accommodation_id, rating: rating(i.name) })),
+  comments: 'Rated by the Postman run.',
+}));`;
+
+const trustScoreShape = `
+pm.test('matches the TrustScore shape', () => {
+  const t = pm.response.json();
+  pm.expect(t).to.have.all.keys('published', 'score', 'based_on', 'breakdown');
+  t.breakdown.forEach((row) => pm.expect(row).to.have.all.keys('accommodation_id', 'name', 'delivered', 'partial', 'not_delivered', 'of'));
+});`;
+
+const feedback = folder(
+  '06 Feedback & Trust Score',
+  'M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded hire of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the fresh hire from folder 05.',
+  [
+    request('Log in the second demo candidate → candidate2Token', {
+      method: 'POST',
+      path: '/login',
+      body: { email: '{{candidate2Email}}', password: '{{demoPassword}}' },
+      tests: authResponse('candidate', 'candidate2Token'),
+    }),
+    request('Candidate finds the hire whose feedback window is open', {
+      path: '/applications?status=hired',
+      auth: bearer('candidate2Token'),
+      tests: `
+${status(200)}
+const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+const hire = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);
+pm.test('a hired application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(hire).to.be.an('object'));
+pm.test('feedback_submitted is shown to the candidate', () => pm.expect(hire.feedback_submitted).to.be.a('boolean'));
+pm.collectionVariables.set('feedbackApplicationId', hire.id);
+pm.collectionVariables.set('feedbackEmployerId', hire.job_posting.employer.id);
+pm.collectionVariables.set('feedbackGiven', String(hire.feedback_submitted));`,
+    }),
+    request('Trust score before the run: hidden below 3 responses', {
+      path: '/employers/{{feedbackEmployerId}}/trust-score',
+      tests: `
+${status(200)}
+${trustScoreShape}
+${FEEDBACK_GIVEN}
+const t = pm.response.json();
+pm.test(given ? 'already published by an earlier run' : 'not published: 2 responses, no score, no breakdown', () => {
+  if (given) pm.expect(t.published).to.eql(true);
+  else pm.expect(t).to.eql({ published: false, score: null, based_on: 2, breakdown: [] });
+});`,
+    }),
+    request('Feedback form lists the accommodations at hire', {
+      path: '/applications/{{feedbackApplicationId}}/feedback-form',
+      auth: bearer('candidate2Token'),
+      tests: `
+${status(200)}
+${FEEDBACK_GIVEN}
+const f = pm.response.json();
+pm.test('open, with the seeded posting\\'s 3 accommodations', () => {
+  pm.expect(f.is_open).to.eql(true);
+  pm.expect(f.submitted).to.eql(given);
+  pm.expect(f.items.map((i) => i.name)).to.have.members(['Adjustable workstation', 'Elevator or ground-floor workspace', 'Written or captioned meetings']);
+});
+pm.collectionVariables.set('feedbackItems', JSON.stringify(f.items));`,
+    }),
+    request('The employer cannot open the form → 403', {
+      path: '/applications/{{feedbackApplicationId}}/feedback-form',
+      auth: bearer('employer2Token'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Another candidate cannot rate the hire → 403', {
+      method: 'POST',
+      path: '/applications/{{feedbackApplicationId}}/feedback',
+      auth: bearer('candidateToken'),
+      body: { items: [] },
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Guest cannot rate → 401', {
+      method: 'POST',
+      path: '/applications/{{feedbackApplicationId}}/feedback',
+      body: { items: [] },
+      tests: `${status(401)}\n${envelope('UNAUTHENTICATED')}`,
+    }),
+    request('Leaving an accommodation unrated → 422 errors.items', {
+      method: 'POST',
+      path: '/applications/{{feedbackApplicationId}}/feedback',
+      auth: bearer('candidate2Token'),
+      raw: '{{feedbackPartialPayload}}',
+      prerequest: `
+const first = JSON.parse(pm.collectionVariables.get('feedbackItems'))[0];
+pm.collectionVariables.set('feedbackPartialPayload', JSON.stringify({ items: [{ accommodation_id: first.accommodation_id, rating: 'delivered' }] }));`,
+      tests: `
+${FEEDBACK_GIVEN}
+const body = pm.response.json();
+if (given) {
+  pm.test('earlier run: 409 FEEDBACK_EXISTS comes first', () => { pm.response.to.have.status(409); pm.expect(body.error.code).to.eql('FEEDBACK_EXISTS'); });
+} else {
+  ${status(422)}
+  pm.test('VALIDATION_FAILED with errors.items', () => { pm.expect(body.error.code).to.eql('VALIDATION_FAILED'); pm.expect(body.errors).to.have.property('items'); });
+}`,
+    }),
+    request('T10 Hired candidate rates after 30 days → 201 (3rd response)', {
+      method: 'POST',
+      path: '/applications/{{feedbackApplicationId}}/feedback',
+      auth: bearer('candidate2Token'),
+      raw: '{{feedbackPayload}}',
+      prerequest: FEEDBACK_BODY,
+      tests: `
+${FEEDBACK_GIVEN}
+const body = pm.response.json();
+if (given) {
+  pm.test('earlier run: 409 FEEDBACK_EXISTS', () => { pm.response.to.have.status(409); pm.expect(body.error.code).to.eql('FEEDBACK_EXISTS'); });
+} else {
+  ${status(201)}
+  pm.test('saved with every item rated', () => {
+    pm.expect(body.application_id).to.eql(pm.collectionVariables.get('feedbackApplicationId'));
+    pm.expect(body.items_rated).to.eql(3);
+  });
+}`,
+    }),
+    request('T10 Trust score published from 3 responses with the right value', {
+      path: '/employers/{{feedbackEmployerId}}/trust-score',
+      tests: `
+${status(200)}
+${trustScoreShape}
+const t = pm.response.json();
+pm.test('published, based on 3, score 78', () => {
+  // Seeded (1 + 0 + 1) + (1 + 0.5 + 1) + this run (1 + 1 + 0.5) = 7 of 9 items = 77.8 → 78.
+  pm.expect(t.published).to.eql(true);
+  pm.expect(t.based_on).to.eql(3);
+  pm.expect(t.score).to.eql(78);
+});
+pm.test('breakdown: 3 ratings per accommodation', () => {
+  pm.expect(t.breakdown).to.have.lengthOf(3);
+  t.breakdown.forEach((row) => pm.expect(row.delivered + row.partial + row.not_delivered).to.eql(row.of).and.eql(3));
+});`,
+    }),
+    request('Rating again → 409 FEEDBACK_EXISTS', {
+      method: 'POST',
+      path: '/applications/{{feedbackApplicationId}}/feedback',
+      auth: bearer('candidate2Token'),
+      raw: '{{feedbackPayload}}',
+      prerequest: FEEDBACK_BODY,
+      tests: `${status(409)}\n${envelope('FEEDBACK_EXISTS')}`,
+    }),
+    request('Form and application now say "submitted"', {
+      path: '/applications/{{feedbackApplicationId}}/feedback-form',
+      auth: bearer('candidate2Token'),
+      tests: `${status(200)}\npm.test('submitted', () => pm.expect(pm.response.json().submitted).to.eql(true));`,
+    }),
+    request('Public employer page shows the published score', {
+      path: '/employers/{{feedbackEmployerId}}',
+      tests: `
+${status(200)}
+pm.test('trust_score summary without breakdown', () => pm.expect(pm.response.json().trust_score).to.eql({ published: true, score: 78, based_on: 3 }));`,
+    }),
+    request('T11 Feedback before 30 days after hire → 422 FEEDBACK_NOT_OPEN', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/feedback',
+      auth: bearer('newCandidateLoginToken'),
+      body: { items: [{ accommodation_id: 1, rating: 'delivered' }] },
+      tests: `${status(422)}\n${envelope('FEEDBACK_NOT_OPEN')}`,
+      description: 'The application was hired today in folder 05; the form opens on calendar day 30 (Asia/Manila).',
+    }),
+    request('The fresh hire\'s form is not open yet and shows the date', {
+      path: '/applications/{{applicationId}}/feedback-form',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+const f = pm.response.json();
+pm.test('closed until opens_on, 30 days ahead', () => {
+  pm.expect(f.is_open).to.eql(false);
+  pm.expect(f.submitted).to.eql(false);
+  const days = (new Date(f.opens_on + 'T00:00:00+08:00') - Date.now()) / 86400000;
+  pm.expect(days).to.be.within(29, 30);
+});`,
+    }),
+    request('Unknown employer trust score → 404', {
+      path: '/employers/999999/trust-score',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -953,10 +1143,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings, candidateSearch, applications],
+  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));

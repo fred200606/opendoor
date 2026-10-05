@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
 - **In progress:** –
-- **Next step:** Phase 5 – Postman folder 06 Feedback & Trust score in `tests/postman/build-collection.mjs` (trust-score shape for employer@ published ≥3; form/submit 403 for strangers + employer; 422 FEEDBACK_NOT_OPEN for a fresh hire (Postman can't wait 30 days – use the hire from folder 05 or a new throwaway one); validation; 404 unknown employer). Keep it re-runnable: do not submit feedback for demo accounts. Then SIA doc update for M7 (Known issues).
+- **Next step:** Close Phase 5: update the SIA documentation for M7 with `opendoor-sia-docs` (see Known issues: `application_accommodation` table, `submitted` / `feedback_submitted`, breakdown hidden below 3, demo seed for T10). Then Phase 6 – Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed (`seed.php`, `public/`), faults.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -103,7 +103,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown (+ `application_accommodation` snapshot at hire)
 - [x] Core: feature tests for math, threshold, window (`tests/Feature/Feedback` 16 tests + 12-case percentage unit table; 257 Core tests pass)
 - [x] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page – live-checked 2026-10-05 (candidate2 rates the Chat hire: form of 4 items at hire, error summary focus, thank-you, "Already rated"; employer 79% → 81% with 7-row breakdown; job details + public employer cards; axe 0 on 5 pages)
-- [ ] Postman: folder 06
+- [x] Postman: folder 06 (16 requests: T10 3rd response publishes employer2@ at 78% – 201 on a fresh seed, 409 on re-runs; T11 not open; 403/401; validation; whole collection 110 requests / 544 assertions pass)
 
 ### Phase 6 – Legacy SOAP integration
 - [ ] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults
@@ -140,9 +140,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- SIA doc not yet updated for M7 details: new table `application_accommodation` (data model / Appendix), `submitted` + `feedback_submitted` fields, breakdown hidden below 3 responses. Do it with `opendoor-sia-docs` at the end of Phase 5.
+- SIA doc not yet updated for M7 details: new table `application_accommodation` (data model / Appendix), `submitted` + `feedback_submitted` fields, breakdown hidden below 3 responses, demo seed (employer@ 79% published; employer2@ 2 responses + candidate2@ open hire for T10). Do it with `opendoor-sia-docs` (next step).
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
-- Gateway limit 120 req/min per IP: one Newman run is 94 requests (~18 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
+- Gateway limit 120 req/min per IP: one Newman run is 110 requests (~22 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
@@ -153,6 +153,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Postman 06 Feedback & Trust Score done; seed moved candidate2@'s open hire to a closed employer2@ posting (2 earlier responses) so T10 really publishes a score. Phase 5 code complete; SIA doc sync next.
 - 2026-10-05 – Feedback screens: `submitted` / `feedback_submitted` / empty-form handling; live-checked with a headless Chrome script (Playwright from the npx cache, `channel: 'chrome'`) because the Playwright MCP did not connect.
 - 2026-10-05 – `DemoFeedbackSeeder`: 3 former employees rate employer@ (published 79%), candidate2@ has an open, unrated hire; fixed MySQL reserved alias `of` in the breakdown (feedback tests also pass on MySQL).
 - 2026-10-05 – M7 Core done: feedback form/submit, hire-time accommodation snapshot, `TrustScoreService` + observer, public trust score; found + fixed a stale cached Employer skipping `feedback_count` writes.

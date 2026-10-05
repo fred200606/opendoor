@@ -84,6 +84,24 @@ class DemoPostingSeeder extends Seeder
                     'Transportation assistance' => 'Shuttle from Magallanes MRT station.',
                 ],
             ],
+            [
+                // Filled and closed: the hires for DemoFeedbackSeeder (2 responses + one open for Postman T10).
+                'title' => 'Quality Control Assistant',
+                'category' => 'Manufacturing and Production',
+                'description' => "Check packed products against the quality checklist.\nDay shift, Monday to Friday.",
+                'address' => '1200 Pasong Tamo Ext.',
+                'location_label' => 'Makati City, Metro Manila',
+                'employment_type' => 'full_time',
+                'work_setup' => 'onsite',
+                'interview_format' => 'onsite',
+                'status' => 'closed',
+                'closes_in_days' => -150,
+                'accommodations' => [
+                    'Elevator or ground-floor workspace' => 'QC room on the ground floor.',
+                    'Adjustable workstation' => null,
+                    'Written or captioned meetings' => 'Shift briefings are also posted in writing.',
+                ],
+            ],
         ],
     ];
 
@@ -108,10 +126,10 @@ class DemoPostingSeeder extends Seeder
                     'employment_type' => $data['employment_type'],
                     'work_setup' => $data['work_setup'],
                     'interview_format' => $data['interview_format'],
-                    'closes_at' => now()->addDays(45)->toDateString(),
+                    'closes_at' => now()->addDays($data['closes_in_days'] ?? 45)->toDateString(),
                 ]);
                 $posting->status = JobPostingStatus::from($data['status']);
-                $posting->is_approved = $data['status'] === 'open';
+                $posting->is_approved = in_array($data['status'], ['open', 'closed'], true);
                 $posting->save();
 
                 $posting->accommodations()->sync(
