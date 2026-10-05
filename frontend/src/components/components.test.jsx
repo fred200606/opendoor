@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 import { fakeApi } from '../test/fakeApi.js';
 import AccommodationPicker from './AccommodationPicker.jsx';
+import Button from './Button.jsx';
 import { ConfirmDialog } from './Dialog.jsx';
 import LocationPicker from './LocationPicker.jsx';
 import MatchBadge from './MatchBadge.jsx';
 import Pagination from './Pagination.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
+import { useApiForm } from '../hooks/useApiForm.js';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
 
 const groups = [
@@ -180,6 +182,49 @@ describe('useFocusRescue', () => {
   });
 });
 
+describe('Button', () => {
+  function SaveForm({ request }) {
+    const form = useApiForm({ name: '' });
+    return (
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          await form.submit(request);
+        }}
+      >
+        <label htmlFor="name">Name</label>
+        <input id="name" {...form.bind('name')} />
+        <Button type="submit" disabled={form.submitting}>
+          Save
+        </Button>
+      </form>
+    );
+  }
+
+  test('keeps focus while the form is sending and ignores repeated clicks and Enter', async () => {
+    const user = userEvent.setup();
+    let finish;
+    const request = vi.fn(() => new Promise((resolve) => (finish = resolve)));
+    render(<SaveForm request={request} />);
+    const save = screen.getByRole('button', { name: 'Save' });
+
+    await user.click(save);
+
+    expect(save).toHaveAttribute('aria-disabled', 'true');
+    expect(save).toHaveFocus();
+    await user.click(save);
+    await user.type(screen.getByLabelText('Name'), 'x{Enter}');
+    expect(request).toHaveBeenCalledTimes(1);
+
+    save.focus();
+    finish(true);
+    await vi.waitFor(() => expect(save).not.toHaveAttribute('aria-disabled'));
+    expect(save).toHaveFocus();
+    await user.click(save);
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('Pagination and ConfirmDialog', () => {
   test('pagination disables the edges and reports the page', async () => {
     const user = userEvent.setup();
@@ -187,9 +232,26 @@ describe('Pagination and ConfirmDialog', () => {
     render(<Pagination meta={{ current_page: 1, last_page: 3 }} onPageChange={onPageChange} />);
 
     expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Previous page/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Previous page/ })).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('button', { name: /Previous page/ }));
+    expect(onPageChange).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /Next page/ }));
     expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  test('the next-page button keeps focus when the last page is reached', async () => {
+    const user = userEvent.setup();
+    function Pages() {
+      const [page, setPage] = useState(1);
+      return <Pagination meta={{ current_page: page, last_page: 2 }} onPageChange={setPage} />;
+    }
+    render(<Pages />);
+
+    await user.click(screen.getByRole('button', { name: /Next page/ }));
+
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next page/ })).toHaveFocus();
+    expect(screen.getByRole('button', { name: /Next page/ })).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('closing a dialog whose opener was removed moves focus to the page heading', () => {

@@ -51,7 +51,7 @@ describe('AdminEmployerPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Check with the business registry' }));
 
     expect(await screen.findByText(/did not respond. You can try again later or decide manually/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Approve' })).not.toHaveAttribute('aria-disabled');
   });
 
   test('rejecting needs a reason, which is sent to the API', async () => {

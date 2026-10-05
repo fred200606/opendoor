@@ -4,6 +4,7 @@ import { adminGetEmployer, adminVerifyEmployer } from '../../api/admin.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import { ConfirmDialog, ReasonDialog } from '../../components/Dialog.jsx';
 import Page from '../../components/Page.jsx';
 import StatusBadge, { VerifiedBadge } from '../../components/StatusBadge.jsx';
@@ -130,17 +131,17 @@ function EmployerReview({ employer, onChange }) {
       )}
 
       <div className="actions">
-        <button type="button" className="button button--secondary" disabled={action.busy} onClick={check}>
+        <Button type="button" className="button button--secondary" disabled={action.busy} onClick={check}>
           {action.busy ? 'Checking…' : 'Check with the business registry'}
-        </button>
+        </Button>
         {!employer.verified_at && (
-          <button type="button" className="button" disabled={action.busy} onClick={() => setDialog('approve')}>
+          <Button type="button" className="button" disabled={action.busy} onClick={() => setDialog('approve')}>
             Approve
-          </button>
+          </Button>
         )}
-        <button type="button" className="button button--secondary" disabled={action.busy} onClick={() => setDialog('reject')}>
+        <Button type="button" className="button button--secondary" disabled={action.busy} onClick={() => setDialog('reject')}>
           {employer.verified_at ? 'Remove verification' : 'Do not approve'}
-        </button>
+        </Button>
       </div>
       <p className="field__hint">The registry result is advice only. You decide whether to approve.</p>
 

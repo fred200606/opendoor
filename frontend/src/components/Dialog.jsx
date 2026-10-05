@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import Button from './Button.jsx';
 
 /**
  * Modal dialog on the native <dialog> element: traps focus, closes with Escape, returns focus
@@ -93,12 +94,12 @@ export function ReasonDialog({ title, label, hint, confirmLabel, required = true
           />
         </div>
         <div className="dialog__actions">
-          <button type="submit" className="button" disabled={busy}>
+          <Button type="submit" className="button" disabled={busy}>
             {busy ? 'Please wait…' : confirmLabel}
-          </button>
-          <button type="button" className="button button--secondary" disabled={busy} onClick={onClose}>
+          </Button>
+          <Button type="button" className="button button--secondary" disabled={busy} onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>
@@ -113,12 +114,12 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel = 'Ca
       onClose={onClose}
       actions={
         <>
-          <button type="button" className={`button ${danger ? 'button--danger' : ''}`} disabled={busy} onClick={onConfirm}>
+          <Button type="button" className={`button ${danger ? 'button--danger' : ''}`} disabled={busy} onClick={onConfirm}>
             {busy ? 'Please wait…' : confirmLabel}
-          </button>
-          <button type="button" className="button button--secondary" disabled={busy} onClick={onClose}>
+          </Button>
+          <Button type="button" className="button button--secondary" disabled={busy} onClick={onClose}>
             {cancelLabel}
-          </button>
+          </Button>
         </>
       }
     >

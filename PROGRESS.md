@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 3 – Candidate side
-- **In progress:** Frontend: keep keyboard focus on submit buttons while a request runs. Live check found that `disabled={…submitting}` drops focus to `<body>` when the focused button is disabled (26 buttons in 13 files, e.g. résumé Upload). Plan: shared `SubmitButton` (`aria-disabled` + ignore clicks while busy) + re-entrance guard in `useApiForm.submit`/`useAction`; Vitest test that focus stays on the button.
-- **Next step:** after the focus fix: Phase 3 – Core M5 search (`GET /job-postings`: category/accommodation filters, `match=1` ranking with `withCount` of needs met + `missing`, sort, pagination). The Find jobs screen currently gets 405 from Core.
+- **In progress:** –
+- **Next step:** Phase 3 – Core M5 search (`GET /job-postings`: category/accommodation filters, `match=1` ranking with `withCount` of needs met + `missing`, sort, pagination). The Find jobs screen currently gets 405 from Core.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – Frontend: buttons that become unavailable use `components/Button.jsx` (`aria-disabled`, clicks ignored) instead of native `disabled`, which drops focus to `<body>` in Chrome; `useApiForm.submit` / `useAction.run` ignore a second call while one is running. Rule added to `opendoor-dev` conventions.
 - 2026-10-04 – Frontend focus rescue: `useFocusRescue` in AppLayout moves focus to the page `<h1>` whenever the focused element is removed from `<main>` (rows/cards that disappear after an action), in addition to the dialog's own fallback.
 - 2026-10-04 – M4: company profile required to post (422 `errors.company`); `submit` defaults to false; `submit:true` on create or edit → `pending_approval` + not approved (editing an open posting is re-approved); `submit:false` only for drafts; close/reopen rules; unpublished postings 404 for non-owners; daily `postings:close-expired` 00:05 Manila; retired accommodations may stay on postings that already had them. Admin reject → back to `draft` with `rejection_reason` (next step).
 - 2026-10-04 – M3: clients send `location_label` with `location_psgc` (Core stores the label; PSGC data stays in Insights). Logos are stored on Core's private disk and served via `GET /api/employers/{id}/logo`; `logo_url` is built from `PUBLIC_API_URL` (the gateway). `unique(registry_type, business_reg_no)`; changing number/type clears `verified_at`; any save after a rejection clears the reason (back to the queue). `registry_checks` table is built in Phase 6 with the SOAP client.
@@ -149,6 +150,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Submit/pagination buttons keep focus while busy (shared `Button`, 25 buttons in 14 files); verified in Chrome (focus stays, repeated Enter sends once); 92 Vitest tests.
 - 2026-10-05 – M2 closed: OpenAPI for profile/needs/résumé + `GET /resumes/{id}`; live résumé check OK; found submit buttons losing focus when disabled (next step).
 - 2026-10-04 – M2 candidate profile backend done (profiles, needs, résumé with signed links, DemoCandidateSeeder, shared UsableAccommodation rule); stopped at the usage limit before the live résumé check.
 - 2026-10-04 – Postman 03 Employer & Postings done (cleans up after itself). **Phase 2 complete.**

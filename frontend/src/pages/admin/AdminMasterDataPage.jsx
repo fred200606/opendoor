@@ -11,6 +11,7 @@ import {
 } from '../../api/masterData.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import Dialog, { ConfirmDialog } from '../../components/Dialog.jsx';
 import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
@@ -80,9 +81,9 @@ function CategoriesSection() {
 
       <form onSubmit={create} noValidate className="inline-form">
         <TextField label="New category" id="new-category" maxLength={100} error={add.fieldErrors.name} {...add.bind('name')} />
-        <button type="submit" className="button" disabled={add.submitting}>
+        <Button type="submit" className="button" disabled={add.submitting}>
           Add category
-        </button>
+        </Button>
       </form>
 
       {editing && (
@@ -122,9 +123,9 @@ function NameDialog({ title, initial, maxLength, onSave, onDone, onClose }) {
       <form onSubmit={handleSubmit} noValidate>
         <TextField label="Name" id="rename-field" maxLength={maxLength} error={form.fieldErrors.name} {...form.bind('name')} />
         <div className="dialog__actions">
-          <button type="submit" className="button" disabled={form.submitting}>
+          <Button type="submit" className="button" disabled={form.submitting}>
             Save
-          </button>
+          </Button>
           <button type="button" className="button button--secondary" onClick={onClose}>
             Cancel
           </button>
@@ -258,9 +259,9 @@ function AccommodationDialog({ accommodation, onDone, onClose }) {
         <SelectField label="Group" id="accommodation-group" name="group" required placeholder="Choose a group" options={toOptions(ACCOMMODATION_GROUPS)} error={form.fieldErrors.group} {...form.bind('group')} />
         <TextField label="Description" id="accommodation-description" hint="Optional. One short sentence shown under the checkbox." maxLength={255} error={form.fieldErrors.description} {...form.bind('description')} />
         <div className="dialog__actions">
-          <button type="submit" className="button" disabled={form.submitting}>
+          <Button type="submit" className="button" disabled={form.submitting}>
             Save
-          </button>
+          </Button>
           <button type="button" className="button button--secondary" onClick={onClose}>
             Cancel
           </button>

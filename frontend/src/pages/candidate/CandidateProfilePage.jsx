@@ -5,6 +5,7 @@ import { getCandidateProfile, updateCandidateProfile, updateNeeds, uploadResume 
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, TextArea, TextField } from '../../components/form/fields.jsx';
 import LocationPicker from '../../components/LocationPicker.jsx';
@@ -90,9 +91,9 @@ function NeedsSection({ profile, groups }) {
           }}
           error={form.fieldErrors.accommodation_ids}
         />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Save my needs'}
-        </button>
+        </Button>
         <p role="status" className="save-status">
           {saved && 'Your needs are saved.'}
         </p>
@@ -170,9 +171,9 @@ function ProfileSection({ profile }) {
           )}
         </fieldset>
 
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Save profile'}
-        </button>
+        </Button>
         <p role="status" className="save-status">
           {saved && 'Your profile is saved.'}
         </p>
@@ -236,9 +237,9 @@ function ResumeSection({ profile }) {
           error={error}
           onChange={choose}
         />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Uploading…' : 'Upload'}
-        </button>
+        </Button>
         <p role="status" className="save-status">
           {saved && 'Your résumé is uploaded.'}
         </p>

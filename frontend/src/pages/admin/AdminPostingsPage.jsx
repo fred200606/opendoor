@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { adminListPostings, adminReviewPosting } from '../../api/admin.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import { ReasonDialog } from '../../components/Dialog.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
@@ -82,12 +83,12 @@ export default function AdminPostingsPage() {
                       </details>
                       {posting.status === 'pending_approval' && (
                         <div className="actions">
-                          <button type="button" className="button" disabled={action.busy} aria-label={`Approve ${posting.title}`} onClick={() => approve(posting)}>
+                          <Button type="button" className="button" disabled={action.busy} aria-label={`Approve ${posting.title}`} onClick={() => approve(posting)}>
                             Approve
-                          </button>
-                          <button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Do not approve ${posting.title}`} onClick={() => setRejecting(posting)}>
+                          </Button>
+                          <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Do not approve ${posting.title}`} onClick={() => setRejecting(posting)}>
                             Do not approve
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </article>

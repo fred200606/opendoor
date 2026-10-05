@@ -30,6 +30,7 @@
 - Contrast ≥ 4.5:1; status shown with text/icon, never color alone (StatusBadge, MatchBadge).
 - Result counts announced in an `aria-live="polite"` region ("12 jobs found").
 - Modals trap focus and close with Escape; no session time-outs during forms.
+- Never put native `disabled` on a button that can have focus (submit while sending, pagination edges, "done" states): it drops focus to `<body>`. Use `components/Button.jsx` (`aria-disabled` + ignored clicks).
 - Usable at 200% zoom and 360 px width.
 - Snapshot section: plain-language headings, distances as text ("220 m away"), explain unavailable data in text.
 

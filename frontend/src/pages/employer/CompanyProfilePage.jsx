@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { getCompany, saveCompany } from '../../api/profile.js';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, TextArea, TextField } from '../../components/form/fields.jsx';
 import LocationPicker from '../../components/LocationPicker.jsx';
@@ -142,9 +143,9 @@ function CompanyForm({ company, onSaved }) {
         {company?.logo_url && <img src={company.logo_url} alt="Current company logo" className="employer-logo" />}
         <TextField label="Logo" name="logo" type="file" accept={LOGO_TYPES.join(',')} hint={`Optional. PNG, JPG or WebP, up to ${LOGO_MAX_MB} MB.`} error={logoError ?? form.fieldErrors.logo} onChange={chooseLogo} />
 
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Save company profile'}
-        </button>
+        </Button>
         <p role="status" className="save-status">
           {saved && 'Your company profile is saved.'}
         </p>

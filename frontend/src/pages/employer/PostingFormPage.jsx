@@ -4,6 +4,7 @@ import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, SelectField, TextArea, TextField } from '../../components/form/fields.jsx';
 import LocationPicker from '../../components/LocationPicker.jsx';
@@ -156,13 +157,13 @@ function PostingForm({ categories, groups, job }) {
         />
 
         <div className="actions">
-          <button type="submit" className="button" disabled={form.submitting}>
+          <Button type="submit" className="button" disabled={form.submitting}>
             Submit for approval
-          </button>
+          </Button>
           {(!isEdit || job.status === 'draft') && (
-            <button type="button" className="button button--secondary" disabled={form.submitting} onClick={() => save(false)}>
+            <Button type="button" className="button button--secondary" disabled={form.submitting} onClick={() => save(false)}>
               Save as draft
-            </button>
+            </Button>
           )}
         </div>
       </form>

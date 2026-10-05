@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/account.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
@@ -41,9 +42,9 @@ export default function NotificationsPage() {
               <div className="notifications-header">
                 <p aria-live="polite">{meta.unread_count ? `${plural(meta.unread_count, 'unread notification')}` : 'Everything is read.'}</p>
                 {meta.unread_count > 0 && (
-                  <button type="button" className="button button--secondary button--small" disabled={action.busy} onClick={markAll}>
+                  <Button type="button" className="button button--secondary button--small" disabled={action.busy} onClick={markAll}>
                     Mark all as read
-                  </button>
+                  </Button>
                 )}
               </div>
               <ul className="notification-list">

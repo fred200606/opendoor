@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ApiErrorAlert } from '../../components/Alert.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
@@ -91,9 +92,9 @@ export default function RegisterPage() {
           {...form.bindCheckbox('consent')}
         />
 
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Creating account…' : 'Create account'}
-        </button>
+        </Button>
       </form>
 
       <p className="form-footer">

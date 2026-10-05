@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
@@ -75,9 +76,9 @@ export default function LoginPage() {
           error={form.fieldErrors.password}
           {...form.bind('password')}
         />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Logging in…' : 'Log in'}
-        </button>
+        </Button>
       </form>
 
       <p className="form-footer">

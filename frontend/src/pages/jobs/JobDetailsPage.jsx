@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthContext.jsx';
 import AccessibilitySnapshot from '../../components/AccessibilitySnapshot.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import Dialog from '../../components/Dialog.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { TextArea } from '../../components/form/fields.jsx';
@@ -182,9 +183,9 @@ function ApplyForm({ job }) {
           error={form.fieldErrors.interview_request}
           {...form.bind('interviewRequest')}
         />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Sending…' : 'Send application'}
-        </button>
+        </Button>
       </form>
     </>
   );
@@ -211,9 +212,9 @@ function SaveButton({ jobId }) {
 
   return (
     <>
-      <button type="button" className="button button--secondary" aria-pressed={saved} disabled={busy} onClick={toggle}>
+      <Button type="button" className="button button--secondary" aria-pressed={saved} disabled={busy} onClick={toggle}>
         {saved ? 'Saved' : 'Save job'}
-      </button>
+      </Button>
       <p className="visually-hidden" role="status">
         {message}
       </p>
@@ -237,9 +238,9 @@ function ReportButton({ jobId }) {
 
   return (
     <>
-      <button type="button" className="button button--link" onClick={() => setOpen(true)} disabled={done}>
+      <Button type="button" className="button button--link" onClick={() => setOpen(true)} disabled={done}>
         {done ? 'Reported – thank you' : 'Report this job'}
-      </button>
+      </Button>
       {open && (
         <Dialog title="Report this job" onClose={() => setOpen(false)}>
           <ApiErrorAlert error={form.formError} title="The report was not sent" />
@@ -254,9 +255,9 @@ function ReportButton({ jobId }) {
               {...form.bind('reason')}
             />
             <div className="dialog__actions">
-              <button type="submit" className="button" disabled={form.submitting}>
+              <Button type="submit" className="button" disabled={form.submitting}>
                 Send report
-              </button>
+              </Button>
               <button type="button" className="button button--secondary" onClick={() => setOpen(false)}>
                 Cancel
               </button>

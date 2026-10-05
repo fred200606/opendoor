@@ -3,6 +3,7 @@ import { changePassword } from '../../api/auth.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABELS } from '../../auth/roles.js';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
@@ -97,9 +98,9 @@ function PasswordSection() {
         <TextField label="Current password" id="current_password" type="password" autoComplete="current-password" required error={form.fieldErrors.current_password} {...form.bind('currentPassword')} />
         <TextField label="New password" id="new_password" type="password" autoComplete="new-password" required hint="At least 8 characters, different from the current one." error={form.fieldErrors.password} {...form.bind('password')} />
         <TextField label="Confirm new password" id="new_password_confirmation" type="password" autoComplete="new-password" required {...form.bind('passwordConfirmation')} />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Changing…' : 'Change password'}
-        </button>
+        </Button>
       </form>
     </section>
   );

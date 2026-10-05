@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { getFeedbackForm, submitFeedback } from '../../api/applications.js';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, TextArea } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
@@ -108,9 +109,9 @@ function FeedbackForm({ applicationId, items }) {
           />
         ))}
         <TextArea label="Comments" hint="Optional. Do not include names." id="comments" maxLength={2000} error={form.fieldErrors.comments} {...form.bind('comments')} />
-        <button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Submit ratings'}
-        </button>
+        </Button>
       </form>
     </>
   );
