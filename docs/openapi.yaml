@@ -164,6 +164,7 @@ paths:
     get:
       tags: [M2 Candidate profile]
       summary: Own candidate profile including accommodation needs
+      description: A new candidate gets an empty profile (created on first access) – this endpoint never answers 404.
       responses:
         '200':
           description: Profile
@@ -175,6 +176,7 @@ paths:
     put:
       tags: [M2 Candidate profile]
       summary: Update own candidate profile
+      description: Partial update – omitted fields keep their value. Empty strings are stored as null. show_disability is forced to false when disability_type is null.
       requestBody:
         required: true
         content:
@@ -201,6 +203,9 @@ paths:
               properties:
                 accommodation_ids:
                   type: array
+                  maxItems: 30
+                  uniqueItems: true
+                  description: Active accommodation types; a type retired after it was chosen may be kept. An empty array clears all needs.
                   items: { type: integer }
       responses:
         '200':
@@ -218,6 +223,7 @@ paths:
     post:
       tags: [M2 Candidate profile]
       summary: Upload résumé (PDF only, max 5 MB)
+      description: Replaces (and deletes) the previous résumé.
       requestBody:
         required: true
         content:
@@ -235,8 +241,29 @@ paths:
               schema:
                 type: object
                 properties:
-                  resume_url: { type: string }
+                  resume_url: { type: string, description: 'Signed gateway link, valid 30 minutes (see GET /resumes/{id})' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+  /resumes/{id}:
+    get:
+      tags: [M2 Candidate profile]
+      summary: Open a résumé PDF from a temporary signed link
+      description: >-
+        No Bearer token (the browser opens the link in a new tab); access is granted by the signature instead.
+        Links come only from the API (resume_url, valid 30 minutes). The signature covers path and query
+        (relative), so the gateway forwards the request unchanged.
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { name: expires, in: query, required: true, schema: { type: integer }, description: Unix timestamp }
+        - { name: signature, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: PDF (Content-Disposition inline, Cache-Control private, no-store)
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   # ---------------------------------------------------------------- M3 Company
   /employer/company:
@@ -1381,14 +1408,15 @@ components:
     CandidateProfileInput:
       type: object
       properties:
-        headline: { type: string, maxLength: 255 }
+        headline: { type: [string, 'null'], maxLength: 255 }
         skills:
           type: array
-          items: { type: string }
-        experience: { type: string }
-        location_psgc: { type: [string, 'null'], maxLength: 10 }
+          maxItems: 30
+          items: { type: string, maxLength: 50 }
+        experience: { type: [string, 'null'], maxLength: 5000 }
+        location_psgc: { type: [string, 'null'], pattern: '^\d{9,10}$' }
         location_label: { type: [string, 'null'], maxLength: 255, description: 'Display label chosen with the PSGC picker, e.g. "Quezon City, National Capital Region (NCR)"; returned as location.label' }
-        disability_type: { type: [string, 'null'], description: Optional; never used for matching }
+        disability_type: { type: [string, 'null'], maxLength: 100, description: Optional; never used for matching }
         show_disability: { type: boolean, default: false }
     CandidateProfile:
       allOf:
@@ -1397,7 +1425,7 @@ components:
           properties:
             id: { type: integer }
             location: { $ref: '#/components/schemas/Location' }
-            resume_url: { type: [string, 'null'] }
+            resume_url: { type: [string, 'null'], description: 'Signed gateway link to GET /resumes/{id}, valid 30 minutes; null without a résumé' }
             accommodations:
               type: array
               items: { $ref: '#/components/schemas/Accommodation' }

@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 3 – Candidate side
-- **In progress:** Phase 3 – Core M2 candidate profile: code + 18 tests committed (110 Core tests pass). Remaining: (1) live UI check of the résumé upload + signed link on `/candidate/profile` (needs + profile save already verified live); (2) OpenAPI: GET /candidate/profile always 200 (created on first access), `location_label`, `GET /resumes/{id}` signed route, resume_url = 30-min signed gateway link; (3) tick the M2 item.
-- **Next step:** Phase 3 – Core M2 candidate profile: `candidate_profiles` (+ `location_label`) + `candidate_accommodation` (FK restrictOnDelete on accommodations), `CandidateProfile` model, `GET/PUT /candidate/profile` (404 or empty until created – frontend handles both), `PUT /candidate/accommodations`, `POST /candidate/resume` (PDF ≤ 5 MB, served through the gateway like logos), privacy rules (disability never used for matching, hidden unless `show_disability`). Screens exist – wire-check `/candidate/profile` live.
+- **In progress:** Frontend: keep keyboard focus on submit buttons while a request runs. Live check found that `disabled={…submitting}` drops focus to `<body>` when the focused button is disabled (26 buttons in 13 files, e.g. résumé Upload). Plan: shared `SubmitButton` (`aria-disabled` + ignore clicks while busy) + re-entrance guard in `useApiForm.submit`/`useAction`; Vitest test that focus stays on the button.
+- **Next step:** after the focus fix: Phase 3 – Core M5 search (`GET /job-postings`: category/accommodation filters, `match=1` ranking with `withCount` of needs met + `missing`, sort, pagination). The Find jobs screen currently gets 405 from Core.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -80,7 +80,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 03 (25 requests: T02, T07, T08, approval workflow, visibility; whole collection 54 requests / 259 assertions pass)
 
 ### Phase 3 – Candidate side
-- [ ] Core: M2 profile + accommodation needs + resume upload
+- [x] Core: M2 profile + accommodation needs + resume upload (9514aa3; 18 tests; live check 2026-10-05: empty profile for new candidate, PDF upload, server 422 for non-PDF, signed gateway link 200 / tampered 403)
 - [ ] Core: M5 search, category/accommodation filters, matching (`withCount`, ordering, `missing`), sort, pagination
 - [ ] Core: feature tests for matching order and privacy rules
 - [ ] Frontend: profile, find jobs (match mode, aria-live count), job details wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
@@ -133,20 +133,23 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc endpoint list needs `GET /resumes/{id}` (signed 30-min résumé link through the gateway) – update with `opendoor-sia-docs`.
+- Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
-- Frontend assumes: résumé max 5 MB PDF (Phase 3 backend must use the same limit); `GET /candidate/profile` may answer 404 for a new candidate (treated as empty profile); dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
+- Frontend assumes: dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 - SIA doc endpoint list needs the new `GET /admin/accommodations` (admin list incl. retired) – update with `opendoor-sia-docs`.
-- Demo seed data still missing: candidate profiles/needs (Phase 3), employers + postings with Metro Manila addresses (Phase 2), hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
+- Demo seed data still missing: hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
 - SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
 - SIA doc 8.5 now references `docs/setup/create-databases.sql`, registry `seed.php` and `public/` – create these with those exact names.
 
 ## Session log (newest first)
 
+- 2026-10-05 – M2 closed: OpenAPI for profile/needs/résumé + `GET /resumes/{id}`; live résumé check OK; found submit buttons losing focus when disabled (next step).
 - 2026-10-04 – M2 candidate profile backend done (profiles, needs, résumé with signed links, DemoCandidateSeeder, shared UsableAccommodation rule); stopped at the usage limit before the live résumé check.
 - 2026-10-04 – Postman 03 Employer & Postings done (cleans up after itself). **Phase 2 complete.**
 - 2026-10-04 – Admin posting approval done; live check (reject with reason, approve → public employer page) found focus lost after list reloads → app-wide focus rescue.
