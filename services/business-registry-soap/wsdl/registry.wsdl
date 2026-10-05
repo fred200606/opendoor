@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OpenDoor Business Registry – simulated DTI/SEC registry (SOAP 1.1, document/literal).
+  The soap:address below is a placeholder: GET /soap?wsdl replaces it with the URL the client
+  used, so the same file works locally (localhost:8003) and on Railway (registry.railway.internal:8003).
+  Requests carry a WS-Security UsernameToken header (checked by the service, not described here).
+-->
+<definitions name="BusinessRegistry" targetNamespace="urn:opendoor:registry:v1"
+    xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:opendoor:registry:v1"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <types>
+    <xsd:schema targetNamespace="urn:opendoor:registry:v1" elementFormDefault="qualified">
+      <xsd:element name="VerifyBusinessRegistrationRequest">
+        <xsd:complexType><xsd:sequence>
+          <xsd:element name="RegistrationNumber" type="xsd:string"/>
+          <xsd:element name="RegistryType">
+            <xsd:simpleType><xsd:restriction base="xsd:string">
+              <xsd:enumeration value="DTI"/><xsd:enumeration value="SEC"/>
+            </xsd:restriction></xsd:simpleType>
+          </xsd:element>
+          <xsd:element name="BusinessName" type="xsd:string"/>
+        </xsd:sequence></xsd:complexType>
+      </xsd:element>
+      <xsd:element name="VerifyBusinessRegistrationResponse">
+        <xsd:complexType><xsd:sequence>
+          <xsd:element name="Found" type="xsd:boolean"/>
+          <!-- ACTIVE | EXPIRED | CANCELLED | NOT_FOUND -->
+          <xsd:element name="Status" type="xsd:string"/>
+          <xsd:element name="RegisteredName" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="DateRegistered" type="xsd:date" minOccurs="0"/>
+          <xsd:element name="NameMatchScore" type="xsd:decimal"/>
+          <xsd:element name="CheckedAt" type="xsd:dateTime"/>
+        </xsd:sequence></xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="VerifyBusinessRegistrationInput">
+    <part name="parameters" element="tns:VerifyBusinessRegistrationRequest"/>
+  </message>
+  <message name="VerifyBusinessRegistrationOutput">
+    <part name="parameters" element="tns:VerifyBusinessRegistrationResponse"/>
+  </message>
+
+  <portType name="BusinessRegistryPortType">
+    <operation name="VerifyBusinessRegistration">
+      <input message="tns:VerifyBusinessRegistrationInput"/>
+      <output message="tns:VerifyBusinessRegistrationOutput"/>
+    </operation>
+  </portType>
+
+  <binding name="BusinessRegistryBinding" type="tns:BusinessRegistryPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="VerifyBusinessRegistration">
+      <soap:operation soapAction="urn:opendoor:registry:v1#VerifyBusinessRegistration"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <service name="BusinessRegistryService">
+    <port name="BusinessRegistryPort" binding="tns:BusinessRegistryBinding">
+      <soap:address location="http://registry.railway.internal:8003/soap"/>
+    </port>
+  </service>
+</definitions>

@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 5 – Verification (feedback + trust score)
+- **Current phase:** Phase 6 – Legacy SOAP integration
 - **In progress:** –
-- **Next step:** Phase 6 – Registry: `services/business-registry-soap` with WSDL, PHP SoapServer handler, WS-Security UsernameToken check, SQLite `registry.db` seeded by `seed.php` (records matching the demo employers + EXPIRED/CANCELLED samples), `public/` entry point, SOAP faults (`Client.Validation`, auth). Read `integrations.md` (SOAP part) + SIA 4.3 first.
+- **Next step:** Phase 6 – Core: `registry_checks` migration + model, `BusinessRegistryClient` (SoapClient, `REGISTRY_WSDL_URL`, UsernameToken via `SoapHeader` + `XSD_ANYXML`, 5 s timeout, fault mapping by suffix of `faultcode` e.g. `SOAP-ENV:Client.Authentication` → 502 REGISTRY_AUTH_FAILED, `Client.Validation` → 422 REGISTRY_INVALID_REQUEST, Server/connection → 502 REGISTRY_UNAVAILABLE + ERROR row), bound in a provider so tests fake it; `PATCH /admin/employers/{id}/verify` (check/approve/reject) + `GET /admin/employers[/{id}]` (OpenAPI). Read OpenAPI `/admin/employers*` + `RegistryResult` first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – Registry: plain PHP without Composer (`src/` autoloader, `tests/run.php` own runner). Registration numbers are normalized (hyphens/spaces removed, upper case) before the 5–20 alphanumeric check, so Core's `CS-2019-12345` matches. WS-Security checked on the raw envelope (DOM, `LIBXML_NONET`, `hash_equals`) before `SoapServer` runs; PasswordDigest refused. WSDL's `soap:address` is rewritten to the requesting host (or `REGISTRY_PUBLIC_URL`). DB at `data/registry.db` (`REGISTRY_DB_PATH`). Seed: the 2 demo employers ACTIVE + 3 more ACTIVE, 2 EXPIRED, 2 CANCELLED.
 - 2026-10-05 – M7: the posting's accommodations are recorded in a new pivot `application_accommodation` when an application becomes hired (migration back-fills already-hired ones); the form lists those, sorted by name, and every item must be rated. Not hired → 422 FEEDBACK_NOT_OPEN (form and submit). Form adds `submitted`; Application adds `feedback_submitted` (candidate only). Trust score `breakdown` is `[]` until published (same answer for everyone). Score math in integers (half points) = PHP `round()`. Recalculation by `FeedbackObserver` after commit; `Feedback::submit()` writes response + items in one transaction.
 - 2026-10-05 – `GET /job-postings/{id}` returns `my_application {id,status,created_at}|null` for candidates (details only) so the page shows the application instead of the apply form.
 - 2026-10-05 – M6: apply returns the full Application (201). Closed postings (or open past `closes_at` day, Manila) → 422 POSTING_CLOSED; drafts/unapproved → 404. Admins have no access to applications (403). The employer's `candidate` block also carries `skills`, `experience`, `resume_url` (signed) and `disability_type` only when `show_disability`. Notifications: Laravel database notifications, type `application_received` / `application_status_changed`, `data {message,url,application_id,status}` to the party that did not act. Status changes run under a row lock.
@@ -106,7 +107,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 06 (16 requests: T10 3rd response publishes employer2@ at 78% – 201 on a fresh seed, 409 on re-runs; T11 not open; 403/401; validation; whole collection 110 requests / 544 assertions pass)
 
 ### Phase 6 – Legacy SOAP integration
-- [ ] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults
+- [x] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults (`php tests/run.php`: 39 checks incl. SoapClient smoke on its own port; faults namespace-qualified `SOAP-ENV:Client.*`)
 - [ ] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping
 - [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check
 - [ ] Frontend: admin employer verification screen shows registry result – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
@@ -148,7 +149,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
-- SIA doc 8.5 references the registry's `seed.php` and `public/` – create them with those exact names in Phase 6 (`docs/setup/create-databases.sql` exists).
 
 ## Session log (newest first)
 
