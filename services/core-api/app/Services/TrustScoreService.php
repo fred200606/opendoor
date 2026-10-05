@@ -57,7 +57,7 @@ class TrustScoreService
                 SUM(CASE WHEN feedback_items.rating = 'delivered' THEN 1 ELSE 0 END) AS delivered,
                 SUM(CASE WHEN feedback_items.rating = 'partial' THEN 1 ELSE 0 END) AS partial,
                 SUM(CASE WHEN feedback_items.rating = 'not_delivered' THEN 1 ELSE 0 END) AS not_delivered,
-                COUNT(*) AS of")
+                COUNT(*) AS rated")
             ->get()
             ->map(fn (object $row) => [
                 'accommodation_id' => (int) $row->accommodation_id,
@@ -65,7 +65,7 @@ class TrustScoreService
                 'delivered' => (int) $row->delivered,
                 'partial' => (int) $row->partial,
                 'not_delivered' => (int) $row->not_delivered,
-                'of' => (int) $row->of,
+                'of' => (int) $row->rated,
             ])
             ->all();
     }

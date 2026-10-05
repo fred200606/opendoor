@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
 - **In progress:** –
-- **Next step:** Phase 5 – demo data: `DemoFeedbackSeeder` (hired applications 40+ days ago + ≥3 `Feedback::submit` responses for one demo employer so its trust score is published; idempotent; called from `DatabaseSeeder`). Then frontend: FeedbackPage uses `submitted` (show "already rated") and handles an empty item list; candidate application page uses `feedback_submitted`; live check of feedback + TrustScoreCard; then Postman 06.
+- **Next step:** Phase 5 frontend: FeedbackPage uses `submitted` (show "already rated" instead of the form) and handles an empty item list; candidate application page uses `feedback_submitted` ("Rated" instead of the link); Vitest; then live check (log in as `candidate2@` → hired Chat Support application → rate; employer@ trust score page 79% with breakdown; job details + employer page cards). Then Postman 06.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -49,6 +49,7 @@
 
 ## Environment notes
 
+- Core tests run on SQLite in memory. For new raw SQL, also run them on MySQL: copy `phpunit.xml` with `DB_CONNECTION=mysql`, `DB_DATABASE=opendoor_core_test` to a temporary `phpunit.mysql.tmp.xml` in `services/core-api`, run `vendor/bin/phpunit -c` with it, then delete it (MySQL 8 reserves words like `of` that SQLite accepts).
 - Main dev machine (Windows 11): PHP 8.4 (Herd Lite), Composer (Herd Lite `composer.bat`), Node 22.15, npm 10.9, MySQL 8.0.42, Git 2.45. **Docker: not installed.** Claude Code CLI used in the VS Code terminal (PowerShell).
 
 ## Checklist
@@ -148,11 +149,11 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
-- Demo seed data still missing: hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
 - SIA doc 8.5 references the registry's `seed.php` and `public/` – create them with those exact names in Phase 6 (`docs/setup/create-databases.sql` exists).
 
 ## Session log (newest first)
 
+- 2026-10-05 – `DemoFeedbackSeeder`: 3 former employees rate employer@ (published 79%), candidate2@ has an open, unrated hire; fixed MySQL reserved alias `of` in the breakdown (feedback tests also pass on MySQL).
 - 2026-10-05 – M7 Core done: feedback form/submit, hire-time accommodation snapshot, `TrustScoreService` + observer, public trust score; found + fixed a stale cached Employer skipping `feedback_count` writes.
 - 2026-10-05 – Postman 05 Applications done. **Phase 4 complete.**
 - 2026-10-05 – Phase 4 M6 applications: backend + tests, screens live-checked end to end; removed a leftover "Postman Data Encoder" posting from the rate-limited Newman run.

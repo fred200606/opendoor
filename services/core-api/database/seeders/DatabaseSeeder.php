@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             DemoEmployerSeeder::class,
             DemoPostingSeeder::class,
             DemoCandidateSeeder::class,
+            DemoFeedbackSeeder::class,
         ]);
     }
 }

@@ -5,11 +5,14 @@ namespace Tests\Feature\Database;
 use App\Enums\AccommodationGroup;
 use App\Enums\UserRole;
 use App\Models\Accommodation;
+use App\Models\Application;
 use App\Models\Category;
+use App\Models\Feedback;
 use App\Models\User;
 use Database\Seeders\AccommodationSeeder;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\DemoFeedbackSeeder;
 use Database\Seeders\DemoUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -36,7 +39,24 @@ class SeederTest extends TestCase
 
         $this->assertSame(count(CategorySeeder::CATEGORIES), Category::count());
         $this->assertSame(18, Accommodation::count()); // 4 + 3 + 5 + 3 + 3 types per data-model.md
-        $this->assertSame(count(DemoUserSeeder::ACCOUNTS), User::count());
+        $formerEmployees = collect(DemoFeedbackSeeder::HIRES)->filter(fn ($hire) => str_starts_with($hire['email'], 'former'))->count();
+        $this->assertSame(count(DemoUserSeeder::ACCOUNTS) + $formerEmployees, User::count());
+        $this->assertSame(count(DemoFeedbackSeeder::HIRES), Application::where('status', 'hired')->count());
+        $this->assertSame(3, Feedback::count());
+    }
+
+    public function test_the_first_demo_employer_has_a_published_trust_score(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $employer = User::where('email', 'employer@opendoor.test')->firstOrFail()->employer;
+
+        // (3.5 + 3.5 + 2.5) of 12 rated items = 79.17 %.
+        $this->assertSame(['published' => true, 'score' => 79, 'based_on' => 3], $employer->fresh()->trustScoreSummary());
+
+        $open = Application::whereHas('candidateProfile.user', fn ($user) => $user->where('email', 'candidate2@opendoor.test'))->sole();
+        $this->assertTrue($open->isFeedbackOpen());
+        $this->assertFalse($open->feedback()->exists());
+        $this->assertSame(4, $open->accommodationsAtHire()->count());
     }
 
     public function test_accommodations_cover_every_group_and_are_active(): void
