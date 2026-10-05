@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 6 – Legacy SOAP integration
 - **In progress:** –
-- **Next step:** Phase 6 – live check of the admin employer verification screen (start registry `php -S 127.0.0.1:8003 -t public` in `services/business-registry-soap`, Core, gateway, Vite; log in as admin → Employers queue → Kalinga Foods (employer2@, SEC CS201912345) → Check with the business registry → ACTIVE 100%; try a NOT_FOUND employer; stop the registry → 502 message; approve / remove verification with reason; axe). Fix what it finds, then tick the frontend item and do Postman 08 (registry part).
+- **Next step:** Phase 6 – Postman folder 08 (registry part) in `tests/postman/build-collection.mjs`: T14 admin check of Kalinga Foods (employer2@, SEC CS201912345) → ACTIVE, name_match ≥ 0.80, check stored (visible in `GET /admin/employers/{id}`); T15 unknown number → NOT_FOUND (needs an employer with an unknown number – e.g. the throwaway employer flow, or check via a registry record that is not ACTIVE); approve + remove verification and restore pending at the end (re-runnable); 403 for non-admins; reject without reason → 422. The registry must be running (`php -S 127.0.0.1:8003 -t public` in `services/business-registry-soap`). Wrong SOAP password (T15b) cannot be set from Postman – covered by PHPUnit; note it in the folder description.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -111,7 +111,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults (`php tests/run.php`: 39 checks incl. SoapClient smoke on its own port; faults namespace-qualified `SOAP-ENV:Client.*`)
 - [x] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping (+ `GET /admin/employers[/{id}]`; live calls to the running registry OK for ACTIVE / NOT_FOUND / 422 / auth 502 / unreachable 502)
 - [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check – first two done (`tests/Feature/Registry` 14 tests, also on MySQL; registry `php tests/run.php` 39 checks); `xmllint` not installed locally → add to CI (Phase 9), then tick
-- [ ] Frontend: admin employer verification screen shows registry result – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Frontend: admin employer verification screen shows registry result – live-checked 2026-10-06 (queue, ACTIVE 100% without warning, NOT_FOUND warning without score, approve, remove verification with reason, registry stopped → "did not respond" + ERROR row; focus stays on the check button; axe 0 on 4 views). No UI changes needed
 - [ ] Postman: folder 08 (registry part)
 
 ### Phase 7 – Mashup (Insights)
@@ -154,6 +154,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – Admin verification screen live-checked against the real SOAP registry (12 checks pass, incl. registry down); demo data reset (Kalinga pending, no checks).
 - 2026-10-06 – Registry SOAP service done (39 checks); Core `BusinessRegistryClient` + `registry_checks` + admin employer queue/verify done (14 tests, 272 Core tests pass). Ran /doctor (user settings only: 3 unused plugins + 2 skills off, auto mode default).
 - 2026-10-05 – SIA doc synced for M7 (4.1, 4.2, 6, 8, Appendix A + data model + seeders); fixed a blank page 8 (H1 now uses `pageBreakBefore` instead of page-break paragraphs); checked as PDF, 41 pages. **Phase 5 complete.**
 - 2026-10-05 – Postman 06 Feedback & Trust Score done; seed moved candidate2@'s open hire to a closed employer2@ posting (2 earlier responses) so T10 really publishes a score. Phase 5 code complete; SIA doc sync next.
