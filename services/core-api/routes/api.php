@@ -10,6 +10,7 @@ use App\Http\Controllers\Employer\CompanyController;
 use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\JobPostingController;
+use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\ResumeController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,9 @@ Route::get('accommodations', [AccommodationController::class, 'index']);
 // M3 Company – public employer page and logo
 Route::get('employers/{employer}', [EmployerController::class, 'show']);
 Route::get('employers/{employer}/logo', [EmployerController::class, 'logo']);
+
+// M5 Search – public; candidates with saved needs also get `match` (token optional)
+Route::get('job-postings', [JobSearchController::class, 'index']);
 
 // M4 Job postings – details are public for open postings (owners and admins also see drafts)
 Route::get('job-postings/{jobPosting}', [JobPostingController::class, 'show']);

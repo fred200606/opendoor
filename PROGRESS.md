@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 3 – Candidate side
 - **In progress:** –
-- **Next step:** Phase 3 – Core M5 search (`GET /job-postings`: category/accommodation filters, `match=1` ranking with `withCount` of needs met + `missing`, sort, pagination). The Find jobs screen currently gets 405 from Core.
+- **Next step:** Phase 3 – Postman folder 04 (Candidate & Search): profile GET/PUT, needs PUT (retired/unknown/duplicate → 422), résumé upload (PDF + non-PDF 422) and signed link (200 / tampered 403), search as guest (match_mode false), candidate `match=1` ranking + `match` on details, filters (q, category, accommodations[] = all), validation 422. Extend `tests/postman/build-collection.mjs`; run the whole collection with Newman.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – M5: `sort=best` = needs met (match mode) then newest; without match mode best = newest; ties by id desc. Candidates with needs get `match` on every posting even with match=0; `match=1` from guests/other roles/candidates without needs is ignored (`match_mode:false`), not an error. `accommodations[]` filter = posting must offer all. Keyword LIKE uses `ESCAPE '!'` (same on MySQL and SQLite). Documented in OpenAPI.
 - 2026-10-05 – Frontend: buttons that become unavailable use `components/Button.jsx` (`aria-disabled`, clicks ignored) instead of native `disabled`, which drops focus to `<body>` in Chrome; `useApiForm.submit` / `useAction.run` ignore a second call while one is running. Rule added to `opendoor-dev` conventions.
 - 2026-10-04 – Frontend focus rescue: `useFocusRescue` in AppLayout moves focus to the page `<h1>` whenever the focused element is removed from `<main>` (rows/cards that disappear after an action), in addition to the dialog's own fallback.
 - 2026-10-04 – M4: company profile required to post (422 `errors.company`); `submit` defaults to false; `submit:true` on create or edit → `pending_approval` + not approved (editing an open posting is re-approved); `submit:false` only for drafts; close/reopen rules; unpublished postings 404 for non-owners; daily `postings:close-expired` 00:05 Manila; retired accommodations may stay on postings that already had them. Admin reject → back to `draft` with `rejection_reason` (next step).
@@ -82,9 +83,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 3 – Candidate side
 - [x] Core: M2 profile + accommodation needs + resume upload (9514aa3; 18 tests; live check 2026-10-05: empty profile for new candidate, PDF upload, server 422 for non-PDF, signed gateway link 200 / tampered 403)
-- [ ] Core: M5 search, category/accommodation filters, matching (`withCount`, ordering, `missing`), sort, pagination
-- [ ] Core: feature tests for matching order and privacy rules
-- [ ] Frontend: profile, find jobs (match mode, aria-live count), job details wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Core: M5 search, category/accommodation filters, matching (`withCount`, ordering, `missing`), sort, pagination (`NeedsMatcher`, `JobSearchController`; `match` also on details)
+- [x] Core: feature tests for matching order and privacy rules (`tests/Feature/Search`, 12 tests; disability type never matches; employer view of needs is tested with applications in Phase 4)
+- [x] Frontend: profile, find jobs (match mode, aria-live count), job details wired – live-checked 2026-10-05 with demo candidate (ranking 3/3 → 1/3 → 0/3, missing needs on details, keyword/company search, axe 0 violations on all three pages)
 - [ ] Postman: folder 04
 
 ### Phase 4 – Applications
@@ -134,6 +135,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Paginated lists expose Core's internal URL in `meta.path` / `meta.links` / `links` (e.g. `http://127.0.0.1:8001/api/...`). Frontend only uses the page numbers. Fix before deployment: build paginator paths from `PUBLIC_API_URL` (e.g. `Paginator::currentPathResolver`) or drop the links.
 - SIA doc endpoint list needs `GET /resumes/{id}` (signed 30-min résumé link through the gateway) – update with `opendoor-sia-docs`.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
@@ -150,6 +152,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – M5 search + matching done (12 tests, 122 Core tests pass); Find jobs + job details live-checked with the demo candidate.
 - 2026-10-05 – Submit/pagination buttons keep focus while busy (shared `Button`, 25 buttons in 14 files); verified in Chrome (focus stays, repeated Enter sends once); 92 Vitest tests.
 - 2026-10-05 – M2 closed: OpenAPI for profile/needs/résumé + `GET /resumes/{id}`; live résumé check OK; found submit buttons losing focus when disabled (next step).
 - 2026-10-04 – M2 candidate profile backend done (profiles, needs, résumé with signed links, DemoCandidateSeeder, shared UsableAccommodation rule); stopped at the usage limit before the live résumé check.

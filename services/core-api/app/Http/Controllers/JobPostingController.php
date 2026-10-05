@@ -7,6 +7,7 @@ use App\Exceptions\ApiException;
 use App\Http\Requests\Postings\JobPostingRequest;
 use App\Http\Resources\JobPostingResource;
 use App\Models\JobPosting;
+use App\Services\NeedsMatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,19 +16,25 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-/** M4 job postings (create, read, update, delete, open/close). Search is M5. */
+/** M4 job postings (create, read, update, delete, open/close). Search is M5 (JobSearchController). */
 class JobPostingController extends Controller
 {
     public const RELATIONS = ['employer', 'category', 'accommodations'];
 
-    /** Public for open postings; owners and admins also see their drafts. Others get 404, not 403. */
+    /**
+     * Public for open postings; owners and admins also see their drafts. Others get 404, not 403.
+     * Candidates with saved needs also get `match`.
+     */
     public function show(Request $request, JobPosting $jobPosting): JobPostingResource
     {
         if (! Gate::forUser($request->user('sanctum'))->allows('view', $jobPosting)) {
             throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
         }
 
-        return new JobPostingResource($jobPosting->load(self::RELATIONS));
+        $jobPosting->load(self::RELATIONS);
+        NeedsMatcher::for($request->user('sanctum'))?->annotate($jobPosting);
+
+        return new JobPostingResource($jobPosting);
     }
 
     public function store(JobPostingRequest $request): JsonResponse

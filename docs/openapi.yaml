@@ -433,28 +433,36 @@ paths:
     get:
       tags: [M5 Search and matching]
       summary: Search open postings; "Matches my needs" mode for candidates with saved needs
+      description: >-
+        Only open, approved postings. A logged-in candidate with saved needs gets `match` on every posting
+        (also with match=0); `meta.match_mode` is true only when match=1 is asked by such a candidate –
+        for guests, other roles and candidates without needs match=1 is ignored (not an error).
+        The disability type is never used.
       security: [{}, { bearerAuth: [] }]
       parameters:
         - name: q
           in: query
-          description: Keyword (title, description, company name)
-          schema: { type: string }
+          description: Keyword, case-insensitive substring of title, description or company name (% and _ are literal)
+          schema: { type: string, maxLength: 100 }
         - name: category
           in: query
           schema: { type: integer }
         - name: accommodations[]
           in: query
+          description: The posting must offer every listed accommodation
           style: form
           explode: true
           schema:
             type: array
+            maxItems: 30
             items: { type: integer }
         - name: match
           in: query
-          description: 1 = rank by the logged-in candidate's needs (full matches first, then by met desc)
+          description: 1 = rank by the logged-in candidate's needs (full matches first, then by met desc, then by `sort`)
           schema: { type: integer, enum: [0, 1] }
         - name: sort
           in: query
+          description: best = needs met (match mode), then newest; newest = created_at desc; closing = closes_at asc. Ties by id desc.
           schema: { type: string, enum: [best, newest, closing], default: best }
         - $ref: '#/components/parameters/Page'
       responses:
@@ -474,6 +482,7 @@ paths:
                       - type: object
                         properties:
                           match_mode: { type: boolean }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
     post:
       tags: [M4 Job postings]
       summary: Create a posting (draft, or submit for approval)
@@ -1569,7 +1578,7 @@ components:
           type: array
           items: { $ref: '#/components/schemas/Accommodation' }
         match:
-          description: Only for logged-in candidates with saved needs
+          description: Only for logged-in candidates with saved needs (search and details); null otherwise. `missing` lists the unmet needs by name.
           oneOf:
             - $ref: '#/components/schemas/Match'
             - type: 'null'
