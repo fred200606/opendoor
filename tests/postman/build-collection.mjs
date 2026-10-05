@@ -770,6 +770,179 @@ pm.test('each posting offers both', () => body.data.forEach((p) => pm.expect(p.a
   ],
 );
 
+// ---------------------------------------------------------------- 05 Applications
+
+const applicationShape = `
+pm.test('matches the Application shape', () => {
+  const a = pm.response.json();
+  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');
+});`;
+
+const applications = folder(
+  '05 Applications',
+  'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.',
+  [
+    request('Employer submits a posting for this run', {
+      method: 'POST',
+      path: '/job-postings',
+      auth: bearer('employerToken'),
+      prerequest: INT_IDS,
+      body: postingBody({ title: 'Postman Applications Test', description: 'Created by the Postman run for folder 05. Deleted at the end.' }),
+      tests: `${status(201)}\npm.collectionVariables.set('appPostingId', pm.response.json().id);`,
+    }),
+    request('Admin approves it → open', {
+      method: 'PATCH',
+      path: '/admin/job-postings/{{appPostingId}}/approve',
+      auth: bearer('adminToken'),
+      body: { action: 'approve' },
+      tests: `${status(200)}\npm.test('open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+    }),
+    request('Employer cannot apply → 403', {
+      method: 'POST',
+      path: '/job-postings/{{appPostingId}}/applications',
+      auth: bearer('employerToken'),
+      body: {},
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Candidate applies with an interview accommodation request → 201', {
+      method: 'POST',
+      path: '/job-postings/{{appPostingId}}/applications',
+      auth: bearer('newCandidateLoginToken'),
+      body: { cover_note: 'Applied by the Postman run.', interview_request: 'Captions during the online interview, please.' },
+      tests: `
+${status(201)}
+${applicationShape}
+const a = pm.response.json();
+pm.test('pending, not hired, no candidate block for the candidate', () => {
+  pm.expect(a.status).to.eql('pending');
+  pm.expect(a.hired_at).to.eql(null);
+  pm.expect(a).to.not.have.property('candidate');
+});
+pm.collectionVariables.set('applicationId', a.id);`,
+    }),
+    request('Applying again → 409 ALREADY_APPLIED', {
+      method: 'POST',
+      path: '/job-postings/{{appPostingId}}/applications',
+      auth: bearer('newCandidateLoginToken'),
+      body: {},
+      tests: `${status(409)}\n${envelope('ALREADY_APPLIED')}`,
+    }),
+    request('Job details show the earlier application to the candidate', {
+      path: '/job-postings/{{appPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+pm.test('my_application is the pending application', () => {
+  const m = pm.response.json().my_application;
+  pm.expect(m.id).to.eql(pm.collectionVariables.get('applicationId'));
+  pm.expect(m.status).to.eql('pending');
+});`,
+    }),
+    request('Candidate cannot mark own application reviewed → 422 INVALID_STATUS_TRANSITION', {
+      method: 'PATCH',
+      path: '/applications/{{applicationId}}/status',
+      auth: bearer('newCandidateLoginToken'),
+      body: { status: 'reviewed' },
+      tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
+    }),
+    request('T06 Employer hires without reviewing → 422 INVALID_STATUS_TRANSITION', {
+      method: 'PATCH',
+      path: '/applications/{{applicationId}}/status',
+      auth: bearer('employerToken'),
+      body: { status: 'hired' },
+      tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
+      description: 'pending → hired skips the review step. (Opening the application as the employer moves it to reviewed.)',
+    }),
+    request('Another employer cannot open the application → 403', {
+      path: '/applications/{{applicationId}}',
+      auth: bearer('employer2Token'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Admins have no access to applications → 403', {
+      path: '/applications',
+      auth: bearer('adminToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Employer opens the application → reviewed, with the candidate details', {
+      path: '/applications/{{applicationId}}',
+      auth: bearer('employerToken'),
+      tests: `
+${status(200)}
+${applicationShape}
+const a = pm.response.json();
+pm.test('opening marks it reviewed', () => pm.expect(a.status).to.eql('reviewed'));
+pm.test('candidate needs and a signed résumé link are shared with this employer', () => {
+  pm.expect(a.candidate).to.include.keys('name', 'headline', 'skills', 'experience', 'accommodations', 'disability_type', 'resume_url');
+  pm.expect(a.candidate.accommodations).to.have.lengthOf(2);
+  pm.expect(a.candidate.resume_url).to.match(/\\/resumes\\/\\d+\\?expires=/);
+});
+pm.test('disability type is hidden (not shared by the candidate)', () => pm.expect(a.candidate.disability_type).to.eql(null));`,
+    }),
+    request('Employer lists applicants for the posting', {
+      path: '/applications?job_posting_id={{appPostingId}}',
+      auth: bearer('employerToken'),
+      tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('one applicant, reviewed', () => { pm.expect(body.meta.total).to.eql(1); pm.expect(body.data[0].status).to.eql('reviewed'); });`,
+    }),
+    request('Employer hires → hired_at and feedback date', {
+      method: 'PATCH',
+      path: '/applications/{{applicationId}}/status',
+      auth: bearer('employerToken'),
+      body: { status: 'hired' },
+      tests: `
+${status(200)}
+const a = pm.response.json();
+pm.test('hired by the employer', () => { pm.expect(a.status).to.eql('hired'); pm.expect(a.hire_confirmed_by).to.eql('employer'); pm.expect(a.hired_at).to.be.a('string'); });
+pm.test('feedback opens 30 days after the hire (Manila)', () => {
+  const opens = new Date(a.feedback_opens_on + 'T00:00:00+08:00');
+  const hiredManila = new Date(new Date(a.hired_at).getTime() + 8 * 3600000).toISOString().slice(0, 10);
+  pm.expect((opens - new Date(hiredManila + 'T00:00:00+08:00')) / 86400000).to.eql(30);
+});`,
+    }),
+    request('Hired is final → reject is refused (422)', {
+      method: 'PATCH',
+      path: '/applications/{{applicationId}}/status',
+      auth: bearer('employerToken'),
+      body: { status: 'rejected' },
+      tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
+    }),
+    request('Candidate sees the hire in My applications', {
+      path: '/applications?status=hired',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+pm.test('the hired application is listed', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.include(pm.collectionVariables.get('applicationId')));`,
+    }),
+    request('Owner closes the posting', {
+      method: 'PATCH',
+      path: '/job-postings/{{appPostingId}}/status',
+      auth: bearer('employerToken'),
+      body: { status: 'closed' },
+      tests: status(200),
+    }),
+    request('Applying to a closed posting → 422 POSTING_CLOSED', {
+      method: 'POST',
+      path: '/job-postings/{{appPostingId}}/applications',
+      auth: bearer('candidateToken'),
+      body: {},
+      tests: `${status(422)}\n${envelope('POSTING_CLOSED')}`,
+    }),
+    request('Owner deletes the posting → 204 (cleanup; the application stays)', {
+      method: 'DELETE',
+      path: '/job-postings/{{appPostingId}}',
+      auth: bearer('employerToken'),
+      tests: status(204),
+    }),
+    request('The application survives the deleted posting', {
+      path: '/applications/{{applicationId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `${status(200)}\npm.test('still hired', () => pm.expect(pm.response.json().status).to.eql('hired'));`,
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -780,10 +953,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings, candidateSearch],
+  item: [auth, masterData, employerPostings, candidateSearch, applications],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));

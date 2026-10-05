@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 4 – Applications
+- **Current phase:** Phase 5 – Verification (feedback + trust score)
 - **In progress:** –
-- **Next step:** Phase 4 – Postman folder 05 (Applications): throwaway candidate applies to a demo posting (201), duplicate 409, closed/unknown posting, details `my_application`, employer opens → reviewed, refused transitions 422 INVALID_STATUS_TRANSITION, stranger 403, hire → `feedback_opens_on`; must clean up (withdraw or keep? applications are never deleted – use a posting created in the run and soft-delete it at the end). Mind the 120 req/min gateway limit (collection is 75 now).
+- **Next step:** Phase 5 – Core M7: `feedback` + `feedback_items` migrations (feedback.application_id unique; items rate the posting's accommodations: delivered | partial | not_delivered), `GET /applications/{id}/feedback-form` (`opens_on`, `is_open`, items), `POST /applications/{id}/feedback` (hired candidate only, from calendar day 30 Manila → 422 FEEDBACK_NOT_OPEN, once → 409 FEEDBACK_EXISTS), `TrustScoreService` + observer (Delivered 1 / Partial 0.5 / Not 0, whole %), publish from 3 responses, `GET /employers/{id}/trust-score` breakdown. Read `business-rules.md` "Feedback and trust score" + OpenAPI M7 first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -95,7 +95,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change (`ApplicationController`, `ApplicationPolicy`, `ApplicationUpdate` database notification, `applicants_count` on employer postings)
 - [x] Core: feature tests for every allowed + disallowed transition, duplicate apply, closed posting (75-case unit table + `tests/Feature/Applications`, 31 tests; 228 Core tests pass)
 - [x] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired – live-checked 2026-10-05 (apply ×2, duplicate message, withdraw, employer open → reviewed, hire → candidate sees feedback date; axe 0 on 5 pages). Added: applicant skills/experience/shared disability/résumé link; job details show an earlier application instead of the form (`my_application`)
-- [ ] Postman: folder 05
+- [x] Postman: folder 05 (19 requests: apply, 409, T06 refused transition, 403 for strangers/admin, open → reviewed, hire + feedback date, POSTING_CLOSED; whole collection 94 requests / 469 assertions pass)
 
 ### Phase 5 – Verification (feedback + trust score)
 - [ ] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown
@@ -138,7 +138,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- Gateway limit 120 req/min per IP: one Newman run is 75 requests (~17 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
+- Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
+- Gateway limit 120 req/min per IP: one Newman run is 94 requests (~18 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
@@ -150,6 +151,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Postman 05 Applications done. **Phase 4 complete.**
 - 2026-10-05 – Phase 4 M6 applications: backend + tests, screens live-checked end to end; removed a leftover "Postman Data Encoder" posting from the rate-limited Newman run.
 - 2026-10-05 – Backlog clean-up: page links via the gateway URL; SIA doc caught up (React 19/oxlint/Vitest, `SERVER_ERROR`, résumé + admin list endpoints in 4.1/Appendix A, data model, upload security, references) and checked as PDF (41 pages); dev references synced.
 - 2026-10-05 – Postman 04 Candidate & Search done (multipart upload + signed link). **Phase 3 complete.**

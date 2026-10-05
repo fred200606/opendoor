@@ -6,7 +6,7 @@
 node tests/postman/build-collection.mjs
 ```
 
-Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search (05–09 are added with their backend phases). Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
+Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search · 05 Applications (06–09 are added with their backend phases). Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
 
 ## Run with Newman
 
@@ -18,7 +18,7 @@ npx newman run tests/postman/OpenDoor.postman_collection.json `
   --env-var "demoPassword=<DEMO_PASSWORD from services/core-api/.env>"
 ```
 
-Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker compose service `gateway`), `production` (Railway gateway). The run creates a throwaway candidate (`pm-candidate-<timestamp>@opendoor.test`, which also gets a profile, two needs and a résumé) and a category/accommodation and posting that it deletes again. Demo accounts are only read, never changed.
+Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker compose service `gateway`), `production` (Railway gateway). The run creates a throwaway candidate (`pm-candidate-<timestamp>@opendoor.test`, which also gets a profile, two needs and a résumé) and a category/accommodation and two postings that it deletes again. Folder 05 leaves one hired application (on its deleted posting) and in-app notifications for the demo employer – applications are never deleted. Demo profiles are only read, never changed.
 
 Run Newman from the **repo root**: folder 04 uploads `tests/postman/fixtures/cv.pdf` and `not-a-pdf.pdf` by that relative path.
 
