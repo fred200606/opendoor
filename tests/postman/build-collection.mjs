@@ -57,19 +57,26 @@ pm.collectionVariables.set('${tokenVar}', body.token);
 const bearer = (tokenVar) => ({ type: 'bearer', bearer: [{ key: 'token', value: `{{${tokenVar}}}`, type: 'string' }] });
 const NO_AUTH = { type: 'noauth' };
 
-function request(name, { method = 'GET', path, auth = NO_AUTH, body, tests, prerequest, description }) {
+/**
+ * `url` replaces `{{baseUrl}}${path}` (e.g. a link returned by the API). `files` sends multipart
+ * form data: { field: 'tests/postman/fixtures/…' } – paths are relative to the repo root (Newman's cwd).
+ */
+function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, body, files, tests, prerequest, description }) {
   const item = {
     name,
     request: {
       method,
       auth,
       header: [{ key: 'Accept', value: 'application/json' }],
-      url: { raw: `{{baseUrl}}${path}`, host: ['{{baseUrl}}'], path: path.replace(/^\//, '').split('?')[0].split('/') },
+      url: url ?? { raw: `{{baseUrl}}${path}`, host: ['{{baseUrl}}'], path: path.replace(/^\//, '').split('?')[0].split('/') },
       description,
     },
     event: [],
   };
-  const query = path.split('?')[1];
+  if (files) {
+    item.request.body = { mode: 'formdata', formdata: Object.entries(files).map(([key, src]) => ({ key, type: 'file', src })) };
+  }
+  const query = url ? undefined : path.split('?')[1];
   if (query) {
     item.request.url.query = query.split('&').map((pair) => {
       const [key, value = ''] = pair.split('=');
@@ -556,6 +563,213 @@ pm.test('only own postings', () => body.data.forEach((p) => pm.expect(p.employer
   }),
 ]);
 
+// ---------------------------------------------------------------- 04 Candidate & Search
+
+// Needs PUT: Postman sends {{vars}} as strings; the API needs integers.
+const INT_NEEDS = `
+const body = JSON.parse(pm.request.body.raw);
+body.accommodation_ids = body.accommodation_ids.map((id) => Number(pm.variables.replaceIn(String(id))));
+pm.request.body.raw = JSON.stringify(body);`;
+
+/** Every posting in the list is open and has the JobPosting shape; meta has the paging fields. */
+const searchList = (matchMode) => `
+${status(200)}
+const body = pm.response.json();
+pm.test('meta: 12 per page, match_mode ${matchMode}', () => {
+  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');
+  pm.expect(body.meta.per_page).to.eql(12);
+  pm.expect(body.meta.match_mode).to.eql(${matchMode});
+});
+pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));
+pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));`;
+
+/** match.met never increases down the list (full matches first). */
+const rankedByNeeds = `
+pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));
+pm.test('ranked by needs met', () => {
+  const met = body.data.map((p) => p.match.met);
+  pm.expect(met).to.eql([...met].sort((a, b) => b - a));
+});
+pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));`;
+
+const candidateSearch = folder(
+  '04 Candidate & Search',
+  'M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and "Matches my needs" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.',
+  [
+    request('New candidate gets an empty profile (not 404)', {
+      path: '/candidate/profile',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+const p = pm.response.json();
+pm.test('empty profile', () => {
+  pm.expect(p.headline).to.eql(null);
+  pm.expect(p.accommodations).to.eql([]);
+  pm.expect(p.resume_url).to.eql(null);
+  pm.expect(p.show_disability).to.eql(false);
+});`,
+    }),
+    request('Candidate saves the profile', {
+      method: 'PUT',
+      path: '/candidate/profile',
+      auth: bearer('newCandidateLoginToken'),
+      body: { headline: '  Data encoder  ', skills: ['Excel', ' Typing ', 'Excel', ''], experience: '', location_psgc: null, location_label: null, disability_type: null, show_disability: true },
+      tests: `
+${status(200)}
+const p = pm.response.json();
+pm.test('trimmed and de-duplicated', () => { pm.expect(p.headline).to.eql('Data encoder'); pm.expect(p.skills).to.eql(['Excel', 'Typing']); pm.expect(p.experience).to.eql(null); });
+pm.test('show_disability is off without a disability type', () => pm.expect(p.show_disability).to.eql(false));`,
+    }),
+    request('Invalid location code → 422 errors.location_psgc', {
+      method: 'PUT',
+      path: '/candidate/profile',
+      auth: bearer('newCandidateLoginToken'),
+      body: { location_psgc: 'Quezon City' },
+      tests: fieldError('location_psgc'),
+    }),
+    request('Employer cannot read a candidate profile → 403', {
+      path: '/candidate/profile',
+      auth: bearer('employerToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Pick two accommodation types as needs', {
+      path: '/accommodations',
+      tests: `
+${status(200)}
+const ids = pm.response.json().data.flatMap((g) => g.items.map((i) => i.id));
+pm.collectionVariables.set('needA', ids[0]);
+pm.collectionVariables.set('needB', ids[1]);`,
+    }),
+    request('Unknown accommodation as a need → 422', {
+      method: 'PUT',
+      path: '/candidate/accommodations',
+      auth: bearer('newCandidateLoginToken'),
+      body: { accommodation_ids: [999999] },
+      tests: fieldError('accommodation_ids.0'),
+    }),
+    request('Candidate saves two needs', {
+      method: 'PUT',
+      path: '/candidate/accommodations',
+      auth: bearer('newCandidateLoginToken'),
+      prerequest: INT_NEEDS,
+      body: { accommodation_ids: ['{{needA}}', '{{needB}}'] },
+      tests: `
+${status(200)}
+pm.test('both needs saved', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.have.members([Number(pm.collectionVariables.get('needA')), Number(pm.collectionVariables.get('needB'))]));`,
+    }),
+    request('Résumé that is not a PDF → 422 errors.resume', {
+      method: 'POST',
+      path: '/candidate/resume',
+      auth: bearer('newCandidateLoginToken'),
+      files: { resume: 'tests/postman/fixtures/not-a-pdf.pdf' },
+      tests: fieldError('resume'),
+    }),
+    request('Candidate uploads a PDF résumé → signed gateway link', {
+      method: 'POST',
+      path: '/candidate/resume',
+      auth: bearer('newCandidateLoginToken'),
+      files: { resume: 'tests/postman/fixtures/cv.pdf' },
+      tests: `
+${status(200)}
+const url = pm.response.json().resume_url;
+pm.test('link goes through the gateway and is signed', () => {
+  pm.expect(url.startsWith(pm.environment.get('baseUrl') + '/resumes/')).to.eql(true);
+  pm.expect(url).to.match(/[?&]expires=\\d+/).and.to.match(/[?&]signature=[0-9a-f]{64}/);
+});
+pm.collectionVariables.set('resumeUrl', url);`,
+    }),
+    request('Signed résumé link opens without a token → PDF', {
+      url: '{{resumeUrl}}',
+      tests: `
+${status(200)}
+pm.test('inline PDF, not cached', () => {
+  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/pdf');
+  pm.expect(pm.response.headers.get('Content-Disposition')).to.match(/^inline;/);
+  pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');
+});`,
+    }),
+    request('Tampered résumé link → 403', {
+      url: '{{resumeUrl}}0',
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('T03 Guest searches open postings', {
+      path: '/job-postings',
+      tests: `
+${searchList(false)}
+pm.test('no match for guests', () => body.data.forEach((p) => pm.expect(p.match).to.eql(null)));
+pm.test('at least one open posting (demo seed)', () => pm.expect(body.data.length).to.be.above(0));
+const first = body.data[0];
+pm.collectionVariables.set('searchPostingId', first.id);
+pm.collectionVariables.set('searchCategoryId', first.category.id);
+pm.collectionVariables.set('filterAccA', first.accommodations[0].id);
+pm.collectionVariables.set('filterAccB', first.accommodations[1].id);`,
+    }),
+    request('Guest asks for match=1 → ignored (match_mode false)', {
+      path: '/job-postings?match=1',
+      tests: searchList(false),
+    }),
+    request('T04 Demo candidate "Matches my needs" → ranked by needs met', {
+      path: '/job-postings?match=1',
+      auth: bearer('candidateToken'),
+      tests: `${searchList(true)}\n${rankedByNeeds}`,
+    }),
+    request('Matches my needs + closing soon → still ranked by needs first', {
+      path: '/job-postings?match=1&sort=closing',
+      auth: bearer('candidateToken'),
+      tests: `
+${searchList(true)}
+${rankedByNeeds}
+pm.test('closing date ascending within the same number of needs met', () => {
+  for (let i = 1; i < body.data.length; i++) {
+    const [a, b] = [body.data[i - 1], body.data[i]];
+    if (a.match.met === b.match.met) pm.expect(a.closes_at <= b.closes_at).to.eql(true);
+  }
+});`,
+    }),
+    request('New candidate with two needs → match total 2', {
+      path: '/job-postings?match=1',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${searchList(true)}
+pm.test('total = 2 needs', () => body.data.forEach((p) => pm.expect(p.match.total).to.eql(2)));`,
+    }),
+    request('T05 Job details show the match and the missing needs by name', {
+      path: '/job-postings/{{searchPostingId}}',
+      auth: bearer('candidateToken'),
+      tests: `
+${status(200)}
+const m = pm.response.json().match;
+pm.test('match with named missing needs', () => {
+  pm.expect(m).to.have.keys('met', 'total', 'missing');
+  m.missing.forEach((need) => pm.expect(need).to.have.keys('id', 'name'));
+});`,
+    }),
+    request('Keyword search is case-insensitive', {
+      path: '/job-postings?q=ENCODER',
+      tests: `
+${searchList(false)}
+pm.test('every result mentions the keyword', () => body.data.forEach((p) => pm.expect([p.title, p.description, p.employer.company_name].join(' ').toLowerCase()).to.include('encoder')));`,
+    }),
+    request('Category filter', {
+      path: '/job-postings?category={{searchCategoryId}}',
+      tests: `
+${searchList(false)}
+pm.test('only that category', () => body.data.forEach((p) => pm.expect(p.category.id).to.eql(Number(pm.collectionVariables.get('searchCategoryId')))));`,
+    }),
+    request('Accommodation filter → postings offer every selected type', {
+      path: '/job-postings?accommodations[]={{filterAccA}}&accommodations[]={{filterAccB}}',
+      tests: `
+${searchList(false)}
+pm.test('includes the posting they came from', () => pm.expect(body.data.map((p) => p.id)).to.include(Number(pm.collectionVariables.get('searchPostingId'))));
+pm.test('each posting offers both', () => body.data.forEach((p) => pm.expect(p.accommodations.map((a) => a.id)).to.include.members([Number(pm.collectionVariables.get('filterAccA')), Number(pm.collectionVariables.get('filterAccB'))])));`,
+    }),
+    request('Invalid sort → 422 errors.sort', {
+      path: '/job-postings?sort=cheapest',
+      tests: fieldError('sort'),
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -566,10 +780,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings],
+  item: [auth, masterData, employerPostings, candidateSearch],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));

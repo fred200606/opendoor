@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 3 – Candidate side
+- **Current phase:** Phase 4 – Applications
 - **In progress:** –
-- **Next step:** Phase 3 – Postman folder 04 (Candidate & Search): profile GET/PUT, needs PUT (retired/unknown/duplicate → 422), résumé upload (PDF + non-PDF 422) and signed link (200 / tampered 403), search as guest (match_mode false), candidate `match=1` ranking + `match` on details, filters (q, category, accommodations[] = all), validation 422. Extend `tests/postman/build-collection.mjs`; run the whole collection with Newman.
+- **Next step:** Phase 4 – Core `ApplicationStatus` enum + `canTransitionTo` (pending → reviewed → hired/rejected, withdrawn by the candidate; see `references/business-rules.md`), `applications` migration (FK restrictOnDelete, unique candidate+posting), apply (`POST /job-postings/{id}/applications`, closed posting / duplicate → error codes from the contract), candidate + employer lists, details, status endpoint, notifications on change. Read OpenAPI M6 + the apply/applicants screens first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -86,7 +86,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: M5 search, category/accommodation filters, matching (`withCount`, ordering, `missing`), sort, pagination (`NeedsMatcher`, `JobSearchController`; `match` also on details)
 - [x] Core: feature tests for matching order and privacy rules (`tests/Feature/Search`, 12 tests; disability type never matches; employer view of needs is tested with applications in Phase 4)
 - [x] Frontend: profile, find jobs (match mode, aria-live count), job details wired – live-checked 2026-10-05 with demo candidate (ranking 3/3 → 1/3 → 0/3, missing needs on details, keyword/company search, axe 0 violations on all three pages)
-- [ ] Postman: folder 04
+- [x] Postman: folder 04 (21 requests: profile, needs, résumé upload + signed link, T03–T05 search/matching, filters; whole collection 75 requests / 383 assertions pass)
 
 ### Phase 4 – Applications
 - [ ] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change
@@ -135,6 +135,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Gateway limit 120 req/min per IP: one Newman run is 75 requests (~17 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Paginated lists expose Core's internal URL in `meta.path` / `meta.links` / `links` (e.g. `http://127.0.0.1:8001/api/...`). Frontend only uses the page numbers. Fix before deployment: build paginator paths from `PUBLIC_API_URL` (e.g. `Paginator::currentPathResolver`) or drop the links.
 - SIA doc endpoint list needs `GET /resumes/{id}` (signed 30-min résumé link through the gateway) – update with `opendoor-sia-docs`.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
@@ -152,6 +153,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Postman 04 Candidate & Search done (multipart upload + signed link). **Phase 3 complete.**
 - 2026-10-05 – M5 search + matching done (12 tests, 122 Core tests pass); Find jobs + job details live-checked with the demo candidate.
 - 2026-10-05 – Submit/pagination buttons keep focus while busy (shared `Button`, 25 buttons in 14 files); verified in Chrome (focus stays, repeated Enter sends once); 92 Vitest tests.
 - 2026-10-05 – M2 closed: OpenAPI for profile/needs/résumé + `GET /resumes/{id}`; live résumé check OK; found submit buttons losing focus when disabled (next step).
