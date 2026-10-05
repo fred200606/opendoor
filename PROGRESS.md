@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
 - **In progress:** –
-- **Next step:** Close Phase 5: update the SIA documentation for M7 with `opendoor-sia-docs` (see Known issues: `application_accommodation` table, `submitted` / `feedback_submitted`, breakdown hidden below 3, demo seed for T10). Then Phase 6 – Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed (`seed.php`, `public/`), faults.
+- **Next step:** Phase 6 – Registry: `services/business-registry-soap` with WSDL, PHP SoapServer handler, WS-Security UsernameToken check, SQLite `registry.db` seeded by `seed.php` (records matching the demo employers + EXPIRED/CANCELLED samples), `public/` entry point, SOAP faults (`Client.Validation`, auth). Read `integrations.md` (SOAP part) + SIA 4.3 first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -140,7 +140,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- SIA doc not yet updated for M7 details: new table `application_accommodation` (data model / Appendix), `submitted` + `feedback_submitted` fields, breakdown hidden below 3 responses, demo seed (employer@ 79% published; employer2@ 2 responses + candidate2@ open hire for T10). Do it with `opendoor-sia-docs` (next step).
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
 - Gateway limit 120 req/min per IP: one Newman run is 110 requests (~22 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
@@ -153,6 +152,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – SIA doc synced for M7 (4.1, 4.2, 6, 8, Appendix A + data model + seeders); fixed a blank page 8 (H1 now uses `pageBreakBefore` instead of page-break paragraphs); checked as PDF, 41 pages. **Phase 5 complete.**
 - 2026-10-05 – Postman 06 Feedback & Trust Score done; seed moved candidate2@'s open hire to a closed employer2@ posting (2 earlier responses) so T10 really publishes a score. Phase 5 code complete; SIA doc sync next.
 - 2026-10-05 – Feedback screens: `submitted` / `feedback_submitted` / empty-form handling; live-checked with a headless Chrome script (Playwright from the npx cache, `channel: 'chrome'`) because the Playwright MCP did not connect.
 - 2026-10-05 – `DemoFeedbackSeeder`: 3 former employees rate employer@ (published 79%), candidate2@ has an open, unrated hire; fixed MySQL reserved alias `of` in the breakdown (feedback tests also pass on MySQL).

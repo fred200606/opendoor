@@ -39,7 +39,7 @@ Then check the output visually. On Windows with Word installed, convert to PDF w
 
 ## Helpers inside build.js
 
-`H1`, `H2`, `P(text)` (supports `**bold**`, `` `code` ``, `[[placeholder]]`), `bullets([...])`, `numbered([...])`, `table(headers, rows, widths, {kv, size})` (widths in DXA, scaled to 10080), `code(text)`, `fig(file, wPx, hPx, caption)` (auto-numbers figures), `note(text)`, `brk()` (page break).
+`H1`, `H2`, `P(text)` (supports `**bold**`, `` `code` ``, `[[placeholder]]`), `bullets([...])`, `numbered([...])`, `table(headers, rows, widths, {kv, size})` (widths in DXA, scaled to 10080), `code(text)`, `fig(file, wPx, hPx, caption)` (auto-numbers figures), `note(text)`. Every `H1` starts a new page (`pageBreakBefore`); there is no separate page-break helper, because a page-break paragraph leaves a blank page when the previous page is exactly full.
 
 ## IPT documents
 

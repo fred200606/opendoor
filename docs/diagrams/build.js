@@ -1,7 +1,7 @@
 const fs = require("fs");
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType,
-  AlignmentType, HeadingLevel, ImageRun, PageBreak, LevelFormat, BorderStyle, Footer, PageNumber,
+  AlignmentType, HeadingLevel, ImageRun, LevelFormat, BorderStyle, Footer, PageNumber,
 } = require("docx");
 
 const OUTDIR = require("path").resolve(__dirname, "..").split("\\").join("/") + "/"; // docs/ (parent of diagrams/)
@@ -21,13 +21,14 @@ function runs(text, base = {}) {
   return out;
 }
 const P = (t, o = {}) => new Paragraph({ children: runs(t, o.run || {}), spacing: { after: 120, line: 276 }, alignment: o.align, ...(o.p || {}) });
-const H1 = (t) => new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(t)], pageBreakBefore: false });
+// Every top-level section starts on a new page. pageBreakBefore (not a PageBreak paragraph) never
+// leaves a blank page when the previous page is exactly full.
+const H1 = (t) => new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(t)], pageBreakBefore: true });
 const H2 = (t) => new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(t)] });
 const H3 = (t) => new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(t)] });
 const bullets = (arr, lvl = 0) => arr.map((t) => new Paragraph({ numbering: { reference: "bul", level: lvl }, children: runs(t), spacing: { after: 60 } }));
 let numRef = 0;
 const numbered = (arr) => { const ref = "num" + (numRef++ % 20); return arr.map((t) => new Paragraph({ numbering: { reference: ref, level: 0 }, children: runs(t), spacing: { after: 60 } })); };
-const brk = () => new Paragraph({ children: [new PageBreak()] });
 const note = (t) => new Paragraph({ children: runs(t, { italics: true, size: 18, color: "555555" }), spacing: { after: 120 } });
 
 const border = { style: BorderStyle.SINGLE, size: 4, color: "7F7F7F" };
@@ -82,7 +83,6 @@ const C = [];
 C.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 0, after: 200 }, children: [new TextRun({ text: "SYSTEMS INTEGRATION AND ARCHITECTURE 1", bold: true, size: 20 })] }));
 C.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [new TextRun({ text: "OPENDOOR", bold: true, size: 56, color: GOLD })] }));
 C.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 }, children: [new TextRun({ text: "An Integrated Job Matching Platform with Accommodation-Based Filtering and Post-Hire Accommodation Verification for Persons with Disabilities", bold: true, size: 26, color: GOLD })] }));
-C.push(brk());
 
 // ---------- Project information ----------
 C.push(H1("Project Information"));
@@ -112,7 +112,6 @@ C.push(...table(["Field", "Information"], [
   ["Version", "1.0"],
   ["Date", "[[Insert date]]"],
 ], [2600, 7480], { kv: true }));
-C.push(brk());
 
 // ---------- Executive summary ----------
 C.push(H1("Executive Summary"));
@@ -121,7 +120,6 @@ C.push(P("**OpenDoor** integrates these sources into one web application aligned
 C.push(P("The final architecture uses an **API Gateway** (Node.js/Express) as the single entry point for a **React** single-page application. Behind the gateway, the **Core Service** (Laravel 13, Sanctum, MySQL 8) owns users, profiles, postings, matching, applications, feedback and moderation. An **Accessibility Insights Service** (Node.js) is a mashup that combines the posting's address and accommodations from the Core Service with three external REST APIs – OpenStreetMap **Nominatim** (geocoding), the **Overpass API** (wheelchair-tagged places nearby) and the **PSGC API** (official Philippine location codes) – into a normalized \"Workplace Accessibility Snapshot\". A **Business Registry Service** exposes a WSDL-described **SOAP 1.1** interface that simulates a legacy DTI/SEC registry; the Core Service calls it with XML and WS-Security credentials during employer verification and maps the XML result to JSON."));
 C.push(P("All services are deployed to the cloud: the React app on Vercel and the gateway, services and MySQL on Railway, with only the gateway exposed publicly and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
 C.push(note("[[Update the final paragraph with the measured results (test pass rate, JMeter P95 and error rate, SUS score) once testing is complete.]]"));
-C.push(brk());
 
 // ---------- 1 Project Overview ----------
 C.push(H1("1. Project Overview"));
@@ -185,7 +183,6 @@ C.push(...table(["Stakeholder", "Type", "Role in the System"], [
   ["PSGC API", "External system (REST)", "Provides official Philippine region, province and city/municipality codes for consistent locations."],
   ["PESO / PDAO offices, PWD organizations", "Secondary stakeholders", "Refer job seekers, help recruit research and usability-test participants, and may use the platform to support placements."],
 ], [2500, 1800, 5780]));
-C.push(brk());
 
 // ---------- 2 AS-IS ----------
 C.push(H1("2. AS-IS Analysis"));
@@ -207,7 +204,6 @@ C.push(...bullets([
   "**Location accessibility lives in a separate system.** Geographic and accessibility data (OpenStreetMap) is never combined with job postings, so every job seeker repeats the same manual lookup and locations are written inconsistently (no standard PSGC codes).",
   "**No post-hire feedback loop.** No system captures delivered-versus-advertised accommodations, so there is no data to build employer accountability or to warn future applicants.",
 ]));
-C.push(brk());
 
 // ---------- 3 TO-BE ----------
 C.push(H1("3. TO-BE Solution and Architecture"));
@@ -248,7 +244,6 @@ C.push(...table(["Component / Service", "Responsibility", "Technology", "Port / 
   ["Overpass API (external)", "Query OSM elements tagged `wheelchair=yes` near a point", "REST (Overpass QL) / JSON", "https://overpass-api.de/api/interpreter", "–"],
   ["PSGC API (external)", "Philippine regions, provinces, cities/municipalities", "REST/JSON", "https://psgc.gitlab.io/api", "–"],
 ], [1700, 2600, 1900, 2180, 1700], { size: 16 }));
-C.push(brk());
 
 // ---------- 4 API ----------
 C.push(H1("4. API and Data Exchange Design"));
@@ -269,9 +264,9 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "POST", "/api/job-postings/{id}/applications", "Apply", "{cover_note, interview_request} → 201 application"],
   ["Core", "GET", "/api/applications", "Own applications (candidate) or applicants (employer)", "?status= → {data:[application]}"],
   ["Core", "PATCH", "/api/applications/{id}/status", "Change status (server-enforced transitions)", "{status:'reviewed'|'hired'|'rejected'|'withdrawn'} → 200"],
-  ["Core", "GET", "/api/applications/{id}/feedback-form", "Accommodations to rate", "→ {items:[{accommodation_id,name}]}"],
+  ["Core", "GET", "/api/applications/{id}/feedback-form", "Accommodations to rate (those advertised at the time of hire)", "→ {opens_on, is_open, submitted, items:[{accommodation_id,name}]}"],
   ["Core", "POST", "/api/applications/{id}/feedback", "Submit per-accommodation feedback", "{items:[{accommodation_id,rating}],comments} → 201"],
-  ["Core", "GET", "/api/employers/{id}/trust-score", "Score, count and breakdown", "→ {published, score, based_on, breakdown[]}"],
+  ["Core", "GET", "/api/employers/{id}/trust-score", "Score, count and breakdown (breakdown empty until published)", "→ {published, score, based_on, breakdown[]}"],
   ["Core", "PATCH", "/api/admin/employers/{id}/verify", "Run registry check, approve or reject", "{action:'check'|'approve'|'reject', reason} → 200 {registry, verified_at}"],
   ["Core", "GET, POST, PUT, DELETE", "/api/admin/categories, /api/admin/accommodations", "Manage master data", "→ category / accommodation"],
   ["Core (internal)", "GET", "/internal/job-postings/{id}/summary", "Posting data for the Insights Service (not routed by gateway)", "X-Service-Key → {address, psgc_code, accommodations, trust_score}"],
@@ -315,7 +310,7 @@ Request:  { "cover_note": "I have 3 years of encoding experience.",
 Response 201:
 { "id": 318, "job_posting_id": 42, "status": "pending",
   "created_at": "2026-10-02T09:15:04+08:00" }`));
-C.push(P("**Submit feedback** – `POST /api/applications/318/feedback` (only when status is `hired`, from calendar day 30 after the hire date in Asia/Manila time – e.g. hired on 1 October, feedback opens on 31 October; one per application). Ratings map to Delivered = 1, Partially = 0.5, Not delivered = 0."));
+C.push(P("**Submit feedback** – `POST /api/applications/318/feedback` (only when status is `hired`, from calendar day 30 after the hire date in Asia/Manila time – e.g. hired on 1 October, feedback opens on 31 October; one per application). The items are the accommodations the posting advertised when the application became hired – the Core Service records them at hire in `application_accommodation`, so later edits to the posting do not change what is rated – and every item must be rated once. Ratings map to Delivered = 1, Partially = 0.5, Not delivered = 0. The candidate's own application view adds `feedback_submitted`; employers never see whether or how a candidate rated."));
 C.push(...code(`
 Request:  { "items": [ { "accommodation_id": 1, "rating": "delivered" },
                        { "accommodation_id": 9, "rating": "partial" } ],
@@ -472,7 +467,6 @@ C.push(...code(`
   "generated_at": "2026-10-02T10:05:40+08:00"
 }`));
 C.push(P("A second transformation happens inside the Core Service: the **matching engine** joins `candidate_accommodation` and `job_posting_accommodation` (Eloquent `withCount`) to compute `match.met`, orders full matches first and then partial matches by count (ties follow the chosen sort: newest or closing soon), and applies keyword, category and extra accommodation filters on top (a posting must offer every selected accommodation). The **trust score** transformation converts ratings to values (Delivered = 1, Partially = 0.5, Not delivered = 0) and computes Σ item ratings ÷ number of rated items × 100, rounded to a whole percentage (e.g. 86%)."));
-C.push(brk());
 
 // ---------- 5 Integration flow ----------
 C.push(H1("5. Integration Flow"));
@@ -511,7 +505,6 @@ C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior
   ["504", "UPSTREAM_TIMEOUT", "Gateway", "Core > 10 s, Insights > 15 s"],
 ], [800, 3000, 1500, 4780], { size: 16 }));
 C.push(P("**Graceful degradation.** External and legacy integrations never block the core hiring transaction. The Insights Service uses per-source timeouts (Nominatim 5 s, Overpass 8 s, Core 3 s), returns HTTP 200 with whatever parts it could build, and reports each source as `ok`, `cached`, `stale` or `unavailable`; the client hides empty sections and shows \"Nearby accessibility information is temporarily unavailable.\" If the Insights Service itself is down, the job details page still renders the posting, match result and trust score from the Core Service. If the Business Registry is down, administrators can still verify manually and the check can be retried. Retries are limited to one retry with back-off for idempotent GET calls; POST/PATCH calls are never retried automatically."));
-C.push(brk());
 
 // ---------- 6 Security ----------
 C.push(H1("6. Security Design"));
@@ -524,7 +517,7 @@ C.push(...bullets([
   "**Core → Business Registry (legacy):** a WS-Security `UsernameToken` in the SOAP header identifies the Core Service; the registry rejects missing or wrong credentials with a SOAP fault.",
 ]));
 C.push(H2("6.2 Authorization"));
-C.push(P("Authorization is enforced on the server in three layers: (1) `auth:sanctum` middleware requires a valid token; (2) a **role middleware** restricts route groups to `candidate`, `employer` or `admin`; and (3) **Laravel Policies** (`JobPostingPolicy`, `ApplicationPolicy`, `CandidateProfilePolicy`, `FeedbackPolicy`) check ownership of the specific record – for example, an employer can update only its own postings and can see a candidate's accommodation needs only through an application to its own posting, and only the hired candidate can submit feedback. API Resources control which fields each role receives (feedback authors are never exposed to employers). The React `ProtectedRoute` component only improves navigation; the server is the real protection. The full permission matrix is reproduced in Appendix A."));
+C.push(P("Authorization is enforced on the server in three layers: (1) `auth:sanctum` middleware requires a valid token; (2) a **role middleware** restricts route groups to `candidate`, `employer` or `admin`; and (3) **Laravel Policies** (`JobPostingPolicy`; `ApplicationPolicy` for viewing, status changes and feedback) check ownership of the specific record – for example, an employer can update only its own postings and can see a candidate's accommodation needs only through an application to its own posting, and only the hired candidate can submit feedback. API Resources control which fields each role receives (feedback authors are never exposed to employers). The React `ProtectedRoute` component only improves navigation; the server is the real protection. The full permission matrix is reproduced in Appendix A."));
 C.push(P("**OAuth 2.0** is not used in this version: all users authenticate directly with OpenDoor, and the external APIs used require no delegated access. A delegated-authorization scenario (e.g., \"Sign in with Google\" or letting a candidate import a résumé from a third-party service) is listed as a future improvement."));
 C.push(H2("6.3 Secret and Credential Management"));
 C.push(...bullets([
@@ -541,10 +534,9 @@ C.push(...bullets([
   "**Transport/HTTPS:** Vercel and Railway public endpoints use HTTPS only; internal calls stay on Railway's private network and are not exposed to the internet.",
   "**Least privilege / access controls:** only the gateway is public; each service has its own database user limited to its own schema; role middleware and Policies enforce per-record ownership; CORS allows only the deployed frontend origin.",
   "**Abuse protection:** gateway rate limiting (120 requests/min per IP) and login rate limiting (5 attempts/min).",
-  "**Data privacy (RA 10173):** explicit consent is recorded (`consented_at`) before accommodation data is stored; disability type is optional, hidden by default and never used for matching; candidates' needs are shown to an employer only after the candidate applies; trust scores are aggregated and shown only after three responses so individual employees cannot be identified.",
+  "**Data privacy (RA 10173):** explicit consent is recorded (`consented_at`) before accommodation data is stored; disability type is optional, hidden by default and never used for matching; candidates' needs are shown to an employer only after the candidate applies; trust scores and their per-accommodation breakdown are aggregated and shown only after three responses so individual employees cannot be identified.",
   "**Project-specific risks:** fake employers (mitigated by registry check and Verified badge), retaliation for negative feedback (anonymity and three-response threshold), false accommodation claims (report-a-posting and moderation), and dependence on third-party APIs (caching, timeouts, degraded mode).",
 ]));
-C.push(brk());
 
 // ---------- 7 Testing ----------
 C.push(H1("7. Testing and Quality Assurance"));
@@ -595,7 +587,6 @@ C.push(...table(["ID", "Defect", "Cause", "Correction", "Verified by"], [
   ["D03", "[[Defect]]", "[[Cause]]", "[[Correction]]", "[[Test ID]]"],
 ], [800, 2400, 2300, 2900, 1680]));
 C.push(note("Typical integration defects to check for: CORS preflight blocked between Vercel and the gateway; gateway stripping the Authorization header; Nominatim requests rejected without a User-Agent; SOAP namespace mismatch between WSDL and SoapClient; time-zone differences in the 30-day feedback rule; trust score not recalculated when feedback is hidden."));
-C.push(brk());
 
 // ---------- 8 Deployment ----------
 C.push(H1("8. Deployment and DevOps"));
@@ -610,7 +601,7 @@ C.push(...table(["Component", "Provider / Platform", "URL / Host", "Configuratio
   ["Business Registry (SOAP)", "Railway service (Dockerfile: PHP 8.3 + SoapServer)", "registry.railway.internal:8003 (no public domain)", "`REGISTRY_SOAP_USER/PASSWORD`; SQLite file seeded at build"],
   ["MySQL 8", "Railway managed database", "mysql.railway.internal:3306", "Schemas `opendoor_core` and `insights_cache` with separate users; daily backups (Railway)"],
 ], [1700, 2200, 2700, 3480], { size: 16 }));
-C.push(P("**Limitations.** The Railway Hobby plan (about US$5/month after the trial credit) and Vercel Hobby are not sized for production load; services may cold-start, so the team opens the application a few minutes before the demonstration. Demo accounts for every role and enough feedback to show a published trust score are seeded. Both URLs are documented in the README and submitted before the defense."));
+C.push(P("**Limitations.** The Railway Hobby plan (about US$5/month after the trial credit) and Vercel Hobby are not sized for production load; services may cold-start, so the team opens the application a few minutes before the demonstration. Demo accounts for every role and enough feedback to show a published trust score are seeded; a second demo employer has two responses and a demo candidate's hire with the feedback window open, so the third response (test T10) can be shown live. Both URLs are documented in the README and submitted before the defense."));
 C.push(H2("8.3 Git and Repository Workflow"));
 C.push(P("OpenDoor uses one GitHub **monorepo** so that contracts, services and tests change together:"));
 C.push(...code(`
@@ -668,7 +659,6 @@ cd frontend && npm ci && npm run dev
 # 7. Run tests
 cd services/core-api && php artisan test
 npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json`));
-C.push(brk());
 
 // ---------- 9 Screens ----------
 C.push(H1("9. Application Screens and Demonstration"));
@@ -694,7 +684,6 @@ C.push(...numbered([
   "**Transformation/mashup:** OSM tags are mapped to accessible transit, toilets and parking with distances, and merged with the employer's advertised accommodations and the community trust score into the Workplace Accessibility Snapshot.",
   "**Final result shown to user:** the job details page shows the match badge, the unmet accommodation, the Verified badge, \"86% – based on 5 hires\", and the nearest accessible MRT stop; the candidate applies with an interview accommodation request and sees the application as Pending, while the employer receives a notification.",
 ]));
-C.push(brk());
 
 // ---------- 10 Evaluation ----------
 C.push(H1("10. Evaluation of the Final Solution"));
@@ -728,7 +717,6 @@ C.push(...bullets([
 ]));
 C.push(H2("10.4 Lessons Learned"));
 C.push(P("[[Summarize the team's actual lessons. Suggested prompts: architectural – where service boundaries helped or added overhead; integration – handling external rate limits, SOAP namespaces and XML-to-JSON mapping; testing – value of Postman assertions in CI and what JMeter revealed; teamwork – how API contracts written first let frontend and backend work in parallel; deployment – private networking, environment variables and cold starts.]]"));
-C.push(brk());
 
 // ---------- 11 Team ----------
 C.push(H1("11. Team Contribution"));
@@ -740,7 +728,6 @@ C.push(...table(["Member", "Primary Responsibilities", "Key Deliverables / Commi
   ["[[Name]]", "Postman/Newman, JMeter, deployment, documentation", "[[tests/, docs/, deployment notes]]", "[[%]]"],
 ], [1800, 3200, 3480, 1600]));
 C.push(P("[[Add a short statement explaining how the team verified contributions (e.g., GitHub commit and PR history, issue assignments, weekly stand-up notes) and how overlapping responsibilities (e.g., shared API contracts between frontend and Core Service) were resolved.]]"));
-C.push(brk());
 
 // ---------- 12 References ----------
 C.push(H1("12. References"));
@@ -778,7 +765,6 @@ C.push(H1("12. References"));
   "W3C. (2007). SOAP Version 1.2 and Web Services Description Language (WSDL) 1.1 notes. https://www.w3.org/TR/wsdl",
   "W3C. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/",
 ].forEach((r) => C.push(new Paragraph({ children: runs(r), indent: { left: 720, hanging: 720 }, spacing: { after: 100 } })));
-C.push(brk());
 
 // ---------- Appendices ----------
 C.push(H1("Appendices"));
@@ -808,9 +794,9 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M6 Applications", "POST", "/job-postings/{id}/applications", "C", "Apply"],
   ["M6 Applications", "GET", "/applications, /applications/{id}", "C (own) / E (own postings)", "List / details"],
   ["M6 Applications", "PATCH", "/applications/{id}/status", "C / E", "Status transition"],
-  ["M7 Feedback", "GET", "/applications/{id}/feedback-form", "C (hired)", "Items to rate"],
+  ["M7 Feedback", "GET", "/applications/{id}/feedback-form", "C (hired)", "Items to rate (recorded at hire), window, submitted"],
   ["M7 Feedback", "POST", "/applications/{id}/feedback", "C (hired, 30 days)", "Submit"],
-  ["M7 Feedback", "GET", "/employers/{id}/trust-score", "P", "Score and breakdown"],
+  ["M7 Feedback", "GET", "/employers/{id}/trust-score", "P", "Score and breakdown (from 3 responses)"],
   ["M8 Dashboards", "GET", "/candidate/dashboard, /employer/dashboard, /admin/dashboard", "C / E / A", "Summaries"],
   ["M9 Notifications", "GET, PATCH", "/notifications, /notifications/{id}/read, /notifications/read-all", "C / E", "List, mark read"],
   ["M10 Moderation", "GET, PATCH", "/admin/users, /admin/users/{id}/suspend", "A", "Users"],
@@ -911,7 +897,7 @@ C.push(...bullets([
   "Local development runs natively (Section 8.5). `docker-compose.yml` is used only in CI: it defines `mysql`, `core-api`, `insights-service`, `business-registry-soap`, `gateway` and a `mock-external` server so tests never depend on public Nominatim/Overpass.",
   "Railway: one project, five services plus MySQL; only `gateway` has a public domain; services reference each other with `${{service.RAILWAY_PRIVATE_DOMAIN}}` variables.",
   "Laravel production: `php artisan config:cache route:cache`, `migrate --force` on release, queue driver `sync` (no worker needed in v1.0).",
-  "Seeders: categories (about 10 industries), RA 7277-based accommodation types, one administrator, demo candidate/employer accounts, sample feedback that publishes a trust score, and sample DTI/SEC records in `registry.db`.",
+  "Seeders: categories (about 10 industries), RA 7277-based accommodation types, one administrator, demo candidate/employer accounts, sample feedback that publishes one employer's trust score (plus a second employer with two responses and an open demo hire for test T10), and sample DTI/SEC records in `registry.db`.",
   "Before the defense: open the frontend and call `/api/health` a few minutes early to wake sleeping services.",
 ]));
 
@@ -927,7 +913,8 @@ C.push(...table(["Table", "Key Fields", "Notes"], [
   ["job_posting_accommodation", "job_posting_id, accommodation_id, note", "Pivot: accommodations provided"],
   ["candidate_accommodation", "candidate_profile_id, accommodation_id", "Pivot: accommodations needed"],
   ["applications", "id, job_posting_id, candidate_profile_id, status, cover_note, interview_request, hired_at, hire_confirmed_by", "Unique (job_posting_id, candidate_profile_id)"],
-  ["feedback / feedback_items", "id, application_id, comments, is_hidden / id, feedback_id, accommodation_id, rating", "One feedback per application; one rating per advertised accommodation"],
+  ["application_accommodation", "application_id, accommodation_id", "Pivot: the posting's accommodations recorded when the application becomes hired (the items the candidate rates)"],
+  ["feedback / feedback_items", "id, application_id, comments, is_hidden / id, feedback_id, accommodation_id, rating", "One feedback per application; one rating per accommodation recorded at hire; hidden feedback leaves the score"],
   ["notifications, reports, saved_jobs", "Laravel notifications; id, reporter_id, job_posting_id, reason, status; candidate_profile_id, job_posting_id", "In-app notices; moderation; bookmarks"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("**Enumerated values** (stored as MySQL `ENUM` columns or PHP backed enums; the same values appear in the API and in `docs/openapi.yaml`):"));
