@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
-- **In progress:** Phase 5 – live check of feedback + trust score (frontend changes committed; Vitest 98 pass).
-- **Next step:** Live check: start Core (`php artisan serve`), gateway, Vite; log in as `candidate2@` → hired Chat Support application → rate (form, validation, thank-you, then "Already rated"); employer@ trust score page (published, breakdown); job details + employer page cards; axe. Then tick the Phase 5 frontend item and do Postman 06.
+- **In progress:** –
+- **Next step:** Phase 5 – Postman folder 06 Feedback & Trust score in `tests/postman/build-collection.mjs` (trust-score shape for employer@ published ≥3; form/submit 403 for strangers + employer; 422 FEEDBACK_NOT_OPEN for a fresh hire (Postman can't wait 30 days – use the hire from folder 05 or a new throwaway one); validation; 404 unknown employer). Keep it re-runnable: do not submit feedback for demo accounts. Then SIA doc update for M7 (Known issues).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -102,7 +102,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 5 – Verification (feedback + trust score)
 - [x] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown (+ `application_accommodation` snapshot at hire)
 - [x] Core: feature tests for math, threshold, window (`tests/Feature/Feedback` 16 tests + 12-case percentage unit table; 257 Core tests pass)
-- [ ] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page – live-checked 2026-10-05 (candidate2 rates the Chat hire: form of 4 items at hire, error summary focus, thank-you, "Already rated"; employer 79% → 81% with 7-row breakdown; job details + public employer cards; axe 0 on 5 pages)
 - [ ] Postman: folder 06
 
 ### Phase 6 – Legacy SOAP integration
@@ -153,6 +153,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Feedback screens: `submitted` / `feedback_submitted` / empty-form handling; live-checked with a headless Chrome script (Playwright from the npx cache, `channel: 'chrome'`) because the Playwright MCP did not connect.
 - 2026-10-05 – `DemoFeedbackSeeder`: 3 former employees rate employer@ (published 79%), candidate2@ has an open, unrated hire; fixed MySQL reserved alias `of` in the breakdown (feedback tests also pass on MySQL).
 - 2026-10-05 – M7 Core done: feedback form/submit, hire-time accommodation snapshot, `TrustScoreService` + observer, public trust score; found + fixed a stale cached Employer skipping `feedback_count` writes.
 - 2026-10-05 – Postman 05 Applications done. **Phase 4 complete.**
