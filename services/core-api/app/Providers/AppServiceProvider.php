@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Registry\BusinessRegistryClient;
 use App\Support\PublicUrl;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Legacy SOAP registry (Phase 6); tests swap it with $this->app->instance(...).
+        $this->app->bind(BusinessRegistryClient::class, fn () => new BusinessRegistryClient(config('services.registry')));
     }
 
     /**

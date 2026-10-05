@@ -360,6 +360,9 @@ paths:
     get:
       tags: [M3 Company]
       summary: One employer with owner and latest registry check (admin)
+      description: >-
+        `latest_registry_check` is the newest check for the registration number and type on file;
+        it is null when the employer changed them after the last check.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
         '200':
@@ -376,6 +379,10 @@ paths:
       description: |
         `check` calls the legacy Business Registry (SOAP) and stores a `registry_checks` row.
         The registry result never approves automatically; the admin decides with `approve` or `reject`.
+        `reject` on a verified employer removes the badge ("Remove verification"); the reason is shown to the employer.
+        A registry that cannot answer (Server fault, connection error, 5 s timeout) is stored as an `ERROR` check and
+        answered with 502 REGISTRY_UNAVAILABLE; credential problems (502 REGISTRY_AUTH_FAILED) and input the registry
+        refuses (422 REGISTRY_INVALID_REQUEST, message includes the registry's reason) store nothing.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -395,7 +402,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  registry: { $ref: '#/components/schemas/RegistryResult' }
+                  registry:
+                    description: The new check (`check`), or the current one for approve/reject (null if none)
+                    oneOf:
+                      - $ref: '#/components/schemas/RegistryResult'
+                      - type: 'null'
                   verified_at: { type: [string, 'null'], format: date-time }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1504,7 +1515,7 @@ components:
       properties:
         status: { $ref: '#/components/schemas/RegistryStatus' }
         registered_name: { type: [string, 'null'] }
-        name_match: { type: [number, 'null'], minimum: 0, maximum: 1 }
+        name_match: { type: [number, 'null'], minimum: 0, maximum: 1, description: 'null for NOT_FOUND and ERROR; below 0.80 is highlighted' }
         checked_at: { type: string, format: date-time }
 
     # ---------- master data

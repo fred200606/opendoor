@@ -89,5 +89,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::apiResource('accommodations', Admin\AccommodationController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('job-postings', [Admin\PostingApprovalController::class, 'index'])->name('job-postings.index');
         Route::patch('job-postings/{jobPosting}/approve', [Admin\PostingApprovalController::class, 'review'])->name('job-postings.review');
+        // M3 verification: SOAP registry check + the admin's decision (Phase 6)
+        Route::get('employers', [Admin\EmployerVerificationController::class, 'index'])->name('employers.index');
+        Route::get('employers/{employer}', [Admin\EmployerVerificationController::class, 'show'])->name('employers.show');
+        Route::patch('employers/{employer}/verify', [Admin\EmployerVerificationController::class, 'verify'])->name('employers.verify');
     });
 });

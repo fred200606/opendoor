@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 6 – Legacy SOAP integration
 - **In progress:** –
-- **Next step:** Phase 6 – Core: `registry_checks` migration + model, `BusinessRegistryClient` (SoapClient, `REGISTRY_WSDL_URL`, UsernameToken via `SoapHeader` + `XSD_ANYXML`, 5 s timeout, fault mapping by suffix of `faultcode` e.g. `SOAP-ENV:Client.Authentication` → 502 REGISTRY_AUTH_FAILED, `Client.Validation` → 422 REGISTRY_INVALID_REQUEST, Server/connection → 502 REGISTRY_UNAVAILABLE + ERROR row), bound in a provider so tests fake it; `PATCH /admin/employers/{id}/verify` (check/approve/reject) + `GET /admin/employers[/{id}]` (OpenAPI). Read OpenAPI `/admin/employers*` + `RegistryResult` first.
+- **Next step:** Phase 6 – live check of the admin employer verification screen (start registry `php -S 127.0.0.1:8003 -t public` in `services/business-registry-soap`, Core, gateway, Vite; log in as admin → Employers queue → Kalinga Foods (employer2@, SEC CS201912345) → Check with the business registry → ACTIVE 100%; try a NOT_FOUND employer; stop the registry → 502 message; approve / remove verification with reason; axe). Fix what it finds, then tick the frontend item and do Postman 08 (registry part).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-06 – Core registry: `registry_checks` also stores the `business_reg_no` + `registry_type` that were checked; `latest_registry_check` is null once the employer changes them. NOT_FOUND/ERROR have `name_match: null`. Only REGISTRY_UNAVAILABLE stores an ERROR row; auth (502) and invalid input (422) store nothing. `reject` on a verified employer = "Remove verification". `raw_response` keeps only the registry's answer (never the request with the password). Local `REGISTRY_WSDL_URL` uses `127.0.0.1`.
 - 2026-10-05 – Registry: plain PHP without Composer (`src/` autoloader, `tests/run.php` own runner). Registration numbers are normalized (hyphens/spaces removed, upper case) before the 5–20 alphanumeric check, so Core's `CS-2019-12345` matches. WS-Security checked on the raw envelope (DOM, `LIBXML_NONET`, `hash_equals`) before `SoapServer` runs; PasswordDigest refused. WSDL's `soap:address` is rewritten to the requesting host (or `REGISTRY_PUBLIC_URL`). DB at `data/registry.db` (`REGISTRY_DB_PATH`). Seed: the 2 demo employers ACTIVE + 3 more ACTIVE, 2 EXPIRED, 2 CANCELLED.
 - 2026-10-05 – M7: the posting's accommodations are recorded in a new pivot `application_accommodation` when an application becomes hired (migration back-fills already-hired ones); the form lists those, sorted by name, and every item must be rated. Not hired → 422 FEEDBACK_NOT_OPEN (form and submit). Form adds `submitted`; Application adds `feedback_submitted` (candidate only). Trust score `breakdown` is `[]` until published (same answer for everyone). Score math in integers (half points) = PHP `round()`. Recalculation by `FeedbackObserver` after commit; `Feedback::submit()` writes response + items in one transaction.
 - 2026-10-05 – `GET /job-postings/{id}` returns `my_application {id,status,created_at}|null` for candidates (details only) so the page shows the application instead of the apply form.
@@ -108,8 +109,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 6 – Legacy SOAP integration
 - [x] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults (`php tests/run.php`: 39 checks incl. SoapClient smoke on its own port; faults namespace-qualified `SOAP-ENV:Client.*`)
-- [ ] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping
-- [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check
+- [x] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping (+ `GET /admin/employers[/{id}]`; live calls to the running registry OK for ACTIVE / NOT_FOUND / 422 / auth 502 / unreachable 502)
+- [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check – first two done (`tests/Feature/Registry` 14 tests, also on MySQL; registry `php tests/run.php` 39 checks); `xmllint` not installed locally → add to CI (Phase 9), then tick
 - [ ] Frontend: admin employer verification screen shows registry result – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 08 (registry part)
 
@@ -141,6 +142,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc not yet synced for Phase 6: `registry_checks` gains `business_reg_no`, `registry_type` (Appendix data model); `name_match` null for NOT_FOUND/ERROR; seeded registry records (8.5 / 4.3 sample uses "Bright Path BPO Inc." CS201912345 – the seed has CS201912345 = KALINGA FOODS, INC. and Bright Path = CS201800777). Sync with `opendoor-sia-docs` at the end of Phase 6.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
 - Gateway limit 120 req/min per IP: one Newman run is 110 requests (~22 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
@@ -152,6 +154,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – Registry SOAP service done (39 checks); Core `BusinessRegistryClient` + `registry_checks` + admin employer queue/verify done (14 tests, 272 Core tests pass). Ran /doctor (user settings only: 3 unused plugins + 2 skills off, auto mode default).
 - 2026-10-05 – SIA doc synced for M7 (4.1, 4.2, 6, 8, Appendix A + data model + seeders); fixed a blank page 8 (H1 now uses `pageBreakBefore` instead of page-break paragraphs); checked as PDF, 41 pages. **Phase 5 complete.**
 - 2026-10-05 – Postman 06 Feedback & Trust Score done; seed moved candidate2@'s open hire to a closed employer2@ posting (2 earlier responses) so T10 really publishes a score. Phase 5 code complete; SIA doc sync next.
 - 2026-10-05 – Feedback screens: `submitted` / `feedback_submitted` / empty-form handling; live-checked with a headless Chrome script (Playwright from the npx cache, `channel: 'chrome'`) because the Playwright MCP did not connect.

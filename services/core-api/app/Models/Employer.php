@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * verified_at, verification_rejected_reason, trust_score and feedback_count are not fillable:
@@ -49,6 +50,26 @@ class Employer extends Model
     public function jobPostings(): HasMany
     {
         return $this->hasMany(JobPosting::class);
+    }
+
+    /** @return HasMany<RegistryCheck, $this> */
+    public function registryChecks(): HasMany
+    {
+        return $this->hasMany(RegistryCheck::class);
+    }
+
+    /** @return HasOne<RegistryCheck, $this> */
+    public function latestRegistryCheck(): HasOne
+    {
+        return $this->hasOne(RegistryCheck::class)->latestOfMany(['checked_at', 'id']);
+    }
+
+    /** The latest check, but only when it was made for the registration number and type on file now. */
+    public function currentRegistryCheck(): ?RegistryCheck
+    {
+        $check = $this->latestRegistryCheck;
+
+        return $check?->isFor($this) ? $check : null;
     }
 
     public function isVerified(): bool

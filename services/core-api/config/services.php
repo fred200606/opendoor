@@ -28,6 +28,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Legacy Business Registry (SOAP). The password is a secret: never log it.
+    'registry' => [
+        'wsdl' => env('REGISTRY_WSDL_URL', 'http://127.0.0.1:8003/soap?wsdl'),
+        'user' => env('REGISTRY_SOAP_USER'),
+        'password' => env('REGISTRY_SOAP_PASSWORD'),
+        'timeout' => (int) env('REGISTRY_TIMEOUT', 5),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
