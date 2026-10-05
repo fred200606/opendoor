@@ -616,6 +616,10 @@ paths:
     post:
       tags: [M6 Applications]
       summary: Apply to an open posting
+      description: >-
+        Candidates only. A draft or unapproved posting is 404; a closed posting, or an open one past its
+        `closes_at` day (Asia/Manila), is 422 POSTING_CLOSED; a second application to the same posting is
+        409 ALREADY_APPLIED. A candidate without a profile gets an empty one. The employer is notified.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         content:
@@ -627,22 +631,19 @@ paths:
                 interview_request: { type: string, maxLength: 1000 }
       responses:
         '201':
-          description: Applied
+          description: Applied (status pending)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  id: { type: integer }
-                  job_posting_id: { type: integer }
-                  status: { $ref: '#/components/schemas/ApplicationStatus' }
-                  created_at: { type: string, format: date-time }
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
   /applications:
     get:
       tags: [M6 Applications]
       summary: Own applications (candidate) or applications to own postings (employer)
+      description: Candidates and employers only (admins 403). Newest first; applications to deleted postings stay listed.
       parameters:
         - name: status
           in: query
@@ -663,10 +664,13 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/Application' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /applications/{id}:
     get:
       tags: [M6 Applications]
       summary: Application details (employer opening a pending application marks it reviewed)
+      description: Only the candidate who applied and the employer that owns the posting; anyone else gets 403.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
         '200':
@@ -683,6 +687,7 @@ paths:
       description: |
         Allowed: pending→reviewed (employer), pending/reviewed→withdrawn (candidate),
         reviewed→rejected (employer), reviewed→hired (employer or candidate). Anything else → 422 INVALID_STATUS_TRANSITION.
+        hired sets `hired_at` and `hire_confirmed_by`. Every change notifies the other party.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -1592,15 +1597,20 @@ components:
       properties:
         id: { type: integer }
         job_posting: { $ref: '#/components/schemas/JobPosting' }
+        job_posting_id: { type: integer }
         candidate:
-          description: Visible to the employer only for applications to its own postings
+          description: Only for the employer that owns the posting (absent for the candidate)
           type: object
           properties:
             name: { type: string }
-            headline: { type: string }
+            headline: { type: [string, 'null'] }
+            skills: { type: array, items: { type: string } }
+            experience: { type: [string, 'null'] }
             accommodations:
               type: array
               items: { $ref: '#/components/schemas/Accommodation' }
+            disability_type: { type: [string, 'null'], description: Only when the candidate chose show_disability; otherwise null }
+            resume_url: { type: [string, 'null'], description: 'Signed gateway link to GET /resumes/{id}, valid 30 minutes' }
         status: { $ref: '#/components/schemas/ApplicationStatus' }
         cover_note: { type: [string, 'null'] }
         interview_request: { type: [string, 'null'] }
@@ -1609,7 +1619,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/HireConfirmedBy'
             - type: 'null'
-        feedback_opens_on: { type: [string, 'null'], format: date }
+        feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after hired_at (Asia/Manila); null until hired' }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -1618,7 +1628,7 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
-        type: { type: string, example: application_status_changed }
+        type: { type: string, description: 'application_received (to the employer) or application_status_changed', example: application_status_changed }
         data:
           type: object
           additionalProperties: true

@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\CandidateProfile;
-use App\Support\PublicUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,8 +14,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class CandidateProfileResource extends JsonResource
 {
-    public const RESUME_LINK_MINUTES = 30;
-
     /**
      * @return array<string, mixed>
      */
@@ -31,9 +28,7 @@ class CandidateProfileResource extends JsonResource
             'location' => ['psgc_code' => $this->location_psgc, 'label' => $this->location_label],
             'disability_type' => $this->disability_type,
             'show_disability' => $this->show_disability,
-            'resume_url' => $this->resume_path
-                ? PublicUrl::signed('resumes.show', ['candidateProfile' => $this->id], now()->addMinutes(self::RESUME_LINK_MINUTES))
-                : null,
+            'resume_url' => $this->resumeUrl(),
             'accommodations' => AccommodationResource::collection($this->whenLoaded('accommodations')),
         ];
     }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -63,6 +64,18 @@ class JobPosting extends Model
     public function accommodations(): BelongsToMany
     {
         return $this->belongsToMany(Accommodation::class, 'job_posting_accommodation')->withPivot('note');
+    }
+
+    /** @return HasMany<Application, $this> */
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    /** Open, approved and still before the end of `closes_at` (Manila) – the cron may not have run yet. */
+    public function acceptsApplications(): bool
+    {
+        return $this->isVisible() && ! $this->closes_at->copy()->endOfDay()->isPast();
     }
 
     /** Postings anyone may see: open, approved and not soft-deleted (search, matching, snapshot). */

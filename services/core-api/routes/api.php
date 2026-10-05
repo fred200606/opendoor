@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Candidate\ProfileController;
@@ -47,6 +48,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('profile', [ProfileController::class, 'update']);
         Route::put('accommodations', [ProfileController::class, 'updateNeeds']);
         Route::post('resume', [ProfileController::class, 'uploadResume']);
+    });
+
+    // M6 Applications – the candidate applies; both parties follow the status workflow (ApplicationPolicy)
+    Route::post('job-postings/{jobPosting}/applications', [ApplicationController::class, 'store'])->middleware('role:candidate');
+    Route::middleware('role:candidate,employer')->group(function () {
+        Route::get('applications', [ApplicationController::class, 'index']);
+        Route::get('applications/{application}', [ApplicationController::class, 'show']);
+        Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus']);
     });
 
     // Employer

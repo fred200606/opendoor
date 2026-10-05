@@ -24,6 +24,7 @@ class PostingController extends Controller
 
         $postings = $employer->jobPostings()
             ->with(JobPostingController::RELATIONS)
+            ->withCount('applications')
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->latest()
             ->paginate(12);

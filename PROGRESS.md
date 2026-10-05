@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 4 – Applications
 - **In progress:** –
-- **Next step:** Phase 4 – Core `ApplicationStatus` enum + `canTransitionTo` (pending → reviewed → hired/rejected, withdrawn by the candidate; see `references/business-rules.md`), `applications` migration (FK restrictOnDelete, unique candidate+posting), apply (`POST /job-postings/{id}/applications`, closed posting / duplicate → error codes from the contract), candidate + employer lists, details, status endpoint, notifications on change. Read OpenAPI M6 + the apply/applicants screens first.
+- **Next step:** Phase 4 – live check of the apply / my applications / application details (withdraw, "I was hired") / employer applicants + decision screens through the gateway with the demo accounts, then tick the frontend item; then Postman folder 05.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – M6: apply returns the full Application (201). Closed postings (or open past `closes_at` day, Manila) → 422 POSTING_CLOSED; drafts/unapproved → 404. Admins have no access to applications (403). The employer's `candidate` block also carries `skills`, `experience`, `resume_url` (signed) and `disability_type` only when `show_disability`. Notifications: Laravel database notifications, type `application_received` / `application_status_changed`, `data {message,url,application_id,status}` to the party that did not act. Status changes run under a row lock.
 - 2026-10-05 – Paginator paths are built from `PUBLIC_API_URL`'s origin + the request path (`Paginator::currentPathResolver` → `PublicUrl::path`), so `meta.path`/`links` point at the gateway.
 - 2026-10-05 – M5: `sort=best` = needs met (match mode) then newest; without match mode best = newest; ties by id desc. Candidates with needs get `match` on every posting even with match=0; `match=1` from guests/other roles/candidates without needs is ignored (`match_mode:false`), not an error. `accommodations[]` filter = posting must offer all. Keyword LIKE uses `ESCAPE '!'` (same on MySQL and SQLite). Documented in OpenAPI.
 - 2026-10-05 – Frontend: buttons that become unavailable use `components/Button.jsx` (`aria-disabled`, clicks ignored) instead of native `disabled`, which drops focus to `<body>` in Chrome; `useApiForm.submit` / `useAction.run` ignore a second call while one is running. Rule added to `opendoor-dev` conventions.
@@ -90,8 +91,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 04 (21 requests: profile, needs, résumé upload + signed link, T03–T05 search/matching, filters; whole collection 75 requests / 383 assertions pass)
 
 ### Phase 4 – Applications
-- [ ] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change
-- [ ] Core: feature tests for every allowed + disallowed transition, duplicate apply, closed posting
+- [x] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change (`ApplicationController`, `ApplicationPolicy`, `ApplicationUpdate` database notification, `applicants_count` on employer postings)
+- [x] Core: feature tests for every allowed + disallowed transition, duplicate apply, closed posting (75-case unit table + `tests/Feature/Applications`, 31 tests; 228 Core tests pass)
 - [ ] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 05
 

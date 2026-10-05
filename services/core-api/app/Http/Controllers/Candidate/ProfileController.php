@@ -68,21 +68,11 @@ class ProfileController extends Controller
             Storage::delete($oldPath);
         }
 
-        return response()->json(['resume_url' => (new CandidateProfileResource($profile))->resolve()['resume_url']]);
+        return response()->json(['resume_url' => $profile->resumeUrl()]);
     }
 
     private function profile(Request $request): CandidateProfile
     {
-        $user = $request->user();
-
-        if (! $user->candidateProfile) {
-            $profile = new CandidateProfile;
-            $profile->user()->associate($user);
-            $profile->save();
-            // fresh(): a just-created model would make the resource answer 201 instead of 200.
-            $user->setRelation('candidateProfile', $profile->fresh());
-        }
-
-        return $user->candidateProfile;
+        return CandidateProfile::for($request->user());
     }
 }

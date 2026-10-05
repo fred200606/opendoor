@@ -43,6 +43,7 @@ class JobPostingResource extends JsonResource
             'match' => $this->resource->getAttribute('match'),
             'trust_score' => $this->employer->trustScoreSummary(),
             'rejection_reason' => $this->when($privileged, $this->rejection_reason),
+            'applicants_count' => $this->when($privileged && isset($this->applications_count), fn () => $this->applications_count),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

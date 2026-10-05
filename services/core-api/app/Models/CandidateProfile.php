@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\PublicUrl;
 use Database\Factories\CandidateProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A candidate's profile and accommodation needs. Needs drive matching (M5);
@@ -18,6 +20,8 @@ class CandidateProfile extends Model
 {
     /** @use HasFactory<CandidateProfileFactory> */
     use HasFactory;
+
+    public const RESUME_LINK_MINUTES = 30;
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -45,5 +49,36 @@ class CandidateProfile extends Model
     public function accommodations(): BelongsToMany
     {
         return $this->belongsToMany(Accommodation::class, 'candidate_accommodation');
+    }
+
+    /** @return HasMany<Application, $this> */
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    /** The candidate's profile; a new candidate gets an empty one on first access (never a 404). */
+    public static function for(User $user): self
+    {
+        if (! $user->candidateProfile) {
+            $profile = new self;
+            $profile->user()->associate($user);
+            $profile->save();
+            // fresh(): a just-created model would make a resource answer 201 instead of 200.
+            $user->setRelation('candidateProfile', $profile->fresh());
+        }
+
+        return $user->candidateProfile;
+    }
+
+    /**
+     * Short-lived signed link through the gateway (a browser link cannot send the Bearer token).
+     * Given only to the candidate and to employers the candidate applied to.
+     */
+    public function resumeUrl(): ?string
+    {
+        return $this->resume_path
+            ? PublicUrl::signed('resumes.show', ['candidateProfile' => $this->id], now()->addMinutes(self::RESUME_LINK_MINUTES))
+            : null;
     }
 }
