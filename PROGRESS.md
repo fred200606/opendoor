@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 4 – Applications
-- **In progress:** Backlog clean-up before Phase 4 (user request 2026-10-05): (1) paginator links from `PUBLIC_API_URL` instead of Core's host; (2) prune stale Known issues; (3) SIA doc catch-up with `opendoor-sia-docs` (new endpoints, `SERVER_ERROR`, React 19/oxlint, M2/M5 rules).
+- **In progress:** –
 - **Next step:** Phase 4 – Core `ApplicationStatus` enum + `canTransitionTo` (pending → reviewed → hired/rejected, withdrawn by the candidate; see `references/business-rules.md`), `applications` migration (FK restrictOnDelete, unique candidate+posting), apply (`POST /job-postings/{id}/applications`, closed posting / duplicate → error codes from the contract), candidate + employer lists, details, status endpoint, notifications on change. Read OpenAPI M6 + the apply/applicants screens first.
 - **Blockers:** –
 
@@ -137,22 +137,18 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ## Known issues / TODO later
 
 - Gateway limit 120 req/min per IP: one Newman run is 75 requests (~17 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
-- SIA doc endpoint list needs `GET /resumes/{id}` (signed 30-min résumé link through the gateway) – update with `opendoor-sia-docs`.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
-- SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
-- SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
-- SIA doc endpoint list needs the new `GET /admin/accommodations` (admin list incl. retired) – update with `opendoor-sia-docs`.
 - Demo seed data still missing: hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
-- SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
 - SIA doc 8.5 references the registry's `seed.php` and `public/` – create them with those exact names in Phase 6 (`docs/setup/create-databases.sql` exists).
 
 ## Session log (newest first)
 
+- 2026-10-05 – Backlog clean-up: page links via the gateway URL; SIA doc caught up (React 19/oxlint/Vitest, `SERVER_ERROR`, résumé + admin list endpoints in 4.1/Appendix A, data model, upload security, references) and checked as PDF (41 pages); dev references synced.
 - 2026-10-05 – Postman 04 Candidate & Search done (multipart upload + signed link). **Phase 3 complete.**
 - 2026-10-05 – M5 search + matching done (12 tests, 122 Core tests pass); Find jobs + job details live-checked with the demo candidate.
 - 2026-10-05 – Submit/pagination buttons keep focus while busy (shared `Button`, 25 buttons in 14 files); verified in Chrome (focus stays, repeated Enter sends once); 92 Vitest tests.

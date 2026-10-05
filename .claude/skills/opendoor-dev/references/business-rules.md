@@ -25,8 +25,8 @@ These are enforced on the server and covered by feature tests.
 
 1. Load the candidate's needs.
 2. For each open, approved posting, `met` = number of those needs in the posting's accommodations (Eloquent `withCount` on the pivot filtered by the need IDs).
-3. Order: full matches first, then by `met` desc, then the requested sort.
-4. Apply keyword (title, description, company name), category and extra accommodation filters on top.
+3. Order: full matches first, then by `met` desc, then the requested sort (`best`/`newest` = newest first, `closing` = closing date first).
+4. Apply keyword (title, description, company name; case-insensitive, `%`/`_` literal), category and extra accommodation filters on top (the posting must offer every selected accommodation).
 5. Guests and candidates with no saved needs see all open postings (`match_mode: false`).
 6. `missing` lists the unmet needs by name. Disability type is never used.
 

@@ -237,7 +237,7 @@ C.push(...table(["Decision", "Choice", "Rationale"], [
 ], [1900, 2900, 5280]));
 C.push(H2("3.4 Component / Service Inventory"));
 C.push(...table(["Component / Service", "Responsibility", "Technology", "Port / URL", "Depends On"], [
-  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI; calls the gateway only", "React 18, Vite, React Router, Axios, AuthContext", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
+  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI; calls the gateway only", "React 19, Vite, React Router 7, Axios, AuthContext", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
   ["API Gateway", "Single entry point; routing; CORS; rate limiting; X-Request-ID; timeouts; uniform error envelope; health check", "Node.js 22, Express, http-proxy-middleware, express-rate-limit", "Public: [[https://opendoor-gateway.up.railway.app]] (dev :8080)", "Core Service, Insights Service"],
   ["Core Service", "Auth and roles, profiles, postings, matching, applications and status workflow, feedback and trust score, dashboards, notifications, moderation, master data", "PHP 8.3, Laravel 13, Sanctum, Eloquent", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service"],
   ["Accessibility Insights Service", "Workplace Accessibility Snapshot mashup; PSGC location lookup; caching and throttling", "Node.js 22, Express, Axios, mysql2", "insights.railway.internal:8002 (dev :8002)", "Core Service (internal API), Nominatim, Overpass, PSGC, MySQL insights_cache"],
@@ -261,6 +261,7 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "POST", "/api/logout", "Revoke current token", "→ 204"],
   ["Core", "GET, PUT", "/api/candidate/profile", "View or update own profile", "{headline,skills[],experience,location_psgc,...} → profile"],
   ["Core", "PUT", "/api/candidate/accommodations", "Replace list of accommodation needs", "{accommodation_ids:[1,4,9]} → 200 needs[]"],
+  ["Core", "POST, GET", "/api/candidate/resume, /api/resumes/{id}", "Upload PDF résumé (max 5 MB); open it from a 30-minute signed link", "multipart `resume` → 200 {resume_url}; signed link → PDF"],
   ["Core", "GET", "/api/job-postings", "Search, filter and match postings", "?q=&category=&accommodations[]=&match=1&sort=&page= → {data:[posting+match], meta}"],
   ["Core", "GET", "/api/job-postings/{id}", "Posting details with match result and trust score", "→ posting (Section 4.2)"],
   ["Core", "POST", "/api/job-postings", "Create posting (draft or submit)", "{title,description,category_id,...,accommodations:[{id,note}]} → 201"],
@@ -280,7 +281,7 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
 ], [1250, 950, 2700, 2280, 2900], { size: 16 }));
 
 C.push(H2("4.2 JSON Representation"));
-C.push(P("**Search with matching** – `GET /api/job-postings?match=1&q=encoder&page=1` (candidate token). The `match` object is computed by the Core Service from the candidate's needs; it appears only for logged-in candidates."));
+C.push(P("**Search with matching** – `GET /api/job-postings?match=1&q=encoder&page=1` (candidate token). The `match` object is computed by the Core Service from the candidate's needs; it appears only for logged-in candidates who have saved accommodation needs."));
 C.push(...code(`
 {
   "data": [
@@ -470,7 +471,7 @@ C.push(...code(`
   "disclaimer": "Map data from OpenStreetMap contributors (ODbL); coverage may be incomplete.",
   "generated_at": "2026-10-02T10:05:40+08:00"
 }`));
-C.push(P("A second transformation happens inside the Core Service: the **matching engine** joins `candidate_accommodation` and `job_posting_accommodation` (Eloquent `withCount`) to compute `match.met`, orders full matches first and then partial matches by count, and applies keyword, category and extra accommodation filters on top. The **trust score** transformation converts ratings to values (Delivered = 1, Partially = 0.5, Not delivered = 0) and computes Σ item ratings ÷ number of rated items × 100, rounded to a whole percentage (e.g. 86%)."));
+C.push(P("A second transformation happens inside the Core Service: the **matching engine** joins `candidate_accommodation` and `job_posting_accommodation` (Eloquent `withCount`) to compute `match.met`, orders full matches first and then partial matches by count (ties follow the chosen sort: newest or closing soon), and applies keyword, category and extra accommodation filters on top (a posting must offer every selected accommodation). The **trust score** transformation converts ratings to values (Delivered = 1, Partially = 0.5, Not delivered = 0) and computes Σ item ratings ÷ number of rated items × 100, rounded to a whole percentage (e.g. 86%)."));
 C.push(brk());
 
 // ---------- 5 Integration flow ----------
@@ -501,8 +502,9 @@ C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior
   ["422", "VALIDATION_FAILED", "Core", "Form Request validation fails; field errors returned in `errors`"],
   ["422", "INVALID_STATUS_TRANSITION", "Core", "Transition not allowed by the ApplicationStatus enum (e.g., Rejected → Hired, Pending → Hired)"],
   ["422", "POSTING_CLOSED / FEEDBACK_NOT_OPEN", "Core", "Applying to a closed posting; feedback before calendar day 30 after the hire date (Asia/Manila)"],
-  ["429", "RATE_LIMITED", "Gateway, Core", "Over 120 requests/min per IP at the gateway, or over 5 login attempts/min; `Retry-After` header sent"],
   ["422", "REGISTRY_INVALID_REQUEST", "Core", "Registry returned `Client.Validation` (e.g., malformed registration number); the employer is asked to correct it"],
+  ["429", "RATE_LIMITED", "Gateway, Core", "Over 120 requests/min per IP at the gateway, or over 5 login attempts/min; `Retry-After` header sent"],
+  ["500", "SERVER_ERROR", "Core", "Unexpected server error; generic message only (no stack trace), details logged with the `request_id`"],
   ["502", "REGISTRY_UNAVAILABLE / REGISTRY_AUTH_FAILED", "Core", "`Server` / `Client.Authentication` fault, connection failure or 5-second timeout; employer remains in the manual review queue"],
   ["502", "UPSTREAM_ERROR", "Gateway", "Downstream service refused the connection or returned an invalid response"],
   ["503", "SERVICE_UNAVAILABLE", "Gateway", "Health check shows the target service down (e.g., sleeping free-tier instance)"],
@@ -535,6 +537,7 @@ C.push(...bullets([
 C.push(H2("6.4 Security Considerations"));
 C.push(...bullets([
   "**Input validation:** Laravel Form Requests validate every create/update (required fields, `Rule::exists` for accommodation and category IDs, `Rule::enum` for statuses, max lengths, PDF-only size-limited résumé uploads); Eloquent parameter binding prevents SQL injection; the SOAP request is validated against the WSDL schema; React escapes output by default.",
+  "**Uploaded files:** company logos are public images served through the gateway; résumés are stored on Core's private disk and opened only through a temporary signed link (30 minutes, `Cache-Control: no-store`) returned to the candidate, so the PDF can be opened in a new tab without exposing the token. Links in API responses (logos, résumés, page links) always point at the gateway, never at an internal service host.",
   "**Transport/HTTPS:** Vercel and Railway public endpoints use HTTPS only; internal calls stay on Railway's private network and are not exposed to the internet.",
   "**Least privilege / access controls:** only the gateway is public; each service has its own database user limited to its own schema; role middleware and Policies enforce per-record ownership; CORS allows only the deployed frontend origin.",
   "**Abuse protection:** gateway rate limiting (120 requests/min per IP) and login rate limiting (5 attempts/min).",
@@ -633,7 +636,7 @@ C.push(...bullets([
 C.push(H2("8.4 CI/CD Workflow"));
 C.push(P("GitHub Actions workflow `.github/workflows/ci.yml`:"));
 C.push(...table(["Stage", "Trigger", "Steps"], [
-  ["Validate & test", "Pull request to `develop` or `main`; push to `develop`", "Path-filtered jobs run in parallel: **frontend** – `npm ci`, ESLint, `npm run build`, axe accessibility check on the built pages; **gateway** and **insights-service** – `npm ci`, lint, unit tests (Jest, with external APIs mocked); **core-api** – `composer install`, Laravel Pint, `php artisan test` against a MySQL service container (policies, status transitions, trust score); **business-registry-soap** – `php -l`, WSDL validated with `xmllint`, SOAP smoke test."],
+  ["Validate & test", "Pull request to `develop` or `main`; push to `develop`", "Path-filtered jobs run in parallel: **frontend** – `npm ci`, oxlint (with `jsx-a11y` accessibility rules), Vitest unit tests (React Testing Library), `npm run build`, axe accessibility check on the built pages; **gateway** and **insights-service** – `npm ci`, lint, unit tests (Jest, with external APIs mocked); **core-api** – `composer install`, Laravel Pint, `php artisan test` against a MySQL service container (policies, status transitions, trust score); **business-registry-soap** – `php -l`, WSDL validated with `xmllint`, SOAP smoke test."],
   ["Integration test", "Same as above, after the jobs pass", "`docker compose up` of gateway, core, insights (external APIs replaced by a mock server), registry and MySQL; seed data; run Newman with the `ci` environment; upload the HTML report as an artifact."],
   ["Deploy", "Push/merge to `main`", "Vercel and Railway GitHub integrations build and deploy the changed components automatically; Laravel migrations run as the Railway release command."],
   ["Post-deploy smoke test", "After deploy on `main`", "Newman runs the smoke folder (health, login, search, snapshot) against the production gateway; failure marks the run red and the team rolls back with Railway/Vercel \"redeploy previous\"."],
@@ -745,26 +748,33 @@ C.push(H1("12. References"));
   "Access Careers. (n.d.). Access Careers. Retrieved September 28, 2026, from http://careers.axlearning.org/",
   "Apache Software Foundation. (n.d.). Apache JMeter user's manual. https://jmeter.apache.org/usermanual/",
   "Department of Labor and Employment. (n.d.). PhilJobNet and PESO Employment Information System. Retrieved September 28, 2026, from https://philjobnet.gov.ph/",
+  "Deque Systems. (n.d.). axe-core: Accessibility engine for automated web UI testing. https://github.com/dequelabs/axe-core",
   "Express.js. (n.d.). Express 4.x API reference. https://expressjs.com/",
   "GitHub. (n.d.). GitHub Actions documentation. https://docs.github.com/actions",
   "Laravel. (n.d.). Laravel 13.x documentation: Sanctum, Authorization, Validation. https://laravel.com/docs/13.x",
+  "Meta Open Source. (n.d.). React documentation (version 19). https://react.dev/",
   "National Privacy Commission. (2016). Implementing rules and regulations of Republic Act No. 10173, known as the Data Privacy Act of 2012. https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/",
   "OASIS. (2006). Web Services Security UsernameToken Profile 1.1. https://docs.oasis-open.org/wss/v1.1/",
+  "OpenJS Foundation. (n.d.). Jest documentation. https://jestjs.io/",
   "OpenStreetMap Foundation. (n.d.). Nominatim usage policy. https://operations.osmfoundation.org/policies/nominatim/",
   "OpenStreetMap Wiki. (n.d.). Overpass API; Key:wheelchair. https://wiki.openstreetmap.org/wiki/Overpass_API",
+  "Oxc Project. (n.d.). Oxlint linter. https://oxc.rs/docs/guide/usage/linter",
   "PHP Group. (n.d.). SOAP extension (SoapServer, SoapClient). https://www.php.net/manual/en/book.soap.php",
   "Postman. (n.d.). Writing tests and running collections with Newman. https://learning.postman.com/docs/",
   "PSGC API. (n.d.). Philippine Standard Geographic Code API. https://psgc.gitlab.io/api/",
   "PWD-E. (n.d.). PWD-E: Future begins today. Retrieved September 28, 2026, from https://pwd-e.com/home/",
   "Railway. (n.d.). Private networking. https://docs.railway.com/",
   "Rappler. (2023). Still a long road ahead: PWDs struggle to join Philippine workforce. https://www.rappler.com/newsbreak/in-depth/persons-with-disability-struggle-philippine-workforce/",
+  "Remix Software. (n.d.). React Router documentation (version 7). https://reactrouter.com/",
   "Republic Act No. 7277. (1992). Magna Carta for Disabled Persons. Official Gazette of the Republic of the Philippines.",
   "Republic Act No. 10173. (2012). Data Privacy Act of 2012. Official Gazette of the Republic of the Philippines.",
   "Republic Act No. 10524. (2013). An Act expanding the positions reserved for persons with disability, amending Republic Act No. 7277. Official Gazette of the Republic of the Philippines.",
   "Respicio & Co. (n.d.). PWD right to reasonable accommodation in the workplace (Philippines). https://www.lawyer-philippines.com/",
   "SDDirect. (2023). Disability inclusion in the Philippines (Disability Inclusion Helpdesk Report No. 61). https://sddirect.org.uk/",
+  "Testing Library. (n.d.). React Testing Library. https://testing-library.com/docs/react-testing-library/intro/",
   "United Nations. (n.d.). Goal 8: Promote sustained, inclusive and sustainable economic growth, full and productive employment and decent work for all. https://sdgs.un.org/goals/goal8",
   "Vercel. (n.d.). Vite on Vercel. https://vercel.com/docs",
+  "Vitest. (n.d.). Vitest documentation. https://vitest.dev/",
   "W3C. (2007). SOAP Version 1.2 and Web Services Description Language (WSDL) 1.1 notes. https://www.w3.org/TR/wsdl",
   "W3C. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/",
 ].forEach((r) => C.push(new Paragraph({ children: runs(r), indent: { left: 720, hanging: 720 }, spacing: { after: 100 } })));
@@ -773,21 +783,25 @@ C.push(brk());
 // ---------- Appendices ----------
 C.push(H1("Appendices"));
 C.push(H2("Appendix A - API endpoint reference / OpenAPI or equivalent"));
-C.push(P("Base URL: `{GATEWAY}/api`. Access: P = public, C = candidate, E = employer, A = administrator, S = internal service key. [[Attach or link the generated OpenAPI file, e.g., docs/openapi.yaml.]]"));
+C.push(P("Base URL: `{GATEWAY}/api`. Access: P = public, C = candidate, E = employer, A = administrator, S = internal service key. The complete machine-readable contract (request and response schemas, error codes, enums) is `docs/openapi.yaml` (OpenAPI 3.1) in the repository."));
 C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M1 Auth", "POST", "/register, /login, /logout", "P / any", "Account, token, logout"],
   ["M1 Auth", "GET, PUT", "/me, /me/password", "any", "Current user; change password"],
   ["M2 Profile", "GET, PUT", "/candidate/profile", "C", "Own profile"],
   ["M2 Profile", "PUT", "/candidate/accommodations", "C", "Replace needs"],
-  ["M2 Profile", "POST", "/candidate/resume", "C", "Upload PDF résumé"],
+  ["M2 Profile", "POST", "/candidate/resume", "C", "Upload PDF résumé (max 5 MB)"],
+  ["M2 Profile", "GET", "/resumes/{id}?expires=&signature=", "P (signed link)", "Open résumé PDF (link valid 30 min)"],
   ["M3 Company", "GET, PUT", "/employer/company", "E", "Own company profile"],
   ["M3 Company", "GET", "/employers/{id}", "P", "Public employer page"],
+  ["M3 Company", "GET", "/employers/{id}/logo", "P", "Company logo (PNG/JPG/WebP, max 2 MB)"],
+  ["M3 Company", "GET", "/admin/employers, /admin/employers/{id}", "A", "Verification queue / details with latest registry check"],
   ["M3 Company", "PATCH", "/admin/employers/{id}/verify", "A", "check (SOAP) / approve / reject"],
   ["M4 Postings", "GET", "/employer/job-postings", "E", "Own postings"],
   ["M4 Postings", "POST", "/job-postings", "E", "Create"],
   ["M4 Postings", "PUT, DELETE", "/job-postings/{id}", "E (owner)", "Update / soft-delete"],
   ["M4 Postings", "PATCH", "/job-postings/{id}/status", "E (owner)", "Close / reopen"],
-  ["M4 Postings", "PATCH", "/admin/job-postings/{id}/approve", "A", "Approve / reject"],
+  ["M4 Postings", "GET", "/admin/job-postings", "A", "Approval queue"],
+  ["M4 Postings", "PATCH", "/admin/job-postings/{id}/approve", "A", "Approve / reject (with reason)"],
   ["M5 Search", "GET", "/job-postings?q=&category=&accommodations[]=&match=1&sort=&page=", "P (match: C)", "Search, filter, match"],
   ["M5 Search", "GET", "/job-postings/{id}", "P", "Details (+ match for C)"],
   ["M5/M11", "GET", "/categories, /accommodations", "P", "Filter options"],
@@ -802,8 +816,10 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M10 Moderation", "GET, PATCH", "/admin/users, /admin/users/{id}/suspend", "A", "Users"],
   ["M10 Moderation", "POST", "/job-postings/{id}/reports", "C", "Report posting"],
   ["M10 Moderation", "GET, PATCH", "/admin/reports, /admin/reports/{id}", "A", "Review reports"],
+  ["M10 Moderation", "GET", "/admin/feedback", "A", "Feedback for moderation (anonymous)"],
   ["M10 Moderation", "PATCH", "/admin/feedback/{id}/hide", "A", "Hide feedback"],
-  ["M11 Master data", "POST, PUT, DELETE", "/admin/categories/{id}, /admin/accommodations/{id}", "A", "Manage lists"],
+  ["M11 Master data", "GET", "/admin/accommodations", "A", "All types incl. retired"],
+  ["M11 Master data", "POST, PUT, DELETE", "/admin/categories/{id}, /admin/accommodations/{id}", "A", "Manage lists (in use: category 422, accommodation retired)"],
   ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks"],
   ["Insights", "GET", "/insights/job-postings/{id}", "P", "Accessibility Snapshot"],
   ["Insights", "GET", "/insights/locations/{regions|provinces|cities}?parent=", "P", "PSGC lists"],
@@ -902,12 +918,12 @@ C.push(...bullets([
 C.push(H2("Appendix F - Additional screenshots or diagrams"));
 C.push(P("**Core Service data model** (MySQL `opendoor_core`). Accommodations are stored once in a lookup table and linked to postings, candidate needs and feedback through pivot tables, so the same vocabulary drives filtering, matching and per-accommodation ratings."));
 C.push(...table(["Table", "Key Fields", "Notes"], [
-  ["users", "id, name, email, password, role, is_active, consented_at, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent"],
-  ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
-  ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, verified_at, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
+  ["users", "id, name, email, password, role, is_active, consented_at, display_prefs, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent"],
+  ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, location_label, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
+  ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, location_label, description, logo_path, verified_at, verification_rejected_reason, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
   ["registry_checks", "id, employer_id, status, registered_name, name_match_score, checked_at, raw_response (XML)", "Result of SOAP verification calls"],
   ["categories / accommodations", "id, name / id, name, group, description, is_retired", "Admin-managed lists"],
-  ["job_postings", "id, employer_id, category_id, title, description, address, location_psgc, employment_type, work_setup, interview_format, status, closes_at, is_approved, deleted_at", "Soft deletes; full-text index on title and description"],
+  ["job_postings", "id, employer_id, category_id, title, description, address, location_psgc, location_label, employment_type, work_setup, interview_format, status, closes_at, is_approved, rejection_reason, deleted_at", "Soft deletes; indexes (status, category_id) and (employer_id, status); MySQL full-text index on title and description (keyword search currently uses a case-insensitive LIKE)"],
   ["job_posting_accommodation", "job_posting_id, accommodation_id, note", "Pivot: accommodations provided"],
   ["candidate_accommodation", "candidate_profile_id, accommodation_id", "Pivot: accommodations needed"],
   ["applications", "id, job_posting_id, candidate_profile_id, status, cover_note, interview_request, hired_at, hire_confirmed_by", "Unique (job_posting_id, candidate_profile_id)"],

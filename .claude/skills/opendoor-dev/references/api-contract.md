@@ -15,11 +15,13 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M1 Auth | POST | /logout | any | revoke token → 204 |
 | M1 Auth | GET | /me | any | current user + role |
 | M1 Auth | PUT | /me/password | any | `{current_password,password,password_confirmation}` |
-| M2 Profile | GET, PUT | /candidate/profile | C | `{headline,skills[],experience,location_psgc,disability_type?,show_disability}` |
+| M2 Profile | GET, PUT | /candidate/profile | C | `{headline,skills[],experience,location_psgc,location_label,disability_type?,show_disability}`; GET never 404s (empty profile created on first access) |
 | M2 Profile | PUT | /candidate/accommodations | C | `{accommodation_ids:[...]}` replaces needs |
-| M2 Profile | POST | /candidate/resume | C | multipart PDF, size-limited |
+| M2 Profile | POST | /candidate/resume | C | multipart PDF ≤ 5 MB → `{resume_url}` (signed gateway link, 30 min) |
+| M2 Profile | GET | /resumes/{id}?expires=&signature= | P (signed) | opens the PDF without a token; tampered/expired → 403 |
 | M3 Company | GET, PUT | /employer/company | E | `{company_name,business_reg_no,registry_type:'DTI'|'SEC',industry,address,location_psgc,description,logo?}` |
 | M3 Company | GET | /employers/{id} | P | public page: company, verified, open postings, trust score |
+| M3 Company | GET | /employers/{id}/logo | P | logo image (PNG/JPG/WebP ≤ 2 MB); `logo_url` built from `PUBLIC_API_URL` |
 | M3 Company | PATCH | /admin/employers/{id}/verify | A | `{action:'check'|'approve'|'reject', reason?}` → `{registry:{status,registered_name,name_match,checked_at}, verified_at}` |
 | M4 Postings | GET | /employer/job-postings | E | own postings (`?status=`) with `applicants_count` |
 | M4 Postings | POST | /job-postings | E | `{title,description,category_id,address,location_psgc,employment_type,work_setup,interview_format,closes_at,accommodations:[{id,note?}],submit:bool}` → 201 |
@@ -67,7 +69,7 @@ Posting in lists/details:
   "match": { "met": 4, "total": 5, "missing": [ { "id": 6, "name": "Sign language interpreter" } ] },
   "trust_score": { "published": true, "score": 86, "based_on": 5 } }
 ```
-`match` only for logged-in candidates with saved needs. `trust_score.score` is `null` and `published:false` below 3 responses. List `meta` includes `match_mode: true|false`.
+`match` only for logged-in candidates with saved needs (on every posting, also with `match=0`); `match=1` from anyone else is ignored (`match_mode:false`). `sort=best` = needs met (match mode) then newest; `newest`; `closing` = `closes_at` asc; ties by id desc. `accommodations[]` = posting must offer all. Page links (`meta.path`, `links`) point at the gateway. `trust_score.score` is `null` and `published:false` below 3 responses. List `meta` includes `match_mode: true|false`.
 
 Internal summary (Core → Insights):
 ```json
