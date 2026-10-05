@@ -125,6 +125,17 @@ describe('JobDetailsPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('You have already applied to this job');
   });
+
+  test('an earlier application replaces the form with its status', async () => {
+    renderApp('/candidate/jobs/42', {
+      as: 'candidate',
+      routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, my_application: { id: 11, status: 'reviewed', created_at: '2026-10-05T09:00:00+08:00' } }] },
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Your application' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View your application' })).toHaveAttribute('href', '/candidate/applications/11');
+    expect(screen.queryByRole('button', { name: 'Send application' })).not.toBeInTheDocument();
+  });
 });
 
 describe('EmployerPublicPage', () => {

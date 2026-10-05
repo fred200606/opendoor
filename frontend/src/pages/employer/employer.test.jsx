@@ -217,6 +217,35 @@ describe('EmployerApplicationPage', () => {
     expect(screen.queryByRole('button', { name: 'Not selected' })).not.toBeInTheDocument();
   });
 
+  test('shows skills, experience, a shared disability and the résumé link', async () => {
+    const candidate = {
+      ...application.candidate,
+      skills: ['Excel', 'Typing'],
+      experience: 'Three years of data entry.',
+      disability_type: 'Low vision',
+      resume_url: 'http://localhost:8080/api/resumes/4?expires=1&signature=abc',
+    };
+    renderApp('/employer/applications/11', { as: 'employer', routes: { 'GET /applications/11': () => [200, { ...application, status: 'reviewed', candidate }] } });
+
+    expect(await screen.findByText('Excel, Typing')).toBeInTheDocument();
+    expect(screen.getByText('Three years of data entry.')).toBeInTheDocument();
+    expect(screen.getByText('Low vision')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Open the résumé (PDF, opens in a new tab)' });
+    expect(link).toHaveAttribute('href', candidate.resume_url);
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  test('without shared details the page says so and hides the disability row', async () => {
+    renderApp('/employer/applications/11', {
+      as: 'employer',
+      routes: { 'GET /applications/11': () => [200, { ...application, candidate: { ...application.candidate, skills: [], experience: null, disability_type: null, resume_url: null } }] },
+    });
+
+    expect(await screen.findByText('No résumé uploaded')).toBeInTheDocument();
+    expect(screen.getAllByText('Not listed')).toHaveLength(2);
+    expect(screen.queryByText('Disability (shared by the applicant)')).not.toBeInTheDocument();
+  });
+
   test('final statuses offer no decisions', async () => {
     renderApp('/employer/applications/11', { as: 'employer', routes: { 'GET /applications/11': () => [200, { ...application, status: 'withdrawn' }] } });
 

@@ -120,10 +120,21 @@ function JobActions({ job }) {
   }
   if (user.role !== 'candidate') return null;
 
+  const mine = job.my_application;
+
   return (
     <section className="card" aria-labelledby="apply-title">
-      <h2 id="apply-title">Apply for this job</h2>
-      {job.status === 'open' ? <ApplyForm job={job} /> : <p>This job is no longer accepting applications.</p>}
+      <h2 id="apply-title">{mine ? 'Your application' : 'Apply for this job'}</h2>
+      {mine ? (
+        <p>
+          You applied on {formatDate(mine.created_at)}. Status: <StatusBadge kind="application" status={mine.status} />{' '}
+          <Link to={`/candidate/applications/${mine.id}`}>View your application</Link>
+        </p>
+      ) : job.status === 'open' ? (
+        <ApplyForm job={job} />
+      ) : (
+        <p>This job is no longer accepting applications.</p>
+      )}
       <div className="actions">
         <SaveButton jobId={job.id} />
         <ReportButton jobId={job.id} />

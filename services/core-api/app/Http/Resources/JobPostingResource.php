@@ -43,6 +43,8 @@ class JobPostingResource extends JsonResource
             'match' => $this->resource->getAttribute('match'),
             'trust_score' => $this->employer->trustScoreSummary(),
             'rejection_reason' => $this->when($privileged, $this->rejection_reason),
+            // Details only, for candidates (null when they have not applied).
+            'my_application' => $this->when(array_key_exists('my_application', $this->resource->getAttributes()), fn () => $this->resource->getAttribute('my_application')),
             'applicants_count' => $this->when($privileged && isset($this->applications_count), fn () => $this->applications_count),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

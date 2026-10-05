@@ -1589,6 +1589,16 @@ components:
             - type: 'null'
         trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
         rejection_reason: { type: [string, 'null'], description: Only for the owning employer and admins }
+        applicants_count: { type: integer, description: 'Only in GET /employer/job-postings (owner)' }
+        my_application:
+          description: Only in GET /job-postings/{id} for a logged-in candidate – their application to this posting, or null
+          oneOf:
+            - type: object
+              properties:
+                id: { type: integer }
+                status: { $ref: '#/components/schemas/ApplicationStatus' }
+                created_at: { type: string, format: date-time }
+            - type: 'null'
         created_at: { type: string, format: date-time }
 
     # ---------- applications

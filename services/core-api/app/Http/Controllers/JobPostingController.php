@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\JobPostingStatus;
+use App\Enums\UserRole;
 use App\Exceptions\ApiException;
 use App\Http\Requests\Postings\JobPostingRequest;
 use App\Http\Resources\JobPostingResource;
@@ -31,8 +32,19 @@ class JobPostingController extends Controller
             throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
         }
 
+        $viewer = $request->user('sanctum');
         $jobPosting->load(self::RELATIONS);
-        NeedsMatcher::for($request->user('sanctum'))?->annotate($jobPosting);
+        NeedsMatcher::for($viewer)?->annotate($jobPosting);
+
+        // A candidate sees an earlier application instead of the apply form.
+        if ($viewer?->role === UserRole::Candidate) {
+            $application = $jobPosting->applications()->whereHas('candidateProfile', fn ($profile) => $profile->where('user_id', $viewer->id))->first();
+            $jobPosting->setAttribute('my_application', $application ? [
+                'id' => $application->id,
+                'status' => $application->status,
+                'created_at' => $application->created_at->toIso8601String(),
+            ] : null);
+        }
 
         return new JobPostingResource($jobPosting);
     }

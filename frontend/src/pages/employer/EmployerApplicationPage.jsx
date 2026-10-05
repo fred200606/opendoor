@@ -108,6 +108,30 @@ function ApplicationReview({ application, onChange }) {
       <h2>Cover note</h2>
       <p className="prose">{application.cover_note || 'The applicant did not write a cover note.'}</p>
 
+      <h2>About the applicant</h2>
+      <dl className="details-list">
+        <dt>Skills</dt>
+        <dd>{(candidate.skills ?? []).length > 0 ? candidate.skills.join(', ') : 'Not listed'}</dd>
+        <dt>Work experience</dt>
+        <dd className="prose">{candidate.experience || 'Not listed'}</dd>
+        {candidate.disability_type && (
+          <>
+            <dt>Disability (shared by the applicant)</dt>
+            <dd>{candidate.disability_type}</dd>
+          </>
+        )}
+        <dt>Résumé</dt>
+        <dd>
+          {candidate.resume_url ? (
+            <a href={candidate.resume_url} target="_blank" rel="noreferrer">
+              Open the résumé (PDF, opens in a new tab)
+            </a>
+          ) : (
+            'No résumé uploaded'
+          )}
+        </dd>
+      </dl>
+
       {application.status === 'reviewed' && (
         <div className="actions">
           {Object.entries(DECISIONS).map(([status, item]) => (

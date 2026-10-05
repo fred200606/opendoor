@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 4 – Applications
 - **In progress:** –
-- **Next step:** Phase 4 – live check of the apply / my applications / application details (withdraw, "I was hired") / employer applicants + decision screens through the gateway with the demo accounts, then tick the frontend item; then Postman folder 05.
+- **Next step:** Phase 4 – Postman folder 05 (Applications): throwaway candidate applies to a demo posting (201), duplicate 409, closed/unknown posting, details `my_application`, employer opens → reviewed, refused transitions 422 INVALID_STATUS_TRANSITION, stranger 403, hire → `feedback_opens_on`; must clean up (withdraw or keep? applications are never deleted – use a posting created in the run and soft-delete it at the end). Mind the 120 req/min gateway limit (collection is 75 now).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – `GET /job-postings/{id}` returns `my_application {id,status,created_at}|null` for candidates (details only) so the page shows the application instead of the apply form.
 - 2026-10-05 – M6: apply returns the full Application (201). Closed postings (or open past `closes_at` day, Manila) → 422 POSTING_CLOSED; drafts/unapproved → 404. Admins have no access to applications (403). The employer's `candidate` block also carries `skills`, `experience`, `resume_url` (signed) and `disability_type` only when `show_disability`. Notifications: Laravel database notifications, type `application_received` / `application_status_changed`, `data {message,url,application_id,status}` to the party that did not act. Status changes run under a row lock.
 - 2026-10-05 – Paginator paths are built from `PUBLIC_API_URL`'s origin + the request path (`Paginator::currentPathResolver` → `PublicUrl::path`), so `meta.path`/`links` point at the gateway.
 - 2026-10-05 – M5: `sort=best` = needs met (match mode) then newest; without match mode best = newest; ties by id desc. Candidates with needs get `match` on every posting even with match=0; `match=1` from guests/other roles/candidates without needs is ignored (`match_mode:false`), not an error. `accommodations[]` filter = posting must offer all. Keyword LIKE uses `ESCAPE '!'` (same on MySQL and SQLite). Documented in OpenAPI.
@@ -93,7 +94,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 4 – Applications
 - [x] Core: `ApplicationStatus` enum + `canTransitionTo`; apply / list / details / status endpoints; notifications on change (`ApplicationController`, `ApplicationPolicy`, `ApplicationUpdate` database notification, `applicants_count` on employer postings)
 - [x] Core: feature tests for every allowed + disallowed transition, duplicate apply, closed posting (75-case unit table + `tests/Feature/Applications`, 31 tests; 228 Core tests pass)
-- [ ] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Frontend: apply (cover note, interview request), my applications, employer applicants + decision screens wired – live-checked 2026-10-05 (apply ×2, duplicate message, withdraw, employer open → reviewed, hire → candidate sees feedback date; axe 0 on 5 pages). Added: applicant skills/experience/shared disability/résumé link; job details show an earlier application instead of the form (`my_application`)
 - [ ] Postman: folder 05
 
 ### Phase 5 – Verification (feedback + trust score)
@@ -149,6 +150,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – Phase 4 M6 applications: backend + tests, screens live-checked end to end; removed a leftover "Postman Data Encoder" posting from the rate-limited Newman run.
 - 2026-10-05 – Backlog clean-up: page links via the gateway URL; SIA doc caught up (React 19/oxlint/Vitest, `SERVER_ERROR`, résumé + admin list endpoints in 4.1/Appendix A, data model, upload security, references) and checked as PDF (41 pages); dev references synced.
 - 2026-10-05 – Postman 04 Candidate & Search done (multipart upload + signed link). **Phase 3 complete.**
 - 2026-10-05 – M5 search + matching done (12 tests, 122 Core tests pass); Find jobs + job details live-checked with the demo candidate.

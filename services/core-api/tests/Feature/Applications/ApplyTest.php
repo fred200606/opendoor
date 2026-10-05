@@ -58,6 +58,23 @@ class ApplyTest extends TestCase
         $this->assertSame(0, $this->candidate->notifications()->count());
     }
 
+    public function test_job_details_tell_a_candidate_about_an_earlier_application(): void
+    {
+        $this->getJson("/api/job-postings/{$this->posting->id}")->assertOk()->assertJsonPath('my_application', null);
+
+        $id = $this->apply()->json('id');
+        $this->getJson("/api/job-postings/{$this->posting->id}")
+            ->assertJsonPath('my_application.id', $id)
+            ->assertJsonPath('my_application.status', 'pending');
+
+        // Not part of the response for guests, employers or search results.
+        $this->getJson('/api/job-postings')->assertJsonMissingPath('data.0.my_application');
+        Sanctum::actingAs($this->posting->employer->user);
+        $this->getJson("/api/job-postings/{$this->posting->id}")->assertJsonMissingPath('my_application');
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/job-postings/{$this->posting->id}")->assertJsonMissingPath('my_application');
+    }
+
     public function test_applying_twice_is_a_conflict(): void
     {
         $this->apply()->assertCreated();
