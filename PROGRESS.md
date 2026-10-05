@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 5 – Verification (feedback + trust score)
 - **In progress:** –
-- **Next step:** Phase 5 – Core M7: `feedback` + `feedback_items` migrations (feedback.application_id unique; items rate the posting's accommodations: delivered | partial | not_delivered), `GET /applications/{id}/feedback-form` (`opens_on`, `is_open`, items), `POST /applications/{id}/feedback` (hired candidate only, from calendar day 30 Manila → 422 FEEDBACK_NOT_OPEN, once → 409 FEEDBACK_EXISTS), `TrustScoreService` + observer (Delivered 1 / Partial 0.5 / Not 0, whole %), publish from 3 responses, `GET /employers/{id}/trust-score` breakdown. Read `business-rules.md` "Feedback and trust score" + OpenAPI M7 first.
+- **Next step:** Phase 5 – demo data: `DemoFeedbackSeeder` (hired applications 40+ days ago + ≥3 `Feedback::submit` responses for one demo employer so its trust score is published; idempotent; called from `DatabaseSeeder`). Then frontend: FeedbackPage uses `submitted` (show "already rated") and handles an empty item list; candidate application page uses `feedback_submitted`; live check of feedback + TrustScoreCard; then Postman 06.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – M7: the posting's accommodations are recorded in a new pivot `application_accommodation` when an application becomes hired (migration back-fills already-hired ones); the form lists those, sorted by name, and every item must be rated. Not hired → 422 FEEDBACK_NOT_OPEN (form and submit). Form adds `submitted`; Application adds `feedback_submitted` (candidate only). Trust score `breakdown` is `[]` until published (same answer for everyone). Score math in integers (half points) = PHP `round()`. Recalculation by `FeedbackObserver` after commit; `Feedback::submit()` writes response + items in one transaction.
 - 2026-10-05 – `GET /job-postings/{id}` returns `my_application {id,status,created_at}|null` for candidates (details only) so the page shows the application instead of the apply form.
 - 2026-10-05 – M6: apply returns the full Application (201). Closed postings (or open past `closes_at` day, Manila) → 422 POSTING_CLOSED; drafts/unapproved → 404. Admins have no access to applications (403). The employer's `candidate` block also carries `skills`, `experience`, `resume_url` (signed) and `disability_type` only when `show_disability`. Notifications: Laravel database notifications, type `application_received` / `application_status_changed`, `data {message,url,application_id,status}` to the party that did not act. Status changes run under a row lock.
 - 2026-10-05 – Paginator paths are built from `PUBLIC_API_URL`'s origin + the request path (`Paginator::currentPathResolver` → `PublicUrl::path`), so `meta.path`/`links` point at the gateway.
@@ -98,8 +99,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 05 (19 requests: apply, 409, T06 refused transition, 403 for strangers/admin, open → reviewed, hire + feedback date, POSTING_CLOSED; whole collection 94 requests / 469 assertions pass)
 
 ### Phase 5 – Verification (feedback + trust score)
-- [ ] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown
-- [ ] Core: feature tests for math, threshold, window
+- [x] Core: feedback form + submit (window, once-only), `TrustScoreService`, observer, publish threshold 3, breakdown (+ `application_accommodation` snapshot at hire)
+- [x] Core: feature tests for math, threshold, window (`tests/Feature/Feedback` 16 tests + 12-case percentage unit table; 257 Core tests pass)
 - [ ] Frontend: feedback form, TrustScoreCard on job details / employer page / employer trust-score page – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 06
 
@@ -138,6 +139,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc not yet updated for M7 details: new table `application_accommodation` (data model / Appendix), `submitted` + `feedback_submitted` fields, breakdown hidden below 3 responses. Do it with `opendoor-sia-docs` at the end of Phase 5.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
 - Gateway limit 120 req/min per IP: one Newman run is 94 requests (~18 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
@@ -151,6 +153,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-05 – M7 Core done: feedback form/submit, hire-time accommodation snapshot, `TrustScoreService` + observer, public trust score; found + fixed a stale cached Employer skipping `feedback_count` writes.
 - 2026-10-05 – Postman 05 Applications done. **Phase 4 complete.**
 - 2026-10-05 – Phase 4 M6 applications: backend + tests, screens live-checked end to end; removed a leftover "Postman Data Encoder" posting from the rate-limited Newman run.
 - 2026-10-05 – Backlog clean-up: page links via the gateway URL; SIA doc caught up (React 19/oxlint/Vitest, `SERVER_ERROR`, résumé + admin list endpoints in 4.1/Appendix A, data model, upload security, references) and checked as PDF (41 pages); dev references synced.

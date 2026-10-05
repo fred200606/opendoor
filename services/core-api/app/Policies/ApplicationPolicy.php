@@ -20,4 +20,10 @@ class ApplicationPolicy
     {
         return $this->view($user, $application);
     }
+
+    /** Feedback is the candidate's own (anonymous to the employer). */
+    public function giveFeedback(User $user, Application $application): bool
+    {
+        return $application->isByCandidate($user);
+    }
 }

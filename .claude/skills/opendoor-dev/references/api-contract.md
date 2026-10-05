@@ -32,11 +32,11 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M5 Search | GET | /job-postings/{id} | P | details (+ `match` for C) |
 | M5/M11 | GET | /categories, /accommodations | P | filter options (accommodations grouped) |
 | M6 Applications | POST | /job-postings/{id}/applications | C | `{cover_note?, interview_request?}` → 201 Application (pending); draft/unapproved 404, closed or past `closes_at` 422 POSTING_CLOSED, duplicate 409 ALREADY_APPLIED |
-| M6 Applications | GET | /applications, /applications/{id} | C own / E own postings (others 403) | `?status=&job_posting_id=`; includes `feedback_opens_on` (date) when hired; employer gets `candidate {name,headline,skills,experience,accommodations,disability_type (only if shown),resume_url}` |
+| M6 Applications | GET | /applications, /applications/{id} | C own / E own postings (others 403) | `?status=&job_posting_id=`; includes `feedback_opens_on` (date) when hired and `feedback_submitted` (candidate only); employer gets `candidate {name,headline,skills,experience,accommodations,disability_type (only if shown),resume_url}` |
 | M6 Applications | PATCH | /applications/{id}/status | C / E | `{status:'reviewed'|'hired'|'rejected'|'withdrawn'}` |
-| M7 Feedback | GET | /applications/{id}/feedback-form | C (hired) | `{opens_on, is_open, items:[{accommodation_id,name}]}` |
-| M7 Feedback | POST | /applications/{id}/feedback | C (hired, ≥30 days) | `{items:[{accommodation_id,rating:'delivered'|'partial'|'not_delivered'}],comments?}` → 201 |
-| M7 Feedback | GET | /employers/{id}/trust-score | P | `{published, score, based_on, breakdown:[{accommodation_id,name,delivered,partial,not_delivered,of}]}` |
+| M7 Feedback | GET | /applications/{id}/feedback-form | C (hired) | `{opens_on, is_open, submitted, items:[{accommodation_id,name}]}` (items recorded at hire; not hired → 422 FEEDBACK_NOT_OPEN) |
+| M7 Feedback | POST | /applications/{id}/feedback | C (hired, ≥30 days) | `{items:[{accommodation_id,rating:'delivered'|'partial'|'not_delivered'}],comments?}` → 201 `{id,application_id,items_rated}`; every form item rated once |
+| M7 Feedback | GET | /employers/{id}/trust-score | P | `{published, score, based_on, breakdown:[{accommodation_id,name,delivered,partial,not_delivered,of}]}`; breakdown `[]` until published |
 | M8 Dashboards | GET | /candidate/dashboard, /employer/dashboard, /admin/dashboard | C / E / A | summaries |
 | M9 Notifications | GET | /notifications | C, E | list (`meta.unread_count`) |
 | M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | mark read |

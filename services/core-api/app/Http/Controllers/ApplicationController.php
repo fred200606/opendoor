@@ -27,7 +27,7 @@ class ApplicationController extends Controller
 {
     private const RELATIONS = [
         'jobPosting.employer.user', 'jobPosting.category', 'jobPosting.accommodations',
-        'candidateProfile.user', 'candidateProfile.accommodations',
+        'candidateProfile.user', 'candidateProfile.accommodations', 'feedback:id,application_id',
     ];
 
     public function store(Request $request, JobPosting $jobPosting): JsonResponse
@@ -133,6 +133,9 @@ class ApplicationController extends Controller
                 $locked->hire_confirmed_by = $actorRole === UserRole::Candidate ? HireConfirmedBy::Candidate : HireConfirmedBy::Employer;
             }
             $locked->save();
+            if ($to === ApplicationStatus::Hired) {
+                $locked->recordHireSnapshot();
+            }
 
             return $locked;
         });

@@ -712,6 +712,10 @@ paths:
     get:
       tags: [M7 Feedback and trust score]
       summary: Accommodations to rate (those advertised at the time of hire)
+      description: >-
+        Only the candidate of a hired application. The items are the accommodations the posting
+        advertised when the application became hired (recorded at hire; later posting edits do not
+        change them), sorted by name. An application that is not hired → 422 FEEDBACK_NOT_OPEN.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
         '200':
@@ -723,6 +727,7 @@ paths:
                 properties:
                   opens_on: { type: string, format: date, description: Calendar day 30 after the hire date (Asia/Manila) }
                   is_open: { type: boolean }
+                  submitted: { type: boolean, description: The candidate has already rated this hire }
                   items:
                     type: array
                     items:
@@ -730,11 +735,18 @@ paths:
                       properties:
                         accommodation_id: { type: integer }
                         name: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /applications/{id}/feedback:
     post:
       tags: [M7 Feedback and trust score]
       summary: Submit feedback once, from calendar day 30 after hire (Asia/Manila)
+      description: >-
+        Only the candidate of a hired application. Not hired or before `opens_on` → 422
+        FEEDBACK_NOT_OPEN; a second response → 409 FEEDBACK_EXISTS. Every item of the feedback form
+        needs exactly one rating (`errors.items` when one is missing; an accommodation that is not on
+        the form → `errors["items.N.accommodation_id"]`). Recomputes the employer's trust score.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -765,6 +777,7 @@ paths:
                   id: { type: integer }
                   application_id: { type: integer }
                   items_rated: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
@@ -772,6 +785,10 @@ paths:
     get:
       tags: [M7 Feedback and trust score]
       summary: Employer trust score (published only from 3 responses)
+      description: >-
+        Same answer for everyone. Below 3 non-hidden responses `published` is false, `score` null and
+        `breakdown` empty (a breakdown of one or two responses would reveal single answers).
+        Responses to soft-deleted postings still count; hidden responses do not.
       security: []
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
@@ -1630,6 +1647,7 @@ components:
             - $ref: '#/components/schemas/HireConfirmedBy'
             - type: 'null'
         feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after hired_at (Asia/Manila); null until hired' }
+        feedback_submitted: { type: boolean, description: 'Only for the candidate (feedback is anonymous to employers): the candidate has rated this hire' }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 

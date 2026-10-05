@@ -39,6 +39,6 @@ class ApplicationFactory extends Factory
             'status' => ApplicationStatus::Hired,
             'hired_at' => $at ?? now(),
             'hire_confirmed_by' => $by,
-        ]);
+        ])->afterCreating(fn (Application $application) => $application->recordHireSnapshot());
     }
 }

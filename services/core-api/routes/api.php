@@ -10,6 +10,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Employer\CompanyController;
 use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\ResumeController;
@@ -26,6 +27,9 @@ Route::get('accommodations', [AccommodationController::class, 'index']);
 // M3 Company – public employer page and logo
 Route::get('employers/{employer}', [EmployerController::class, 'show']);
 Route::get('employers/{employer}/logo', [EmployerController::class, 'logo']);
+
+// M7 Trust score – public; published only from 3 responses
+Route::get('employers/{employer}/trust-score', [EmployerController::class, 'trustScore']);
 
 // M5 Search – public; candidates with saved needs also get `match` (token optional)
 Route::get('job-postings', [JobSearchController::class, 'index']);
@@ -56,6 +60,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('applications', [ApplicationController::class, 'index']);
         Route::get('applications/{application}', [ApplicationController::class, 'show']);
         Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus']);
+    });
+
+    // M7 Feedback – only the hired candidate (ApplicationPolicy::giveFeedback)
+    Route::middleware('role:candidate')->group(function () {
+        Route::get('applications/{application}/feedback-form', [FeedbackController::class, 'form']);
+        Route::post('applications/{application}/feedback', [FeedbackController::class, 'store']);
     });
 
     // Employer

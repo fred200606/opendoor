@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * M6: a candidate's application to a posting. status, hired_at and hire_confirmed_by are not
@@ -55,6 +57,39 @@ class Application extends Model
     public function candidateProfile(): BelongsTo
     {
         return $this->belongsTo(CandidateProfile::class);
+    }
+
+    /**
+     * The accommodations the posting advertised when this application became hired – the items
+     * the candidate rates (M7). Recorded by recordHireSnapshot().
+     *
+     * @return BelongsToMany<Accommodation, $this>
+     */
+    public function accommodationsAtHire(): BelongsToMany
+    {
+        return $this->belongsToMany(Accommodation::class, 'application_accommodation');
+    }
+
+    /** @return HasOne<Feedback, $this> */
+    public function feedback(): HasOne
+    {
+        return $this->hasOne(Feedback::class);
+    }
+
+    /** Copies the posting's current accommodations; call when the application becomes hired. */
+    public function recordHireSnapshot(): void
+    {
+        $this->accommodationsAtHire()->sync(
+            $this->jobPosting->accommodations()->pluck('accommodations.id'),
+        );
+    }
+
+    /** Hired and on or after calendar day 30 after the hire (Manila). */
+    public function isFeedbackOpen(): bool
+    {
+        $opensOn = $this->feedbackOpensOn();
+
+        return $this->status === ApplicationStatus::Hired && $opensOn !== null && ! now()->lessThan($opensOn);
     }
 
     public function isByCandidate(?User $user): bool

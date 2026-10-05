@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Application in docs/openapi.yaml. Load jobPosting (with JobPostingController::RELATIONS) and,
- * for employers, candidateProfile.user + candidateProfile.accommodations.
+ * Application in docs/openapi.yaml. Load jobPosting (with JobPostingController::RELATIONS),
+ * feedback (candidates) and, for employers, candidateProfile.user + candidateProfile.accommodations.
  *
  * `candidate` only for the employer that owns the posting (RA 10173: needs are shared through the
  * application; the disability type only when the candidate chose to show it).
@@ -35,6 +35,8 @@ class ApplicationResource extends JsonResource
             'hired_at' => $this->hired_at?->toIso8601String(),
             'hire_confirmed_by' => $this->hire_confirmed_by,
             'feedback_opens_on' => $this->feedbackOpensOn()?->toDateString(),
+            // Only the candidate learns whether they rated (feedback is anonymous to employers).
+            'feedback_submitted' => $this->when(! $forEmployer, fn () => $this->feedback !== null),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
