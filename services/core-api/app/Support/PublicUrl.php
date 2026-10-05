@@ -21,6 +21,12 @@ class PublicUrl
         return self::origin().$path;
     }
 
+    /** Gateway URL of a Core path (the gateway forwards paths unchanged): api/job-postings → http://localhost:8080/api/job-postings. */
+    public static function path(string $path): string
+    {
+        return self::origin().'/'.ltrim($path, '/');
+    }
+
     /** Scheme, host and port of PUBLIC_API_URL (e.g. http://localhost:8080). */
     private static function origin(): string
     {

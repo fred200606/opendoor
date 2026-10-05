@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 4 – Applications
-- **In progress:** –
+- **In progress:** Backlog clean-up before Phase 4 (user request 2026-10-05): (1) paginator links from `PUBLIC_API_URL` instead of Core's host; (2) prune stale Known issues; (3) SIA doc catch-up with `opendoor-sia-docs` (new endpoints, `SERVER_ERROR`, React 19/oxlint, M2/M5 rules).
 - **Next step:** Phase 4 – Core `ApplicationStatus` enum + `canTransitionTo` (pending → reviewed → hired/rejected, withdrawn by the candidate; see `references/business-rules.md`), `applications` migration (FK restrictOnDelete, unique candidate+posting), apply (`POST /job-postings/{id}/applications`, closed posting / duplicate → error codes from the contract), candidate + employer lists, details, status endpoint, notifications on change. Read OpenAPI M6 + the apply/applicants screens first.
 - **Blockers:** –
 
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-05 – Paginator paths are built from `PUBLIC_API_URL`'s origin + the request path (`Paginator::currentPathResolver` → `PublicUrl::path`), so `meta.path`/`links` point at the gateway.
 - 2026-10-05 – M5: `sort=best` = needs met (match mode) then newest; without match mode best = newest; ties by id desc. Candidates with needs get `match` on every posting even with match=0; `match=1` from guests/other roles/candidates without needs is ignored (`match_mode:false`), not an error. `accommodations[]` filter = posting must offer all. Keyword LIKE uses `ESCAPE '!'` (same on MySQL and SQLite). Documented in OpenAPI.
 - 2026-10-05 – Frontend: buttons that become unavailable use `components/Button.jsx` (`aria-disabled`, clicks ignored) instead of native `disabled`, which drops focus to `<body>` in Chrome; `useApiForm.submit` / `useAction.run` ignore a second call while one is running. Rule added to `opendoor-dev` conventions.
 - 2026-10-04 – Frontend focus rescue: `useFocusRescue` in AppLayout moves focus to the page `<h1>` whenever the focused element is removed from `<main>` (rows/cards that disappear after an action), in addition to the dialog's own fallback.
@@ -136,20 +137,19 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ## Known issues / TODO later
 
 - Gateway limit 120 req/min per IP: one Newman run is 75 requests (~17 s). When folders 05–09 push it past 120, raise `RATE_LIMIT_PER_MIN` in the local/CI gateway env or run Newman with `--delay-request`; keep the default for production (folder 09 may test 429).
-- Paginated lists expose Core's internal URL in `meta.path` / `meta.links` / `links` (e.g. `http://127.0.0.1:8001/api/...`). Frontend only uses the page numbers. Fix before deployment: build paginator paths from `PUBLIC_API_URL` (e.g. `Paginator::currentPathResolver`) or drop the links.
 - SIA doc endpoint list needs `GET /resumes/{id}` (signed 30-min résumé link through the gateway) – update with `opendoor-sia-docs`.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - SIA doc needs the frontend-driven contract additions (admin list endpoints, dashboard fields, upload limits) – update endpoint list + Appendix with `opendoor-sia-docs`.
-- Frontend assumes: dashboard response shapes (candidate/employer/admin) must be added to OpenAPI (frontend step 8); company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
+- Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA doc says "React 18" (tech stack table, section 3.x) – change to React 19 with `opendoor-sia-docs`; also mention oxlint instead of ESLint in the testing section.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 - SIA doc endpoint list needs the new `GET /admin/accommodations` (admin list incl. retired) – update with `opendoor-sia-docs`.
 - Demo seed data still missing: hired applications + ≥3 feedback for one employer (Phase 5). Add to `DatabaseSeeder` in those phases.
 - SIA doc error-code table needs the new `SERVER_ERROR` (500) row – update with `opendoor-sia-docs`.
-- SIA doc 8.5 now references `docs/setup/create-databases.sql`, registry `seed.php` and `public/` – create these with those exact names.
+- SIA doc 8.5 references the registry's `seed.php` and `public/` – create them with those exact names in Phase 6 (`docs/setup/create-databases.sql` exists).
 
 ## Session log (newest first)
 

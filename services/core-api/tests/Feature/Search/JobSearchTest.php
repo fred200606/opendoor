@@ -83,6 +83,11 @@ class JobSearchTest extends TestCase
             $this->posting("Job {$day}", daysAgo: $day);
         }
 
+        // Page links point at the gateway (PUBLIC_API_URL), not at Core's own host.
+        $this->getJson('http://127.0.0.1:8001/api/job-postings?sort=newest')
+            ->assertJsonPath('meta.path', 'http://localhost:8080/api/job-postings')
+            ->assertJsonPath('links.next', 'http://localhost:8080/api/job-postings?sort=newest&page=2');
+
         $this->getJson('/api/job-postings?page=2')
             ->assertOk()
             ->assertJsonPath('meta.current_page', 2)
