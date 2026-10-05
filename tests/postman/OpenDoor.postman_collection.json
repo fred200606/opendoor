@@ -154,6 +154,30 @@
     {
       "key": "feedbackPartialPayload",
       "value": ""
+    },
+    {
+      "key": "kalingaId",
+      "value": ""
+    },
+    {
+      "key": "kalingaCompany",
+      "value": ""
+    },
+    {
+      "key": "pmEmployerEmail",
+      "value": ""
+    },
+    {
+      "key": "pmRegNo",
+      "value": ""
+    },
+    {
+      "key": "pmEmployerToken",
+      "value": ""
+    },
+    {
+      "key": "pmEmployerId",
+      "value": ""
     }
   ],
   "item": [
@@ -6168,6 +6192,896 @@
                 "999999",
                 "trust-score"
               ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08 Admin & SOAP Registry",
+      "description": "M3 verification through the legacy SOAP Business Registry (the registry service must be running). T14 checks the seeded ACTIVE SEC number of employer2@ (Kalinga Foods); the admin then approves and removes the verification, and employer2@ re-saves the company so it is back in the queue (re-runnable). T15 uses a throwaway employer with a random number (NOT_FOUND). A wrong SOAP password (502 REGISTRY_AUTH_FAILED) cannot be caused from Postman – it is covered by the Core PHPUnit tests (tests/Feature/Registry).",
+      "item": [
+        {
+          "name": "Admin finds Kalinga Foods in the verification queue",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers?status=pending&q=CS201912345",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "q",
+                  "value": "CS201912345"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const k = body.data.find((e) => e.business_reg_no === 'CS201912345');",
+                  "pm.test('pending, with owner and registration data', () => {",
+                  "  pm.expect(k).to.be.an('object');",
+                  "  pm.expect(k.verified_at).to.eql(null);",
+                  "  pm.expect(k.registry_type).to.eql('SEC');",
+                  "  pm.expect(k.owner.email).to.eql(pm.environment.get('employer2Email'));",
+                  "  pm.expect(k).to.have.property('latest_registry_check');",
+                  "});",
+                  "pm.collectionVariables.set('kalingaId', k.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employers cannot open the admin queue → 403",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T14 Admin registry check (SOAP) for a seeded ACTIVE SEC number → 200 [slow]",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}",
+                "verify"
+              ]
+            },
+            "description": "Gateway → Core → SOAP registry (WS-Security UsernameToken). [slow]: the first call loads the WSDL.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"check\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('body.registry matches the RegistryResult shape', () => {",
+                  "  const r = body.registry;",
+                  "  pm.expect(r).to.have.all.keys('status', 'registered_name', 'name_match', 'checked_at');",
+                  "  pm.expect(r.status).to.be.oneOf(['ACTIVE', 'EXPIRED', 'CANCELLED', 'NOT_FOUND', 'ERROR']);",
+                  "  pm.expect(r.checked_at).to.match(/^\\d{4}-\\d\\d-\\d\\dT/);",
+                  "});",
+                  "pm.test('ACTIVE, registered name, name_match ≥ 0.80', () => {",
+                  "  pm.expect(body.registry.status).to.eql('ACTIVE');",
+                  "  pm.expect(body.registry.registered_name).to.eql('KALINGA FOODS, INC.');",
+                  "  pm.expect(body.registry.name_match).to.be.at.least(0.8);",
+                  "});",
+                  "pm.test('the check never approves by itself', () => pm.expect(body.verified_at).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T14 The check is stored and shown on the employer",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const e = pm.response.json();",
+                  "",
+                  "pm.test('e.latest_registry_check matches the RegistryResult shape', () => {",
+                  "  const r = e.latest_registry_check;",
+                  "  pm.expect(r).to.have.all.keys('status', 'registered_name', 'name_match', 'checked_at');",
+                  "  pm.expect(r.status).to.be.oneOf(['ACTIVE', 'EXPIRED', 'CANCELLED', 'NOT_FOUND', 'ERROR']);",
+                  "  pm.expect(r.checked_at).to.match(/^\\d{4}-\\d\\d-\\d\\dT/);",
+                  "});",
+                  "pm.test('latest_registry_check is the ACTIVE result', () => pm.expect(e.latest_registry_check.status).to.eql('ACTIVE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rejecting without a reason → 422 errors.reason",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.reason is present', () => pm.expect(body.errors).to.have.property('reason'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A candidate cannot verify employers → 403",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin approves → verified_at, Verified badge on the public page",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('verified_at is set; the current check comes along', () => {",
+                  "  pm.expect(body.verified_at).to.be.a('string');",
+                  "  pm.expect(body.registry.status).to.eql('ACTIVE');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public employer page shows the Verified badge",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employers/{{kalingaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employers",
+                "{{kalingaId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('verified', () => pm.expect(pm.response.json().verified).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin removes the verification with a reason",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{kalingaId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{kalingaId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"reject\",\n  \"reason\": \"Postman run: verification removed again.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('not verified any more', () => pm.expect(pm.response.json().verified_at).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The employer sees the reason",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "company"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('reason shown, not verified', () => {",
+                  "  pm.expect(c.verification_rejected_reason).to.eql('Postman run: verification removed again.');",
+                  "  pm.expect(c.verified).to.eql(false);",
+                  "});",
+                  "const keep = ['company_name', 'registry_type', 'business_reg_no', 'industry', 'address', 'description'];",
+                  "const payload = Object.fromEntries(keep.map((k) => [k, c[k]]));",
+                  "payload.location_psgc = c.location ? c.location.psgc_code : null;",
+                  "payload.location_label = c.location ? c.location.label : null;",
+                  "pm.collectionVariables.set('kalingaCompany', JSON.stringify(payload));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The employer saves the company → back in the queue (cleanup)",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{{kalingaCompany}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('reason cleared, pending again', () => {",
+                  "  const c = pm.response.json();",
+                  "  pm.expect(c.verification_rejected_reason).to.eql(null);",
+                  "  pm.expect(c.verified_at).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T15 Register a throwaway employer",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Employer\",\n  \"email\": \"{{pmEmployerEmail}}\",\n  \"password\": \"postman-pass-123\",\n  \"password_confirmation\": \"postman-pass-123\",\n  \"role\": \"employer\",\n  \"consent\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('pmEmployerEmail', 'pm-employer-' + Date.now() + '@opendoor.test');",
+                  "pm.collectionVariables.set('pmRegNo', '9' + String(Math.floor(Math.random() * 1e7)).padStart(7, '0'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('pmEmployerToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T15 Throwaway employer saves a company with an unknown DTI number",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/employer/company",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "employer",
+                "company"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Postman Unknown Trading\",\n  \"registry_type\": \"DTI\",\n  \"business_reg_no\": \"{{pmRegNo}}\",\n  \"industry\": \"Retail\",\n  \"address\": \"1 Postman St.\",\n  \"location_label\": \"Pasig City, Metro Manila\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('pmEmployerId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T15 Registry check with an unknown number → 200 NOT_FOUND [slow]",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{pmEmployerId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{pmEmployerId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"check\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('body.registry matches the RegistryResult shape', () => {",
+                  "  const r = body.registry;",
+                  "  pm.expect(r).to.have.all.keys('status', 'registered_name', 'name_match', 'checked_at');",
+                  "  pm.expect(r.status).to.be.oneOf(['ACTIVE', 'EXPIRED', 'CANCELLED', 'NOT_FOUND', 'ERROR']);",
+                  "  pm.expect(r.checked_at).to.match(/^\\d{4}-\\d\\d-\\d\\dT/);",
+                  "});",
+                  "pm.test('NOT_FOUND without a name or score', () => {",
+                  "  pm.expect(body.registry.status).to.eql('NOT_FOUND');",
+                  "  pm.expect(body.registry.registered_name).to.eql(null);",
+                  "  pm.expect(body.registry.name_match).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown employer → 404",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/999999/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "999999",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"check\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "event": [

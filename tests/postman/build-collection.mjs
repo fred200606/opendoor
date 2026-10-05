@@ -1133,6 +1133,175 @@ pm.test('closed until opens_on, 30 days ahead', () => {
   ],
 );
 
+// ---------------------------------------------------------------- 08 Admin & SOAP Registry
+
+const registryResultShape = (field) => `
+pm.test('${field} matches the RegistryResult shape', () => {
+  const r = ${field};
+  pm.expect(r).to.have.all.keys('status', 'registered_name', 'name_match', 'checked_at');
+  pm.expect(r.status).to.be.oneOf(['ACTIVE', 'EXPIRED', 'CANCELLED', 'NOT_FOUND', 'ERROR']);
+  pm.expect(r.checked_at).to.match(/^\\d{4}-\\d\\d-\\d\\dT/);
+});`;
+
+const adminRegistry = folder(
+  '08 Admin & SOAP Registry',
+  'M3 verification through the legacy SOAP Business Registry (the registry service must be running). T14 checks the seeded ACTIVE SEC number of employer2@ (Kalinga Foods); the admin then approves and removes the verification, and employer2@ re-saves the company so it is back in the queue (re-runnable). T15 uses a throwaway employer with a random number (NOT_FOUND). A wrong SOAP password (502 REGISTRY_AUTH_FAILED) cannot be caused from Postman – it is covered by the Core PHPUnit tests (tests/Feature/Registry).',
+  [
+    request('Admin finds Kalinga Foods in the verification queue', {
+      path: '/admin/employers?status=pending&q=CS201912345',
+      auth: bearer('adminToken'),
+      tests: `
+${status(200)}
+const body = pm.response.json();
+const k = body.data.find((e) => e.business_reg_no === 'CS201912345');
+pm.test('pending, with owner and registration data', () => {
+  pm.expect(k).to.be.an('object');
+  pm.expect(k.verified_at).to.eql(null);
+  pm.expect(k.registry_type).to.eql('SEC');
+  pm.expect(k.owner.email).to.eql(pm.environment.get('employer2Email'));
+  pm.expect(k).to.have.property('latest_registry_check');
+});
+pm.collectionVariables.set('kalingaId', k.id);`,
+    }),
+    request('Employers cannot open the admin queue → 403', {
+      path: '/admin/employers',
+      auth: bearer('employer2Token'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('T14 Admin registry check (SOAP) for a seeded ACTIVE SEC number → 200 [slow]', {
+      method: 'PATCH',
+      path: '/admin/employers/{{kalingaId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'check' },
+      tests: `
+${status(200)}
+const body = pm.response.json();
+${registryResultShape('body.registry')}
+pm.test('ACTIVE, registered name, name_match ≥ 0.80', () => {
+  pm.expect(body.registry.status).to.eql('ACTIVE');
+  pm.expect(body.registry.registered_name).to.eql('KALINGA FOODS, INC.');
+  pm.expect(body.registry.name_match).to.be.at.least(0.8);
+});
+pm.test('the check never approves by itself', () => pm.expect(body.verified_at).to.eql(null));`,
+      description: 'Gateway → Core → SOAP registry (WS-Security UsernameToken). [slow]: the first call loads the WSDL.',
+    }),
+    request('T14 The check is stored and shown on the employer', {
+      path: '/admin/employers/{{kalingaId}}',
+      auth: bearer('adminToken'),
+      tests: `
+${status(200)}
+const e = pm.response.json();
+${registryResultShape('e.latest_registry_check')}
+pm.test('latest_registry_check is the ACTIVE result', () => pm.expect(e.latest_registry_check.status).to.eql('ACTIVE'));`,
+    }),
+    request('Rejecting without a reason → 422 errors.reason', {
+      method: 'PATCH',
+      path: '/admin/employers/{{kalingaId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'reject' },
+      tests: fieldError('reason'),
+    }),
+    request('A candidate cannot verify employers → 403', {
+      method: 'PATCH',
+      path: '/admin/employers/{{kalingaId}}/verify',
+      auth: bearer('candidateToken'),
+      body: { action: 'approve' },
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Admin approves → verified_at, Verified badge on the public page', {
+      method: 'PATCH',
+      path: '/admin/employers/{{kalingaId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'approve' },
+      tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('verified_at is set; the current check comes along', () => {
+  pm.expect(body.verified_at).to.be.a('string');
+  pm.expect(body.registry.status).to.eql('ACTIVE');
+});`,
+    }),
+    request('Public employer page shows the Verified badge', {
+      path: '/employers/{{kalingaId}}',
+      tests: `${status(200)}\npm.test('verified', () => pm.expect(pm.response.json().verified).to.eql(true));`,
+    }),
+    request('Admin removes the verification with a reason', {
+      method: 'PATCH',
+      path: '/admin/employers/{{kalingaId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'reject', reason: 'Postman run: verification removed again.' },
+      tests: `${status(200)}\npm.test('not verified any more', () => pm.expect(pm.response.json().verified_at).to.eql(null));`,
+    }),
+    request('The employer sees the reason', {
+      path: '/employer/company',
+      auth: bearer('employer2Token'),
+      tests: `
+${status(200)}
+const c = pm.response.json();
+pm.test('reason shown, not verified', () => {
+  pm.expect(c.verification_rejected_reason).to.eql('Postman run: verification removed again.');
+  pm.expect(c.verified).to.eql(false);
+});
+const keep = ['company_name', 'registry_type', 'business_reg_no', 'industry', 'address', 'description'];
+const payload = Object.fromEntries(keep.map((k) => [k, c[k]]));
+payload.location_psgc = c.location ? c.location.psgc_code : null;
+payload.location_label = c.location ? c.location.label : null;
+pm.collectionVariables.set('kalingaCompany', JSON.stringify(payload));`,
+    }),
+    request('The employer saves the company → back in the queue (cleanup)', {
+      method: 'PUT',
+      path: '/employer/company',
+      auth: bearer('employer2Token'),
+      raw: '{{kalingaCompany}}',
+      tests: `
+${status(200)}
+pm.test('reason cleared, pending again', () => {
+  const c = pm.response.json();
+  pm.expect(c.verification_rejected_reason).to.eql(null);
+  pm.expect(c.verified_at).to.eql(null);
+});`,
+    }),
+    request('T15 Register a throwaway employer', {
+      method: 'POST',
+      path: '/register',
+      prerequest: `
+pm.collectionVariables.set('pmEmployerEmail', 'pm-employer-' + Date.now() + '@opendoor.test');
+pm.collectionVariables.set('pmRegNo', '9' + String(Math.floor(Math.random() * 1e7)).padStart(7, '0'));`,
+      body: { name: 'Postman Employer', email: '{{pmEmployerEmail}}', password: 'postman-pass-123', password_confirmation: 'postman-pass-123', role: 'employer', consent: true },
+      tests: `${status(201)}\npm.collectionVariables.set('pmEmployerToken', pm.response.json().token);`,
+    }),
+    request('T15 Throwaway employer saves a company with an unknown DTI number', {
+      method: 'PUT',
+      path: '/employer/company',
+      auth: bearer('pmEmployerToken'),
+      body: { company_name: 'Postman Unknown Trading', registry_type: 'DTI', business_reg_no: '{{pmRegNo}}', industry: 'Retail', address: '1 Postman St.', location_label: 'Pasig City, Metro Manila' },
+      tests: `${status(200)}\npm.collectionVariables.set('pmEmployerId', pm.response.json().id);`,
+    }),
+    request('T15 Registry check with an unknown number → 200 NOT_FOUND [slow]', {
+      method: 'PATCH',
+      path: '/admin/employers/{{pmEmployerId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'check' },
+      tests: `
+${status(200)}
+const body = pm.response.json();
+${registryResultShape('body.registry')}
+pm.test('NOT_FOUND without a name or score', () => {
+  pm.expect(body.registry.status).to.eql('NOT_FOUND');
+  pm.expect(body.registry.registered_name).to.eql(null);
+  pm.expect(body.registry.name_match).to.eql(null);
+});`,
+    }),
+    request('Unknown employer → 404', {
+      method: 'PATCH',
+      path: '/admin/employers/999999/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'check' },
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -1143,10 +1312,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback],
+  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, adminRegistry],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));
