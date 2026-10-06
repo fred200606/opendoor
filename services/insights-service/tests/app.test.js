@@ -76,6 +76,18 @@ describe('config', () => {
     expect(config.cacheDb).toEqual({ host: '127.0.0.1', port: 3307, database: 'insights_cache', user: 'insights', password: 'x' });
   });
 
+  test('Nominatim is off without a contact email and on with one', () => {
+    expect(loadConfig({ NOMINATIM_CONTACT_EMAIL: '  ' }).nominatimContactEmail).toBeNull();
+    expect(loadConfig({ NOMINATIM_CONTACT_EMAIL: 'team@opendoor.test' })).toMatchObject({
+      nominatimUrl: 'https://nominatim.openstreetmap.org',
+      nominatimContactEmail: 'team@opendoor.test',
+    });
+  });
+
+  test('rejects a contact email that is not an address', () => {
+    expect(() => loadConfig({ NOMINATIM_CONTACT_EMAIL: 'OpenDoor (team)' })).toThrow(/NOMINATIM_CONTACT_EMAIL must be an email/);
+  });
+
   test('rejects URLs without a scheme', () => {
     expect(() => loadConfig({ PSGC_URL: 'psgc.gitlab.io/api' })).toThrow(/PSGC_URL must be an http\(s\) URL/);
   });

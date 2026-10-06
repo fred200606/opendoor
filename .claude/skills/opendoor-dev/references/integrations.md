@@ -22,6 +22,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
 1. **Core** – `GET ${CORE_INTERNAL_URL}/internal/job-postings/{id}/summary` with `X-Service-Key` (timeout 3 s). 404 → return 404 (posting not open).
 2. **PSGC** – resolve `psgc_code` to `City, Province, Region` label (cache 7 days).
 3. **Nominatim** – `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1` with header `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`; max 1 request/second (queue); timeout 5 s; cache 30 days. On failure fall back to the city centroid, `precision: "city"`, and report `sources.nominatim: "unavailable"`.
+   As built (`src/services/geocoder.js`): no street match → search the place alone (`precision: "city"`, cached under the same address hash); no match at all → bundled centroid with `nominatim: "ok"`; queue wait > 2 s → not sent (no cooldown); failure → 60 s cooldown, stale entry, bundled centroid (`src/data/city-centroids.json`, PSGC code → `{lat, lon}`, built with `npm run build:city-centroids`), else `lat/lon/precision: null`. No contact email → Nominatim never called.
 4. **Overpass** – POST to `${OVERPASS_URL}` (timeout 8 s, cache 24 h):
    ```
    [out:json][timeout:8];

@@ -16,6 +16,13 @@ Node.js 22 + Express 4 (ESM). Private service behind the gateway, which forwards
 - `X-Data-Source` response header: `ok`, `cached`, `stale` or `fallback`.
 - Rebuild the fallback from live data: `npm run build:psgc-fallback`.
 
+## Geocoding (Nominatim, used by the snapshot)
+
+- `NOMINATIM_CONTACT_EMAIL` is required by the [usage policy](https://operations.osmfoundation.org/policies/nominatim/) and sent as `User-Agent: OpenDoor/1.0 (<email>)`. Without it Nominatim is never called (cache and bundled centroids only).
+- At most 1 request/s (queue); a request that would wait more than 2 s is not sent. Timeout 5 s; after a failure Nominatim is skipped for 60 s.
+- Order: `geocode_cache` (30 days, key = SHA-256 of the normalized "address, place") → "address, place" (`precision: street`) → "place" (`precision: city`, stored under the same key) → expired entry (`stale`) → `src/data/city-centroids.json` by PSGC code (`precision: city`, source `unavailable`) → no coordinates.
+- Build the centroids once (≈2.5 min, needs the contact email): `npm run build:city-centroids`. OSM boundary relations were not usable instead: too few carry the 10-digit PSGC `ref`, and their bounding-box centres can lie in the sea (Manila).
+
 ## Cache database
 
 The tables (`psgc_cache`, `overpass_cache`, `geocode_cache`) are created at startup (`CREATE TABLE IF NOT EXISTS`). The database is optional: if it is down, reads count as misses and the service keeps answering. Without `CACHE_DB_USER` an in-memory cache is used.

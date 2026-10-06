@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** Nominatim: `src/lib/cooldown.js` (shared with locations), `src/lib/throttle.js` (1 req/s, max queue wait), `src/sources/nominatim.js`, `src/services/geocoder.js` (street → city query → bundled centroid `src/data/city-centroids.json`, built by `scripts/build-city-centroids.mjs` via Nominatim once the contact email is set; OSM boundary `ref` coverage was too thin), `geocode_cache` mapping in both stores, tests.
-- **Next step:** Phase 7 – Nominatim client in `services/insights-service/src/sources/nominatim.js`: `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1`, `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`, max 1 request/s (queue), timeout 5 s, `geocode_cache` 30 days (table already created at startup), city-centroid fallback with `precision: "city"`; reuse `createCached` + the cooldown pattern from `src/services/locations.js`; nock tests. Local `.env` still has an empty `NOMINATIM_CONTACT_EMAIL` (user fills it in).
+- **In progress:** –
+- **Next step:** Phase 7 – Overpass client `src/sources/overpass.js` + `src/services/nearby.js`: POST `OVERPASS_URL` with the query from `integrations.md` §2 step 4 (radius 500, timeout 8 s), `overpass_cache` 24 h keyed `lat,lon,radius` rounded to 4 dp, 60 s cooldown (`createCooldown`), stale on failure; transform: tag→category table (transit_stops / toilets / parking / other, first match wins), haversine metres (integer), de-dup by OSM type+id, nearest 3 per category, `wheelchair` yes|limited, name fallback; nock tests. Then the snapshot endpoint. **Waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then run `npm run build:city-centroids` and a live Nominatim check.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -15,6 +15,8 @@
 - (none)
 
 ## Decisions (final – do not re-ask)
+
+- 2026-10-06 – Insights geocoding: query "address, place"; no street match → "place" alone (`precision: city`), cached under the full address hash (SHA-256 of the lower-cased, space-collapsed query); no match → bundled centroid with `nominatim: ok`. Throttle 1 req/s with max 2 s queue wait (over → not sent, no cooldown); 60 s cooldown after failures. Empty `NOMINATIM_CONTACT_EMAIL` = Nominatim off (never call it without the policy contact). Bundled centroids come from Nominatim (build script), not OSM boundary relations (10-digit `ref` on only ~490 of ~1,600; bbox centres can be in the sea). The user's account email is not used for this.
 
 - 2026-10-06 – Insights locations: outward codes are the official 10-digit PSGC codes; the PSGC API's 9-digit codes stay in cached items as `ref` and parents are looked up, not converted (BARMM 150000000 ↔ 1900000000). `parent` must be 10 digits (422 `VALIDATION_FAILED`), unknown → 404, regions ignore `parent`, cities accept any region code. Lists sorted by name; region names "Ilocos Region (Region I)" / "National Capital Region (NCR)". Order: fresh cache → PSGC → stale → bundled fallback (all regions + provinces, NCR, cities of each province; `npm run build:psgc-fallback`) → 503 `SERVICE_UNAVAILABLE`; header `X-Data-Source`. 60 s cooldown after a source failure. Cache tables created at startup; the cache DB is optional (misses when down). Axios for outbound calls (SIA doc stack).
 
@@ -120,7 +122,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 7 – Mashup (Insights)
 - [x] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware (`tests/Feature/Internal` 13 tests incl. T16; 285 Core tests pass; live check 401/200/404 on MySQL)
 - [x] Insights: PSGC locations endpoints + cache + fallback JSON (scaffold: Express ESM on 8002, envelope, request ID, `/health`; 34 Jest/nock tests; live check through the gateway: ok → cached, BARMM lookup, PSGC down → cached/fallback in < 35 ms)
-- [ ] Insights: Nominatim client (throttle 1/s, UA) + cache
+- [ ] Insights: Nominatim client (throttle 1/s, UA) + cache – code done 2026-10-06 (`geocoder.js`, 18 nock tests, `geocode_cache` round trip on MySQL); tick after `npm run build:city-centroids` + a live Nominatim check, both need `NOMINATIM_CONTACT_EMAIL`
 - [ ] Insights: Overpass client + cache; tag→category transform; haversine
 - [ ] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing)
 - [ ] Gateway: `/api/insights/*` route verified
@@ -157,6 +159,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – Nominatim geocoder built and tested (throttle, cooldown, cache, stale, centroid fallback); waiting for `NOMINATIM_CONTACT_EMAIL` for the centroid build + live check. Next: Overpass.
 - 2026-10-06 – Insights Service scaffolded; PSGC location lists with MySQL cache, cooldown and bundled fallback (34 tests; live check through the gateway incl. PSGC down). OpenAPI: 10-digit codes, 404/422/503, `X-Data-Source`.
 - 2026-10-06 – Phase 7 started: Core internal posting summary + service-key middleware (T16); OpenAPI adds `location_label` and the full breakdown. SIA doc sync for it at the end of Phase 7.
 - 2026-10-06 – SIA doc synced for Phase 6 (4.1 admin employer list, 4.3 sample number = seeded CS201800777, normalization, ERROR checks, data model + registry seed); PDF 41 pages, no blank pages. **Phase 6 complete except the CI `xmllint` check.**

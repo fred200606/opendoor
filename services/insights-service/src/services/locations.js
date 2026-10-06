@@ -1,3 +1,4 @@
+import { createCooldown } from '../lib/cooldown.js';
 import { ApiError } from '../lib/errors.js';
 
 const regionOf = (code) => `${code.slice(0, 2)}00000000`;
@@ -13,17 +14,7 @@ const regionOf = (code) => `${code.slice(0, 2)}00000000`;
  * Every method resolves to { items: [{ code, name, level }], source: 'ok'|'cached'|'stale'|'fallback' }.
  */
 export function createLocationService({ psgc, cached, ttlMs, cooldownMs, fallback, log = console }) {
-  let psgcDownUntil = 0;
-
-  const guarded = (fetch) => async () => {
-    if (Date.now() < psgcDownUntil) throw new Error('PSGC skipped after a recent failure');
-    try {
-      return await fetch();
-    } catch (err) {
-      psgcDownUntil = Date.now() + cooldownMs;
-      throw err;
-    }
-  };
+  const guarded = createCooldown('PSGC', cooldownMs);
 
   async function load(key, fetch) {
     try {

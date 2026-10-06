@@ -1,8 +1,11 @@
 // Insights Service configuration, read only from environment variables and validated at startup.
 
+const DAY = 24 * 60 * 60 * 1000;
+
 const DEFAULTS = {
   PORT: '8002',
   PSGC_URL: 'https://psgc.gitlab.io/api',
+  NOMINATIM_URL: 'https://nominatim.openstreetmap.org',
   CACHE_DB_HOST: '127.0.0.1',
   CACHE_DB_PORT: '3306',
   CACHE_DB_NAME: 'insights_cache',
@@ -31,9 +34,17 @@ export function loadConfig(env = process.env) {
     return value;
   };
 
+  // Required by the Nominatim usage policy; without it Nominatim is not called at all.
+  const contactEmail = (read('NOMINATIM_CONTACT_EMAIL') ?? '').trim();
+  if (contactEmail && !/^[^\s@()]+@[^\s@()]+\.[^\s@()]+$/.test(contactEmail)) {
+    errors.push('NOMINATIM_CONTACT_EMAIL must be an email address (sent in the User-Agent to Nominatim)');
+  }
+
   const config = {
     port: positiveInt('PORT'),
     psgcUrl: url('PSGC_URL'),
+    nominatimUrl: url('NOMINATIM_URL'),
+    nominatimContactEmail: contactEmail || null,
     // The cache is optional at runtime: without a database every request goes to the sources.
     cacheDb: read('CACHE_DB_USER')
       ? {
@@ -44,10 +55,12 @@ export function loadConfig(env = process.env) {
           password: read('CACHE_DB_PASSWORD') ?? '',
         }
       : null,
-    timeouts: { psgc: 5_000 },
-    ttl: { psgc: 7 * 24 * 60 * 60 * 1000 },
+    timeouts: { psgc: 5_000, nominatim: 5_000 },
+    ttl: { psgc: 7 * DAY, geocode: 30 * DAY },
     // How long a failed source is skipped before it is tried again.
-    cooldowns: { psgc: 60_000 },
+    cooldowns: { psgc: 60_000, nominatim: 60_000 },
+    // Nominatim: 1 request/s; a request that would queue longer than maxWaitMs is not sent.
+    throttle: { nominatim: { intervalMs: 1_000, maxWaitMs: 2_000 } },
     logRequests: env.NODE_ENV !== 'test',
   };
 
