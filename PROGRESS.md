@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** –
+- **In progress:** Insights scaffold (Express ESM, envelope, request ID, `/health`, Jest/nock) + MySQL cache helper (`CREATE TABLE IF NOT EXISTS` at startup) + `GET /api/insights/locations/{level}` (10-digit PSGC codes outward, PSGC API's 9-digit codes looked up via cached lists – BARMM differs) + fallback JSON built by `scripts/build-psgc-fallback.mjs`.
 - **Next step:** Phase 7 – Insights scaffold in `services/insights-service` (only `.env`/`.env.example` exist): Express ESM app on 8002 like the gateway (error envelope, request ID, `GET /health`, Jest + supertest), then `GET /api/insights/locations/{regions|provinces|cities}?parent=` via PSGC (`PSGC_URL`) with the MySQL `insights_cache` (7 days) + bundled fallback JSON (NCR + major cities). Read `integrations.md` §2, `architecture.md` and `gateway/` for conventions first.
 - **Blockers:** –
 
