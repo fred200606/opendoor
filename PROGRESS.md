@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** –
+- **In progress:** Nominatim: `src/lib/cooldown.js` (shared with locations), `src/lib/throttle.js` (1 req/s, max queue wait), `src/sources/nominatim.js`, `src/services/geocoder.js` (street → city query → bundled centroid `src/data/city-centroids.json`, built by `scripts/build-city-centroids.mjs` via Nominatim once the contact email is set; OSM boundary `ref` coverage was too thin), `geocode_cache` mapping in both stores, tests.
 - **Next step:** Phase 7 – Nominatim client in `services/insights-service/src/sources/nominatim.js`: `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1`, `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`, max 1 request/s (queue), timeout 5 s, `geocode_cache` 30 days (table already created at startup), city-centroid fallback with `precision: "city"`; reuse `createCached` + the cooldown pattern from `src/services/locations.js`; nock tests. Local `.env` still has an empty `NOMINATIM_CONTACT_EMAIL` (user fills it in).
 - **Blockers:** –
 
