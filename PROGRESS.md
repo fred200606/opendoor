@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** –
+- **In progress:** Snapshot endpoint: `src/sources/core.js` (3 s, 404 → 404, other failures → 503), `locations.describe(code)` (city → province → region; HUC codes don't share the province prefix, so search the region's provinces, prefix match first), place query "address, City, Province" (no "City of", NCR → Metro Manila), `src/services/snapshot.js` with a 12 s budget (late sources → `unavailable`, their requests still fill the cache), route, wiring in `app.js`/`server.js`, tests.
 - **Next step:** Phase 7 – snapshot endpoint `GET /api/insights/job-postings/{id}` (`src/routes/snapshot.js` + `src/services/snapshot.js`, wire geocoder + nearby + centroids into `app.js`/`server.js`): Core client (`CORE_INTERNAL_URL` + `X-Service-Key`, 3 s; 404 → 404; decide Core down → 503 vs 200), PSGC label for `psgc_code` (needs a city lookup – Core's `location_label` as fallback), employer_claims grouped, community_verification (null until published), `sources`, disclaimer, `generated_at` (+08:00). **Budget:** worst case Core 3 + PSGC 5 + Nominatim 2×5 + queue 2 + Overpass 8 s exceeds the gateway's 15 s – add an overall deadline (e.g. skip sources once ~12 s are used). Jest/nock tests with each source failing. **Waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then run `npm run build:city-centroids` and a live Nominatim check.
 - **Blockers:** –
 
