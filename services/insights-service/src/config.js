@@ -6,6 +6,7 @@ const DEFAULTS = {
   PORT: '8002',
   PSGC_URL: 'https://psgc.gitlab.io/api',
   NOMINATIM_URL: 'https://nominatim.openstreetmap.org',
+  OVERPASS_URL: 'https://overpass-api.de/api/interpreter',
   CACHE_DB_HOST: '127.0.0.1',
   CACHE_DB_PORT: '3306',
   CACHE_DB_NAME: 'insights_cache',
@@ -45,6 +46,8 @@ export function loadConfig(env = process.env) {
     psgcUrl: url('PSGC_URL'),
     nominatimUrl: url('NOMINATIM_URL'),
     nominatimContactEmail: contactEmail || null,
+    overpassUrl: url('OVERPASS_URL'),
+    nearbyRadiusM: 500,
     // The cache is optional at runtime: without a database every request goes to the sources.
     cacheDb: read('CACHE_DB_USER')
       ? {
@@ -55,10 +58,10 @@ export function loadConfig(env = process.env) {
           password: read('CACHE_DB_PASSWORD') ?? '',
         }
       : null,
-    timeouts: { psgc: 5_000, nominatim: 5_000 },
-    ttl: { psgc: 7 * DAY, geocode: 30 * DAY },
+    timeouts: { psgc: 5_000, nominatim: 5_000, overpass: 8_000 },
+    ttl: { psgc: 7 * DAY, geocode: 30 * DAY, overpass: DAY },
     // How long a failed source is skipped before it is tried again.
-    cooldowns: { psgc: 60_000, nominatim: 60_000 },
+    cooldowns: { psgc: 60_000, nominatim: 60_000, overpass: 60_000 },
     // Nominatim: 1 request/s; a request that would queue longer than maxWaitMs is not sent.
     throttle: { nominatim: { intervalMs: 1_000, maxWaitMs: 2_000 } },
     logRequests: env.NODE_ENV !== 'test',

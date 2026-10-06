@@ -23,6 +23,13 @@ Node.js 22 + Express 4 (ESM). Private service behind the gateway, which forwards
 - Order: `geocode_cache` (30 days, key = SHA-256 of the normalized "address, place") → "address, place" (`precision: street`) → "place" (`precision: city`, stored under the same key) → expired entry (`stale`) → `src/data/city-centroids.json` by PSGC code (`precision: city`, source `unavailable`) → no coordinates.
 - Build the centroids once (≈2.5 min, needs the contact email): `npm run build:city-centroids`. OSM boundary relations were not usable instead: too few carry the 10-digit PSGC `ref`, and their bounding-box centres can lie in the sea (Manila).
 
+## Nearby accessible places (Overpass, used by the snapshot)
+
+- POST to `OVERPASS_URL` with the documented query (nodes + ways tagged `wheelchair=yes|limited` within 500 m, `out center tags 50`), timeout 8 s. A busy server answers 429/504 with HTML, or 200 with a `runtime error` remark and partial data; all count as failures, so partial answers are never cached.
+- `overpass_cache` (24 h) is keyed by the point rounded to 4 dp (~11 m) + radius and stores trimmed elements (position + the tags we use); distances are measured from the exact point on every request.
+- Transform: category by tags (transit stops → toilets → parking → other, first match wins), haversine metres, de-duplicated by OSM type/id, centre outside the radius dropped, nearest 3 per category. Unnamed places are dropped from `other` only.
+- Failure: expired entry (`stale`), else `nearby_accessible: null` with `overpass: "unavailable"`; 60 s cooldown.
+
 ## Cache database
 
 The tables (`psgc_cache`, `overpass_cache`, `geocode_cache`) are created at startup (`CREATE TABLE IF NOT EXISTS`). The database is optional: if it is down, reads count as misses and the service keeps answering. Without `CACHE_DB_USER` an in-memory cache is used.

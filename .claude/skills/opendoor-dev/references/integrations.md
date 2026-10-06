@@ -36,6 +36,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
    - `parking`: `amenity=parking` (incl. `capacity:disabled`)
    - `other`: everything else
    Distance with haversine (metres, integer); de-duplicate by OSM id; keep the nearest 3 per category; keep `wheelchair` as `yes` or `limited`.
+   As built (`src/services/nearby.js`): cache key = point rounded to 4 dp + radius, payload = trimmed elements, distances from the exact point; way centres beyond the radius dropped; unnamed places dropped from `other` only; 429/504 HTML or a `runtime error` remark = failure (never cached) → stale entry, else `nearby_accessible: null`; 60 s cooldown. The public overpass-api.de instance is often busy (seen 504 after 16 s on 2026-10-07) – the 8 s timeout + cooldown + cache keep the snapshot fast.
 6. **Combine** and respond 200 even if some sources failed:
 ```json
 { "job_posting_id": 42,
