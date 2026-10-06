@@ -6,6 +6,7 @@
 //   npm run build:city-centroids   (reads .env)
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { placeQuery } from '../src/services/geocoder.js';
 import { createNominatimClient } from '../src/sources/nominatim.js';
 
 const contactEmail = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
@@ -34,10 +35,10 @@ const missing = [];
 for (const [key, cities] of Object.entries(fallback)) {
   if (!key.startsWith('cities:')) continue;
   const parent = key.slice('cities:'.length);
-  const area = provinceNames.get(parent) ?? 'Metro Manila';
+  const province = provinceNames.get(parent) ?? null; // NCR has none
 
   for (const city of cities) {
-    const point = await nominatim.search(`${city.name}, ${area}`);
+    const point = await nominatim.search(placeQuery({ city: city.name, province }));
     if (point) centroids[city.code] = point;
     else missing.push(`${city.code} ${city.name}`);
   }

@@ -4,6 +4,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 const DEFAULTS = {
   PORT: '8002',
+  CORE_INTERNAL_URL: 'http://127.0.0.1:8001',
   PSGC_URL: 'https://psgc.gitlab.io/api',
   NOMINATIM_URL: 'https://nominatim.openstreetmap.org',
   OVERPASS_URL: 'https://overpass-api.de/api/interpreter',
@@ -43,6 +44,9 @@ export function loadConfig(env = process.env) {
 
   const config = {
     port: positiveInt('PORT'),
+    coreInternalUrl: url('CORE_INTERNAL_URL'),
+    // Shared secret with Core's /internal routes; without it Core refuses every snapshot (503).
+    serviceKey: read('SERVICE_KEY_INSIGHTS') || null,
     psgcUrl: url('PSGC_URL'),
     nominatimUrl: url('NOMINATIM_URL'),
     nominatimContactEmail: contactEmail || null,
@@ -58,7 +62,9 @@ export function loadConfig(env = process.env) {
           password: read('CACHE_DB_PASSWORD') ?? '',
         }
       : null,
-    timeouts: { psgc: 5_000, nominatim: 5_000, overpass: 8_000 },
+    timeouts: { core: 3_000, psgc: 5_000, nominatim: 5_000, overpass: 8_000 },
+    // Whole snapshot, below the gateway's 15 s Insights timeout.
+    snapshotBudgetMs: 12_000,
     ttl: { psgc: 7 * DAY, geocode: 30 * DAY, overpass: DAY },
     // How long a failed source is skipped before it is tried again.
     cooldowns: { psgc: 60_000, nominatim: 60_000, overpass: 60_000 },

@@ -10,12 +10,40 @@ export function silentLog() {
   return { lines, error: (line) => lines.push(line), warn: (line) => lines.push(line), log: () => {} };
 }
 
-/** Sources are retried at once after a failure unless a test sets `cooldowns`. */
-export function buildApp({ store = createMemoryStore(), psgcFallback = {}, log = silentLog(), timeouts = {}, cooldowns = { psgc: 0 } } = {}) {
-  const config = loadConfig({ NODE_ENV: 'test', PSGC_URL });
+export const TEST_ENV = {
+  NODE_ENV: 'test',
+  CORE_INTERNAL_URL: 'http://core.test',
+  SERVICE_KEY_INSIGHTS: 'test-service-key',
+  PSGC_URL,
+  NOMINATIM_URL: 'http://nominatim.test',
+  NOMINATIM_CONTACT_EMAIL: 'team@opendoor.test',
+  OVERPASS_URL: 'http://overpass.test/api/interpreter',
+};
+
+/**
+ * The app with every outside service on a fake host (use nock). Sources are retried at once
+ * after a failure and Nominatim is not throttled unless a test sets `cooldowns` / `throttle`.
+ */
+export function buildApp({
+  store = createMemoryStore(),
+  psgcFallback = {},
+  centroids = {},
+  log = silentLog(),
+  env = {},
+  timeouts = {},
+  cooldowns = {},
+  budgetMs,
+} = {}) {
+  const config = loadConfig({ ...TEST_ENV, ...env });
   const app = createApp(
-    { ...config, timeouts: { ...config.timeouts, ...timeouts }, cooldowns: { ...config.cooldowns, ...cooldowns } },
-    { store, psgcFallback, log },
+    {
+      ...config,
+      timeouts: { ...config.timeouts, ...timeouts },
+      cooldowns: { psgc: 0, nominatim: 0, overpass: 0, ...cooldowns },
+      throttle: { nominatim: { intervalMs: 0, maxWaitMs: 2_000 } },
+      snapshotBudgetMs: budgetMs ?? config.snapshotBudgetMs,
+    },
+    { store, psgcFallback, centroids, log },
   );
   return { app, store, log };
 }

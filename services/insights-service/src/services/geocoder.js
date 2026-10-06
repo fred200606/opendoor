@@ -2,6 +2,14 @@ import { createHash } from 'node:crypto';
 import { createCooldown } from '../lib/cooldown.js';
 
 const normalize = (query) => query.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Place part of a Nominatim query: "Makati, Metro Manila", "Cebu, Cebu". OSM names drop PSGC's
+ * "City of" prefix, and region names ("National Capital Region (NCR)") only confuse the search.
+ */
+export function placeQuery({ city, province }) {
+  return [city.replace(/^City of\s+/i, '').trim(), province ?? 'Metro Manila'].join(', ');
+}
 export const addressHash = (query) => createHash('sha256').update(normalize(query)).digest('hex');
 
 /**

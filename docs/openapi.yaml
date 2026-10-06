@@ -1200,7 +1200,11 @@ paths:
     get:
       tags: [Insights]
       summary: Workplace Accessibility Snapshot (mashup of Core, PSGC, Nominatim, Overpass)
-      description: Returns 200 even when some sources fail; see `sources`.
+      description: |
+        Returns 200 even when PSGC, Nominatim or Overpass fail; see `sources`. Only the Core Service
+        is required. The snapshot is answered within about 12 s: a source still running then is
+        reported as `unavailable` (its answer still fills the cache for the next request).
+        `stale` for `psgc` also covers the bundled fallback lists.
       security: []
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
@@ -1210,6 +1214,11 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Snapshot' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: SERVICE_UNAVAILABLE (the Core Service did not answer or refused the service key)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /insights/locations/{level}:
     get:
       tags: [Insights]

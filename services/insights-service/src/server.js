@@ -26,8 +26,15 @@ if (config.cacheDb) {
   store = createMemoryStore();
 }
 
-const psgcFallback = JSON.parse(readFileSync(new URL('./data/psgc-fallback.json', import.meta.url), 'utf8'));
+if (!config.serviceKey) console.warn('SERVICE_KEY_INSIGHTS is not set; Core will refuse every snapshot (503).');
+if (!config.nominatimContactEmail) {
+  console.warn('NOMINATIM_CONTACT_EMAIL is not set; geocoding uses the cache and bundled city centroids only.');
+}
 
-createApp(config, { store, psgcFallback }).listen(config.port, () => {
+const readData = (file) => JSON.parse(readFileSync(new URL(`./data/${file}`, import.meta.url), 'utf8'));
+const psgcFallback = readData('psgc-fallback.json');
+const centroids = readData('city-centroids.json');
+
+createApp(config, { store, psgcFallback, centroids }).listen(config.port, () => {
   console.log(`OpenDoor Insights Service listening on http://localhost:${config.port} (psgc: ${config.psgcUrl})`);
 });
