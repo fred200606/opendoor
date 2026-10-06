@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** Gateway `/api/insights/*` live check (seeders done 2026-10-07: QC/Makati/Pasig codes, local DB re-seeded).
-- **Next step:** Phase 7 – Gateway `/api/insights/*` live check: check Insights `SERVICE_KEY_INSIGHTS` matches Core's (both set), start Core + Insights + gateway, then `GET /api/insights/job-postings/{id}` through the gateway (200 with `sources`, unknown id 404, Core stopped → 503, Overpass slow → under 15 s). **Still waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then `npm run build:city-centroids` and a live Nominatim check (ticks the Nominatim item).
+- **In progress:** –
+- **Next step:** Phase 7 – Postman folder 07 (Insights): snapshot 200 with `sources` keys + `disclaimer` + `generated_at` +08:00, unknown posting 404, locations regions/provinces/cities incl. 422 `parent` and 404 level; regenerate via `tests/postman/build-collection.mjs`, run with Newman against the local stack (Core + Insights + gateway). Then the frontend Accessibility Snapshot + picker live check. **Still waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → `npm run build:city-centroids`, live Nominatim check, and a live snapshot with coordinates + Overpass through the gateway (must stay under 15 s).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -129,7 +129,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Insights: Nominatim client (throttle 1/s, UA) + cache – code done 2026-10-06 (`geocoder.js`, 18 nock tests, `geocode_cache` round trip on MySQL); tick after `npm run build:city-centroids` + a live Nominatim check, both need `NOMINATIM_CONTACT_EMAIL`
 - [x] Insights: Overpass client + cache; tag→category transform; haversine (`nearby.js`, 34 tests; live check 2026-10-07 against overpass-api.de: Quezon Ave. 5.6 s, Ayala 2.4 s)
 - [x] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing) (`snapshot.js` + `core.js` + `locations.describe`, 31 tests, 119 Insights tests; OpenAPI 503)
-- [ ] Gateway: `/api/insights/*` route verified
+- [x] Gateway: `/api/insights/*` route verified (live 2026-10-07 with real PSGC: open postings 200 `psgc: ok` → `cached`, pending/unknown/`abc` 404, Core stopped → 503 in 15 ms, request ID passed through; coordinates/Overpass part waits for `NOMINATIM_CONTACT_EMAIL`)
 - [ ] Frontend: Accessibility Snapshot section + PSGC location picker – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 07
 
@@ -162,6 +162,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-07 – Demo seeders got real PSGC codes (QC/Makati/Pasig, picker labels); gateway live check of the snapshot done (200/404/503). Next: Postman 07.
 - 2026-10-07 – Snapshot endpoint done (Core client, PSGC describe incl. HUCs, 12 s budget; 31 nock tests incl. every source failing and a late source filling the cache; 119 Insights tests). Next: gateway live check after fixing demo PSGC codes.
 - 2026-10-07 – Overpass nearby places built and tested (88 Insights tests); live check OK once overpass-api.de recovered (it answered 504 earlier). Next: snapshot endpoint.
 - 2026-10-06 – Nominatim geocoder built and tested (throttle, cooldown, cache, stale, centroid fallback); waiting for `NOMINATIM_CONTACT_EMAIL` for the centroid build + live check. Next: Overpass.
