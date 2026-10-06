@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** –
-- **Next step:** Phase 7 – Gateway `/api/insights/*` live check: first fix the demo seeders' `location_psgc` (Known issues: Quezon City 1381300000, Makati 1380300000, labels "City, National Capital Region (NCR)"), check Insights `SERVICE_KEY_INSIGHTS` matches Core's (both set), start Core + Insights + gateway, then `GET /api/insights/job-postings/{id}` through the gateway (200 with `sources`, unknown id 404, Core stopped → 503, Overpass slow → under 15 s). **Still waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then `npm run build:city-centroids` and a live Nominatim check (ticks the Nominatim item).
+- **In progress:** Gateway `/api/insights/*` live check (seeders done 2026-10-07: QC/Makati/Pasig codes, local DB re-seeded).
+- **Next step:** Phase 7 – Gateway `/api/insights/*` live check: check Insights `SERVICE_KEY_INSIGHTS` matches Core's (both set), start Core + Insights + gateway, then `GET /api/insights/job-postings/{id}` through the gateway (200 with `sources`, unknown id 404, Core stopped → 503, Overpass slow → under 15 s). **Still waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then `npm run build:city-centroids` and a live Nominatim check (ticks the Nominatim item).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -155,7 +155,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Gateway limit 120 req/min per IP: one Newman run is now 125 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
-- Demo employers/postings have `location_psgc = null` – fill real 10-digit PSGC codes (e.g. Quezon City 1381300000, Makati 1380300000) in the demo seeders before the snapshot live check (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.

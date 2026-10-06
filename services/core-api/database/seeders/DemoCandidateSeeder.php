@@ -16,14 +16,16 @@ class DemoCandidateSeeder extends Seeder
             'headline' => 'Data encoder with 3 years of BPO experience',
             'skills' => ['Excel', 'Typing (60 wpm)', 'Data validation'],
             'experience' => "Data encoder, 2022–2025.\nCustomer records and quality checks.",
-            'location_label' => 'Quezon City, Metro Manila',
+            'location_psgc' => '1381300000',
+            'location_label' => 'Quezon City, National Capital Region (NCR)',
             'needs' => ['Wheelchair-accessible entrance', 'Accessible restroom', 'Written or captioned meetings'],
         ],
         'candidate2@opendoor.test' => [
             'headline' => 'Chat support agent and FSL user',
             'skills' => ['Filipino Sign Language', 'Chat support', 'Email support'],
             'experience' => 'Chat support for an e-commerce shop, 2023–2025.',
-            'location_label' => 'Pasig City, Metro Manila',
+            'location_psgc' => '1381200000',
+            'location_label' => 'City of Pasig, National Capital Region (NCR)',
             'needs' => ['Sign language interpreter', 'Written or captioned meetings', 'Flexible hours', 'Remote work'],
         ],
     ];

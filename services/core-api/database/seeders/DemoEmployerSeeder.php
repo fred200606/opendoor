@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 /**
  * Company profiles for the demo employer accounts (run after DemoUserSeeder).
  * Registration numbers match the simulated Business Registry seed (Phase 6).
- * location_psgc stays null until the codes are confirmed against the PSGC API (Phase 7).
+ * Locations use the official 10-digit PSGC codes and the label the location picker builds.
  */
 class DemoEmployerSeeder extends Seeder
 {
@@ -21,7 +21,8 @@ class DemoEmployerSeeder extends Seeder
             'business_reg_no' => '3456789',
             'industry' => 'Information Technology',
             'address' => '25 Scout Tobias St., South Triangle',
-            'location_label' => 'Quezon City, Metro Manila',
+            'location_psgc' => '1381300000',
+            'location_label' => 'Quezon City, National Capital Region (NCR)',
             'description' => 'Software and data services company. Our office is on the ground floor with a ramp, and our team uses captioned video calls.',
             'verified' => true,
         ],
@@ -31,7 +32,8 @@ class DemoEmployerSeeder extends Seeder
             'business_reg_no' => 'CS201912345',
             'industry' => 'Food Manufacturing',
             'address' => '1200 Pasong Tamo Ext.',
-            'location_label' => 'Makati City, Metro Manila',
+            'location_psgc' => '1380300000',
+            'location_label' => 'City of Makati, National Capital Region (NCR)',
             'description' => 'Food production and packaging. We offer flexible hours and a job coach for new staff.',
             'verified' => false,
         ],
