@@ -1855,8 +1855,10 @@ components:
         id: { type: integer }
         address: { type: string }
         psgc_code: { type: [string, 'null'] }
+        location_label: { type: [string, 'null'], description: Label stored with the PSGC code (fallback when PSGC is unavailable) }
         accommodations:
           type: array
+          description: Advertised accommodations, sorted by name
           items:
             type: object
             properties:
@@ -1864,15 +1866,5 @@ components:
               name: { type: string }
               group: { $ref: '#/components/schemas/AccommodationGroup' }
         trust_score:
-          allOf:
-            - $ref: '#/components/schemas/TrustScoreSummary'
-            - type: object
-              properties:
-                breakdown:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      accommodation_id: { type: integer }
-                      delivered: { type: integer }
-                      of: { type: integer }
+          description: Same as the public trust score; breakdown is empty until published
+          $ref: '#/components/schemas/TrustScore'

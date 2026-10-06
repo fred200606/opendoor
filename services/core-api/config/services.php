@@ -28,6 +28,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Shared secret the Insights Service sends as X-Service-Key on /internal/* calls.
+    'insights' => [
+        'key' => env('SERVICE_KEY_INSIGHTS'),
+    ],
+
     // Legacy Business Registry (SOAP). The password is a secret: never log it.
     'registry' => [
         'wsdl' => env('REGISTRY_WSDL_URL', 'http://127.0.0.1:8003/soap?wsdl'),

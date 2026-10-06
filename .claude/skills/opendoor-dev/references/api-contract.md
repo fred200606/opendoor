@@ -73,10 +73,12 @@ Posting in lists/details:
 
 Internal summary (Core → Insights):
 ```json
-{ "id": 42, "address": "123 Quezon Ave.", "psgc_code": "137404000",
+{ "id": 42, "address": "123 Quezon Ave.", "psgc_code": "1307404000", "location_label": "Quezon City, Metro Manila",
   "accommodations": [ { "id": 1, "name": "...", "group": "physical_access" } ],
-  "trust_score": { "published": true, "score": 86, "based_on": 5, "breakdown": [ { "accommodation_id": 1, "delivered": 5, "of": 5 } ] } }
+  "trust_score": { "published": true, "score": 86, "based_on": 5,
+    "breakdown": [ { "accommodation_id": 1, "name": "...", "delivered": 4, "partial": 1, "not_delivered": 0, "of": 5 } ] } }
 ```
+Only open + approved, non-deleted postings (else 404); missing/wrong `X-Service-Key` → 401 before the lookup. `breakdown` is `[]` until published (same as the public trust score).
 
 Snapshot shape: see `integrations.md`.
 

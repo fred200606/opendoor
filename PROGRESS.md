@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Phase 7 – Core `/internal/job-postings/{id}/summary` (separate route file, `ServiceKey` middleware with `hash_equals` on `X-Service-Key` = `SERVICE_KEY_INSIGHTS`, not under auth:sanctum; 404 unless open + approved; shape in SIA Appendix B / OpenAPI) + tests incl. T16 (no key → 401). Read `integrations.md` §2 + OpenAPI internal schema first. (Phase 6 leaves only the `xmllint` WSDL check, which goes into CI in Phase 9.)
+- **Next step:** Phase 7 – Insights scaffold in `services/insights-service` (only `.env`/`.env.example` exist): Express ESM app on 8002 like the gateway (error envelope, request ID, `GET /health`, Jest + supertest), then `GET /api/insights/locations/{regions|provinces|cities}?parent=` via PSGC (`PSGC_URL`) with the MySQL `insights_cache` (7 days) + bundled fallback JSON (NCR + major cities). Read `integrations.md` §2, `architecture.md` and `gateway/` for conventions first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-06 – Internal summary: `routes/internal.php` under `/internal` with `service.key` (`EnsureServiceKey`, `hash_equals` against `services.insights.key`; an unset key refuses every call; key checked before the lookup). Visible postings only (open + approved + not deleted; `closes_at` not checked, same as search), else 404. Added `location_label` (fallback when PSGC is down); `trust_score` = the public `TrustScore` (breakdown with name/partial/not_delivered, `[]` until published). Accommodations sorted by name.
 - 2026-10-06 – Core registry: `registry_checks` also stores the `business_reg_no` + `registry_type` that were checked; `latest_registry_check` is null once the employer changes them. NOT_FOUND/ERROR have `name_match: null`. Only REGISTRY_UNAVAILABLE stores an ERROR row; auth (502) and invalid input (422) store nothing. `reject` on a verified employer = "Remove verification". `raw_response` keeps only the registry's answer (never the request with the password). Local `REGISTRY_WSDL_URL` uses `127.0.0.1`.
 - 2026-10-05 – Registry: plain PHP without Composer (`src/` autoloader, `tests/run.php` own runner). Registration numbers are normalized (hyphens/spaces removed, upper case) before the 5–20 alphanumeric check, so Core's `CS-2019-12345` matches. WS-Security checked on the raw envelope (DOM, `LIBXML_NONET`, `hash_equals`) before `SoapServer` runs; PasswordDigest refused. WSDL's `soap:address` is rewritten to the requesting host (or `REGISTRY_PUBLIC_URL`). DB at `data/registry.db` (`REGISTRY_DB_PATH`). Seed: the 2 demo employers ACTIVE + 3 more ACTIVE, 2 EXPIRED, 2 CANCELLED.
 - 2026-10-05 – M7: the posting's accommodations are recorded in a new pivot `application_accommodation` when an application becomes hired (migration back-fills already-hired ones); the form lists those, sorted by name, and every item must be rated. Not hired → 422 FEEDBACK_NOT_OPEN (form and submit). Form adds `submitted`; Application adds `feedback_submitted` (candidate only). Trust score `breakdown` is `[]` until published (same answer for everyone). Score math in integers (half points) = PHP `round()`. Recalculation by `FeedbackObserver` after commit; `Feedback::submit()` writes response + items in one transaction.
@@ -115,7 +116,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 08 (registry part) (15 requests: T14 ACTIVE + stored check, T15 NOT_FOUND via a throwaway employer, approve / remove verification / employer re-save restores the queue, 403/404/422; whole collection 125 requests / 607 assertions pass, re-runnable)
 
 ### Phase 7 – Mashup (Insights)
-- [ ] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware
+- [x] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware (`tests/Feature/Internal` 13 tests incl. T16; 285 Core tests pass; live check 401/200/404 on MySQL)
 - [ ] Insights: PSGC locations endpoints + cache + fallback JSON
 - [ ] Insights: Nominatim client (throttle 1/s, UA) + cache
 - [ ] Insights: Overpass client + cache; tag→category transform; haversine
@@ -154,6 +155,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – Phase 7 started: Core internal posting summary + service-key middleware (T16); OpenAPI adds `location_label` and the full breakdown. SIA doc sync for it at the end of Phase 7.
 - 2026-10-06 – SIA doc synced for Phase 6 (4.1 admin employer list, 4.3 sample number = seeded CS201800777, normalization, ERROR checks, data model + registry seed); PDF 41 pages, no blank pages. **Phase 6 complete except the CI `xmllint` check.**
 - 2026-10-06 – Postman 08 Admin & SOAP Registry done (T14/T15 against the running registry); Phase 6 code complete, SIA doc sync next.
 - 2026-10-06 – Admin verification screen live-checked against the real SOAP registry (12 checks pass, incl. registry down); demo data reset (Kalinga pending, no checks).
