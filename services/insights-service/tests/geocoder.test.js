@@ -12,6 +12,9 @@ const hit = (lat, lon) => [{ place_id: 1, lat: String(lat), lon: String(lon), di
 
 const nominatim = () => nock('http://nominatim.test');
 const search = (q) => nominatim().get('/search').query({ q, countrycodes: 'ph', format: 'jsonv2', limit: '1' });
+/** Place searches ask for the top 5 and take the first city/town/municipality. */
+const searchPlace = (q) => nominatim().get('/search').query({ q, countrycodes: 'ph', format: 'jsonv2', limit: '5' });
+const place = (lat, lon, addresstype = 'city') => ({ place_id: 2, lat: String(lat), lon: String(lon), addresstype, display_name: 'a place' });
 
 function build({ store = createMemoryStore(), contactEmail = 'team@opendoor.test', timeoutMs = 1_000, intervalMs = 0, maxWaitMs = 2_000, cooldownMs = 0 } = {}) {
   const log = silentLog();
@@ -60,7 +63,7 @@ describe('geocoder', () => {
 
   test('no street match → the place is searched → precision "city", cached under the full address', async () => {
     search('123 Quezon Ave., Quezon City').reply(200, []);
-    search('Quezon City').reply(200, hit(14.65, 121.05));
+    searchPlace('Quezon City').reply(200, [place(14.65, 121.05)]);
     const { geocode, store } = build();
 
     const result = await geocode(QC);
@@ -70,7 +73,7 @@ describe('geocoder', () => {
   });
 
   test('without an address only the place is searched', async () => {
-    const scope = search('Quezon City').reply(200, hit(14.65, 121.05));
+    const scope = searchPlace('Quezon City').reply(200, [place(14.65, 121.05)]);
     const { geocode } = build();
 
     const result = await geocode({ address: null, place: 'Quezon City', psgcCode: '1381300000' });
@@ -79,9 +82,52 @@ describe('geocoder', () => {
     expect(scope.isDone()).toBe(true);
   });
 
+  test('a place search skips provinces, villages and streets and takes the first city or town', async () => {
+    searchPlace('Bacolod-Kalawi, Lanao Del Sur').reply(200, [
+      place(7.9, 124.2, 'state'),
+      place(8.1, 123.8, 'village'),
+      place(7.85767, 124.1423, 'town'),
+    ]);
+    const { geocode } = build();
+
+    const result = await geocode({ address: null, place: ['Bacolod-Kalawi, Lanao Del Sur'], psgcCode: '1903601000' });
+
+    expect(result).toEqual({ lat: 7.85767, lon: 124.1423, precision: 'city', source: 'ok' });
+  });
+
+  test('without a city boundary, the first place whose address names the city is taken (look-alikes skipped)', async () => {
+    const poi = (lat, lon, display_name) => ({ place_id: 3, lat: String(lat), lon: String(lon), addresstype: 'highway', display_name });
+    searchPlace('Lapu-Lapu, Cebu').reply(200, [
+      poi(10.2921, 123.9033, 'Lapu-Lapu, M.C. Briones Street, San Roque, Cebu City, Central Visayas, Philippines'),
+      poi(10.303, 123.9863, 'cebu, Gumamela Street, Villa Marina, Pajac, Lapu-Lapu, Central Visayas, Philippines'),
+    ]);
+    searchPlace('Danao City, Cebu').reply(200, [poi(10.5201, 124.0306, 'Danao City, Cebu North Road, Suba, Danao, Cebu, Philippines')]);
+    searchPlace('Nowhere, Cebu').reply(200, [poi(10.1, 123.9, 'Nowhere, Some Street, Talisay, Cebu, Philippines')]);
+    const { geocode } = build();
+
+    expect(await geocode({ address: null, place: ['Lapu-Lapu, Cebu'], psgcCode: null })).toMatchObject({ lat: 10.303, lon: 123.9863 });
+    expect(await geocode({ address: null, place: ['Danao City, Cebu'], psgcCode: null })).toMatchObject({ lat: 10.5201, precision: 'city' });
+    expect(await geocode({ address: null, place: ['Nowhere, Cebu'], psgcCode: null })).toEqual({ lat: null, lon: null, precision: null, source: 'ok' });
+  });
+
+  test('the place queries are tried in order until one finds a city; cached under the first', async () => {
+    const queries = ['Davao, Davao Del Sur', 'Davao City, Davao Del Sur', 'Davao City'];
+    search('J.P. Laurel Ave., Davao, Davao Del Sur').reply(200, []);
+    searchPlace(queries[0]).reply(200, [place(6.698, 125.361, 'state')]);
+    searchPlace(queries[1]).reply(200, []);
+    searchPlace(queries[2]).reply(200, [place(7.064831, 125.608062)]);
+    const { geocode, store } = build();
+
+    const result = await geocode({ address: 'J.P. Laurel Ave.', place: queries, psgcCode: '1130700000' });
+
+    expect(result).toEqual({ lat: 7.064831, lon: 125.608062, precision: 'city', source: 'ok' });
+    expect((await store.get('geocode_cache', addressHash('J.P. Laurel Ave., Davao, Davao Del Sur'))).payload.lat).toBe(7.064831);
+    expect(nock.pendingMocks()).toEqual([]);
+  });
+
   test('nothing found → bundled city centroid, and Nominatim itself counts as ok', async () => {
     search('123 Quezon Ave., Quezon City').reply(200, []);
-    search('Quezon City').reply(200, []);
+    searchPlace('Quezon City').reply(200, []);
     const { geocode, store } = build();
 
     const result = await geocode(QC);

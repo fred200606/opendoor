@@ -4,20 +4,29 @@ import { createCooldown } from '../lib/cooldown.js';
 const normalize = (query) => query.toLowerCase().replace(/\s+/g, ' ').trim();
 
 /**
- * Place part of a Nominatim query: "Makati, Metro Manila", "Cebu, Cebu". OSM names drop PSGC's
- * "City of" prefix, and region names ("National Capital Region (NCR)") only confuse the search.
+ * Place searches for a city, best first: "Makati, Metro Manila", then for PSGC's "City of X" also
+ * "X City, Province" and "X City" alone. The bare name can only find a province of the same name
+ * ("Davao, Davao del Sur"), and an independent city can lie outside its province's OSM boundary
+ * (Zamboanga City), so the later forms are tried when the first finds no city or town.
+ * Checked live on 2026-10-07. NCR has no province: "Metro Manila".
  */
-export function placeQuery({ city, province }) {
-  return [city.replace(/^City of\s+/i, '').trim(), province ?? 'Metro Manila'].join(', ');
+export function placeQueries({ city, province }) {
+  const area = province ?? 'Metro Manila';
+  const name = city.trim();
+  const bare = name.replace(/^City of\s+/i, '');
+  if (bare === name) return [`${name}, ${area}`];
+  return [`${bare}, ${area}`, `${bare} City, ${area}`, `${bare} City`];
 }
+
 export const addressHash = (query) => createHash('sha256').update(normalize(query)).digest('hex');
 
 /**
  * Geocodes a workplace for the snapshot.
  *
- * 1. `geocode_cache` (30 days), keyed by the hash of "address, place"
- * 2. Nominatim "address, place" → precision "street"; no match → Nominatim "place" → precision "city"
- *    (stored under the same key, so the next snapshot needs no request)
+ * 1. `geocode_cache` (30 days), keyed by the hash of "address, place" (the first place query)
+ * 2. Nominatim "address, place" → precision "street"; no match → the place queries in order, each
+ *    accepting only a city/town/municipality → precision "city" (stored under the same key, so
+ *    the next snapshot needs no request). `place` is one query or a list (`placeQueries`).
  * 3. Nominatim failed: an expired cache entry (stale), else the bundled city centroid for the PSGC
  *    code (precision "city"), else no coordinates
  *
@@ -28,7 +37,7 @@ export const addressHash = (query) => createHash('sha256').update(normalize(quer
  *   source: 'ok'|'cached'|'stale'|'unavailable' }>}
  */
 export function createGeocoder({ nominatim, cached, ttlMs, cooldownMs, centroids, log = console }) {
-  const search = nominatim ? createCooldown('Nominatim', cooldownMs)((query) => nominatim.search(query)) : null;
+  const search = nominatim ? createCooldown('Nominatim', cooldownMs)((query, options) => nominatim.search(query, options)) : null;
 
   function centroid(psgcCode, source) {
     const point = psgcCode ? centroids[psgcCode] : undefined;
@@ -36,7 +45,8 @@ export function createGeocoder({ nominatim, cached, ttlMs, cooldownMs, centroids
   }
 
   return async function geocode({ address, place, psgcCode }) {
-    const query = [address, place].filter(Boolean).join(', ');
+    const places = [place ?? []].flat().filter(Boolean);
+    const query = [address, places[0]].filter(Boolean).join(', ');
     if (!query) return centroid(psgcCode, 'unavailable');
 
     const fetch = async () => {
@@ -45,8 +55,10 @@ export function createGeocoder({ nominatim, cached, ttlMs, cooldownMs, centroids
       const street = address ? await search(query) : null;
       if (street) return { query, ...street, precision: 'street' };
 
-      const city = place ? await search(place) : null;
-      if (city) return { query, ...city, precision: 'city' };
+      for (const candidate of places) {
+        const city = await search(candidate, { settlement: true });
+        if (city) return { query, ...city, precision: 'city' };
+      }
 
       throw Object.assign(new Error('Nominatim found no match'), { code: 'NO_MATCH' });
     };

@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Phase 7 – Postman folder 07 (Insights): snapshot 200 with `sources` keys + `disclaimer` + `generated_at` +08:00, unknown posting 404, locations regions/provinces/cities incl. 422 `parent` and 404 level; regenerate via `tests/postman/build-collection.mjs`, run with Newman against the local stack (Core + Insights + gateway). Then the frontend Accessibility Snapshot + picker live check. **Still waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → `npm run build:city-centroids`, live Nominatim check, and a live snapshot with coordinates + Overpass through the gateway (must stay under 15 s).
+- **Next step:** Phase 7 – Postman folder 07 (Insights): snapshot 200 with `sources` keys + `disclaimer` + `generated_at` +08:00, unknown posting 404, locations regions/provinces/cities incl. 422 `parent` and 404 level; regenerate via `tests/postman/build-collection.mjs`, run with Newman against the local stack (Core + Insights + gateway; the snapshot calls real Nominatim/Overpass locally – assert only shape, not places). Then the frontend Accessibility Snapshot + picker live check, then the Phase 7 SIA doc sync.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -15,6 +15,8 @@
 - (none)
 
 ## Decisions (final – do not re-ask)
+
+- 2026-10-07 – Nominatim place searches: queries "X, Province" → "X City, Province" → "X City" (last two only for PSGC "City of X"); top 5 per search; accept a city/town/municipality, else the first result whose address names the city. Replaces the plain first-result rule, which gave province centres (Davao, Zamboanga) and same-name places elsewhere (Lapu-Lapu bus stop in Cebu City). A region-name rule for independent cities was tried and dropped (Bacolod is now in the Negros Island Region). The contact email is set by the user in the local `.env` only. The build script retries a lookup twice (5 s, 10 s) on network errors.
 
 - 2026-10-07 – Snapshot: Core is the only required source – 404 → 404, any other Core failure (down, timeout, 401, bad body) → 503 `SERVICE_UNAVAILABLE`; ids outside 1…2³¹−1 → 404 without asking Core. 12 s budget for the whole snapshot: a source still running at the deadline is `unavailable` and nothing new starts, but its request continues and fills the cache. PSGC label via `locations.describe` (HUCs searched across the region's provinces); bundled fallback lists report `psgc: stale`; PSGC down → Core's `location_label`; no `psgc_code` → `psgc: unavailable`. Posting data is never cached in Insights. OpenAPI adds the 503.
 
@@ -126,7 +128,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 7 – Mashup (Insights)
 - [x] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware (`tests/Feature/Internal` 13 tests incl. T16; 285 Core tests pass; live check 401/200/404 on MySQL)
 - [x] Insights: PSGC locations endpoints + cache + fallback JSON (scaffold: Express ESM on 8002, envelope, request ID, `/health`; 34 Jest/nock tests; live check through the gateway: ok → cached, BARMM lookup, PSGC down → cached/fallback in < 35 ms)
-- [ ] Insights: Nominatim client (throttle 1/s, UA) + cache – code done 2026-10-06 (`geocoder.js`, 18 nock tests, `geocode_cache` round trip on MySQL); tick after `npm run build:city-centroids` + a live Nominatim check, both need `NOMINATIM_CONTACT_EMAIL`
+- [x] Insights: Nominatim client (throttle 1/s, UA) + cache (`geocoder.js`, 21 nock tests; 145/145 bundled centroids built 2026-10-07 and compared with a first build – Davao, Zamboanga, Angeles, Bacolod, Lapu-Lapu, Iligan fixed; live snapshot through the gateway: street match 3.7 s → cached 0.1 s, city fallback + Overpass timeout 9.1 s)
 - [x] Insights: Overpass client + cache; tag→category transform; haversine (`nearby.js`, 34 tests; live check 2026-10-07 against overpass-api.de: Quezon Ave. 5.6 s, Ayala 2.4 s)
 - [x] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing) (`snapshot.js` + `core.js` + `locations.describe`, 31 tests, 119 Insights tests; OpenAPI 503)
 - [x] Gateway: `/api/insights/*` route verified (live 2026-10-07 with real PSGC: open postings 200 `psgc: ok` → `cached`, pending/unknown/`abc` 404, Core stopped → 503 in 15 ms, request ID passed through; coordinates/Overpass part waits for `NOMINATIM_CONTACT_EMAIL`)
@@ -151,6 +153,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
+- Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
 - Gateway limit 120 req/min per IP: one Newman run is now 125 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
@@ -162,6 +166,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-07 – Contact email set by the user; city centroids built (145/145) after fixing place matching (provinces/look-alikes rejected); live snapshot with Nominatim + Overpass through the gateway. Nominatim item done. Next: Postman 07.
 - 2026-10-07 – Demo seeders got real PSGC codes (QC/Makati/Pasig, picker labels); gateway live check of the snapshot done (200/404/503). Next: Postman 07.
 - 2026-10-07 – Snapshot endpoint done (Core client, PSGC describe incl. HUCs, 12 s budget; 31 nock tests incl. every source failing and a late source filling the cache; 119 Insights tests). Next: gateway live check after fixing demo PSGC codes.
 - 2026-10-07 – Overpass nearby places built and tested (88 Insights tests); live check OK once overpass-api.de recovered (it answered 504 earlier). Next: snapshot endpoint.

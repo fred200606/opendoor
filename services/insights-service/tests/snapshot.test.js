@@ -1,6 +1,6 @@
 import nock from 'nock';
 import request from 'supertest';
-import { placeQuery } from '../src/services/geocoder.js';
+import { placeQueries } from '../src/services/geocoder.js';
 import { DISCLAIMER, manilaTimestamp } from '../src/services/snapshot.js';
 import { buildApp, raw } from './helpers.js';
 
@@ -363,14 +363,15 @@ describe('GET /api/insights/job-postings/{id}', () => {
   });
 });
 
-describe('placeQuery', () => {
+describe('placeQueries', () => {
   test.each([
-    [{ city: 'Quezon City', province: null }, 'Quezon City, Metro Manila'],
-    [{ city: 'City of Makati', province: null }, 'Makati, Metro Manila'],
-    [{ city: 'City of Cebu', province: 'Cebu' }, 'Cebu, Cebu'],
-    [{ city: 'Bacolod-Kalawi', province: 'Lanao Del Sur' }, 'Bacolod-Kalawi, Lanao Del Sur'],
-  ])('%j → %s', (place, query) => {
-    expect(placeQuery(place)).toBe(query);
+    [{ city: 'Quezon City', province: null }, ['Quezon City, Metro Manila']],
+    [{ city: 'Pateros', province: null }, ['Pateros, Metro Manila']],
+    [{ city: 'City of Makati', province: null }, ['Makati, Metro Manila', 'Makati City, Metro Manila', 'Makati City']],
+    [{ city: 'City of Davao', province: 'Davao Del Sur' }, ['Davao, Davao Del Sur', 'Davao City, Davao Del Sur', 'Davao City']],
+    [{ city: 'Bacolod-Kalawi', province: 'Lanao Del Sur' }, ['Bacolod-Kalawi, Lanao Del Sur']],
+  ])('%j → %j', (place, queries) => {
+    expect(placeQueries(place)).toEqual(queries);
   });
 });
 

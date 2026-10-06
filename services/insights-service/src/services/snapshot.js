@@ -1,5 +1,5 @@
 import { ApiError } from '../lib/errors.js';
-import { placeQuery } from './geocoder.js';
+import { placeQueries } from './geocoder.js';
 
 export const DISCLAIMER = 'Map data from OpenStreetMap contributors (ODbL); coverage may be incomplete.';
 
@@ -72,7 +72,7 @@ export function createSnapshotService({ core, locations, geocode, nearby, budget
 
     // Nominatim: coordinates of the workplace (or the city centre).
     const geocoded = await withinBudget(() =>
-      geocode({ address: summary.address, place: place ? placeQuery(place) : null, psgcCode: summary.psgc_code }),
+      geocode({ address: summary.address, place: place ? placeQueries(place) : null, psgcCode: summary.psgc_code }),
     );
     if (geocoded !== late) {
       Object.assign(location, { lat: geocoded.lat, lon: geocoded.lon, precision: geocoded.precision });

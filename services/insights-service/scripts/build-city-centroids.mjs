@@ -6,7 +6,7 @@
 //   npm run build:city-centroids   (reads .env)
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { placeQuery } from '../src/services/geocoder.js';
+import { placeQueries } from '../src/services/geocoder.js';
 import { createNominatimClient } from '../src/sources/nominatim.js';
 
 const contactEmail = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
@@ -30,6 +30,21 @@ const provinceNames = new Map(
     .flatMap(([, items]) => items.map((item) => [item.code, item.name])),
 );
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** A network hiccup (DNS, reset, 5xx) should not end a run of ~150 lookups: retry twice. */
+async function searchWithRetry(query) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await nominatim.search(query, { settlement: true });
+    } catch (err) {
+      if (attempt === 3) throw err;
+      console.warn(`${query}: ${err.code ?? err.message}; retrying`);
+      await sleep(5_000 * attempt);
+    }
+  }
+}
+
 const centroids = {};
 const missing = [];
 for (const [key, cities] of Object.entries(fallback)) {
@@ -38,7 +53,11 @@ for (const [key, cities] of Object.entries(fallback)) {
   const province = provinceNames.get(parent) ?? null; // NCR has none
 
   for (const city of cities) {
-    const point = await nominatim.search(placeQuery({ city: city.name, province }));
+    let point = null;
+    for (const query of placeQueries({ city: city.name, province })) {
+      point = await searchWithRetry(query);
+      if (point) break;
+    }
     if (point) centroids[city.code] = point;
     else missing.push(`${city.code} ${city.name}`);
   }
