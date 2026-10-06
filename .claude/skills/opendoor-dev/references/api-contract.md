@@ -100,11 +100,11 @@ Snapshot shape: see `integrations.md`.
 | 403 | FORBIDDEN, ACCOUNT_SUSPENDED | Core |
 | 404 | NOT_FOUND | Core, Insights, Gateway |
 | 409 | ALREADY_APPLIED, FEEDBACK_EXISTS | Core |
-| 422 | VALIDATION_FAILED, INVALID_STATUS_TRANSITION, POSTING_CLOSED, FEEDBACK_NOT_OPEN, REGISTRY_INVALID_REQUEST | Core |
+| 422 | VALIDATION_FAILED, INVALID_STATUS_TRANSITION, POSTING_CLOSED, FEEDBACK_NOT_OPEN, REGISTRY_INVALID_REQUEST | Core (Insights: VALIDATION_FAILED for `parent`) |
 | 429 | RATE_LIMITED (with `Retry-After`) | Gateway, Core login |
 | 500 | SERVER_ERROR (unexpected error; generic message, no details) | any |
 | 502 | REGISTRY_UNAVAILABLE, REGISTRY_AUTH_FAILED, UPSTREAM_ERROR | Core, Gateway |
-| 503 | SERVICE_UNAVAILABLE | Gateway |
+| 503 | SERVICE_UNAVAILABLE | Gateway, Insights (PSGC list neither cached nor bundled) |
 | 504 | UPSTREAM_TIMEOUT | Gateway |
 
 In Laravel, implement the envelope once in `bootstrap/app.php` (`withExceptions`) and throw a custom `DomainException`-style class carrying `code` + HTTP status for business errors.

@@ -1214,6 +1214,11 @@ paths:
     get:
       tags: [Insights]
       summary: PSGC location lists for pickers
+      description: |
+        Official 10-digit PSGC codes, sorted by name. Lists are cached 7 days. When PSGC is down,
+        an expired cache entry is served, else a bundled list (all regions and provinces, NCR, and
+        the cities of each province); a list that is neither cached nor bundled is 503.
+        Unknown levels are 404.
       security: []
       parameters:
         - name: level
@@ -1222,16 +1227,29 @@ paths:
           schema: { type: string, enum: [regions, provinces, cities] }
         - name: parent
           in: query
-          description: Region code (for provinces, or cities of NCR) or province code (for cities)
-          schema: { type: string }
+          description: |
+            Required for provinces and cities (ignored for regions). Region code (for provinces, or
+            for the cities of a region without provinces such as NCR) or province code (for cities).
+          schema: { type: string, pattern: '^\d{10}$', example: '1300000000' }
       responses:
         '200':
           description: Locations
+          headers:
+            X-Data-Source:
+              description: Where the list came from
+              schema: { type: string, enum: [ok, cached, stale, fallback] }
           content:
             application/json:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/LocationItem' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '503':
+          description: SERVICE_UNAVAILABLE (PSGC down and the list is neither cached nor bundled)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   # ---------------------------------------------------------------- Internal (not routed by gateway)
   /internal/job-postings/{id}/summary:
@@ -1428,7 +1446,7 @@ components:
     LocationItem:
       type: object
       properties:
-        code: { type: string }
+        code: { type: string, pattern: '^\d{10}$', description: 'Official 10-digit PSGC code', example: '1381300000' }
         name: { type: string }
         level: { type: string, enum: [region, province, city, municipality] }
 

@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** Insights scaffold (Express ESM, envelope, request ID, `/health`, Jest/nock) + MySQL cache helper (`CREATE TABLE IF NOT EXISTS` at startup) + `GET /api/insights/locations/{level}` (10-digit PSGC codes outward, PSGC API's 9-digit codes looked up via cached lists – BARMM differs) + fallback JSON built by `scripts/build-psgc-fallback.mjs`.
-- **Next step:** Phase 7 – Insights scaffold in `services/insights-service` (only `.env`/`.env.example` exist): Express ESM app on 8002 like the gateway (error envelope, request ID, `GET /health`, Jest + supertest), then `GET /api/insights/locations/{regions|provinces|cities}?parent=` via PSGC (`PSGC_URL`) with the MySQL `insights_cache` (7 days) + bundled fallback JSON (NCR + major cities). Read `integrations.md` §2, `architecture.md` and `gateway/` for conventions first.
+- **In progress:** –
+- **Next step:** Phase 7 – Nominatim client in `services/insights-service/src/sources/nominatim.js`: `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1`, `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`, max 1 request/s (queue), timeout 5 s, `geocode_cache` 30 days (table already created at startup), city-centroid fallback with `precision: "city"`; reuse `createCached` + the cooldown pattern from `src/services/locations.js`; nock tests. Local `.env` still has an empty `NOMINATIM_CONTACT_EMAIL` (user fills it in).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -15,6 +15,8 @@
 - (none)
 
 ## Decisions (final – do not re-ask)
+
+- 2026-10-06 – Insights locations: outward codes are the official 10-digit PSGC codes; the PSGC API's 9-digit codes stay in cached items as `ref` and parents are looked up, not converted (BARMM 150000000 ↔ 1900000000). `parent` must be 10 digits (422 `VALIDATION_FAILED`), unknown → 404, regions ignore `parent`, cities accept any region code. Lists sorted by name; region names "Ilocos Region (Region I)" / "National Capital Region (NCR)". Order: fresh cache → PSGC → stale → bundled fallback (all regions + provinces, NCR, cities of each province; `npm run build:psgc-fallback`) → 503 `SERVICE_UNAVAILABLE`; header `X-Data-Source`. 60 s cooldown after a source failure. Cache tables created at startup; the cache DB is optional (misses when down). Axios for outbound calls (SIA doc stack).
 
 - 2026-10-06 – Internal summary: `routes/internal.php` under `/internal` with `service.key` (`EnsureServiceKey`, `hash_equals` against `services.insights.key`; an unset key refuses every call; key checked before the lookup). Visible postings only (open + approved + not deleted; `closes_at` not checked, same as search), else 404. Added `location_label` (fallback when PSGC is down); `trust_score` = the public `TrustScore` (breakdown with name/partial/not_delivered, `[]` until published). Accommodations sorted by name.
 - 2026-10-06 – Core registry: `registry_checks` also stores the `business_reg_no` + `registry_type` that were checked; `latest_registry_check` is null once the employer changes them. NOT_FOUND/ERROR have `name_match: null`. Only REGISTRY_UNAVAILABLE stores an ERROR row; auth (502) and invalid input (422) store nothing. `reject` on a verified employer = "Remove verification". `raw_response` keeps only the registry's answer (never the request with the password). Local `REGISTRY_WSDL_URL` uses `127.0.0.1`.
@@ -117,7 +119,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 7 – Mashup (Insights)
 - [x] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware (`tests/Feature/Internal` 13 tests incl. T16; 285 Core tests pass; live check 401/200/404 on MySQL)
-- [ ] Insights: PSGC locations endpoints + cache + fallback JSON
+- [x] Insights: PSGC locations endpoints + cache + fallback JSON (scaffold: Express ESM on 8002, envelope, request ID, `/health`; 34 Jest/nock tests; live check through the gateway: ok → cached, BARMM lookup, PSGC down → cached/fallback in < 35 ms)
 - [ ] Insights: Nominatim client (throttle 1/s, UA) + cache
 - [ ] Insights: Overpass client + cache; tag→category transform; haversine
 - [ ] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing)
@@ -147,7 +149,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Gateway limit 120 req/min per IP: one Newman run is now 125 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
-- Demo employers have `location_psgc = null` – fill real 10-digit PSGC codes in `DemoEmployerSeeder` once the Insights PSGC client exists (Phase 7).
+- Demo employers/postings have `location_psgc = null` – fill real 10-digit PSGC codes (e.g. Quezon City 1381300000, Makati 1380300000) in the demo seeders before the snapshot live check (Phase 7).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
 - Local Newman: bcrypt requests on Windows `php artisan serve` occasionally exceed the 1000 ms check (single-threaded dev server); rerun before treating as a regression.
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
@@ -155,6 +157,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-06 – Insights Service scaffolded; PSGC location lists with MySQL cache, cooldown and bundled fallback (34 tests; live check through the gateway incl. PSGC down). OpenAPI: 10-digit codes, 404/422/503, `X-Data-Source`.
 - 2026-10-06 – Phase 7 started: Core internal posting summary + service-key middleware (T16); OpenAPI adds `location_label` and the full breakdown. SIA doc sync for it at the end of Phase 7.
 - 2026-10-06 – SIA doc synced for Phase 6 (4.1 admin employer list, 4.3 sample number = seeded CS201800777, normalization, ERROR checks, data model + registry seed); PDF 41 pages, no blank pages. **Phase 6 complete except the CI `xmllint` check.**
 - 2026-10-06 – Postman 08 Admin & SOAP Registry done (T14/T15 against the running registry); Phase 6 code complete, SIA doc sync next.

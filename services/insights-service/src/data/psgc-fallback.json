@@ -1,0 +1,388 @@
+{
+  "regions": [
+    {"code":"1900000000","name":"Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)","level":"region","ref":"150000000"},
+    {"code":"0500000000","name":"Bicol Region (Region V)","level":"region","ref":"050000000"},
+    {"code":"0200000000","name":"Cagayan Valley (Region II)","level":"region","ref":"020000000"},
+    {"code":"0400000000","name":"CALABARZON (Region IV-A)","level":"region","ref":"040000000"},
+    {"code":"1600000000","name":"Caraga (Region XIII)","level":"region","ref":"160000000"},
+    {"code":"0300000000","name":"Central Luzon (Region III)","level":"region","ref":"030000000"},
+    {"code":"0700000000","name":"Central Visayas (Region VII)","level":"region","ref":"070000000"},
+    {"code":"1400000000","name":"Cordillera Administrative Region (CAR)","level":"region","ref":"140000000"},
+    {"code":"1100000000","name":"Davao Region (Region XI)","level":"region","ref":"110000000"},
+    {"code":"0800000000","name":"Eastern Visayas (Region VIII)","level":"region","ref":"080000000"},
+    {"code":"0100000000","name":"Ilocos Region (Region I)","level":"region","ref":"010000000"},
+    {"code":"1700000000","name":"MIMAROPA Region","level":"region","ref":"170000000"},
+    {"code":"1300000000","name":"National Capital Region (NCR)","level":"region","ref":"130000000"},
+    {"code":"1000000000","name":"Northern Mindanao (Region X)","level":"region","ref":"100000000"},
+    {"code":"1200000000","name":"SOCCSKSARGEN (Region XII)","level":"region","ref":"120000000"},
+    {"code":"0600000000","name":"Western Visayas (Region VI)","level":"region","ref":"060000000"},
+    {"code":"0900000000","name":"Zamboanga Peninsula (Region IX)","level":"region","ref":"090000000"}
+  ],
+  "provinces:1900000000": [
+    {"code":"1900700000","name":"Basilan","level":"province","ref":"150700000"},
+    {"code":"1903600000","name":"Lanao Del Sur","level":"province","ref":"153600000"},
+    {"code":"1903800000","name":"Maguindanao","level":"province","ref":"153800000"},
+    {"code":"1906600000","name":"Sulu","level":"province","ref":"156600000"},
+    {"code":"1907000000","name":"Tawi-Tawi","level":"province","ref":"157000000"}
+  ],
+  "cities:1900700000": [
+    {"code":"1900702000","name":"City of Lamitan","level":"city","ref":"150702000"}
+  ],
+  "cities:1903600000": [
+    {"code":"1903617000","name":"City of Marawi","level":"city","ref":"153617000"}
+  ],
+  "provinces:0500000000": [
+    {"code":"0500500000","name":"Albay","level":"province","ref":"050500000"},
+    {"code":"0501600000","name":"Camarines Norte","level":"province","ref":"051600000"},
+    {"code":"0501700000","name":"Camarines Sur","level":"province","ref":"051700000"},
+    {"code":"0502000000","name":"Catanduanes","level":"province","ref":"052000000"},
+    {"code":"0504100000","name":"Masbate","level":"province","ref":"054100000"},
+    {"code":"0506200000","name":"Sorsogon","level":"province","ref":"056200000"}
+  ],
+  "cities:0500500000": [
+    {"code":"0500506000","name":"City of Legazpi","level":"city","ref":"050506000"},
+    {"code":"0500508000","name":"City of Ligao","level":"city","ref":"050508000"},
+    {"code":"0500517000","name":"City of Tabaco","level":"city","ref":"050517000"}
+  ],
+  "cities:0501700000": [
+    {"code":"0501716000","name":"City of Iriga","level":"city","ref":"051716000"},
+    {"code":"0501724000","name":"City of Naga","level":"city","ref":"051724000"}
+  ],
+  "cities:0504100000": [
+    {"code":"0504111000","name":"City of Masbate","level":"city","ref":"054111000"}
+  ],
+  "cities:0506200000": [
+    {"code":"0506216000","name":"City of Sorsogon","level":"city","ref":"056216000"}
+  ],
+  "provinces:0200000000": [
+    {"code":"0200900000","name":"Batanes","level":"province","ref":"020900000"},
+    {"code":"0201500000","name":"Cagayan","level":"province","ref":"021500000"},
+    {"code":"0203100000","name":"Isabela","level":"province","ref":"023100000"},
+    {"code":"0205000000","name":"Nueva Vizcaya","level":"province","ref":"025000000"},
+    {"code":"0205700000","name":"Quirino","level":"province","ref":"025700000"}
+  ],
+  "cities:0201500000": [
+    {"code":"0201529000","name":"Tuguegarao City","level":"city","ref":"021529000"}
+  ],
+  "cities:0203100000": [
+    {"code":"0203108000","name":"City of Cauayan","level":"city","ref":"023108000"},
+    {"code":"0203114000","name":"City of Ilagan","level":"city","ref":"023114000"},
+    {"code":"0203135000","name":"City of Santiago","level":"city","ref":"023135000"}
+  ],
+  "provinces:0400000000": [
+    {"code":"0401000000","name":"Batangas","level":"province","ref":"041000000"},
+    {"code":"0402100000","name":"Cavite","level":"province","ref":"042100000"},
+    {"code":"0403400000","name":"Laguna","level":"province","ref":"043400000"},
+    {"code":"0405600000","name":"Quezon","level":"province","ref":"045600000"},
+    {"code":"0405800000","name":"Rizal","level":"province","ref":"045800000"}
+  ],
+  "cities:0401000000": [
+    {"code":"0401005000","name":"Batangas City","level":"city","ref":"041005000"},
+    {"code":"0401014000","name":"City of Lipa","level":"city","ref":"041014000"},
+    {"code":"0401028000","name":"City of Sto. Tomas","level":"city","ref":"041028000"},
+    {"code":"0401031000","name":"City of Tanauan","level":"city","ref":"041031000"}
+  ],
+  "cities:0402100000": [
+    {"code":"0402103000","name":"City of Bacoor","level":"city","ref":"042103000"},
+    {"code":"0402105000","name":"City of Cavite","level":"city","ref":"042105000"},
+    {"code":"0402106000","name":"City of Dasmariñas","level":"city","ref":"042106000"},
+    {"code":"0402108000","name":"City of General Trias","level":"city","ref":"042108000"},
+    {"code":"0402109000","name":"City of Imus","level":"city","ref":"042109000"},
+    {"code":"0402119000","name":"City of Tagaytay","level":"city","ref":"042119000"},
+    {"code":"0402122000","name":"City of Trece Martires","level":"city","ref":"042122000"}
+  ],
+  "cities:0403400000": [
+    {"code":"0403403000","name":"City of Biñan","level":"city","ref":"043403000"},
+    {"code":"0403404000","name":"City of Cabuyao","level":"city","ref":"043404000"},
+    {"code":"0403405000","name":"City of Calamba","level":"city","ref":"043405000"},
+    {"code":"0403424000","name":"City of San Pablo","level":"city","ref":"043424000"},
+    {"code":"0403425000","name":"City of San Pedro","level":"city","ref":"043425000"},
+    {"code":"0403428000","name":"City of Santa Rosa","level":"city","ref":"043428000"}
+  ],
+  "cities:0405600000": [
+    {"code":"0431200000","name":"City of Lucena","level":"city","ref":"045624000"},
+    {"code":"0405647000","name":"City of Tayabas","level":"city","ref":"045647000"}
+  ],
+  "cities:0405800000": [
+    {"code":"0405802000","name":"City of Antipolo","level":"city","ref":"045802000"}
+  ],
+  "provinces:1600000000": [
+    {"code":"1600200000","name":"Agusan Del Norte","level":"province","ref":"160200000"},
+    {"code":"1600300000","name":"Agusan Del Sur","level":"province","ref":"160300000"},
+    {"code":"1608500000","name":"Dinagat Islands","level":"province","ref":"168500000"},
+    {"code":"1606700000","name":"Surigao Del Norte","level":"province","ref":"166700000"},
+    {"code":"1606800000","name":"Surigao Del Sur","level":"province","ref":"166800000"}
+  ],
+  "cities:1600200000": [
+    {"code":"1630400000","name":"City of Butuan","level":"city","ref":"160202000"},
+    {"code":"1600203000","name":"City of Cabadbaran","level":"city","ref":"160203000"}
+  ],
+  "cities:1600300000": [
+    {"code":"1600301000","name":"City of Bayugan","level":"city","ref":"160301000"}
+  ],
+  "cities:1606700000": [
+    {"code":"1606724000","name":"City of Surigao","level":"city","ref":"166724000"}
+  ],
+  "cities:1606800000": [
+    {"code":"1606803000","name":"City of Bislig","level":"city","ref":"166803000"},
+    {"code":"1606819000","name":"City of Tandag","level":"city","ref":"166819000"}
+  ],
+  "provinces:0300000000": [
+    {"code":"0307700000","name":"Aurora","level":"province","ref":"037700000"},
+    {"code":"0300800000","name":"Bataan","level":"province","ref":"030800000"},
+    {"code":"0301400000","name":"Bulacan","level":"province","ref":"031400000"},
+    {"code":"0304900000","name":"Nueva Ecija","level":"province","ref":"034900000"},
+    {"code":"0305400000","name":"Pampanga","level":"province","ref":"035400000"},
+    {"code":"0306900000","name":"Tarlac","level":"province","ref":"036900000"},
+    {"code":"0307100000","name":"Zambales","level":"province","ref":"037100000"}
+  ],
+  "cities:0300800000": [
+    {"code":"0300803000","name":"City of Balanga","level":"city","ref":"030803000"}
+  ],
+  "cities:0301400000": [
+    {"code":"0301410000","name":"City of Malolos","level":"city","ref":"031410000"},
+    {"code":"0301412000","name":"City of Meycauayan","level":"city","ref":"031412000"},
+    {"code":"0301420000","name":"City of San Jose Del Monte","level":"city","ref":"031420000"}
+  ],
+  "cities:0304900000": [
+    {"code":"0304903000","name":"City of Cabanatuan","level":"city","ref":"034903000"},
+    {"code":"0304908000","name":"City of Gapan","level":"city","ref":"034908000"},
+    {"code":"0304919000","name":"City of Palayan","level":"city","ref":"034919000"},
+    {"code":"0304926000","name":"San Jose City","level":"city","ref":"034926000"},
+    {"code":"0304917000","name":"Science City of Muñoz","level":"city","ref":"034917000"}
+  ],
+  "cities:0305400000": [
+    {"code":"0330100000","name":"City of Angeles","level":"city","ref":"035401000"},
+    {"code":"0305416000","name":"City of San Fernando","level":"city","ref":"035416000"},
+    {"code":"0305409000","name":"Mabalacat City","level":"city","ref":"035409000"}
+  ],
+  "cities:0306900000": [
+    {"code":"0306916000","name":"City of Tarlac","level":"city","ref":"036916000"}
+  ],
+  "cities:0307100000": [
+    {"code":"0331400000","name":"City of Olongapo","level":"city","ref":"037107000"}
+  ],
+  "provinces:0700000000": [
+    {"code":"0701200000","name":"Bohol","level":"province","ref":"071200000"},
+    {"code":"0702200000","name":"Cebu","level":"province","ref":"072200000"},
+    {"code":"0704600000","name":"Negros Oriental","level":"province","ref":"074600000"},
+    {"code":"0706100000","name":"Siquijor","level":"province","ref":"076100000"}
+  ],
+  "cities:0701200000": [
+    {"code":"0701242000","name":"City of Tagbilaran","level":"city","ref":"071242000"}
+  ],
+  "cities:0702200000": [
+    {"code":"0702211000","name":"City of Bogo","level":"city","ref":"072211000"},
+    {"code":"0702214000","name":"City of Carcar","level":"city","ref":"072214000"},
+    {"code":"0730600000","name":"City of Cebu","level":"city","ref":"072217000"},
+    {"code":"0731100000","name":"City of Lapu-Lapu","level":"city","ref":"072226000"},
+    {"code":"0731300000","name":"City of Mandaue","level":"city","ref":"072230000"},
+    {"code":"0702234000","name":"City of Naga","level":"city","ref":"072234000"},
+    {"code":"0702250000","name":"City of Talisay","level":"city","ref":"072250000"},
+    {"code":"0702251000","name":"City of Toledo","level":"city","ref":"072251000"},
+    {"code":"0702223000","name":"Danao City","level":"city","ref":"072223000"}
+  ],
+  "cities:0704600000": [
+    {"code":"0704604000","name":"City of Bais","level":"city","ref":"074604000"},
+    {"code":"0704606000","name":"City of Bayawan","level":"city","ref":"074606000"},
+    {"code":"0704608000","name":"City of Canlaon","level":"city","ref":"074608000"},
+    {"code":"0704610000","name":"City of Dumaguete","level":"city","ref":"074610000"},
+    {"code":"0704611000","name":"City of Guihulngan","level":"city","ref":"074611000"},
+    {"code":"0704621000","name":"City of Tanjay","level":"city","ref":"074621000"}
+  ],
+  "provinces:1400000000": [
+    {"code":"1400100000","name":"Abra","level":"province","ref":"140100000"},
+    {"code":"1408100000","name":"Apayao","level":"province","ref":"148100000"},
+    {"code":"1401100000","name":"Benguet","level":"province","ref":"141100000"},
+    {"code":"1402700000","name":"Ifugao","level":"province","ref":"142700000"},
+    {"code":"1403200000","name":"Kalinga","level":"province","ref":"143200000"},
+    {"code":"1404400000","name":"Mountain Province","level":"province","ref":"144400000"}
+  ],
+  "cities:1401100000": [
+    {"code":"1430300000","name":"City of Baguio","level":"city","ref":"141102000"}
+  ],
+  "cities:1403200000": [
+    {"code":"1403213000","name":"City of Tabuk","level":"city","ref":"143213000"}
+  ],
+  "provinces:1100000000": [
+    {"code":"1108200000","name":"Davao De Oro","level":"province","ref":"118200000"},
+    {"code":"1102300000","name":"Davao Del Norte","level":"province","ref":"112300000"},
+    {"code":"1102400000","name":"Davao Del Sur","level":"province","ref":"112400000"},
+    {"code":"1108600000","name":"Davao Occidental","level":"province","ref":"118600000"},
+    {"code":"1102500000","name":"Davao Oriental","level":"province","ref":"112500000"}
+  ],
+  "cities:1102300000": [
+    {"code":"1102315000","name":"City of Panabo","level":"city","ref":"112315000"},
+    {"code":"1102319000","name":"City of Tagum","level":"city","ref":"112319000"},
+    {"code":"1102317000","name":"Island Garden City of Samal","level":"city","ref":"112317000"}
+  ],
+  "cities:1102400000": [
+    {"code":"1130700000","name":"City of Davao","level":"city","ref":"112402000"},
+    {"code":"1102403000","name":"City of Digos","level":"city","ref":"112403000"}
+  ],
+  "cities:1102500000": [
+    {"code":"1102509000","name":"City of Mati","level":"city","ref":"112509000"}
+  ],
+  "provinces:0800000000": [
+    {"code":"0807800000","name":"Biliran","level":"province","ref":"087800000"},
+    {"code":"0802600000","name":"Eastern Samar","level":"province","ref":"082600000"},
+    {"code":"0803700000","name":"Leyte","level":"province","ref":"083700000"},
+    {"code":"0804800000","name":"Northern Samar","level":"province","ref":"084800000"},
+    {"code":"0806000000","name":"Samar","level":"province","ref":"086000000"},
+    {"code":"0806400000","name":"Southern Leyte","level":"province","ref":"086400000"}
+  ],
+  "cities:0802600000": [
+    {"code":"0802604000","name":"City of Borongan","level":"city","ref":"082604000"}
+  ],
+  "cities:0803700000": [
+    {"code":"0803708000","name":"City of Baybay","level":"city","ref":"083708000"},
+    {"code":"0831600000","name":"City of Tacloban","level":"city","ref":"083747000"},
+    {"code":"0803738000","name":"Ormoc City","level":"city","ref":"083738000"}
+  ],
+  "cities:0806000000": [
+    {"code":"0806003000","name":"City of Calbayog","level":"city","ref":"086003000"},
+    {"code":"0806005000","name":"City of Catbalogan","level":"city","ref":"086005000"}
+  ],
+  "cities:0806400000": [
+    {"code":"0806407000","name":"City of Maasin","level":"city","ref":"086407000"}
+  ],
+  "provinces:0100000000": [
+    {"code":"0102800000","name":"Ilocos Norte","level":"province","ref":"012800000"},
+    {"code":"0102900000","name":"Ilocos Sur","level":"province","ref":"012900000"},
+    {"code":"0103300000","name":"La Union","level":"province","ref":"013300000"},
+    {"code":"0105500000","name":"Pangasinan","level":"province","ref":"015500000"}
+  ],
+  "cities:0102800000": [
+    {"code":"0102805000","name":"City of Batac","level":"city","ref":"012805000"},
+    {"code":"0102812000","name":"City of Laoag","level":"city","ref":"012812000"}
+  ],
+  "cities:0102900000": [
+    {"code":"0102906000","name":"City of Candon","level":"city","ref":"012906000"},
+    {"code":"0102934000","name":"City of Vigan","level":"city","ref":"012934000"}
+  ],
+  "cities:0103300000": [
+    {"code":"0103314000","name":"City of San Fernando","level":"city","ref":"013314000"}
+  ],
+  "cities:0105500000": [
+    {"code":"0105503000","name":"City of Alaminos","level":"city","ref":"015503000"},
+    {"code":"0105518000","name":"City of Dagupan","level":"city","ref":"015518000"},
+    {"code":"0105532000","name":"City of San Carlos","level":"city","ref":"015532000"},
+    {"code":"0105546000","name":"City of Urdaneta","level":"city","ref":"015546000"}
+  ],
+  "provinces:1700000000": [
+    {"code":"1704000000","name":"Marinduque","level":"province","ref":"174000000"},
+    {"code":"1705100000","name":"Occidental Mindoro","level":"province","ref":"175100000"},
+    {"code":"1705200000","name":"Oriental Mindoro","level":"province","ref":"175200000"},
+    {"code":"1705300000","name":"Palawan","level":"province","ref":"175300000"},
+    {"code":"1705900000","name":"Romblon","level":"province","ref":"175900000"}
+  ],
+  "cities:1705200000": [
+    {"code":"1705205000","name":"City of Calapan","level":"city","ref":"175205000"}
+  ],
+  "cities:1705300000": [
+    {"code":"1731500000","name":"City of Puerto Princesa","level":"city","ref":"175316000"}
+  ],
+  "provinces:1300000000": [],
+  "cities:1300000000": [
+    {"code":"1380100000","name":"City of Caloocan","level":"city","ref":"137501000"},
+    {"code":"1380200000","name":"City of Las Piñas","level":"city","ref":"137601000"},
+    {"code":"1380300000","name":"City of Makati","level":"city","ref":"137602000"},
+    {"code":"1380400000","name":"City of Malabon","level":"city","ref":"137502000"},
+    {"code":"1380500000","name":"City of Mandaluyong","level":"city","ref":"137401000"},
+    {"code":"1380600000","name":"City of Manila","level":"city","ref":"133900000"},
+    {"code":"1380700000","name":"City of Marikina","level":"city","ref":"137402000"},
+    {"code":"1380800000","name":"City of Muntinlupa","level":"city","ref":"137603000"},
+    {"code":"1380900000","name":"City of Navotas","level":"city","ref":"137503000"},
+    {"code":"1381000000","name":"City of Parañaque","level":"city","ref":"137604000"},
+    {"code":"1381200000","name":"City of Pasig","level":"city","ref":"137403000"},
+    {"code":"1381400000","name":"City of San Juan","level":"city","ref":"137405000"},
+    {"code":"1381500000","name":"City of Taguig","level":"city","ref":"137607000"},
+    {"code":"1381600000","name":"City of Valenzuela","level":"city","ref":"137504000"},
+    {"code":"1381100000","name":"Pasay City","level":"city","ref":"137605000"},
+    {"code":"1381701000","name":"Pateros","level":"municipality","ref":"137606000"},
+    {"code":"1381300000","name":"Quezon City","level":"city","ref":"137404000"}
+  ],
+  "provinces:1000000000": [
+    {"code":"1001300000","name":"Bukidnon","level":"province","ref":"101300000"},
+    {"code":"1001800000","name":"Camiguin","level":"province","ref":"101800000"},
+    {"code":"1003500000","name":"Lanao Del Norte","level":"province","ref":"103500000"},
+    {"code":"1004200000","name":"Misamis Occidental","level":"province","ref":"104200000"},
+    {"code":"1004300000","name":"Misamis Oriental","level":"province","ref":"104300000"}
+  ],
+  "cities:1001300000": [
+    {"code":"1001312000","name":"City of Malaybalay","level":"city","ref":"101312000"},
+    {"code":"1001321000","name":"City of Valencia","level":"city","ref":"101321000"}
+  ],
+  "cities:1003500000": [
+    {"code":"1030900000","name":"City of Iligan","level":"city","ref":"103504000"}
+  ],
+  "cities:1004200000": [
+    {"code":"1004209000","name":"City of Oroquieta","level":"city","ref":"104209000"},
+    {"code":"1004210000","name":"City of Ozamiz","level":"city","ref":"104210000"},
+    {"code":"1004215000","name":"City of Tangub","level":"city","ref":"104215000"}
+  ],
+  "cities:1004300000": [
+    {"code":"1030500000","name":"City of Cagayan De Oro","level":"city","ref":"104305000"},
+    {"code":"1004307000","name":"City of El Salvador","level":"city","ref":"104307000"},
+    {"code":"1004308000","name":"City of Gingoog","level":"city","ref":"104308000"}
+  ],
+  "provinces:1200000000": [
+    {"code":"1204700000","name":"Cotabato","level":"province","ref":"124700000"},
+    {"code":"1208000000","name":"Sarangani","level":"province","ref":"128000000"},
+    {"code":"1206300000","name":"South Cotabato","level":"province","ref":"126300000"},
+    {"code":"1206500000","name":"Sultan Kudarat","level":"province","ref":"126500000"}
+  ],
+  "cities:1204700000": [
+    {"code":"1204704000","name":"City of Kidapawan","level":"city","ref":"124704000"}
+  ],
+  "cities:1206300000": [
+    {"code":"1230800000","name":"City of General Santos","level":"city","ref":"126303000"},
+    {"code":"1206306000","name":"City of Koronadal","level":"city","ref":"126306000"}
+  ],
+  "cities:1206500000": [
+    {"code":"1206511000","name":"City of Tacurong","level":"city","ref":"126511000"}
+  ],
+  "provinces:0600000000": [
+    {"code":"0600400000","name":"Aklan","level":"province","ref":"060400000"},
+    {"code":"0600600000","name":"Antique","level":"province","ref":"060600000"},
+    {"code":"0601900000","name":"Capiz","level":"province","ref":"061900000"},
+    {"code":"0607900000","name":"Guimaras","level":"province","ref":"067900000"},
+    {"code":"0603000000","name":"Iloilo","level":"province","ref":"063000000"},
+    {"code":"0604500000","name":"Negros Occidental","level":"province","ref":"064500000"}
+  ],
+  "cities:0601900000": [
+    {"code":"0601914000","name":"City of Roxas","level":"city","ref":"061914000"}
+  ],
+  "cities:0603000000": [
+    {"code":"0631000000","name":"City of Iloilo","level":"city","ref":"063022000"},
+    {"code":"0603035000","name":"City of Passi","level":"city","ref":"063035000"}
+  ],
+  "cities:0604500000": [
+    {"code":"0630200000","name":"City of Bacolod","level":"city","ref":"064501000"},
+    {"code":"0604502000","name":"City of Bago","level":"city","ref":"064502000"},
+    {"code":"0604504000","name":"City of Cadiz","level":"city","ref":"064504000"},
+    {"code":"0604509000","name":"City of Escalante","level":"city","ref":"064509000"},
+    {"code":"0604510000","name":"City of Himamaylan","level":"city","ref":"064510000"},
+    {"code":"0604515000","name":"City of Kabankalan","level":"city","ref":"064515000"},
+    {"code":"0604516000","name":"City of La Carlota","level":"city","ref":"064516000"},
+    {"code":"0604523000","name":"City of Sagay","level":"city","ref":"064523000"},
+    {"code":"0604524000","name":"City of San Carlos","level":"city","ref":"064524000"},
+    {"code":"0604526000","name":"City of Silay","level":"city","ref":"064526000"},
+    {"code":"0604527000","name":"City of Sipalay","level":"city","ref":"064527000"},
+    {"code":"0604528000","name":"City of Talisay","level":"city","ref":"064528000"},
+    {"code":"0604531000","name":"City of Victorias","level":"city","ref":"064531000"}
+  ],
+  "provinces:0900000000": [
+    {"code":"0907200000","name":"Zamboanga Del Norte","level":"province","ref":"097200000"},
+    {"code":"0907300000","name":"Zamboanga Del Sur","level":"province","ref":"097300000"},
+    {"code":"0908300000","name":"Zamboanga Sibugay","level":"province","ref":"098300000"}
+  ],
+  "cities:0907200000": [
+    {"code":"0907201000","name":"City of Dapitan","level":"city","ref":"097201000"},
+    {"code":"0907202000","name":"City of Dipolog","level":"city","ref":"097202000"}
+  ],
+  "cities:0907300000": [
+    {"code":"0907322000","name":"City of Pagadian","level":"city","ref":"097322000"},
+    {"code":"0931700000","name":"City of Zamboanga","level":"city","ref":"097332000"}
+  ]
+}
