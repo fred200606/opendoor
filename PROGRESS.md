@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 7 – Mashup (Insights)
-- **In progress:** –
+- **In progress:** Overpass: `src/sources/overpass.js` (POST, 8 s, rejects runtime-error remarks), `src/services/nearby.js` (overpass_cache 24 h keyed lat,lon 4 dp + radius, stores trimmed elements, transform per request with exact coords; null when no coordinates/unavailable), tests.
 - **Next step:** Phase 7 – Overpass client `src/sources/overpass.js` + `src/services/nearby.js`: POST `OVERPASS_URL` with the query from `integrations.md` §2 step 4 (radius 500, timeout 8 s), `overpass_cache` 24 h keyed `lat,lon,radius` rounded to 4 dp, 60 s cooldown (`createCooldown`), stale on failure; transform: tag→category table (transit_stops / toilets / parking / other, first match wins), haversine metres (integer), de-dup by OSM type+id, nearest 3 per category, `wheelchair` yes|limited, name fallback; nock tests. Then the snapshot endpoint. **Waiting on the user:** `NOMINATIM_CONTACT_EMAIL` in `services/insights-service/.env` → then run `npm run build:city-centroids` and a live Nominatim check.
 - **Blockers:** –
 
