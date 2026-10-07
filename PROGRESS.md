@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Phase 7 – frontend live check of the Accessibility Snapshot section (job details) + PSGC location picker against the real stack (Core + Insights + gateway + Vite): snapshot with nearby places, a `sources` message when a part is unavailable (e.g. Insights with an unreachable `OVERPASS_URL`), picker region → province → city incl. NCR, saving a posting/profile with the picked code. Keyboard + screen-reader labels (WCAG). Then the Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot/budget/place matching/`other` rule, OpenAPI 503, T12/T13/T16 evidence.
+- **Next step:** Phase 7 – frontend live check of the Accessibility Snapshot section (job details) + PSGC location picker against the real stack (Core + Insights + gateway + Vite): snapshot with nearby places, a `sources` message when a part is unavailable (e.g. Insights with an unreachable `OVERPASS_URL`), picker region → province → city incl. NCR, saving a posting/profile with the picked code. Keyboard + screen-reader labels (WCAG) – use the `design:accessibility-review` skill (design plugin re-enabled 2026-10-07 for this). Then the Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot/budget/place matching/`other` rule, OpenAPI 503, T12/T13/T16 evidence.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
