@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Phase 7 – Postman folder 07 (Insights): snapshot 200 with `sources` keys + `disclaimer` + `generated_at` +08:00, unknown posting 404, locations regions/provinces/cities incl. 422 `parent` and 404 level; regenerate via `tests/postman/build-collection.mjs`, run with Newman against the local stack (Core + Insights + gateway; the snapshot calls real Nominatim/Overpass locally – assert only shape, not places). Then the frontend Accessibility Snapshot + picker live check, then the Phase 7 SIA doc sync.
+- **Next step:** Phase 7 – frontend live check of the Accessibility Snapshot section (job details) + PSGC location picker against the real stack (Core + Insights + gateway + Vite): snapshot with nearby places, a `sources` message when a part is unavailable (e.g. Insights with an unreachable `OVERPASS_URL`), picker region → province → city incl. NCR, saving a posting/profile with the picked code. Keyboard + screen-reader labels (WCAG). Then the Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot/budget/place matching/`other` rule, OpenAPI 503, T12/T13/T16 evidence.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -133,7 +133,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing) (`snapshot.js` + `core.js` + `locations.describe`, 31 tests, 119 Insights tests; OpenAPI 503)
 - [x] Gateway: `/api/insights/*` route verified (live 2026-10-07 with real PSGC: open postings 200 `psgc: ok` → `cached`, pending/unknown/`abc` 404, Core stopped → 503 in 15 ms, request ID passed through; coordinates/Overpass part waits for `NOMINATIM_CONTACT_EMAIL`)
 - [ ] Frontend: Accessibility Snapshot section + PSGC location picker – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
-- [ ] Postman: folder 07
+- [x] Postman: folder 07 (15 requests: T12, cache repeat, T13 behind `overpassDown`, 404s, PSGC lists + 422/404, gateway blocks `/internal`, T16 behind `coreUrl`; local run 2026-10-07: 87/87 assertions incl. T13 with Overpass unreachable → `unavailable` in 71 ms)
 
 ### Phase 8 – Administration
 - [ ] Core: M10 users (suspend → revoke tokens), reports, feedback hide
@@ -156,7 +156,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
-- Gateway limit 120 req/min per IP: one Newman run is now 125 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
+- Gateway limit 120 req/min per IP: one Newman run is now about 140 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
 - Railway: Core's local disk is ephemeral – logos/résumés need a Railway volume (or object storage) before production (Phase 9).
@@ -166,6 +166,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-07 – Postman folder 07 Insights Mashup (T12, T13, T16) passes against the local stack; /doctor: `design` plugin off, preference saved to suggest off plugins when useful. Next: frontend snapshot + picker live check.
 - 2026-10-07 – Contact email set by the user; city centroids built (145/145) after fixing place matching (provinces/look-alikes rejected); live snapshot with Nominatim + Overpass through the gateway. Nominatim item done. Next: Postman 07.
 - 2026-10-07 – Demo seeders got real PSGC codes (QC/Makati/Pasig, picker labels); gateway live check of the snapshot done (200/404/503). Next: Postman 07.
 - 2026-10-07 – Snapshot endpoint done (Core client, PSGC describe incl. HUCs, 12 s budget; 31 nock tests incl. every source failing and a late source filling the cache; 119 Insights tests). Next: gateway live check after fixing demo PSGC codes.

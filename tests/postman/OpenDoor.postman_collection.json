@@ -178,6 +178,18 @@
     {
       "key": "pmEmployerId",
       "value": ""
+    },
+    {
+      "key": "insightsPostingId",
+      "value": ""
+    },
+    {
+      "key": "insightsPsgcCode",
+      "value": ""
+    },
+    {
+      "key": "gatewayRoot",
+      "value": ""
     }
   ],
   "item": [
@@ -6204,6 +6216,814 @@
                   "",
                   "const body = pm.response.json();",
                   "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 Insights Mashup",
+      "description": "Accessibility Snapshot (T12, T13) and PSGC location lists through the gateway; T16 calls Core directly. The snapshot uses live PSGC/Nominatim/Overpass locally, so map data is checked by shape only. T13 runs only with --env-var overpassDown=true while Insights runs with an unreachable OVERPASS_URL; T16 only with --env-var coreUrl=<Core URL> (Core is private in production).",
+      "item": [
+        {
+          "name": "Find a seeded posting with a PSGC location",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const posting = pm.response.json().data.find((p) => p.location && p.location.psgc_code);",
+                  "pm.test('a visible posting has a PSGC code (demo seed)', () => pm.expect(posting).to.be.an('object'));",
+                  "pm.collectionVariables.set('insightsPostingId', posting.id);",
+                  "pm.collectionVariables.set('insightsPsgcCode', posting.location.psgc_code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T12 Accessibility Snapshot (Gateway → Insights → Core + PSGC + Nominatim + Overpass) [slow]",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/job-postings/{{insightsPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "job-postings",
+                "{{insightsPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "",
+                  "pm.test('snapshot shape', () => {",
+                  "  pm.expect(s).to.have.all.keys('job_posting_id', 'location', 'employer_claims', 'community_verification', 'nearby_accessible', 'sources', 'disclaimer', 'generated_at');",
+                  "  pm.expect(s.job_posting_id).to.eql(Number(pm.collectionVariables.get('insightsPostingId')));",
+                  "  pm.expect(s.location).to.have.all.keys('psgc_code', 'label', 'lat', 'lon', 'precision');",
+                  "  pm.expect(s.disclaimer).to.include('OpenStreetMap');",
+                  "  pm.expect(s.generated_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$/);",
+                  "});",
+                  "pm.test('sources has a status for each source', () => {",
+                  "  pm.expect(s.sources).to.have.all.keys('core', 'psgc', 'nominatim', 'overpass');",
+                  "  Object.values(s.sources).forEach((v) => pm.expect(v).to.be.oneOf(['ok', 'cached', 'stale', 'unavailable']));",
+                  "  pm.expect(s.sources.core).to.eql('ok');",
+                  "});",
+                  "pm.test('employer claims are accommodation names grouped by group', () => {",
+                  "  const groups = ['physical_access', 'communication', 'work_arrangement', 'assistive_technology', 'support'];",
+                  "  Object.entries(s.employer_claims).forEach(([group, names]) => {",
+                  "    pm.expect(group).to.be.oneOf(groups);",
+                  "    pm.expect(names).to.be.an('array').that.is.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('community verification only when the trust score is published (3+ responses)', () => {",
+                  "  if (s.community_verification === null) return;",
+                  "  pm.expect(s.community_verification.trust_score).to.be.within(0, 100);",
+                  "  pm.expect(s.community_verification.based_on).to.be.at.least(3);",
+                  "  pm.expect(s.community_verification.breakdown).to.be.an('array');",
+                  "});",
+                  "pm.test('nearby places: null when Overpass gave nothing, else the nearest 3 per category within 500 m', () => {",
+                  "  const n = s.nearby_accessible;",
+                  "  if (s.sources.overpass === 'unavailable') return pm.expect(n).to.eql(null);",
+                  "  if (n === null) return pm.expect(s.location.lat).to.eql(null);",
+                  "  pm.expect(n.radius_m).to.eql(500);",
+                  "  ['transit_stops', 'toilets', 'parking', 'other'].forEach((category) => {",
+                  "    pm.expect(n[category]).to.be.an('array').with.length.at.most(3);",
+                  "    n[category].forEach((place, i) => {",
+                  "      pm.expect(place.wheelchair).to.be.oneOf(['yes', 'limited']);",
+                  "      pm.expect(place.distance_m).to.be.within(0, 500);",
+                  "      if (i > 0) pm.expect(place.distance_m).to.be.at.least(n[category][i - 1].distance_m);",
+                  "    });",
+                  "  });",
+                  "});",
+                  "pm.test('answers within the gateway timeout (15 s)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('location has the PSGC code, its names and coordinates', () => {",
+                  "  pm.expect(s.location.psgc_code).to.eql(pm.collectionVariables.get('insightsPsgcCode'));",
+                  "  pm.expect(s.location.label).to.be.a('string').and.not.empty;",
+                  "  pm.expect(s.location.lat).to.be.within(4.5, 21.5);",
+                  "  pm.expect(s.location.lon).to.be.within(116, 127);",
+                  "  pm.expect(s.location.precision).to.be.oneOf(['street', 'city']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Snapshot again → PSGC, Nominatim and Overpass are not asked again",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/job-postings/{{insightsPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "job-postings",
+                "{{insightsPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "",
+                  "pm.test('snapshot shape', () => {",
+                  "  pm.expect(s).to.have.all.keys('job_posting_id', 'location', 'employer_claims', 'community_verification', 'nearby_accessible', 'sources', 'disclaimer', 'generated_at');",
+                  "  pm.expect(s.job_posting_id).to.eql(Number(pm.collectionVariables.get('insightsPostingId')));",
+                  "  pm.expect(s.location).to.have.all.keys('psgc_code', 'label', 'lat', 'lon', 'precision');",
+                  "  pm.expect(s.disclaimer).to.include('OpenStreetMap');",
+                  "  pm.expect(s.generated_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$/);",
+                  "});",
+                  "pm.test('sources has a status for each source', () => {",
+                  "  pm.expect(s.sources).to.have.all.keys('core', 'psgc', 'nominatim', 'overpass');",
+                  "  Object.values(s.sources).forEach((v) => pm.expect(v).to.be.oneOf(['ok', 'cached', 'stale', 'unavailable']));",
+                  "  pm.expect(s.sources.core).to.eql('ok');",
+                  "});",
+                  "pm.test('employer claims are accommodation names grouped by group', () => {",
+                  "  const groups = ['physical_access', 'communication', 'work_arrangement', 'assistive_technology', 'support'];",
+                  "  Object.entries(s.employer_claims).forEach(([group, names]) => {",
+                  "    pm.expect(group).to.be.oneOf(groups);",
+                  "    pm.expect(names).to.be.an('array').that.is.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('community verification only when the trust score is published (3+ responses)', () => {",
+                  "  if (s.community_verification === null) return;",
+                  "  pm.expect(s.community_verification.trust_score).to.be.within(0, 100);",
+                  "  pm.expect(s.community_verification.based_on).to.be.at.least(3);",
+                  "  pm.expect(s.community_verification.breakdown).to.be.an('array');",
+                  "});",
+                  "pm.test('nearby places: null when Overpass gave nothing, else the nearest 3 per category within 500 m', () => {",
+                  "  const n = s.nearby_accessible;",
+                  "  if (s.sources.overpass === 'unavailable') return pm.expect(n).to.eql(null);",
+                  "  if (n === null) return pm.expect(s.location.lat).to.eql(null);",
+                  "  pm.expect(n.radius_m).to.eql(500);",
+                  "  ['transit_stops', 'toilets', 'parking', 'other'].forEach((category) => {",
+                  "    pm.expect(n[category]).to.be.an('array').with.length.at.most(3);",
+                  "    n[category].forEach((place, i) => {",
+                  "      pm.expect(place.wheelchair).to.be.oneOf(['yes', 'limited']);",
+                  "      pm.expect(place.distance_m).to.be.within(0, 500);",
+                  "      if (i > 0) pm.expect(place.distance_m).to.be.at.least(n[category][i - 1].distance_m);",
+                  "    });",
+                  "  });",
+                  "});",
+                  "pm.test('no source fetched again (cached, or skipped after a recent failure)', () => {",
+                  "  ['psgc', 'nominatim', 'overpass'].forEach((source) => pm.expect(s.sources[source], source).to.not.eql('ok'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T13 Snapshot with Overpass unreachable → 200, other sections present [slow]",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/job-postings/{{insightsPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "job-postings",
+                "{{insightsPostingId}}"
+              ]
+            },
+            "description": "Only with --env-var overpassDown=true and Insights started with an unreachable OVERPASS_URL. A cache entry from the last 24 h is still served (overpass: cached/stale) – that is the designed degradation; empty `overpass_cache` for a strict `unavailable`."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.environment.get('overpassDown') !== 'true') pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "",
+                  "pm.test('snapshot shape', () => {",
+                  "  pm.expect(s).to.have.all.keys('job_posting_id', 'location', 'employer_claims', 'community_verification', 'nearby_accessible', 'sources', 'disclaimer', 'generated_at');",
+                  "  pm.expect(s.job_posting_id).to.eql(Number(pm.collectionVariables.get('insightsPostingId')));",
+                  "  pm.expect(s.location).to.have.all.keys('psgc_code', 'label', 'lat', 'lon', 'precision');",
+                  "  pm.expect(s.disclaimer).to.include('OpenStreetMap');",
+                  "  pm.expect(s.generated_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$/);",
+                  "});",
+                  "pm.test('sources has a status for each source', () => {",
+                  "  pm.expect(s.sources).to.have.all.keys('core', 'psgc', 'nominatim', 'overpass');",
+                  "  Object.values(s.sources).forEach((v) => pm.expect(v).to.be.oneOf(['ok', 'cached', 'stale', 'unavailable']));",
+                  "  pm.expect(s.sources.core).to.eql('ok');",
+                  "});",
+                  "pm.test('employer claims are accommodation names grouped by group', () => {",
+                  "  const groups = ['physical_access', 'communication', 'work_arrangement', 'assistive_technology', 'support'];",
+                  "  Object.entries(s.employer_claims).forEach(([group, names]) => {",
+                  "    pm.expect(group).to.be.oneOf(groups);",
+                  "    pm.expect(names).to.be.an('array').that.is.not.empty;",
+                  "  });",
+                  "});",
+                  "pm.test('community verification only when the trust score is published (3+ responses)', () => {",
+                  "  if (s.community_verification === null) return;",
+                  "  pm.expect(s.community_verification.trust_score).to.be.within(0, 100);",
+                  "  pm.expect(s.community_verification.based_on).to.be.at.least(3);",
+                  "  pm.expect(s.community_verification.breakdown).to.be.an('array');",
+                  "});",
+                  "pm.test('nearby places: null when Overpass gave nothing, else the nearest 3 per category within 500 m', () => {",
+                  "  const n = s.nearby_accessible;",
+                  "  if (s.sources.overpass === 'unavailable') return pm.expect(n).to.eql(null);",
+                  "  if (n === null) return pm.expect(s.location.lat).to.eql(null);",
+                  "  pm.expect(n.radius_m).to.eql(500);",
+                  "  ['transit_stops', 'toilets', 'parking', 'other'].forEach((category) => {",
+                  "    pm.expect(n[category]).to.be.an('array').with.length.at.most(3);",
+                  "    n[category].forEach((place, i) => {",
+                  "      pm.expect(place.wheelchair).to.be.oneOf(['yes', 'limited']);",
+                  "      pm.expect(place.distance_m).to.be.within(0, 500);",
+                  "      if (i > 0) pm.expect(place.distance_m).to.be.at.least(n[category][i - 1].distance_m);",
+                  "    });",
+                  "  });",
+                  "});",
+                  "pm.test('Overpass is not reported as ok; the other sections are still there', () => {",
+                  "  pm.expect(s.sources.overpass).to.be.oneOf(['unavailable', 'cached', 'stale']);",
+                  "  if (s.sources.overpass === 'unavailable') pm.expect(s.nearby_accessible).to.eql(null);",
+                  "  pm.expect(s.location.label).to.be.a('string');",
+                  "  pm.expect(s.employer_claims).to.be.an('object');",
+                  "});",
+                  "pm.test('answers within the gateway timeout (15 s)', () => pm.expect(pm.response.responseTime).to.be.below(15000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Snapshot of an unknown posting → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/job-postings/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "job-postings",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Snapshot with a non-numeric id → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/job-postings/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "job-postings",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PSGC regions (10-digit codes, sorted by name) [slow]",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/regions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "regions"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json();",
+                  "pm.test('X-Data-Source tells where the list came from', () => pm.expect(pm.response.headers.get('X-Data-Source')).to.be.oneOf(['ok', 'cached', 'stale', 'fallback']));",
+                  "pm.test('regions with 10-digit codes, NCR included', () => {",
+                  "  pm.expect(items.length).to.be.at.least(17);",
+                  "  items.forEach((r) => {",
+                  "    pm.expect(r).to.have.all.keys('code', 'name', 'level');",
+                  "    pm.expect(r.code).to.match(/^\\d{10}$/);",
+                  "    pm.expect(r.level).to.eql('region');",
+                  "  });",
+                  "  pm.expect(items.map((r) => r.code)).to.include('1300000000');",
+                  "});",
+                  "pm.test('sorted by name', () => {",
+                  "  const names = items.map((r) => r.name);",
+                  "  pm.expect(names).to.eql([...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));",
+                  "});",
+                  "pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PSGC provinces of Ilocos Region [slow]",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/provinces?parent=0100000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "provinces"
+              ],
+              "query": [
+                {
+                  "key": "parent",
+                  "value": "0100000000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json();",
+                  "pm.test('provinces of the region', () => {",
+                  "  pm.expect(items.map((p) => p.name)).to.include.members(['Ilocos Norte', 'Pangasinan']);",
+                  "  items.forEach((p) => pm.expect(p.level).to.eql('province'));",
+                  "});",
+                  "pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PSGC cities of NCR (a region without provinces) [slow]",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/cities?parent=1300000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "cities"
+              ],
+              "query": [
+                {
+                  "key": "parent",
+                  "value": "1300000000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json();",
+                  "pm.test('NCR cities and Pateros', () => {",
+                  "  const byCode = Object.fromEntries(items.map((c) => [c.code, c]));",
+                  "  pm.expect(byCode['1381300000']).to.include({ name: 'Quezon City', level: 'city' });",
+                  "  pm.expect(byCode['1381701000']).to.include({ level: 'municipality' });",
+                  "});",
+                  "pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Provinces without parent → 422",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/provinces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "provinces"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.parent is present', () => pm.expect(body.errors).to.have.property('parent'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Provinces with a 9-digit parent → 422",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/provinces?parent=010000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "provinces"
+              ],
+              "query": [
+                {
+                  "key": "parent",
+                  "value": "010000000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.parent is present', () => pm.expect(body.errors).to.have.property('parent'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Provinces of an unknown region → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/provinces?parent=9900000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "provinces"
+              ],
+              "query": [
+                {
+                  "key": "parent",
+                  "value": "9900000000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown location level → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/insights/locations/barangays?parent=1381300000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "insights",
+                "locations",
+                "barangays"
+              ],
+              "query": [
+                {
+                  "key": "parent",
+                  "value": "1381300000"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The gateway does not route /internal → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayRoot}}/internal/job-postings/{{insightsPostingId}}/summary"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('gatewayRoot', pm.environment.get('baseUrl').replace(/\\/api\\/?$/, ''));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T16 Core /internal without X-Service-Key → 401",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{coreUrl}}/internal/job-postings/{{insightsPostingId}}/summary",
+            "description": "Calls Core directly (not through the gateway). Only with --env-var coreUrl=http://127.0.0.1:8001 – Core is private in production."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.environment.get('coreUrl')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is UNAUTHENTICATED', () => pm.expect(body.error.code).to.eql('UNAUTHENTICATED'));",
                   "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
                 ]
               }

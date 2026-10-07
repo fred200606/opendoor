@@ -1302,6 +1302,192 @@ pm.test('NOT_FOUND without a name or score', () => {
   ],
 );
 
+// ---------------------------------------------------------------- 07 Insights Mashup
+
+const SOURCE_STATUS = `['ok', 'cached', 'stale', 'unavailable']`;
+
+/** Snapshot body (`s`) shape from docs/openapi.yaml → Snapshot. Map data is live, so only shapes are checked. */
+const snapshotShape = `
+pm.test('snapshot shape', () => {
+  pm.expect(s).to.have.all.keys('job_posting_id', 'location', 'employer_claims', 'community_verification', 'nearby_accessible', 'sources', 'disclaimer', 'generated_at');
+  pm.expect(s.job_posting_id).to.eql(Number(pm.collectionVariables.get('insightsPostingId')));
+  pm.expect(s.location).to.have.all.keys('psgc_code', 'label', 'lat', 'lon', 'precision');
+  pm.expect(s.disclaimer).to.include('OpenStreetMap');
+  pm.expect(s.generated_at).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$/);
+});
+pm.test('sources has a status for each source', () => {
+  pm.expect(s.sources).to.have.all.keys('core', 'psgc', 'nominatim', 'overpass');
+  Object.values(s.sources).forEach((v) => pm.expect(v).to.be.oneOf(${SOURCE_STATUS}));
+  pm.expect(s.sources.core).to.eql('ok');
+});
+pm.test('employer claims are accommodation names grouped by group', () => {
+  const groups = ['physical_access', 'communication', 'work_arrangement', 'assistive_technology', 'support'];
+  Object.entries(s.employer_claims).forEach(([group, names]) => {
+    pm.expect(group).to.be.oneOf(groups);
+    pm.expect(names).to.be.an('array').that.is.not.empty;
+  });
+});
+pm.test('community verification only when the trust score is published (3+ responses)', () => {
+  if (s.community_verification === null) return;
+  pm.expect(s.community_verification.trust_score).to.be.within(0, 100);
+  pm.expect(s.community_verification.based_on).to.be.at.least(3);
+  pm.expect(s.community_verification.breakdown).to.be.an('array');
+});
+pm.test('nearby places: null when Overpass gave nothing, else the nearest 3 per category within 500 m', () => {
+  const n = s.nearby_accessible;
+  if (s.sources.overpass === 'unavailable') return pm.expect(n).to.eql(null);
+  if (n === null) return pm.expect(s.location.lat).to.eql(null);
+  pm.expect(n.radius_m).to.eql(500);
+  ['transit_stops', 'toilets', 'parking', 'other'].forEach((category) => {
+    pm.expect(n[category]).to.be.an('array').with.length.at.most(3);
+    n[category].forEach((place, i) => {
+      pm.expect(place.wheelchair).to.be.oneOf(['yes', 'limited']);
+      pm.expect(place.distance_m).to.be.within(0, 500);
+      if (i > 0) pm.expect(place.distance_m).to.be.at.least(n[category][i - 1].distance_m);
+    });
+  });
+});`;
+
+/** The gateway's root (baseUrl without /api), for paths outside /api. */
+const GATEWAY_ROOT = `pm.collectionVariables.set('gatewayRoot', pm.environment.get('baseUrl').replace(/\\/api\\/?$/, ''));`;
+
+const insights = folder(
+  '07 Insights Mashup',
+  'Accessibility Snapshot (T12, T13) and PSGC location lists through the gateway; T16 calls Core directly. The snapshot uses live PSGC/Nominatim/Overpass locally, so map data is checked by shape only. T13 runs only with --env-var overpassDown=true while Insights runs with an unreachable OVERPASS_URL; T16 only with --env-var coreUrl=<Core URL> (Core is private in production).',
+  [
+    request('Find a seeded posting with a PSGC location', {
+      path: '/job-postings',
+      tests: `
+${status(200)}
+const posting = pm.response.json().data.find((p) => p.location && p.location.psgc_code);
+pm.test('a visible posting has a PSGC code (demo seed)', () => pm.expect(posting).to.be.an('object'));
+pm.collectionVariables.set('insightsPostingId', posting.id);
+pm.collectionVariables.set('insightsPsgcCode', posting.location.psgc_code);`,
+    }),
+    request('T12 Accessibility Snapshot (Gateway → Insights → Core + PSGC + Nominatim + Overpass) [slow]', {
+      path: '/insights/job-postings/{{insightsPostingId}}',
+      tests: `
+${status(200)}
+const s = pm.response.json();
+${snapshotShape}
+pm.test('answers within the gateway timeout (15 s)', () => pm.expect(pm.response.responseTime).to.be.below(15000));
+pm.test('location has the PSGC code, its names and coordinates', () => {
+  pm.expect(s.location.psgc_code).to.eql(pm.collectionVariables.get('insightsPsgcCode'));
+  pm.expect(s.location.label).to.be.a('string').and.not.empty;
+  pm.expect(s.location.lat).to.be.within(4.5, 21.5);
+  pm.expect(s.location.lon).to.be.within(116, 127);
+  pm.expect(s.location.precision).to.be.oneOf(['street', 'city']);
+});`,
+    }),
+    request('Snapshot again → PSGC, Nominatim and Overpass are not asked again', {
+      path: '/insights/job-postings/{{insightsPostingId}}',
+      tests: `
+${status(200)}
+const s = pm.response.json();
+${snapshotShape}
+pm.test('no source fetched again (cached, or skipped after a recent failure)', () => {
+  ['psgc', 'nominatim', 'overpass'].forEach((source) => pm.expect(s.sources[source], source).to.not.eql('ok'));
+});`,
+    }),
+    request('T13 Snapshot with Overpass unreachable → 200, other sections present [slow]', {
+      path: '/insights/job-postings/{{insightsPostingId}}',
+      description:
+        'Only with --env-var overpassDown=true and Insights started with an unreachable OVERPASS_URL. A cache entry from the last 24 h is still served (overpass: cached/stale) – that is the designed degradation; empty `overpass_cache` for a strict `unavailable`.',
+      prerequest: `if (pm.environment.get('overpassDown') !== 'true') pm.execution.skipRequest();`,
+      tests: `
+${status(200)}
+const s = pm.response.json();
+${snapshotShape}
+pm.test('Overpass is not reported as ok; the other sections are still there', () => {
+  pm.expect(s.sources.overpass).to.be.oneOf(['unavailable', 'cached', 'stale']);
+  if (s.sources.overpass === 'unavailable') pm.expect(s.nearby_accessible).to.eql(null);
+  pm.expect(s.location.label).to.be.a('string');
+  pm.expect(s.employer_claims).to.be.an('object');
+});
+pm.test('answers within the gateway timeout (15 s)', () => pm.expect(pm.response.responseTime).to.be.below(15000));`,
+    }),
+    request('Snapshot of an unknown posting → 404', {
+      path: '/insights/job-postings/999999',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('Snapshot with a non-numeric id → 404', {
+      path: '/insights/job-postings/abc',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('PSGC regions (10-digit codes, sorted by name) [slow]', {
+      path: '/insights/locations/regions',
+      tests: `
+${status(200)}
+const items = pm.response.json();
+pm.test('X-Data-Source tells where the list came from', () => pm.expect(pm.response.headers.get('X-Data-Source')).to.be.oneOf(['ok', 'cached', 'stale', 'fallback']));
+pm.test('regions with 10-digit codes, NCR included', () => {
+  pm.expect(items.length).to.be.at.least(17);
+  items.forEach((r) => {
+    pm.expect(r).to.have.all.keys('code', 'name', 'level');
+    pm.expect(r.code).to.match(/^\\d{10}$/);
+    pm.expect(r.level).to.eql('region');
+  });
+  pm.expect(items.map((r) => r.code)).to.include('1300000000');
+});
+pm.test('sorted by name', () => {
+  const names = items.map((r) => r.name);
+  pm.expect(names).to.eql([...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' })));
+});
+pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));`,
+    }),
+    request('PSGC provinces of Ilocos Region [slow]', {
+      path: '/insights/locations/provinces?parent=0100000000',
+      tests: `
+${status(200)}
+const items = pm.response.json();
+pm.test('provinces of the region', () => {
+  pm.expect(items.map((p) => p.name)).to.include.members(['Ilocos Norte', 'Pangasinan']);
+  items.forEach((p) => pm.expect(p.level).to.eql('province'));
+});
+pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));`,
+    }),
+    request('PSGC cities of NCR (a region without provinces) [slow]', {
+      path: '/insights/locations/cities?parent=1300000000',
+      tests: `
+${status(200)}
+const items = pm.response.json();
+pm.test('NCR cities and Pateros', () => {
+  const byCode = Object.fromEntries(items.map((c) => [c.code, c]));
+  pm.expect(byCode['1381300000']).to.include({ name: 'Quezon City', level: 'city' });
+  pm.expect(byCode['1381701000']).to.include({ level: 'municipality' });
+});
+pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.response.responseTime).to.be.below(6000));`,
+    }),
+    request('Provinces without parent → 422', {
+      path: '/insights/locations/provinces',
+      tests: fieldError('parent'),
+    }),
+    request('Provinces with a 9-digit parent → 422', {
+      path: '/insights/locations/provinces?parent=010000000',
+      tests: fieldError('parent'),
+    }),
+    request('Provinces of an unknown region → 404', {
+      path: '/insights/locations/provinces?parent=9900000000',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('Unknown location level → 404', {
+      path: '/insights/locations/barangays?parent=1381300000',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('The gateway does not route /internal → 404', {
+      url: '{{gatewayRoot}}/internal/job-postings/{{insightsPostingId}}/summary',
+      prerequest: GATEWAY_ROOT,
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('T16 Core /internal without X-Service-Key → 401', {
+      url: '{{coreUrl}}/internal/job-postings/{{insightsPostingId}}/summary',
+      description: 'Calls Core directly (not through the gateway). Only with --env-var coreUrl=http://127.0.0.1:8001 – Core is private in production.',
+      prerequest: `if (!pm.environment.get('coreUrl')) pm.execution.skipRequest();`,
+      tests: `${status(401)}\n${envelope('UNAUTHENTICATED')}`,
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -1312,10 +1498,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId', 'insightsPostingId', 'insightsPsgcCode', 'gatewayRoot'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, adminRegistry],
+  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, insights, adminRegistry],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));
