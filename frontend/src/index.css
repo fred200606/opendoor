@@ -50,6 +50,7 @@ h2,
 h3 {
   line-height: 1.25;
   margin: 0 0 0.75rem;
+  overflow-wrap: break-word; /* long words at 200% text on phones */
 }
 
 h1 {
@@ -647,6 +648,7 @@ main:focus {
 /* ---------- pickers */
 
 .accommodation-picker__group {
+  min-width: 0; /* fieldsets default to min-content and overflow narrow screens */
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--divider);
@@ -666,7 +668,7 @@ main:focus {
 .location-picker {
   display: grid;
   gap: 0 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
 }
 
 /* ---------- dialog */

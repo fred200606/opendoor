@@ -20,12 +20,22 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
   const [province, setProvince] = useState('');
   const [loadError, setLoadError] = useState(null);
   const latestRequest = useRef(0);
+  const regionSelect = useRef(null);
+  const focusRegion = useRef(false);
 
   useEffect(() => {
     if (!editing) return;
     getLocations('regions')
       .then(setRegions)
       .catch(() => setLoadError('The list of places could not be loaded. Please try again later.'));
+  }, [editing]);
+
+  // "Change location" disappears when clicked; keep keyboard users in place instead of at the <h1>.
+  useEffect(() => {
+    if (editing && focusRegion.current) {
+      focusRegion.current = false;
+      regionSelect.current?.focus();
+    }
   }, [editing]);
 
   /**
@@ -74,7 +84,14 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
         <p className="field__label">{legend}</p>
         <p>
           {currentLabel || 'Saved location'}{' '}
-          <button type="button" className="button button--link" onClick={() => setEditing(true)}>
+          <button
+            type="button"
+            className="button button--link"
+            onClick={() => {
+              focusRegion.current = true;
+              setEditing(true);
+            }}
+          >
             Change location
           </button>
         </p>
@@ -85,21 +102,43 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
   const errorText = Array.isArray(error) ? error[0] : error;
 
   return (
-    <fieldset id={id} tabIndex={-1} className={`field fieldset ${errorText ? 'field--invalid' : ''}`}>
+    <fieldset
+      id={id}
+      tabIndex={-1}
+      className={`field fieldset ${errorText ? 'field--invalid' : ''}`}
+      aria-describedby={[`${baseId}-hint`, errorText && `${baseId}-error`].filter(Boolean).join(' ')}
+    >
       <legend className="field__label">{legend}</legend>
-      <p className="field__hint">Choose the region first, then the city or municipality.</p>
-      {(errorText || loadError) && (
-        <p className="field__error">
+      <p id={`${baseId}-hint`} className="field__hint">
+        Choose the region first, then the city or municipality.
+      </p>
+      {errorText && (
+        <p id={`${baseId}-error`} className="field__error">
           <span aria-hidden="true">⚠ </span>
-          {errorText || loadError}
+          {errorText}
         </p>
       )}
+      {/* Always rendered so screen readers announce a list that fails to load after a choice. */}
+      <div role="alert">
+        {loadError && (
+          <p className="field__error">
+            <span aria-hidden="true">⚠ </span>
+            {loadError}
+          </p>
+        )}
+      </div>
       <div className="location-picker">
         <div className="field">
           <label htmlFor={`${baseId}-region`} className="field__label">
             Region
           </label>
-          <select id={`${baseId}-region`} className="field__input" value={region} onChange={(event) => chooseRegion(event.target.value)}>
+          <select
+            ref={regionSelect}
+            id={`${baseId}-region`}
+            className="field__input"
+            value={region}
+            onChange={(event) => chooseRegion(event.target.value)}
+          >
             <option value="">Choose a region</option>
             {regions.map((item) => (
               <option key={item.code} value={item.code}>

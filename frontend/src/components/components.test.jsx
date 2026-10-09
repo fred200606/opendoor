@@ -175,6 +175,30 @@ describe('LocationPicker', () => {
     expect(screen.queryByRole('option', { name: 'City of Caloocan' })).not.toBeInTheDocument();
   });
 
+  test('"Change location" moves focus to the region list', async () => {
+    const user = userEvent.setup();
+    fakeApi({ 'GET /insights/locations/regions': () => [200, [{ code: '1300000000', name: 'National Capital Region (NCR)', level: 'region' }]] });
+    render(<LocationPicker value="1381300000" currentLabel="Quezon City, NCR" onChange={() => {}} />);
+
+    await user.click(screen.getByRole('button', { name: 'Change location' }));
+
+    expect(screen.getByLabelText('Region')).toHaveFocus();
+    expect(screen.getByRole('group', { name: 'Location' })).toHaveAccessibleDescription('Choose the region first, then the city or municipality.');
+  });
+
+  test('announces a list that fails to load', async () => {
+    const user = userEvent.setup();
+    fakeApi({
+      'GET /insights/locations/regions': () => [200, [{ code: '0100000000', name: 'Ilocos Region (Region I)', level: 'region' }]],
+      'GET /insights/locations/provinces': () => [503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'Unavailable', request_id: 'test-id' } }],
+    });
+    render(<LocationPicker onChange={() => {}} />);
+
+    await user.selectOptions(await screen.findByLabelText('Region'), await screen.findByRole('option', { name: /Ilocos/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The list of places could not be loaded');
+  });
+
   test('shows the saved location until the user changes it', () => {
     fakeApi({});
     render(<LocationPicker value="1381300000" currentLabel="Quezon City, NCR" onChange={() => {}} />);
