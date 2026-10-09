@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { getLocations } from '../api/insights.js';
 
 const NCR_CODE = '1300000000';
@@ -19,6 +19,7 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
   const [region, setRegion] = useState('');
   const [province, setProvince] = useState('');
   const [loadError, setLoadError] = useState(null);
+  const latestRequest = useRef(0);
 
   useEffect(() => {
     if (!editing) return;
@@ -27,31 +28,44 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
       .catch(() => setLoadError('The list of places could not be loaded. Please try again later.'));
   }, [editing]);
 
-  async function chooseRegion(code) {
+  /**
+   * Loads a list and applies it only if no newer choice was made meanwhile. Arrow keys on a closed
+   * select fire a change per step, so a slow answer for a skipped region must not fill the lists.
+   */
+  async function load(level, parent, apply) {
+    const request = ++latestRequest.current;
+    setLoadError(null);
+    try {
+      const items = await getLocations(level, parent);
+      if (request === latestRequest.current) apply(items);
+    } catch {
+      if (request === latestRequest.current) setLoadError('The list of places could not be loaded. Please try again later.');
+    }
+  }
+
+  function chooseRegion(code) {
     setRegion(code);
     setProvince('');
     setProvinces([]);
     setCities([]);
     onChange(null);
-    if (!code) return;
-    try {
-      if (isNcr(code)) setCities(await getLocations('cities', code));
-      else setProvinces(await getLocations('provinces', code));
-    } catch {
-      setLoadError('The list of places could not be loaded. Please try again later.');
+    if (!code) {
+      latestRequest.current++;
+      return;
     }
+    if (isNcr(code)) load('cities', code, setCities);
+    else load('provinces', code, setProvinces);
   }
 
-  async function chooseProvince(code) {
+  function chooseProvince(code) {
     setProvince(code);
     setCities([]);
     onChange(null);
-    if (!code) return;
-    try {
-      setCities(await getLocations('cities', code));
-    } catch {
-      setLoadError('The list of places could not be loaded. Please try again later.');
+    if (!code) {
+      latestRequest.current++;
+      return;
     }
+    load('cities', code, setCities);
   }
 
   if (!editing) {

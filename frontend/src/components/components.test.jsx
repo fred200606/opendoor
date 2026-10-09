@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -143,6 +143,36 @@ describe('LocationPicker', () => {
 
     expect(screen.queryByLabelText('Province')).not.toBeInTheDocument();
     expect(onChange).toHaveBeenLastCalledWith('1381300000', 'Quezon City, National Capital Region (NCR)');
+  });
+
+  test('ignores a slow list for a region the user already moved past', async () => {
+    const user = userEvent.setup();
+    let releaseNcr;
+    fakeApi({
+      'GET /insights/locations/regions': () => [
+        200,
+        [
+          { code: '1300000000', name: 'National Capital Region (NCR)', level: 'region' },
+          { code: '1000000000', name: 'Northern Mindanao (Region X)', level: 'region' },
+        ],
+      ],
+      'GET /insights/locations/cities': () =>
+        new Promise((resolve) => {
+          releaseNcr = () => resolve([200, [{ code: '1380100000', name: 'City of Caloocan', level: 'city' }]]);
+        }),
+      'GET /insights/locations/provinces': () => [200, [{ code: '1001300000', name: 'Bukidnon', level: 'province' }]],
+    });
+    render(<LocationPicker onChange={() => {}} />);
+
+    const region = await screen.findByLabelText('Region');
+    await user.selectOptions(region, await screen.findByRole('option', { name: /NCR/ }));
+    await user.selectOptions(region, screen.getByRole('option', { name: /Northern Mindanao/ }));
+    expect(await screen.findByLabelText('Province')).toBeInTheDocument();
+
+    await act(async () => releaseNcr());
+
+    expect(screen.queryByLabelText('City or municipality')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'City of Caloocan' })).not.toBeInTheDocument();
   });
 
   test('shows the saved location until the user changes it', () => {
