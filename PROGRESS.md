@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 7 – Mashup (Insights)
 - **In progress:** –
-- **Next step:** Phase 7 – frontend live check of the Accessibility Snapshot section (job details) + PSGC location picker against the real stack (Core + Insights + gateway + Vite): snapshot with nearby places, a `sources` message when a part is unavailable (e.g. Insights with an unreachable `OVERPASS_URL`), picker region → province → city incl. NCR, saving a posting/profile with the picked code. Keyboard + screen-reader labels (WCAG) – use the `design:accessibility-review` skill (design plugin re-enabled 2026-10-07 for this). Then the Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot/budget/place matching/`other` rule, OpenAPI 503, T12/T13/T16 evidence.
+- **Next step:** Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot (12 s budget, Core-only required source, place matching, `other` drops unnamed places, `nearby_accessible: null` rule), OpenAPI 503, T12/T13/T16 evidence (Postman 07 run 2026-10-07) and the frontend live check of 2026-10-10. Then Phase 7 is complete → Phase 8 (M10 moderation first).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -132,7 +132,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Insights: Overpass client + cache; tag→category transform; haversine (`nearby.js`, 34 tests; live check 2026-10-07 against overpass-api.de: Quezon Ave. 5.6 s, Ayala 2.4 s)
 - [x] Insights: snapshot endpoint with `sources` flags + Jest/nock tests (each source failing) (`snapshot.js` + `core.js` + `locations.describe`, 31 tests, 119 Insights tests; OpenAPI 503)
 - [x] Gateway: `/api/insights/*` route verified (live 2026-10-07 with real PSGC: open postings 200 `psgc: ok` → `cached`, pending/unknown/`abc` 404, Core stopped → 503 in 15 ms, request ID passed through; coordinates/Overpass part waits for `NOMINATIM_CONTACT_EMAIL`)
-- [ ] Frontend: Accessibility Snapshot section + PSGC location picker – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Frontend: Accessibility Snapshot section + PSGC location picker – live-checked 2026-10-10 (Core + Insights + gateway + Vite): QC postings with nearby stops / `stale` note; new Laoag posting saved via picker (`0102812000`, label with province) → Overpass unreachable + Nominatim DNS failure → both notes, `nearby` unavailable; snapshot 503 → section warning, job page intact; NCR region → cities (company profile Makati → back to QC). Fixed: stale list race on arrow keys (ada8c20); focus after "Change location", announced load error, `aria-describedby`, reflow at 360 px + 150–200% text (26c7ff8). axe 0 on 4 views; 101 Vitest tests
 - [x] Postman: folder 07 (15 requests: T12, cache repeat, T13 behind `overpassDown`, 404s, PSGC lists + 422/404, gateway blocks `/internal`, T16 behind `coreUrl`; local run 2026-10-07: 87/87 assertions incl. T13 with Overpass unreachable → `unavailable` in 71 ms)
 
 ### Phase 8 – Administration
@@ -153,6 +153,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Dashboards: `.stats__list` uses `minmax(9rem, 1fr)` – likely sideways scroll at 360 px + 200% text (same bug as the location picker, fixed there with `min(…, 100%)`). Check/fix at the Phase 8 dashboard live check.
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
@@ -166,6 +167,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – Phase 7 frontend live check done (snapshot incl. stale/unavailable/503, picker incl. NCR, saving posting + company); accessibility-review found + fixed a picker list race, lost focus, silent load error and reflow overflow. Next: Phase 7 SIA doc sync.
 - 2026-10-07 – Postman folder 07 Insights Mashup (T12, T13, T16) passes against the local stack; /doctor: `design` plugin off, preference saved to suggest off plugins when useful. Next: frontend snapshot + picker live check.
 - 2026-10-07 – Contact email set by the user; city centroids built (145/145) after fixing place matching (provinces/look-alikes rejected); live snapshot with Nominatim + Overpass through the gateway. Nominatim item done. Next: Postman 07.
 - 2026-10-07 – Demo seeders got real PSGC codes (QC/Makati/Pasig, picker labels); gateway live check of the snapshot done (200/404/503). Next: Postman 07.
