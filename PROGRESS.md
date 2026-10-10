@@ -7,15 +7,16 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals). First answer the pending decision on admin posting removal if it affects the CI scope (it does not block CI).
+- **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- Admin removal of postings: the SIA doc (1.5, Appendix A permission matrix "Job posting … Admin: D") and the dev skill say administrators can remove postings, but Core has no admin delete endpoint (admins can only approve/reject pending postings; resolving a report does not change the posting). Either add `DELETE /admin/job-postings/{id}` (soft delete + notice to the employer) or change the doc to "reject/close via report". Ask the user.
+- (none)
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – Admin removal of postings (as in the SIA doc): `DELETE /admin/job-postings/{id}` with a required reason soft-deletes the posting (applications kept) and sends the employer a `posting_review` notice (decision `removed`, with the reason). Already deleted → 404. UI: Remove button on the admin postings screen.
 - 2026-10-10 – Postman request names use the SIA test-plan numbering (T03 = match search, T04 = apply + employer notified, T05 = apply twice); folder 09 holds T09 and the other security cases, T08 stays in folder 03. Rate limiting (429) is not tested by Newman: it needs more requests than the local limit allows in one run; the gateway Jest tests cover it.
 - 2026-10-10 – Suspended employer: its postings are hidden while the owner is suspended (treated as not visible everywhere candidates and guests look: search, details, saved jobs, apply, Insights summary, public employer page). No data is changed, so lifting the suspension restores them. Candidates keep seeing their own existing applications.
 - 2026-10-10 – M12 saved jobs pulled forward from Phase 9 (the Saved jobs page 404'd). Only visible postings can be saved (else 404) or are listed; a bookmark on a closed posting stays and shows again if it reopens. POST is idempotent (201 new, 200 already saved; returns the posting), DELETE is idempotent by plain id (204, also for closed/deleted postings). List newest-saved first, 12/page, with `match`. New `saved` boolean on JobPosting for candidates only (details, saved list, save response; not in search) so the details page shows the right state – OpenAPI updated, SIA doc not yet.
@@ -150,6 +151,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 9 – Release
 - [x] M12 saved jobs – pulled forward 2026-10-10 (`SavedJobController`, `saved_jobs` table, `saved` on JobPosting; `tests/Feature/SavedJobs` 8 tests, also on MySQL; 328 Core tests; 102 Vitest; Postman 04 +8 requests; live-checked save → reload keeps "Saved" → list → remove, axe 0 on 3 views)
+- [x] Admin removal of postings (SIA doc: Admin D on postings) – 2026-10-10: `DELETE /admin/job-postings/{id}` with required reason, soft delete, `posting_review` notice with `removed:true`; 3 Core tests (336 total, MySQL subset); Remove button + reason dialog on the admin postings screen (Vitest 109); Postman 09 +4 (full run 183 requests / 880 assertions / 0 failures); OpenAPI, SIA 4.1 + Appendix A, api-contract.md
 - [ ] M13 display settings (if time allows)
 - [ ] GitHub Actions CI (lint, tests, build, Newman with mock externals)
 - [ ] Dockerfiles for Railway (core-api, registry); Railway project + private networking; Vercel project
@@ -175,6 +177,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – Admin posting removal built (user decision: match the SIA doc). Next: Phase 9 CI.
 - 2026-10-10 – SIA doc synced for Phase 8 (4.1 endpoints, 5.2 notices, 5.3 errors incl. 400/422/404 details, 6.1/6.4 suspension + no X-Powered-By, 7.1 test-ID note + folder 09, Appendix A matrix + visible-posting definition, data model rows; 1.4 saved jobs delivered); Postman folders 04/05 renamed to the documented names; PDF 44 pages, no empty pages. **Phase 8 complete.** Next: Phase 9 CI.
 - 2026-10-10 – Postman folder 09 (31 requests) + T03–T05 labels aligned with the SIA test plan; gateway strips X-Powered-By; README: registry must listen on 127.0.0.1 (localhost bound IPv6 only and Core got 502). Phase 8 code/tests complete. Next: SIA doc sync.
 - 2026-10-10 – Phase 8 frontend live check done (candidate, admin, employer; 8 small a11y/UX fixes, axe 0 on 11 views). Next: Postman folder 09.

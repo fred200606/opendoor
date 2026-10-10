@@ -621,6 +621,29 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/JobPosting' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/job-postings/{id}:
+    delete:
+      tags: [M4 Job postings]
+      summary: Remove a posting (admin)
+      description: >-
+        Any status. Soft delete: applications and feedback are kept. The employer gets a `posting_review`
+        notice with `removed: true` and the reason. An already removed or unknown posting is 404.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 1000 }
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
 
   # ---------------------------------------------------------------- M6 Applications
   /job-postings/{id}/applications:

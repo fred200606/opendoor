@@ -28,6 +28,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M4 Postings | PUT, DELETE | /job-postings/{id} | E owner | update / soft-delete |
 | M4 Postings | PATCH | /job-postings/{id}/status | E owner | `{status:'open'|'closed'}` |
 | M4 Postings | PATCH | /admin/job-postings/{id}/approve | A | `{action:'approve'|'reject', reason?}` |
+| M4 Postings | DELETE | /admin/job-postings/{id} | A | `{reason}` required → 204; any status; soft delete (applications kept); employer gets `posting_review` notice with `removed:true`; already removed → 404 |
 | M5 Search | GET | /job-postings | P (match: C) | `?q=&category=&accommodations[]=&match=1&sort=best|newest|closing&page=` |
 | M5 Search | GET | /job-postings/{id} | P | details (+ `match` for C) |
 | M5/M11 | GET | /categories, /accommodations | P | filter options (accommodations grouped) |

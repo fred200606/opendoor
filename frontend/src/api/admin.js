@@ -30,6 +30,12 @@ export async function adminReviewPosting(id, action, reason) {
   return data;
 }
 
+/** Soft-deletes a posting in any status; the employer is told the reason. */
+export async function adminRemovePosting(id, reason) {
+  await api.delete(`/admin/job-postings/${id}`, { data: { reason } });
+  return true;
+}
+
 export async function adminListUsers({ role, q, page } = {}) {
   const { data } = await api.get('/admin/users', { params: { role: role || undefined, q: q || undefined, page } });
   return data;

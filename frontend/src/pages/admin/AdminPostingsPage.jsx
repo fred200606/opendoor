@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { adminListPostings, adminReviewPosting } from '../../api/admin.js';
+import { adminListPostings, adminRemovePosting, adminReviewPosting } from '../../api/admin.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
@@ -15,7 +15,7 @@ import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, plural } from '../../lib/format.js';
 import { EMPLOYMENT_TYPES, POSTING_STATUSES, WORK_SETUPS, toOptions } from '../../lib/labels.js';
 
-/** Posting approval queue (pending_approval → open, or rejected with a reason). */
+/** Posting approval queue (pending_approval → open, or rejected with a reason); any posting can be removed. */
 export default function AdminPostingsPage() {
   const [params, setParams] = useSearchParams();
   const status = params.get('status') ?? 'pending_approval';
@@ -23,6 +23,7 @@ export default function AdminPostingsPage() {
   const state = useAsync(() => adminListPostings({ status, page }), [status, page]);
   const action = useAction();
   const [rejecting, setRejecting] = useState(null);
+  const [removing, setRemoving] = useState(null);
 
   async function approve(posting) {
     const result = await action.run(() => adminReviewPosting(posting.id, 'approve'), `“${posting.title}” is approved and now open.`);
@@ -33,6 +34,13 @@ export default function AdminPostingsPage() {
     const posting = rejecting;
     const result = await action.run(() => adminReviewPosting(posting.id, 'reject', reason), `“${posting.title}” was not approved. The employer can see your reason.`);
     setRejecting(null);
+    if (result) state.reload();
+  }
+
+  async function remove(reason) {
+    const posting = removing;
+    const result = await action.run(() => adminRemovePosting(posting.id, reason), `“${posting.title}” was removed. The employer was told why.`);
+    setRemoving(null);
     if (result) state.reload();
   }
 
@@ -81,16 +89,21 @@ export default function AdminPostingsPage() {
                           ))}
                         </ul>
                       </details>
-                      {posting.status === 'pending_approval' && (
-                        <div className="actions">
-                          <Button type="button" className="button" disabled={action.busy} aria-label={`Approve ${posting.title}`} onClick={() => approve(posting)}>
-                            Approve
-                          </Button>
-                          <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Do not approve ${posting.title}`} onClick={() => setRejecting(posting)}>
-                            Do not approve
-                          </Button>
-                        </div>
-                      )}
+                      <div className="actions">
+                        {posting.status === 'pending_approval' && (
+                          <>
+                            <Button type="button" className="button" disabled={action.busy} aria-label={`Approve ${posting.title}`} onClick={() => approve(posting)}>
+                              Approve
+                            </Button>
+                            <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Do not approve ${posting.title}`} onClick={() => setRejecting(posting)}>
+                              Do not approve
+                            </Button>
+                          </>
+                        )}
+                        <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Remove ${posting.title}`} onClick={() => setRemoving(posting)}>
+                          Remove
+                        </Button>
+                      </div>
                     </article>
                   </li>
                 ))}
@@ -110,6 +123,18 @@ export default function AdminPostingsPage() {
           busy={action.busy}
           onSubmit={reject}
           onClose={() => setRejecting(null)}
+        />
+      )}
+
+      {removing && (
+        <ReasonDialog
+          title={`Remove “${removing.title}”?`}
+          label="Reason shown to the employer"
+          hint="The posting disappears for everyone; applications are kept. For example: false accommodation claims or a duplicate posting."
+          confirmLabel="Remove posting"
+          busy={action.busy}
+          onSubmit={remove}
+          onClose={() => setRemoving(null)}
         />
       )}
     </Page>

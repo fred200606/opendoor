@@ -1749,11 +1749,47 @@ pm.test('no exception details leak', () => {
       body: { email: '{{pmEmployerEmail}}', password: 'postman-pass-123' },
       tests: `${status(200)}\npm.collectionVariables.set('pmEmployerToken', pm.response.json().token);`,
     }),
-    request('Cleanup: throwaway employer deletes the posting → 204', {
+    // Admin removal (soft delete with a reason; also the cleanup of this folder)
+    request('Admin removal without a reason → 422 errors.reason', {
       method: 'DELETE',
-      path: '/job-postings/{{secPostingId}}',
+      path: '/admin/job-postings/{{secPostingId}}',
+      auth: bearer('adminToken'),
+      body: { reason: '' },
+      tests: fieldError('reason'),
+    }),
+    request('Employer cannot use the admin removal → 403', {
+      method: 'DELETE',
+      path: '/admin/job-postings/{{secPostingId}}',
       auth: bearer('pmEmployerToken'),
+      body: { reason: 'Mine.' },
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Admin removes the posting with a reason → 204', {
+      method: 'DELETE',
+      path: '/admin/job-postings/{{secPostingId}}',
+      auth: bearer('adminToken'),
+      body: { reason: 'Removed by the Postman run.' },
       tests: status(204),
+    }),
+    request('The employer is told why', {
+      path: '/notifications',
+      auth: bearer('pmEmployerToken'),
+      tests: `
+${status(200)}
+pm.test('newest notice is the removal with the reason', () => {
+  const n = pm.response.json().data[0];
+  pm.expect(n.type).to.eql('posting_review');
+  pm.expect(n.data.removed).to.eql(true);
+  pm.expect(n.data.job_posting_id).to.eql(Number(pm.collectionVariables.get('secPostingId')));
+  pm.expect(n.data.message).to.include('Removed by the Postman run.');
+});`,
+    }),
+    request('The removed posting is gone → 404; removing again → 404', {
+      method: 'DELETE',
+      path: '/admin/job-postings/{{secPostingId}}',
+      auth: bearer('adminToken'),
+      body: { reason: 'Again.' },
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
     }),
   ],
 );

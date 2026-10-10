@@ -9843,9 +9843,190 @@
           ]
         },
         {
-          "name": "Cleanup: throwaway employer deletes the posting → 204",
+          "name": "Admin removal without a reason → 422 errors.reason",
           "request": {
             "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.reason is present', () => pm.expect(body.errors).to.have.property('reason'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employer cannot use the admin removal → 403",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Mine.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin removes the posting with a reason → 204",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Removed by the Postman run.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The employer is told why",
+          "request": {
+            "method": "GET",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -9863,13 +10044,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "raw": "{{baseUrl}}/notifications",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "job-postings",
-                "{{secPostingId}}"
+                "notifications"
               ]
             }
           },
@@ -9879,7 +10059,75 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status 204', () => pm.response.to.have.status(204));"
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('newest notice is the removal with the reason', () => {",
+                  "  const n = pm.response.json().data[0];",
+                  "  pm.expect(n.type).to.eql('posting_review');",
+                  "  pm.expect(n.data.removed).to.eql(true);",
+                  "  pm.expect(n.data.job_posting_id).to.eql(Number(pm.collectionVariables.get('secPostingId')));",
+                  "  pm.expect(n.data.message).to.include('Removed by the Postman run.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The removed posting is gone → 404; removing again → 404",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Again.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
                 ]
               }
             }

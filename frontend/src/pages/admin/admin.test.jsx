@@ -123,6 +123,35 @@ describe('AdminPostingsPage', () => {
     await screen.findByText(/was not approved/);
     expect(calls.filter((call) => call.key === 'PATCH /admin/job-postings/42/approve').at(-1).data).toEqual({ action: 'reject', reason: 'Add the working hours.' });
   });
+
+  test('removes an open posting only with a reason', async () => {
+    let removed = false;
+    const { user, calls } = renderApp('/admin/job-postings?status=open', {
+      as: 'admin',
+      routes: {
+        'GET /admin/job-postings': () => [200, paged(removed ? [] : [{ ...job, status: 'open' }])],
+        'DELETE /admin/job-postings/42': () => {
+          removed = true;
+          return [204, ''];
+        },
+      },
+    });
+
+    expect(await screen.findByRole('button', { name: 'Remove Data Encoder' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approve Data Encoder' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Remove Data Encoder' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove posting' }));
+    expect(within(screen.getByRole('dialog')).getByRole('alert')).toHaveTextContent('Enter a reason.');
+    expect(calls.some((call) => call.key === 'DELETE /admin/job-postings/42')).toBe(false);
+
+    await user.type(screen.getByLabelText('Reason shown to the employer'), 'False accommodation claims.');
+    await user.click(screen.getByRole('button', { name: 'Remove posting' }));
+
+    expect(await screen.findByText('“Data Encoder” was removed. The employer was told why.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'DELETE /admin/job-postings/42').data).toEqual({ reason: 'False accommodation claims.' });
+    expect(await screen.findByText('No postings here')).toBeInTheDocument();
+  });
 });
 
 describe('AdminUsersPage', () => {

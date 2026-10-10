@@ -3,6 +3,7 @@
 namespace Tests\Feature\Postings;
 
 use App\Enums\JobPostingStatus;
+use App\Models\Application;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -112,5 +113,55 @@ class AdminPostingApprovalTest extends TestCase
         $this->getJson('/api/admin/job-postings')->assertForbidden();
 
         $this->assertSame(JobPostingStatus::PendingApproval, $posting->fresh()->status);
+    }
+
+    public function test_an_admin_removes_an_open_posting_with_a_reason_and_the_employer_is_told(): void
+    {
+        $posting = JobPosting::factory()->open()->create(['title' => 'Data Encoder']);
+        $application = Application::factory()->create(['job_posting_id' => $posting->id]);
+        $this->actingAsAdmin();
+
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'The accommodations listed were found to be false.'])
+            ->assertNoContent();
+
+        $this->assertSoftDeleted($posting);
+        $this->assertNotNull($application->fresh(), 'applications are kept');
+        $this->getJson("/api/job-postings/{$posting->id}")->assertNotFound();
+
+        $notice = $posting->employer->user->notifications()->sole();
+        $this->assertSame('posting_review', $notice->type);
+        $this->assertSame('Your posting Data Encoder was removed by an administrator: The accommodations listed were found to be false.', $notice->data['message']);
+        $this->assertSame('/employer/jobs', $notice->data['url']);
+        $this->assertTrue($notice->data['removed']);
+    }
+
+    public function test_removal_needs_a_reason_and_works_once(): void
+    {
+        $posting = JobPosting::factory()->pending()->create();
+        $this->actingAsAdmin();
+        $url = "/api/admin/job-postings/{$posting->id}";
+
+        $this->deleteJson($url, ['reason' => '  '])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['reason' => 'Tell the employer why the posting is removed.']);
+        $this->assertNotSoftDeleted($posting);
+
+        $this->deleteJson($url, ['reason' => 'Duplicate posting.'])->assertNoContent();
+        $this->deleteJson($url, ['reason' => 'Again.'])->assertNotFound()->assertJsonPath('error.code', 'NOT_FOUND');
+        $this->deleteJson('/api/admin/job-postings/999999', ['reason' => 'Unknown.'])->assertNotFound();
+    }
+
+    public function test_only_admins_remove_postings(): void
+    {
+        $posting = JobPosting::factory()->open()->create();
+
+        Sanctum::actingAs($posting->employer->user);
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'Mine.'])->assertForbidden();
+        Sanctum::actingAs(User::factory()->candidate()->create());
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'Bad.'])->assertForbidden();
+        $this->app['auth']->forgetGuards();
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'Bad.'])->assertUnauthorized();
+
+        $this->assertNotSoftDeleted($posting);
     }
 }

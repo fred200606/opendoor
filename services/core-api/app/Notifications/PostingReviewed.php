@@ -7,10 +7,13 @@ use App\Models\JobPosting;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-/** M9 in-app notice to the employer when an admin approves a posting (now open) or sends it back to draft. */
+/**
+ * M9 in-app notice to the employer when an admin approves a posting (now open), sends it back to
+ * draft, or removes it (with `$removedReason`).
+ */
 class PostingReviewed extends Notification
 {
-    public function __construct(private readonly JobPosting $posting) {}
+    public function __construct(private readonly JobPosting $posting, private readonly ?string $removedReason = null) {}
 
     /** @return list<string> */
     public function via(object $notifiable): array
@@ -29,6 +32,18 @@ class PostingReviewed extends Notification
     public function toArray(object $notifiable): array
     {
         $posting = $this->posting;
+
+        if ($this->removedReason !== null) {
+            return [
+                'message' => "Your posting {$posting->title} was removed by an administrator: ".Str::finish(rtrim($this->removedReason, '.!? '), '.'),
+                // The posting itself is gone; its edit page would be a 404.
+                'url' => '/employer/jobs',
+                'job_posting_id' => $posting->id,
+                'approved' => false,
+                'removed' => true,
+            ];
+        }
+
         $approved = $posting->status === JobPostingStatus::Open;
 
         return [

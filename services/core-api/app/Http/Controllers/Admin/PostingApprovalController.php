@@ -11,6 +11,7 @@ use App\Models\JobPosting;
 use App\Notifications\PostingReviewed;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -61,5 +62,23 @@ class PostingApprovalController extends Controller
         $jobPosting->employer->user->notify(new PostingReviewed($jobPosting));
 
         return new JobPostingResource($jobPosting->load(JobPostingController::RELATIONS));
+    }
+
+    /**
+     * Removes a posting in any status (e.g. after a report): soft delete, so applications and
+     * feedback stay. The employer is told why. Already removed → 404 (route binding).
+     */
+    public function destroy(Request $request, JobPosting $jobPosting): Response
+    {
+        $reason = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ], [
+            'reason.required' => 'Tell the employer why the posting is removed.',
+        ])['reason'];
+
+        $jobPosting->delete();
+        $jobPosting->employer->user->notify(new PostingReviewed($jobPosting, $reason));
+
+        return response()->noContent();
     }
 }
