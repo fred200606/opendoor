@@ -164,6 +164,25 @@ describe('AdminUsersPage', () => {
 });
 
 describe('AdminReportsPage and AdminFeedbackPage', () => {
+  test('resolved reports show the date and the admin note', async () => {
+    renderApp('/admin/reports?status=dismissed', {
+      as: 'admin',
+      routes: {
+        'GET /admin/reports': () => [
+          200,
+          paged([
+            { id: 3, job_posting_id: 42, job_posting: { id: 42, title: 'Data Encoder' }, reason: 'Fake job', status: 'dismissed', note: 'Checked with the employer.', resolved_at: '2026-10-06T10:00:00+08:00', created_at: '2026-10-04T09:00:00+08:00' },
+            { id: 4, job_posting_id: 43, job_posting: { id: 43, title: 'Chat Support' }, reason: 'Odd', status: 'dismissed', note: null, resolved_at: '2026-10-07T10:00:00+08:00', created_at: '2026-10-05T09:00:00+08:00' },
+          ]),
+        ],
+      },
+    });
+
+    expect(await screen.findByText('Resolved October 6, 2026 – note: Checked with the employer.')).toBeInTheDocument();
+    expect(screen.getByText('Resolved October 7, 2026 – no note')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Dismiss/ })).not.toBeInTheDocument();
+  });
+
   test('dismisses an open report with an optional note', async () => {
     const { user, calls } = renderApp('/admin/reports', {
       as: 'admin',
@@ -173,7 +192,7 @@ describe('AdminReportsPage and AdminFeedbackPage', () => {
       },
     });
 
-    await user.click(await screen.findByRole('button', { name: 'Dismiss: report 3' }));
+    await user.click(await screen.findByRole('button', { name: 'Dismiss: report on Data Encoder, October 4, 2026' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Dismiss' }));
 
     expect(await screen.findByText('The report was dismissed.')).toBeInTheDocument();
@@ -203,11 +222,11 @@ describe('AdminReportsPage and AdminFeedbackPage', () => {
     });
 
     expect(await screen.findByText('Not delivered')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Hide response' }));
+    await user.click(screen.getByRole('button', { name: 'Hide response: Data Encoder at Bayanihan Tech, October 4, 2026' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Hide response' }));
 
     expect(await screen.findByText(/is hidden and no longer counts/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Show again' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show again: Data Encoder at Bayanihan Tech, October 4, 2026' })).toBeInTheDocument();
     expect(calls.find((call) => call.key === 'PATCH /admin/feedback/9/hide').data).toEqual({ hidden: true });
   });
 });

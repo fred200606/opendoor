@@ -75,7 +75,12 @@ export default function AdminFeedbackPage() {
                         ))}
                       </ul>
                       {feedback.comments && <blockquote className="quote">{feedback.comments}</blockquote>}
-                      <button type="button" className="button button--secondary button--small" onClick={() => setConfirm(feedback)}>
+                      <button
+                        type="button"
+                        className="button button--secondary button--small"
+                        aria-label={`${feedback.is_hidden ? 'Show again' : 'Hide response'}: ${feedback.job_title} at ${feedback.employer?.company_name}, ${formatDate(feedback.created_at)}`}
+                        onClick={() => setConfirm(feedback)}
+                      >
                         {feedback.is_hidden ? 'Show again' : 'Hide response'}
                       </button>
                     </article>

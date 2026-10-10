@@ -65,6 +65,12 @@ export default function AdminReportsPage() {
                         Reported {formatDate(report.created_at)} <StatusBadge kind="report" status={report.status} />
                       </p>
                       <blockquote className="quote">{report.reason}</blockquote>
+                      {report.status !== 'open' && report.resolved_at && (
+                        <p>
+                          Resolved {formatDate(report.resolved_at)}
+                          {report.note ? ` – note: ${report.note}` : ' – no note'}
+                        </p>
+                      )}
                       {report.status === 'open' && (
                         <div className="actions">
                           {Object.entries(RESOLUTIONS).map(([resolution, item]) => (
@@ -72,7 +78,7 @@ export default function AdminReportsPage() {
                               key={resolution}
                               type="button"
                               className={`button ${resolution === 'dismissed' ? 'button--secondary' : ''}`}
-                              aria-label={`${item.label}: report ${report.id}`}
+                              aria-label={`${item.label}: report on ${report.job_posting?.title ?? `posting #${report.job_posting_id}`}, ${formatDate(report.created_at)}`}
                               onClick={() => setResolving({ report, resolution })}
                             >
                               {item.label}
