@@ -4,6 +4,7 @@ import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
+import { notificationsChanged } from '../../lib/notifications.js';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import { useAction } from '../../hooks/useAction.js';
@@ -20,12 +21,18 @@ export default function NotificationsPage() {
   async function markRead(notification) {
     if (notification.read_at) return;
     const done = await action.run(() => markNotificationRead(notification.id));
-    if (done) state.setData((current) => withRead(current, [notification.id]));
+    if (done) {
+      state.setData((current) => withRead(current, [notification.id]));
+      notificationsChanged();
+    }
   }
 
   async function markAll() {
     const done = await action.run(() => markAllNotificationsRead(), 'All notifications are marked as read.');
-    if (done) state.setData((current) => withRead(current, null));
+    if (done) {
+      state.setData((current) => withRead(current, null));
+      notificationsChanged();
+    }
   }
 
   return (

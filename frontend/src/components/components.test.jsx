@@ -340,4 +340,14 @@ describe('Pagination and ConfirmDialog', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  test('a dangerous confirmation starts on Cancel, a harmless one does not', () => {
+    const { unmount } = render(<ConfirmDialog title="Suspend Ana Reyes?" confirmLabel="Suspend" danger onConfirm={() => {}} onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    unmount();
+
+    render(<ConfirmDialog title="Reactivate Ana Reyes?" confirmLabel="Reactivate" onConfirm={() => {}} onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveAttribute('data-autofocus');
+  });
 });

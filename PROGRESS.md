@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 8 – Administration
-- **In progress:** Phase 8 frontend live check. Sub-steps: (a) candidate dashboard + report button + notifications; (b) admin dashboard, users, reports queue (resolve the report from a), feedback list, posting/employer decision → employer notice; (c) employer dashboard + notification bell/page; (d) `.stats__list` reflow at 360 px + 200 % text; (e) axe on every view. Done so far: (a) candidate dashboard matches API, report sent live (report dialog now has an ErrorSummary that takes focus; "1 open job offers" wording), notifications empty state, axe 0 on dashboard/job/notifications; (d) `.stats__list` fixed with `min(9rem, 100%)` (was 288 px column in a 281 px list at 360 px + 200 %). (b) partly: admin dashboard matches API; live-check report dismissed with a note (focus returns to the opener on Cancel); resolved reports now show date + note; report and feedback buttons got descriptive names; axe 0 on dashboard/reports/feedback. Next: (b) users screen (suspend dialog, cancel only) + approve a throwaway posting → (c) employer sees the `posting_review` notice.
-- **Next step:** Phase 8 – Frontend live check (Core + gateway + Vite, demo accounts): admin users/reports/feedback/dashboard, candidate + employer dashboards, notification bell + page (incl. new `employer_verification` / `posting_review` notices), report button on job details; fix the `.stats__list` reflow (Known issues); `design:accessibility-review` + axe (incl. the new employer sentence in the admin suspend dialog). Then Postman folder 09, then SIA doc sync for M8–M10 and M12.
+- **In progress:** –
+- **Next step:** Phase 8 – Postman folder 09 (negative + security cases, incl. M12 and the suspended-employer rule), then SIA doc sync for M8–M10 and M12 (`opendoor-sia-docs`). Then Phase 9.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -144,7 +144,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: M10 users (suspend → revoke tokens), reports, feedback hide (`tests/Feature/Moderation` 21 tests, also on MySQL; 306 Core tests pass; OpenAPI 403/404/422 + Report `note`/`resolved_at`)
 - [x] Core: M8 dashboards (candidate, employer, admin analytics) (`DashboardController`; `tests/Feature/Dashboards` 7 tests, also on MySQL; 313 Core tests pass; OpenAPI rules + 401/403)
 - [x] Core: M9 notifications list / read / read-all (`NotificationController`; admin decisions now notify the employer: `employer_verification`, `posting_review`; `tests/Feature/Notifications` 7 tests, also on MySQL; 320 Core tests pass)
-- [ ] Frontend: admin screens, dashboards, notification bell wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
+- [x] Frontend: admin screens, dashboards, notification bell wired – live-checked 2026-10-10 with all three demo roles (dashboards match the API; report → admin dismiss with note; approve → employer `posting_review` notice → bell 7 → 6). Fixed: report dialog ErrorSummary, resolved reports show date + note, descriptive report/feedback button names, dangerous confirmations start on Cancel, bell follows "Mark all as read", stats sections labelled by their heading, `.stats__list` reflow, "1 open job offers". axe 0 on 11 views; 108 Vitest tests
 - [ ] Postman: folder 09 negative + security cases
 
 ### Phase 9 – Release
@@ -159,6 +159,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- Vitest: `AdminEmployerPage > registry check result is shown…` failed once in a full run (passes alone and in 3 full reruns) – timing under load; use longer `findBy` timeouts if it recurs in CI.
+- Live checks did not include a real screen reader (NVDA) – covered by the Phase 9 WCAG audit.
 - SIA doc: add M12 (saved-jobs rules, `saved_jobs` table, `saved` field on JobPosting) and the suspended-employer rule (postings hidden until reactivation) at the next doc sync (`opendoor-sia-docs`).
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
@@ -173,6 +175,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – Phase 8 frontend live check done (candidate, admin, employer; 8 small a11y/UX fixes, axe 0 on 11 views). Next: Postman folder 09.
 - 2026-10-10 – Suspended employer's postings now hidden until reactivation (`JobPosting::visible()`/`isVisible()` require an active owner; 5 tests, 333 Core tests, MySQL subset; admin suspend dialog explains it; live check 3 → 0 → 3). Next: Phase 8 frontend live check.
 - 2026-10-10 – M12 saved jobs built (the Saved jobs page showed "resource not found": Core had no endpoints). Core + `saved` flag + OpenAPI + Postman 04 + live check done. Next: Phase 8 frontend live check (unchanged).
 - 2026-10-10 – M9 notifications in Core (list/read/read-all + employer notices for verification and posting decisions; 7 tests, SQLite + MySQL). Phase 8 Core work complete. Next: frontend live check.

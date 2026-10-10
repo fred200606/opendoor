@@ -90,4 +90,23 @@ describe('NotificationsPage', () => {
 
     expect(await screen.findByRole('link', { name: 'Notifications, 2 unread' })).toHaveAttribute('href', '/notifications');
   });
+
+  test('the header count follows "Mark all as read" without a page change', async () => {
+    let unread = 2;
+    const { user } = renderApp('/notifications', {
+      as: 'candidate',
+      routes: {
+        'GET /notifications': () => [200, paged(unread ? notifications : notifications.map((n) => ({ ...n, read_at: '2026-10-10T09:00:00+08:00' })), { unread_count: unread })],
+        'PATCH /notifications/read-all': () => {
+          unread = 0;
+          return [204, ''];
+        },
+      },
+    });
+
+    expect(await screen.findByRole('link', { name: 'Notifications, 2 unread' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Mark all as read' }));
+
+    expect(await screen.findByRole('link', { name: 'Notifications' })).not.toHaveAttribute('aria-label');
+  });
 });

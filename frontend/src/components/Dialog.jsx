@@ -3,7 +3,8 @@ import Button from './Button.jsx';
 
 /**
  * Modal dialog on the native <dialog> element: traps focus, closes with Escape, returns focus
- * to the opener. Render it only while open: {open && <Dialog …/>}.
+ * to the opener. Starts on the element marked `data-autofocus`, if any.
+ * Render it only while open: {open && <Dialog …/>}.
  */
 export default function Dialog({ title, onClose, children, actions }) {
   const ref = useRef(null);
@@ -13,6 +14,8 @@ export default function Dialog({ title, onClose, children, actions }) {
     const dialog = ref.current;
     const opener = document.activeElement;
     if (!dialog.open) dialog.showModal();
+    // showModal() focuses the first control; a dialog can name a safer start (e.g. Cancel).
+    dialog.querySelector('[data-autofocus]')?.focus();
 
     return () => {
       if (dialog.open) dialog.close();
@@ -106,7 +109,10 @@ export function ReasonDialog({ title, label, hint, confirmLabel, required = true
   );
 }
 
-/** Yes/no confirmation. `onConfirm` may be async; errors are shown by the caller. */
+/**
+ * Yes/no confirmation. `onConfirm` may be async; errors are shown by the caller.
+ * With `danger`, focus starts on Cancel so a stray Enter does not delete or suspend anything.
+ */
 export function ConfirmDialog({ title, children, confirmLabel, cancelLabel = 'Cancel', danger = false, busy = false, onConfirm, onClose }) {
   return (
     <Dialog
@@ -117,7 +123,7 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel = 'Ca
           <Button type="button" className={`button ${danger ? 'button--danger' : ''}`} disabled={busy} onClick={onConfirm}>
             {busy ? 'Please wait…' : confirmLabel}
           </Button>
-          <Button type="button" className="button button--secondary" disabled={busy} onClick={onClose}>
+          <Button type="button" className="button button--secondary" disabled={busy} onClick={onClose} data-autofocus={danger || undefined}>
             {cancelLabel}
           </Button>
         </>

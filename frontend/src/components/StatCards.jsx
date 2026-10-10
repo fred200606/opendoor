@@ -1,12 +1,14 @@
+import { useId } from 'react';
 import { Link } from 'react-router-dom';
 
 /** Dashboard numbers as a labelled list (readable in order, not just a visual grid). */
 export default function StatCards({ title, items, headingLevel = 2 }) {
   const Heading = `h${headingLevel}`;
+  const headingId = useId();
 
   return (
-    <section className="stats" aria-label={title}>
-      <Heading>{title}</Heading>
+    <section className="stats" aria-labelledby={headingId}>
+      <Heading id={headingId}>{title}</Heading>
       <ul className="stats__list">
         {items.map((item) => (
           <li key={item.label} className="stats__item">
