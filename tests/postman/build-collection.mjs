@@ -564,7 +564,7 @@ pm.test('only own postings', () => body.data.forEach((p) => pm.expect(p.employer
   }),
 ]);
 
-// ---------------------------------------------------------------- 04 Candidate & Search
+// ---------------------------------------------------------------- 04 Candidate & Matching
 
 // Needs PUT: Postman sends {{vars}} as strings; the API needs integers.
 const INT_NEEDS = `
@@ -594,7 +594,7 @@ pm.test('ranked by needs met', () => {
 pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));`;
 
 const candidateSearch = folder(
-  '04 Candidate & Search',
+  '04 Candidate & Matching',
   'M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and "Matches my needs" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.',
   [
     request('New candidate gets an empty profile (not 404)', {
@@ -830,7 +830,7 @@ pm.test('one saved posting, marked saved, with match', () => {
   ],
 );
 
-// ---------------------------------------------------------------- 05 Applications
+// ---------------------------------------------------------------- 05 Applications & Status
 
 const applicationShape = `
 pm.test('matches the Application shape', () => {
@@ -839,7 +839,7 @@ pm.test('matches the Application shape', () => {
 });`;
 
 const applications = folder(
-  '05 Applications',
+  '05 Applications & Status',
   'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.',
   [
     request('Employer submits a posting for this run', {

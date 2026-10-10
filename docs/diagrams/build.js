@@ -169,7 +169,7 @@ C.push(...bullets([
   "The Business Registry Service is a **simulated** legacy system seeded with sample registrations; it does not connect to the real DTI BNRS or SEC databases, which offer no public SOAP or REST API. An administrator always makes the final verification decision.",
   "Accessibility Snapshot data depends on OpenStreetMap volunteers tagging places with `wheelchair=yes`; coverage in some Philippine areas is incomplete, so the snapshot is informational only and never used for ranking.",
   "Public Nominatim and Overpass instances have usage limits (Nominatim: at most one request per second, identifying User-Agent required), so results are cached and requests are throttled.",
-  "Email notifications, saved jobs and display settings are \"Could have\" features and may be delivered only if time allows. No mobile app, payments, or video interviews are included.",
+  "Email notifications and display settings (M13) are \"Could have\" features and may be delivered only if time allows (saved jobs, M12, was delivered). No mobile app, payments, or video interviews are included.",
   "Free-tier/hobby cloud plans may sleep when idle and are not sized for production traffic.",
 ]));
 
@@ -270,6 +270,11 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "GET", "/api/admin/employers, /api/admin/employers/{id}", "Verification queue; one employer with its latest registry check", "→ AdminEmployer"],
   ["Core", "PATCH", "/api/admin/employers/{id}/verify", "Run registry check, approve or reject", "{action:'check'|'approve'|'reject', reason} → 200 {registry, verified_at}"],
   ["Core", "GET, POST, PUT, DELETE", "/api/admin/categories, /api/admin/accommodations", "Manage master data", "→ category / accommodation"],
+  ["Core", "GET", "/api/candidate/dashboard, /api/employer/dashboard, /api/admin/dashboard", "Role summaries (M8); counts equal the lists they link to", "→ zero-filled counts per status, matching jobs, ratings due, trust score, queues"],
+  ["Core", "GET, PATCH", "/api/notifications, /api/notifications/{id}/read, /api/notifications/read-all", "In-app notices for candidates and employers (M9)", "→ {data:[{id,type,data:{message,url},read_at}], meta:{unread_count}}"],
+  ["Core", "POST; GET, PATCH", "/api/job-postings/{id}/reports; /api/admin/reports/{id}", "Report a visible posting; admin dismisses or records action (M10)", "{reason} → 201; {status:'dismissed'|'actioned', note} → 200"],
+  ["Core", "PATCH", "/api/admin/users/{id}/suspend", "Suspend (revokes all tokens, hides an employer's postings) or reactivate (M10)", "{suspended:true|false} → 200 user; own account → 422"],
+  ["Core", "GET; POST, DELETE", "/api/candidate/saved-jobs; /api/candidate/saved-jobs/{jobId}", "Bookmarks of visible postings (M12)", "→ {data:[posting+saved], meta}; POST 201 (200 if already saved); DELETE 204"],
   ["Core (internal)", "GET", "/internal/job-postings/{id}/summary", "Posting data for the Insights Service (not routed by gateway)", "X-Service-Key → {address, psgc_code, location_label, accommodations, trust_score}"],
   ["Insights", "GET", "/api/insights/job-postings/{id}", "Workplace Accessibility Snapshot (mashup)", "→ 200 snapshot (Section 4.5); 404 posting not visible; 503 Core unreachable"],
   ["Insights", "GET", "/api/insights/locations/{level}", "Normalized PSGC lists (regions, provinces, cities/municipalities)", "?parent=<10-digit PSGC code> → [{code,name,level}]; header `X-Data-Source`"],
@@ -486,17 +491,17 @@ C.push(...table(["Source", "Destination", "Trigger / Endpoint", "Data Exchanged"
   ["Insights Service", "Nominatim (external)", "`GET /search?q=&countrycodes=ph&format=jsonv2&limit=1` (city searches `limit=5`); `User-Agent` with contact email", "Street address and PSGC place names → lat/lon", "Coordinates cached 30 days (key: SHA-256 of the normalized query)"],
   ["Insights Service", "Overpass (external)", "`POST /api/interpreter` (Overpass QL, `around:500`)", "Coordinates → OSM elements with `wheelchair` tag", "Nearby accessible places cached 24 h"],
   ["Insights Service", "PSGC API (external)", "`GET /regions`, `/regions/{code}/provinces`, `/regions/{code}/cities-municipalities` (NCR), `/provinces/{code}/cities-municipalities`", "PSGC codes and names", "Normalized location lists (10-digit codes, sorted by name) cached 7 days"],
-  ["Core Service", "Core Service (event)", "Application status change, feedback saved/hidden (observer)", "Application, feedback items", "Notification created; employer trust score and feedback count recalculated"],
+  ["Core Service", "Core Service (event)", "Application status change; admin decision on an employer's verification or a posting's review; feedback saved/hidden (observer)", "Application, decision and reason, feedback items", "In-app notification created (`application_received`, `application_status_changed`, `employer_verification`, `posting_review`); employer trust score and feedback count recalculated"],
 ], [1500, 1600, 2600, 2180, 2200], { size: 16 }));
 C.push(H2("5.3 Error Handling and Status Propagation"));
 C.push(P("Every service returns the error envelope shown in Section 4.2. The gateway creates an `X-Request-ID` (UUID) if the client did not send one, forwards it to every downstream call, and logs it, so one request can be traced through all services. Downstream status codes are propagated unchanged to the client; the gateway only generates its own errors when a dependency cannot be reached."));
 C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior"], [
-  ["400", "BAD_REQUEST", "Gateway, services", "Malformed JSON or query parameters"],
-  ["401", "UNAUTHENTICATED", "Core", "Missing, invalid or revoked Sanctum token; the client logs the user out"],
-  ["403", "FORBIDDEN / ACCOUNT_SUSPENDED", "Core", "Wrong role or Policy denies (e.g., editing another employer's posting); suspended account"],
-  ["404", "NOT_FOUND", "Core, Insights", "Unknown ID, or a posting that is not open and approved; unknown PSGC region/province"],
+  ["400", "BAD_REQUEST", "Core", "A request the framework rejects as malformed. A malformed JSON body is read as empty and answered with 422 `VALIDATION_FAILED` (never a stack trace)"],
+  ["401", "UNAUTHENTICATED", "Core", "Missing, invalid or revoked Sanctum token (also every token of a suspended account); the client logs the user out"],
+  ["403", "FORBIDDEN / ACCOUNT_SUSPENDED", "Core", "Wrong role or Policy denies (e.g., editing another employer's posting, reading another candidate's application); login to a suspended account"],
+  ["404", "NOT_FOUND", "Core, Insights", "Unknown ID; a posting that is not open and approved, or whose employer is suspended (also when saving, applying or reporting); unknown PSGC region/province"],
   ["409", "ALREADY_APPLIED / FEEDBACK_EXISTS", "Core", "Duplicate application or second feedback for the same application"],
-  ["422", "VALIDATION_FAILED", "Core, Insights", "Form Request validation fails, or a location list `parent` that is not a 10-digit PSGC code; field errors returned in `errors`"],
+  ["422", "VALIDATION_FAILED", "Core, Insights", "Form Request validation fails, or a location list `parent` that is not a 10-digit PSGC code; also business checks reported per field: a second open report on the same posting (`errors.reason`), an administrator suspending their own account (`errors.suspended`); field errors returned in `errors`"],
   ["422", "INVALID_STATUS_TRANSITION", "Core", "Transition not allowed by the ApplicationStatus enum (e.g., Rejected → Hired, Pending → Hired)"],
   ["422", "POSTING_CLOSED / FEEDBACK_NOT_OPEN", "Core", "Applying to a closed posting; feedback before calendar day 30 after the hire date (Asia/Manila)"],
   ["422", "REGISTRY_INVALID_REQUEST", "Core", "Registry returned `Client.Validation` (e.g., malformed registration number); the employer is asked to correct it"],
@@ -513,7 +518,7 @@ C.push(P("**Graceful degradation.** External and legacy integrations never block
 C.push(H1("6. Security Design"));
 C.push(H2("6.1 Authentication"));
 C.push(...bullets([
-  "**Users** log in with email and password through `POST /api/login`. Passwords are hashed with bcrypt. The Core Service issues a **Laravel Sanctum personal access token**, which the React client sends as `Authorization: Bearer <token>` on each request through the gateway. Logout revokes the token on the server. Suspended accounts cannot log in and their tokens are revoked.",
+  "**Users** log in with email and password through `POST /api/login`. Passwords are hashed with bcrypt. The Core Service issues a **Laravel Sanctum personal access token**, which the React client sends as `Authorization: Bearer <token>` on each request through the gateway. Logout revokes the token on the server. Suspended accounts cannot log in and all their tokens are revoked at once; while an employer is suspended its postings are hidden from candidates and guests (nothing is deleted, so reactivation restores them).",
   "**Administrators** are never self-registered; they are created by the seeder or by another administrator.",
   "**Gateway → services:** the gateway forwards the bearer token unchanged; the Core Service validates it (the gateway does not trust or decode it).",
   "**Insights → Core (service-to-service):** internal endpoints under `/internal/*` are not routed by the gateway and require an `X-Service-Key` header whose value is a shared secret held only by the two services; requests without it receive 401.",
@@ -537,6 +542,7 @@ C.push(...bullets([
   "**Transport/HTTPS:** Vercel and Railway public endpoints use HTTPS only; internal calls stay on Railway's private network and are not exposed to the internet.",
   "**Least privilege / access controls:** only the gateway is public; each service has its own database user limited to its own schema; role middleware and Policies enforce per-record ownership; CORS allows only the deployed frontend origin.",
   "**Abuse protection:** gateway rate limiting (120 requests/min per IP) and login rate limiting (5 attempts/min).",
+  "**Information disclosure:** errors carry only a code, a plain message and the `request_id` (no stack traces, `APP_DEBUG=false`); the gateway removes `X-Powered-By` headers from upstream responses, so clients cannot read the server stack or PHP version; an unknown origin receives no CORS headers.",
   "**Data privacy (RA 10173):** explicit consent is recorded (`consented_at`) before accommodation data is stored; disability type is optional, hidden by default and never used for matching; candidates' needs are shown to an employer only after the candidate applies; trust scores and their per-accommodation breakdown are aggregated and shown only after three responses so individual employees cannot be identified.",
   "**Project-specific risks:** fake employers (mitigated by registry check and Verified badge), retaliation for negative feedback (anonymity and three-response threshold), false accommodation claims (report-a-posting and moderation), and dependence on third-party APIs (caching, timeouts, degraded mode).",
 ]));
@@ -562,6 +568,7 @@ C.push(...table(["Test ID", "Scenario", "Type", "Expected Result", "Actual Resul
   ["T15", "Registry check with an unknown number / wrong SOAP password", "Integration (negative)", "200 `status=NOT_FOUND` / 502 `REGISTRY_AUTH_FAILED`", "[[Actual]]", "[[PASS/FAIL]]"],
   ["T16", "Call Core `/internal/job-postings/{id}/summary` without `X-Service-Key`", "Integration (security)", "401 `UNAUTHENTICATED`; the gateway does not route `/internal/*`", "[[Actual]]", "[[PASS/FAIL]]"],
 ], [700, 2800, 1300, 2700, 1500, 1080], { size: 16 }));
+C.push(P("Each test ID is the prefix of at least one request name in the Postman collection (e.g. `T05 Applying again → 409 ALREADY_APPLIED`), so a Newman report shows the result per test. Folder 09 adds further security cases beyond the plan: a forged token, other roles and other employers denied (403), a candidate or employer reading someone else's application (403), an administrator suspending their own account (422), SQL-like search text treated as plain text, malformed JSON answered without a stack trace, no CORS headers for an unknown origin, no `X-Powered-By` header, and the suspension rule end to end (token revoked, login refused, postings hidden, restored on reactivation)."));
 C.push(H2("7.2 Postman / API Test Evidence"));
 C.push(P("The repository contains `tests/postman/OpenDoor.postman_collection.json` and environments `local.postman_environment.json` and `production.postman_environment.json` (variables: `baseUrl`, `candidateEmail`, `employerEmail`, `adminEmail`, passwords from secrets). The collection is organized in folders that run in order: **01 Auth**, **02 Master Data**, **03 Employer & Postings**, **04 Candidate & Matching**, **05 Applications & Status**, **06 Feedback & Trust Score**, **07 Insights Mashup**, **08 Admin & SOAP Registry**, **09 Negative & Security Cases**. Login requests save tokens to collection variables; create requests save IDs (`jobPostingId`, `applicationId`) for later requests."));
 C.push(P("Assertions written in each request's Tests tab check:"));
@@ -812,7 +819,7 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M10 Moderation", "PATCH", "/admin/feedback/{id}/hide", "A", "Hide feedback"],
   ["M11 Master data", "GET", "/admin/accommodations", "A", "All types incl. retired"],
   ["M11 Master data", "POST, PUT, DELETE", "/admin/categories/{id}, /admin/accommodations/{id}", "A", "Manage lists (in use: category 422, accommodation retired)"],
-  ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks"],
+  ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks of visible postings; POST and DELETE idempotent; `saved` flag on posting details"],
   ["Insights", "GET", "/insights/job-postings/{id}", "P", "Accessibility Snapshot"],
   ["Insights", "GET", "/insights/locations/{regions|provinces|cities}?parent=", "P", "PSGC lists"],
   ["Internal", "GET", "/internal/job-postings/{id}/summary (Core, not public)", "S", "Data for mashup"],
@@ -828,7 +835,11 @@ C.push(...table(["Data", "Guest", "Candidate", "Employer", "Admin"], [
   ["Accommodation feedback", "–", "C, R own (once, after hire)", "– (score only)", "R, U (hide)"],
   ["Trust score", "R (3+ responses)", "R (3+ responses)", "R own", "R all"],
   ["Categories and accommodation types", "R", "R", "R", "C, R, U, D"],
+  ["Reports on postings", "–", "C (visible postings, one open per posting)", "–", "R, U (dismiss / action)"],
+  ["Notifications", "–", "R, U own (mark read)", "R, U own (mark read)", "–"],
+  ["Saved jobs", "–", "C, R, D own (visible postings)", "–", "–"],
 ], [2400, 1500, 2200, 2100, 1880], { size: 16 }));
+C.push(P("A **visible posting** is open, approved, not deleted, and its employer's account is not suspended. Only visible postings appear in search, on the public employer page and in the Accessibility Snapshot, and only they can be opened, saved, applied to or reported by guests and candidates; owners and administrators still see the others."));
 
 C.push(H2("Appendix B - Representative JSON/XML/SOAP samples"));
 C.push(P("JSON samples: Sections 4.2 and 4.5. SOAP request, response and fault: Section 4.3. Additional samples:"));
@@ -923,7 +934,9 @@ C.push(...table(["Table", "Key Fields", "Notes"], [
   ["applications", "id, job_posting_id, candidate_profile_id, status, cover_note, interview_request, hired_at, hire_confirmed_by", "Unique (job_posting_id, candidate_profile_id)"],
   ["application_accommodation", "application_id, accommodation_id", "Pivot: the posting's accommodations recorded when the application becomes hired (the items the candidate rates)"],
   ["feedback / feedback_items", "id, application_id, comments, is_hidden / id, feedback_id, accommodation_id, rating", "One feedback per application; one rating per accommodation recorded at hire; hidden feedback leaves the score"],
-  ["notifications, reports, saved_jobs", "Laravel notifications; id, reporter_id, job_posting_id, reason, status; candidate_profile_id, job_posting_id", "In-app notices; moderation; bookmarks"],
+  ["notifications", "Laravel notifications table: id (UUID), type, notifiable, data (message, url, ids), read_at", "In-app notices for candidates and employers"],
+  ["reports", "id, reporter_id, job_posting_id, reason, status, note, resolved_by, resolved_at, timestamps", "One open report per candidate and posting; `note` and resolver set only when an administrator resolves it"],
+  ["saved_jobs", "candidate_profile_id, job_posting_id, timestamps", "Composite primary key; bookmarks kept when a posting closes and listed again if it reopens"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("**Enumerated values** (stored as MySQL `ENUM` columns or PHP backed enums; the same values appear in the API and in `docs/openapi.yaml`):"));
 C.push(...table(["Field", "Allowed values"], [

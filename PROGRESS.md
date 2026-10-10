@@ -5,14 +5,14 @@
 
 ## Now
 
-- **Current phase:** Phase 8 – Administration
+- **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** SIA doc sync for M8–M10, M12, the suspended-employer rule and Postman 09 (`opendoor-sia-docs`); then Phase 8 is complete → Phase 9 (first: GitHub Actions CI).
+- **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals). First answer the pending decision on admin posting removal if it affects the CI scope (it does not block CI).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- (none)
+- Admin removal of postings: the SIA doc (1.5, Appendix A permission matrix "Job posting … Admin: D") and the dev skill say administrators can remove postings, but Core has no admin delete endpoint (admins can only approve/reject pending postings; resolving a report does not change the posting). Either add `DELETE /admin/job-postings/{id}` (soft delete + notice to the employer) or change the doc to "reject/close via report". Ask the user.
 
 ## Decisions (final – do not re-ask)
 
@@ -162,7 +162,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 - Vitest: `AdminEmployerPage > registry check result is shown…` failed once in a full run (passes alone and in 3 full reruns) – timing under load; use longer `findBy` timeouts if it recurs in CI.
 - Live checks did not include a real screen reader (NVDA) – covered by the Phase 9 WCAG audit.
-- SIA doc: add M12 (saved-jobs rules, `saved_jobs` table, `saved` field on JobPosting) and the suspended-employer rule (postings hidden until reactivation) at the next doc sync (`opendoor-sia-docs`).
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Admin analytics now ignore deleted postings (M8); the employer dashboard still counts that applicant (same as the applicants list). Before the production smoke (Phase 9) run only read-only folders there.
@@ -176,6 +175,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – SIA doc synced for Phase 8 (4.1 endpoints, 5.2 notices, 5.3 errors incl. 400/422/404 details, 6.1/6.4 suspension + no X-Powered-By, 7.1 test-ID note + folder 09, Appendix A matrix + visible-posting definition, data model rows; 1.4 saved jobs delivered); Postman folders 04/05 renamed to the documented names; PDF 44 pages, no empty pages. **Phase 8 complete.** Next: Phase 9 CI.
 - 2026-10-10 – Postman folder 09 (31 requests) + T03–T05 labels aligned with the SIA test plan; gateway strips X-Powered-By; README: registry must listen on 127.0.0.1 (localhost bound IPv6 only and Core got 502). Phase 8 code/tests complete. Next: SIA doc sync.
 - 2026-10-10 – Phase 8 frontend live check done (candidate, admin, employer; 8 small a11y/UX fixes, axe 0 on 11 views). Next: Postman folder 09.
 - 2026-10-10 – Suspended employer's postings now hidden until reactivation (`JobPosting::visible()`/`isVisible()` require an active owner; 5 tests, 333 Core tests, MySQL subset; admin suspend dialog explains it; live check 3 → 0 → 3). Next: Phase 8 frontend live check.

@@ -41,7 +41,7 @@ External REST APIs (called only by Insights): Nominatim `https://nominatim.opens
 | `/api/*` (everything else) | Core Service | 10 s |
 | `/internal/*` | **never routed** (404 at gateway) | – |
 
-Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/api/insights/*` and `GET /health`). Upstream `Access-Control-*` headers are dropped – the gateway alone decides CORS. The gateway forwards `Authorization` unchanged (it does not validate tokens), adds `X-Request-ID` (UUID v4) if missing, adds `X-Forwarded-For`, and redacts `Authorization` / `X-Service-Key` in logs.
+Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/api/insights/*` and `GET /health`). Upstream `Access-Control-*` headers are dropped – the gateway alone decides CORS – and so is `X-Powered-By` (no stack/version disclosure). The gateway forwards `Authorization` unchanged (it does not validate tokens), adds `X-Request-ID` (UUID v4) if missing, adds `X-Forwarded-For`, and redacts `Authorization` / `X-Service-Key` in logs.
 
 ## Service-to-service calls
 

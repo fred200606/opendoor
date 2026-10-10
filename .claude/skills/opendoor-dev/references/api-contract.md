@@ -50,7 +50,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M3 Company | GET | /admin/employers, /admin/employers/{id} | A | verification queue `?status=pending|verified|rejected&q=`; AdminEmployer = Company + owner + latest_registry_check |
 | M4 Postings | GET | /admin/job-postings | A | `?status=` (default pending_approval) for the approval queue |
 | M10 Moderation | GET | /admin/feedback | A | `?employer_id=&hidden=0|1`; anonymous AdminFeedback (no author) |
-| M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks |
+| M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks of visible postings, newest saved first, with `match` and `saved:true`; POST 201 (200 if already saved; hidden → 404); DELETE by id, idempotent → 204 |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
 | Insights | GET | /insights/locations/{regions|provinces|cities}?parent= | P | `[{code,name,level}]` |
 | Internal (Core) | GET | /internal/job-postings/{id}/summary | S | not routed by gateway |
@@ -95,7 +95,7 @@ Snapshot shape: see `integrations.md`.
 
 | HTTP | Code | Raised by |
 |---|---|---|
-| 400 | BAD_REQUEST | any |
+| 400 | BAD_REQUEST (a malformed JSON body is read as empty → 422 VALIDATION_FAILED) | any |
 | 401 | UNAUTHENTICATED | Core, Insights (`/internal`) |
 | 403 | FORBIDDEN, ACCOUNT_SUSPENDED | Core |
 | 404 | NOT_FOUND | Core, Insights, Gateway |

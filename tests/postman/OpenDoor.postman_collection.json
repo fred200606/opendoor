@@ -3140,7 +3140,7 @@
       ]
     },
     {
-      "name": "04 Candidate & Search",
+      "name": "04 Candidate & Matching",
       "description": "M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and \"Matches my needs\" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.",
       "item": [
         {
@@ -4625,7 +4625,7 @@
       ]
     },
     {
-      "name": "05 Applications",
+      "name": "05 Applications & Status",
       "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.",
       "item": [
         {
