@@ -255,6 +255,7 @@ function ReportButton({ jobId }) {
       {open && (
         <Dialog title="Report this job" onClose={() => setOpen(false)}>
           <ApiErrorAlert error={form.formError} title="The report was not sent" />
+          <ErrorSummary errors={form.fieldErrors} fields={{ reason: { id: 'reason' } }} />
           <form onSubmit={handleSubmit} noValidate>
             <TextArea
               label="What is wrong with this posting?"

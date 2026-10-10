@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { accommodationGroups, categories, job, snapshot } from '../../test/fixtures.js';
-import { apiError, paged, renderApp } from '../../test/render.jsx';
+import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
 
 const masterData = {
   'GET /categories': () => [200, { data: categories }],
@@ -135,6 +135,31 @@ describe('JobDetailsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Your application' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View your application' })).toHaveAttribute('href', '/candidate/applications/11');
     expect(screen.queryByRole('button', { name: 'Send application' })).not.toBeInTheDocument();
+  });
+
+  test('report: a missing reason is announced and focused, then the report is sent', async () => {
+    let attempt = 0;
+    const { user, calls } = renderApp('/candidate/jobs/42', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'POST /job-postings/42/reports': () =>
+          ++attempt === 1 ? validationError({ reason: ['Tell us what is wrong with this posting.'] }) : [201, { id: 1, job_posting_id: 42, status: 'open' }],
+      },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Report this job' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Send report' }));
+
+    const summary = await screen.findByRole('alert');
+    expect(summary).toHaveTextContent('Tell us what is wrong with this posting.');
+    expect(summary).toHaveFocus();
+
+    await user.type(screen.getByLabelText(/What is wrong with this posting/), 'The ramp does not exist.');
+    await user.click(screen.getByRole('button', { name: 'Send report' }));
+
+    expect(await screen.findByRole('button', { name: 'Reported – thank you' })).toBeInTheDocument();
+    expect(calls.filter((call) => call.key === 'POST /job-postings/42/reports').at(-1).data).toEqual({ reason: 'The ramp does not exist.' });
   });
 
   test('a saved posting shows as saved and can be unsaved', async () => {

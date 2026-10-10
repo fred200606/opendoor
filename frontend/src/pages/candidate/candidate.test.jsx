@@ -274,6 +274,18 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
     expect(await screen.findByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Submitted' }).closest('li')).toHaveTextContent('2');
     expect(screen.getByRole('link', { name: 'rate the accommodations now' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
+    expect(screen.getByRole('region', { name: 'Jobs for you' })).toHaveTextContent('4 open jobs offer all the accommodations you need.');
+  });
+
+  test('one matching job is worded in the singular', async () => {
+    renderApp('/candidate/dashboard', {
+      as: 'candidate',
+      routes: {
+        'GET /candidate/dashboard': () => [200, { applications: {}, needs_count: 3, matching_jobs: 1, feedback_due: [] }],
+      },
+    });
+
+    expect(await screen.findByRole('region', { name: 'Jobs for you' })).toHaveTextContent('1 open job offers all the accommodations you need.');
   });
 
   test('saved job can be removed', async () => {

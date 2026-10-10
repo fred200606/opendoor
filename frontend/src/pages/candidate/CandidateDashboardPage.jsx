@@ -41,7 +41,7 @@ export default function CandidateDashboardPage() {
             <section aria-labelledby="matches-title">
               <h2 id="matches-title">Jobs for you</h2>
               <p>
-                {dashboard.matching_jobs ?? 0} open jobs offer all the accommodations you need.{' '}
+                {matchingJobsText(dashboard.matching_jobs ?? 0)} all the accommodations you need.{' '}
                 <Link to="/candidate/jobs">See matching jobs</Link>
               </p>
             </section>
@@ -68,4 +68,9 @@ export default function CandidateDashboardPage() {
       </AsyncContent>
     </Page>
   );
+}
+
+function matchingJobsText(count) {
+  if (count === 0) return 'No open jobs offer';
+  return count === 1 ? '1 open job offers' : `${count} open jobs offer`;
 }
