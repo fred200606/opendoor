@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 8 – Frontend live check (Core + gateway + Vite, demo accounts): admin users/reports/feedback/dashboard, candidate + employer dashboards, notification bell + page (incl. new `employer_verification` / `posting_review` notices), report button on job details; fix the `.stats__list` reflow (Known issues); `design:accessibility-review` + axe. First settle the suspended-employer postings question (Known issues). Then Postman folder 09, then SIA doc sync for M8–M10 and M12.
+- **Next step:** Phase 8 – Frontend live check (Core + gateway + Vite, demo accounts): admin users/reports/feedback/dashboard, candidate + employer dashboards, notification bell + page (incl. new `employer_verification` / `posting_review` notices), report button on job details; fix the `.stats__list` reflow (Known issues); `design:accessibility-review` + axe (incl. the new employer sentence in the admin suspend dialog). Then Postman folder 09, then SIA doc sync for M8–M10 and M12.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – Suspended employer: its postings are hidden while the owner is suspended (treated as not visible everywhere candidates and guests look: search, details, saved jobs, apply, Insights summary, public employer page). No data is changed, so lifting the suspension restores them. Candidates keep seeing their own existing applications.
 - 2026-10-10 – M12 saved jobs pulled forward from Phase 9 (the Saved jobs page 404'd). Only visible postings can be saved (else 404) or are listed; a bookmark on a closed posting stays and shows again if it reopens. POST is idempotent (201 new, 200 already saved; returns the posting), DELETE is idempotent by plain id (204, also for closed/deleted postings). List newest-saved first, 12/page, with `match`. New `saved` boolean on JobPosting for candidates only (details, saved list, save response; not in search) so the details page shows the right state – OpenAPI updated, SIA doc not yet.
 - 2026-10-10 – M9: notifications for candidates and employers only (admins 403, as in the contract; the UI hides the bell for admins). Newest first (relation order; ids are random UUIDs), 12/page, `meta.unread_count` = all unread. Another user's or unknown id → 404; re-reading keeps the first `read_at`. New types `employer_verification` (approve/reject/remove, not `check`) and `posting_review` (approve → `/jobs/{id}`, reject → `/employer/jobs/{id}/edit`) with the admin's reason in the message.
 - 2026-10-10 – M8: dashboard counts are zero-filled for every status and equal the lists they link to – employer postings exclude soft-deleted ones, employer applicants include applications to deleted postings (as `GET /applications`), admin analytics leave out deleted postings and their applications. Candidate `matching_jobs` = visible postings offering every saved need (0 without needs); `feedback_due` = hired, unrated applications (also not-yet-open ones), earliest hire first. Employer without company → `exists:false`, zeros, unpublished trust score.
@@ -158,8 +159,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
-- SIA doc: add M12 (saved-jobs rules, `saved_jobs` table, `saved` field on JobPosting) at the next doc sync (`opendoor-sia-docs`).
-- M10: suspending an employer leaves its open postings visible in search (business rules only say login is blocked + tokens revoked). Decide with the user whether suspension should hide/close them before the Phase 8 live check.
+- SIA doc: add M12 (saved-jobs rules, `saved_jobs` table, `saved` field on JobPosting) and the suspended-employer rule (postings hidden until reactivation) at the next doc sync (`opendoor-sia-docs`).
 - Dashboards: `.stats__list` uses `minmax(9rem, 1fr)` – likely sideways scroll at 360 px + 200% text (same bug as the location picker, fixed there with `min(…, 100%)`). Check/fix at the Phase 8 dashboard live check.
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
@@ -174,6 +174,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – Suspended employer's postings now hidden until reactivation (`JobPosting::visible()`/`isVisible()` require an active owner; 5 tests, 333 Core tests, MySQL subset; admin suspend dialog explains it; live check 3 → 0 → 3). Next: Phase 8 frontend live check.
 - 2026-10-10 – M12 saved jobs built (the Saved jobs page showed "resource not found": Core had no endpoints). Core + `saved` flag + OpenAPI + Postman 04 + live check done. Next: Phase 8 frontend live check (unchanged).
 - 2026-10-10 – M9 notifications in Core (list/read/read-all + employer notices for verification and posting decisions; 7 tests, SQLite + MySQL). Phase 8 Core work complete. Next: frontend live check.
 - 2026-10-10 – M8 dashboards in Core (candidate/employer/admin, 7 tests on SQLite + MySQL). Next: M9 notifications.

@@ -123,6 +123,13 @@ export default function AdminUsersPage() {
               ? 'They are signed out on every device and cannot log in until you reactivate the account.'
               : 'They will be able to log in again.'}
           </p>
+          {confirm.role === 'employer' && (
+            <p>
+              {confirm.is_active
+                ? 'Their job postings are hidden from candidates while the account is suspended. Nothing is deleted.'
+                : 'Their open job postings will be shown to candidates again.'}
+            </p>
+          )}
         </ConfirmDialog>
       )}
     </Page>

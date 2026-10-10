@@ -68,5 +68,5 @@ These are enforced on the server and covered by feature tests.
 
 - Registration requires the consent checkbox; store `consented_at` before any accommodation data.
 - Disability type optional, hidden by default, never used in matching or shown to employers unless `show_disability`.
-- Suspended users cannot log in and their tokens are revoked.
+- Suspended users cannot log in and their tokens are revoked. A suspended employer's postings are hidden (not visible: search, details, apply, save, report, Insights summary, employer page) until reactivation; no data changes, candidates keep their applications.
 - Never log request bodies containing accommodation needs or feedback.

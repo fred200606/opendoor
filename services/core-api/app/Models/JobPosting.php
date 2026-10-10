@@ -88,16 +88,26 @@ class JobPosting extends Model
         return $this->isVisible() && ! $this->closes_at->copy()->endOfDay()->isPast();
     }
 
-    /** Postings anyone may see: open, approved and not soft-deleted (search, matching, snapshot). */
+    /**
+     * Postings anyone may see: open, approved, not soft-deleted and from an employer that is not
+     * suspended (search, matching, snapshot). Lifting the suspension shows them again.
+     */
     #[Scope]
     protected function visible(Builder $query): void
     {
-        $query->where('status', JobPostingStatus::Open)->where('is_approved', true);
+        $query->where('status', JobPostingStatus::Open)->where('is_approved', true)
+            ->whereRelation('employer.user', 'is_active', true);
     }
 
     public function isVisible(): bool
     {
-        return $this->status === JobPostingStatus::Open && $this->is_approved && ! $this->trashed();
+        return $this->status === JobPostingStatus::Open && $this->is_approved && ! $this->trashed() && $this->ownerIsActive();
+    }
+
+    /** False while the employer's account is suspended (M10). */
+    public function ownerIsActive(): bool
+    {
+        return (bool) $this->employer?->user?->is_active;
     }
 
     public function isOwnedBy(?User $user): bool

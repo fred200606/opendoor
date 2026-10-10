@@ -32,8 +32,8 @@ class ApplicationController extends Controller
 
     public function store(Request $request, JobPosting $jobPosting): JsonResponse
     {
-        // Drafts and postings waiting for approval stay hidden (404); closed ones say so.
-        $closed = $jobPosting->status === JobPostingStatus::Closed && $jobPosting->is_approved;
+        // Drafts, postings waiting for approval and those of a suspended employer stay hidden (404); closed ones say so.
+        $closed = $jobPosting->status === JobPostingStatus::Closed && $jobPosting->is_approved && $jobPosting->ownerIsActive();
         if (! $closed && ! $jobPosting->isVisible()) {
             throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
         }

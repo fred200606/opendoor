@@ -143,6 +143,24 @@ describe('AdminUsersPage', () => {
     expect(await screen.findByRole('button', { name: 'Reactivate Maria Santos' })).toBeInTheDocument();
     expect(calls.find((call) => call.key === 'PATCH /admin/users/2/suspend').data).toEqual({ suspended: true });
   });
+
+  test('suspending an employer explains that the postings are hidden, only for employers', async () => {
+    const { user } = renderApp('/admin/users', {
+      as: 'admin',
+      routes: { 'GET /admin/users': () => [200, paged([users.candidate, users.employer, { ...users.employer, id: 5, name: 'Jose Cruz', is_active: false }])] },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Suspend Ana Reyes' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Their job postings are hidden from candidates while the account is suspended.');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+
+    await user.click(screen.getByRole('button', { name: 'Reactivate Jose Cruz' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Their open job postings will be shown to candidates again.');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+
+    await user.click(screen.getByRole('button', { name: 'Suspend Maria Santos' }));
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('job postings');
+  });
 });
 
 describe('AdminReportsPage and AdminFeedbackPage', () => {

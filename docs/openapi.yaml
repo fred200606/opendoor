@@ -445,7 +445,7 @@ paths:
       tags: [M5 Search and matching]
       summary: Search open postings; "Matches my needs" mode for candidates with saved needs
       description: >-
-        Only open, approved postings. A logged-in candidate with saved needs gets `match` on every posting
+        Only open, approved postings of employers that are not suspended. A logged-in candidate with saved needs gets `match` on every posting
         (also with match=0); `meta.match_mode` is true only when match=1 is asked by such a candidate –
         for guests, other roles and candidates without needs match=1 is ignored (not an error).
         The disability type is never used.
