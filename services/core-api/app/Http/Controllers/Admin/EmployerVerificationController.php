@@ -8,6 +8,7 @@ use App\Http\Resources\AdminEmployerResource;
 use App\Http\Resources\RegistryCheckResource;
 use App\Models\Employer;
 use App\Models\RegistryCheck;
+use App\Notifications\VerificationDecision;
 use App\Services\Registry\BusinessRegistryClient;
 use App\Services\Registry\RegistryException;
 use App\Services\Registry\RegistryResult;
@@ -73,7 +74,9 @@ class EmployerVerificationController extends Controller
             'approve' => $this->decide($employer, verified: true),
             'reject' => $this->decide($employer, verified: false, reason: trim($data['reason'])),
         };
-        // M9: notify the employer of the decision (Phase 8).
+        if ($data['action'] !== 'check') {
+            $employer->user->notify(new VerificationDecision($employer));
+        }
 
         return response()->json([
             'registry' => $check ? (new RegistryCheckResource($check))->resolve($request) : null,

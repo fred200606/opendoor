@@ -8,6 +8,7 @@ use App\Http\Controllers\JobPostingController;
 use App\Http\Requests\Admin\ReviewPostingRequest;
 use App\Http\Resources\JobPostingResource;
 use App\Models\JobPosting;
+use App\Notifications\PostingReviewed;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
@@ -57,7 +58,7 @@ class PostingApprovalController extends Controller
         }
 
         $jobPosting->save();
-        // M9: notify the employer of the decision (Phase 8).
+        $jobPosting->employer->user->notify(new PostingReviewed($jobPosting));
 
         return new JobPostingResource($jobPosting->load(JobPostingController::RELATIONS));
     }

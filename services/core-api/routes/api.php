@@ -14,6 +14,7 @@ use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\JobSearchController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResumeController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [MeController::class, 'show']);
     Route::put('me/password', [MeController::class, 'updatePassword']);
+
+    // M9 Notifications – own in-app notices (admins receive none)
+    Route::middleware('role:candidate,employer')->prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::patch('read-all', [NotificationController::class, 'readAll']);
+        Route::patch('{id}/read', [NotificationController::class, 'read']);
+    });
 
     // Candidate
     Route::middleware('role:candidate')->prefix('candidate')->group(function () {

@@ -38,8 +38,8 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M7 Feedback | POST | /applications/{id}/feedback | C (hired, ≥30 days) | `{items:[{accommodation_id,rating:'delivered'|'partial'|'not_delivered'}],comments?}` → 201 `{id,application_id,items_rated}`; every form item rated once |
 | M7 Feedback | GET | /employers/{id}/trust-score | P | `{published, score, based_on, breakdown:[{accommodation_id,name,delivered,partial,not_delivered,of}]}`; breakdown `[]` until published |
 | M8 Dashboards | GET | /candidate/dashboard, /employer/dashboard, /admin/dashboard | C / E / A | summaries (OpenAPI schemas); counts zero-filled per status and equal to the linked lists: employer postings without deleted ones, employer applicants incl. deleted postings, admin analytics without deleted postings; candidate `matching_jobs` = visible postings with all needs (0 without needs), `feedback_due` = hired + unrated, earliest hire first |
-| M9 Notifications | GET | /notifications | C, E | list (`meta.unread_count`) |
-| M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | mark read |
+| M9 Notifications | GET | /notifications | C, E | newest first, 12/page (`meta.unread_count` = all unread); types `application_received`, `application_status_changed`, `employer_verification`, `posting_review` (admin decisions → employer) |
+| M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | 204; another user's / unknown id → 404; re-read keeps the first `read_at` |
 | M10 Moderation | GET | /admin/users | A | `?role=&q=` (name/email); sorted by name |
 | M10 Moderation | PATCH | /admin/users/{id}/suspend | A | `{suspended:bool}` → User; suspend revokes all tokens; own account → 422 `errors.suspended` |
 | M10 Moderation | POST | /job-postings/{id}/reports | C | `{reason}` (≤ 1000) → 201 Report; visible postings only (else 404); one open report per candidate + posting (422 `errors.reason`) |

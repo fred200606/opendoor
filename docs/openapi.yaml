@@ -860,6 +860,7 @@ paths:
     get:
       tags: [M9 Notifications]
       summary: Own notifications (unread count in meta)
+      description: Candidates and employers only (admins receive none – 403). Newest first, 12 per page; `meta.unread_count` counts all unread notifications.
       parameters: [{ $ref: '#/components/parameters/Page' }]
       responses:
         '200':
@@ -878,10 +879,13 @@ paths:
                       - type: object
                         properties:
                           unread_count: { type: integer }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /notifications/{id}/read:
     patch:
       tags: [M9 Notifications]
       summary: Mark one notification read
+      description: Another user's or an unknown id is 404. Marking it again keeps the first `read_at`.
       parameters:
         - name: id
           in: path
@@ -889,12 +893,15 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '204': { description: Marked read }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /notifications/read-all:
     patch:
       tags: [M9 Notifications]
       summary: Mark all notifications read
       responses:
         '204': { description: Marked read }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   # ---------------------------------------------------------------- M10 Moderation
   /admin/users:
@@ -1735,7 +1742,14 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
-        type: { type: string, description: 'application_received (to the employer) or application_status_changed', example: application_status_changed }
+        type:
+          type: string
+          enum: [application_received, application_status_changed, employer_verification, posting_review]
+          description: |
+            application_received (to the employer), application_status_changed (to the party that did not act),
+            employer_verification (admin approved/rejected the company; data.verified),
+            posting_review (admin approved/rejected a posting; data.job_posting_id, data.approved)
+          example: application_status_changed
         data:
           type: object
           additionalProperties: true
