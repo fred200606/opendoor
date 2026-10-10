@@ -888,13 +888,14 @@ paths:
     get:
       tags: [M10 Moderation]
       summary: List users
+      description: Sorted by name, 12 per page. `q` matches name or email (case-insensitive, `%` and `_` literal).
       parameters:
         - name: role
           in: query
           schema: { $ref: '#/components/schemas/Role' }
         - name: q
           in: query
-          schema: { type: string }
+          schema: { type: string, maxLength: 100 }
         - $ref: '#/components/parameters/Page'
       responses:
         '200':
@@ -908,10 +909,13 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/User' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/users/{id}/suspend:
     patch:
       tags: [M10 Moderation]
       summary: Suspend (revokes all tokens) or reactivate a user
+      description: A suspended user is signed out everywhere and gets ACCOUNT_SUSPENDED on login. Admins cannot suspend themselves (422 `errors.suspended`).
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -928,10 +932,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/User' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /job-postings/{id}/reports:
     post:
       tags: [M10 Moderation]
       summary: Report a posting
+      description: |
+        Candidates only. The posting must be visible (open, approved, not deleted), else 404.
+        One open report per candidate and posting (422 `errors.reason`); after an admin resolves it the candidate may report again.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -948,10 +958,15 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Report' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/reports:
     get:
       tags: [M10 Moderation]
       summary: List reports
+      description: '`status=open` is a queue (oldest first); any other filter or none lists newest first. 12 per page.'
       parameters:
         - name: status
           in: query
@@ -969,6 +984,8 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/Report' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/reports/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
@@ -980,9 +997,12 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Report' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [M10 Moderation]
       summary: Dismiss or act on a report
+      description: Only open reports (422 `errors.status` once resolved). Records the admin and the time; closing the posting or suspending the employer are separate actions.
       requestBody:
         required: true
         content:
@@ -992,17 +1012,21 @@ paths:
               required: [status]
               properties:
                 status: { type: string, enum: [dismissed, actioned] }
-                note: { type: string }
+                note: { type: [string, 'null'], maxLength: 1000 }
       responses:
         '200':
           description: Updated
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Report' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/feedback:
     get:
       tags: [M10 Moderation]
       summary: Feedback responses for moderation (anonymous – no author)
+      description: Newest first, 12 per page.
       parameters:
         - name: employer_id
           in: query
@@ -1024,6 +1048,7 @@ paths:
                     items: { $ref: '#/components/schemas/AdminFeedback' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/feedback/{id}/hide:
     patch:
       tags: [M10 Moderation]
@@ -1040,6 +1065,9 @@ paths:
                 hidden: { type: boolean }
       responses:
         '204': { description: Updated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
 
   # ---------------------------------------------------------------- M11 Master data
   /categories:
@@ -1717,6 +1745,13 @@ components:
             employer: { $ref: '#/components/schemas/EmployerSummary' }
         reason: { type: string }
         status: { $ref: '#/components/schemas/ReportStatus' }
+        note:
+          description: Admin only – the note recorded when resolving
+          type: [string, 'null']
+        resolved_at:
+          description: Admin only
+          type: [string, 'null']
+          format: date-time
         created_at: { type: string, format: date-time }
 
     # ---------- administration

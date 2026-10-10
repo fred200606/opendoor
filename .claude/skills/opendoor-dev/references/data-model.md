@@ -20,7 +20,7 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 | application_accommodation | application_id, accommodation_id | composite PK; the posting's accommodations recorded when the application becomes hired = the items the candidate rates |
 | feedback | id, application_id unique, comments null, is_hidden bool default false, timestamps | anonymous to employers |
 | feedback_items | id, feedback_id, accommodation_id, rating enum(delivered, partial, not_delivered) | unique(feedback_id, accommodation_id) |
-| reports | id, reporter_id FK users, job_posting_id, reason, status enum(open, dismissed, actioned), timestamps | – |
+| reports | id, reporter_id FK users, job_posting_id FK (cascade), reason text, status enum(open, dismissed, actioned) default open, note text null, resolved_by FK users null, resolved_at null, timestamps; index (status, created_at), (job_posting_id, reporter_id) | admin fields set only on resolve (forceFill) |
 | saved_jobs | candidate_profile_id, job_posting_id, timestamps | composite PK |
 
 **Foreign keys to master data** (`category_id`, every `accommodation_id`) use `restrictOnDelete()`: the admin delete endpoints rely on the FK error to detect "in use" (`App\Support\ForeignKeys`).

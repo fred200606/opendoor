@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 8 – Core M10 moderation: `GET /admin/users`, `PATCH /admin/users/{id}/suspend` (suspend revokes all tokens), reports (`POST /job-postings/{id}/reports`, `GET/PATCH /admin/reports`), `GET /admin/feedback` + `PATCH /admin/feedback/{id}/hide` (trust score recalculated). Check `docs/openapi.yaml` and the built admin screens first.
+- **Next step:** Phase 8 – Core M8 dashboards (`GET /candidate/dashboard`, `/employer/dashboard`, `/admin/dashboard`; schemas CandidateDashboard/EmployerDashboard/AdminDashboard in `docs/openapi.yaml`; check the built dashboard pages first; analytics should ignore soft-deleted postings – see Known issues). SIA doc sync for M10 (Appendix A/F reports fields, 4.1) at the end of Phase 8.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – M10: `reports` table adds `note`, `resolved_by`, `resolved_at` (PATCH accepted `note` but the model had no column); Report returns `note`/`resolved_at` to admins only. Reports only for visible postings (else 404), one **open** report per candidate + posting (422 `errors.reason`), resolve only while open (422 `errors.status`, row lock). Admin queue `status=open` oldest first, other lists newest first; users sorted by name; all 12 per page. Admins cannot suspend themselves (422 `errors.suspended`); suspend revokes all tokens in one transaction. Feedback hide → 204, score via the existing `FeedbackObserver`. Resolving a report does not change the posting.
 - 2026-10-07 – Nominatim place searches: queries "X, Province" → "X City, Province" → "X City" (last two only for PSGC "City of X"); top 5 per search; accept a city/town/municipality, else the first result whose address names the city. Replaces the plain first-result rule, which gave province centres (Davao, Zamboanga) and same-name places elsewhere (Lapu-Lapu bus stop in Cebu City). A region-name rule for independent cities was tried and dropped (Bacolod is now in the Negros Island Region). The contact email is set by the user in the local `.env` only. The build script retries a lookup twice (5 s, 10 s) on network errors.
 
 - 2026-10-07 – Snapshot: Core is the only required source – 404 → 404, any other Core failure (down, timeout, 401, bad body) → 503 `SERVICE_UNAVAILABLE`; ids outside 1…2³¹−1 → 404 without asking Core. 12 s budget for the whole snapshot: a source still running at the deadline is `unavailable` and nothing new starts, but its request continues and fills the cache. PSGC label via `locations.describe` (HUCs searched across the region's provinces); bundled fallback lists report `psgc: stale`; PSGC down → Core's `location_label`; no `psgc_code` → `psgc: unavailable`. Posting data is never cached in Insights. OpenAPI adds the 503.
@@ -136,7 +137,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Postman: folder 07 (15 requests: T12, cache repeat, T13 behind `overpassDown`, 404s, PSGC lists + 422/404, gateway blocks `/internal`, T16 behind `coreUrl`; local run 2026-10-07: 87/87 assertions incl. T13 with Overpass unreachable → `unavailable` in 71 ms)
 
 ### Phase 8 – Administration
-- [ ] Core: M10 users (suspend → revoke tokens), reports, feedback hide
+- [x] Core: M10 users (suspend → revoke tokens), reports, feedback hide (`tests/Feature/Moderation` 21 tests, also on MySQL; 306 Core tests pass; OpenAPI 403/404/422 + Report `note`/`resolved_at`)
 - [ ] Core: M8 dashboards (candidate, employer, admin analytics)
 - [ ] Core: M9 notifications list / read / read-all
 - [ ] Frontend: admin screens, dashboards, notification bell wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
@@ -153,6 +154,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- M10: suspending an employer leaves its open postings visible in search (business rules only say login is blocked + tokens revoked). Decide with the user whether suspension should hide/close them before the Phase 8 live check.
 - Dashboards: `.stats__list` uses `minmax(9rem, 1fr)` – likely sideways scroll at 360 px + 200% text (same bug as the location picker, fixed there with `min(…, 100%)`). Check/fix at the Phase 8 dashboard live check.
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
@@ -167,6 +169,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – M10 moderation in Core: admin users list + suspend/reactivate, posting reports (candidate create, admin queue/resolve with note), admin feedback list + hide (21 tests, SQLite + MySQL). Next: M8 dashboards.
 - 2026-10-10 – SIA doc synced for Phase 7 (4.1, 4.2 10-digit PSGC sample, 4.4 failure handling, 4.5 snapshot rules: Core-only required, 12 s budget, place matching, unnamed `other` dropped, `nearby_accessible: null`; 5.2/5.3 incl. Insights 422/503 and no automatic retries; T12/T13/T16 expected results; 8.2 env; App. B/F; refs Axios, nock, PSA PSGC); PDF 43 pages, no blank pages. Test-plan Actual/Status stay for the final run (Phase 9), like T01–T15. dev references: QC code 1381300000. **Phase 7 complete.**
 - 2026-10-10 – Phase 7 frontend live check done (snapshot incl. stale/unavailable/503, picker incl. NCR, saving posting + company); accessibility-review found + fixed a picker list race, lost focus, silent load error and reflow overflow. Next: Phase 7 SIA doc sync.
 - 2026-10-07 – Postman folder 07 Insights Mashup (T12, T13, T16) passes against the local stack; /doctor: `design` plugin off, preference saved to suggest off plugins when useful. Next: frontend snapshot + picker live check.

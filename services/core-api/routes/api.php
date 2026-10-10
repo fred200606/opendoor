@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\JobSearchController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResumeController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +63,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus']);
     });
 
+    // M10 Reports – a candidate reports a visible posting
+    Route::post('job-postings/{jobPosting}/reports', [ReportController::class, 'store'])->middleware('role:candidate');
+
     // M7 Feedback – only the hired candidate (ApplicationPolicy::giveFeedback)
     Route::middleware('role:candidate')->group(function () {
         Route::get('applications/{application}/feedback-form', [FeedbackController::class, 'form']);
@@ -93,5 +97,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('employers', [Admin\EmployerVerificationController::class, 'index'])->name('employers.index');
         Route::get('employers/{employer}', [Admin\EmployerVerificationController::class, 'show'])->name('employers.show');
         Route::patch('employers/{employer}/verify', [Admin\EmployerVerificationController::class, 'verify'])->name('employers.verify');
+        // M10 moderation: accounts, reported postings, feedback responses
+        Route::get('users', [Admin\UserController::class, 'index'])->name('users.index');
+        Route::patch('users/{user}/suspend', [Admin\UserController::class, 'suspend'])->name('users.suspend');
+        Route::get('reports', [Admin\ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/{report}', [Admin\ReportController::class, 'show'])->name('reports.show');
+        Route::patch('reports/{report}', [Admin\ReportController::class, 'update'])->name('reports.update');
+        Route::get('feedback', [Admin\FeedbackModerationController::class, 'index'])->name('feedback.index');
+        Route::patch('feedback/{feedback}/hide', [Admin\FeedbackModerationController::class, 'hide'])->name('feedback.hide');
     });
 });

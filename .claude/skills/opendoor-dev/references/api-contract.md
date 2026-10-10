@@ -40,10 +40,10 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M8 Dashboards | GET | /candidate/dashboard, /employer/dashboard, /admin/dashboard | C / E / A | summaries |
 | M9 Notifications | GET | /notifications | C, E | list (`meta.unread_count`) |
 | M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | mark read |
-| M10 Moderation | GET | /admin/users | A | `?role=&q=` |
-| M10 Moderation | PATCH | /admin/users/{id}/suspend | A | `{suspended:bool}` (revokes tokens) |
-| M10 Moderation | POST | /job-postings/{id}/reports | C | `{reason}` |
-| M10 Moderation | GET, PATCH | /admin/reports, /admin/reports/{id} | A | `?status=`; PATCH `{status:'dismissed'|'actioned', note?}` |
+| M10 Moderation | GET | /admin/users | A | `?role=&q=` (name/email); sorted by name |
+| M10 Moderation | PATCH | /admin/users/{id}/suspend | A | `{suspended:bool}` → User; suspend revokes all tokens; own account → 422 `errors.suspended` |
+| M10 Moderation | POST | /job-postings/{id}/reports | C | `{reason}` (≤ 1000) → 201 Report; visible postings only (else 404); one open report per candidate + posting (422 `errors.reason`) |
+| M10 Moderation | GET, PATCH | /admin/reports, /admin/reports/{id} | A | `?status=` (open = oldest first, else newest); PATCH `{status:'dismissed'|'actioned', note?}` only while open (422 `errors.status`); Report adds `note`, `resolved_at` for admins |
 | M10 Moderation | PATCH | /admin/feedback/{id}/hide | A | `{hidden:bool}` hide/unhide a response (recomputes score) |
 | M11 Master data | POST, PUT, DELETE | /admin/categories/{id?}, /admin/accommodations/{id?} | A | delete only if unused; accommodations are retired, not deleted, when in use |
 | M11 Master data | GET | /admin/accommodations | A | all types incl. retired (to restore via PUT `is_retired:false`) |
