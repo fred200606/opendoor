@@ -62,7 +62,7 @@ Posting in lists/details:
 { "id": 42, "title": "Data Encoder",
   "employer": { "id": 7, "company_name": "Bright Path BPO Inc.", "verified": true },
   "category": { "id": 3, "name": "Administrative" },
-  "location": { "psgc_code": "137404000", "label": "Quezon City, NCR" },
+  "location": { "psgc_code": "1381300000", "label": "Quezon City, National Capital Region (NCR)" },
   "employment_type": "full_time", "work_setup": "hybrid", "interview_format": "online",
   "closes_at": "2026-11-30",
   "accommodations": [ { "id": 1, "name": "Wheelchair-accessible entrance", "group": "physical_access", "note": "Ramp at main entrance" } ],
@@ -73,7 +73,7 @@ Posting in lists/details:
 
 Internal summary (Core → Insights):
 ```json
-{ "id": 42, "address": "123 Quezon Ave.", "psgc_code": "1307404000", "location_label": "Quezon City, Metro Manila",
+{ "id": 42, "address": "123 Quezon Ave.", "psgc_code": "1381300000", "location_label": "Quezon City, National Capital Region (NCR)",
   "accommodations": [ { "id": 1, "name": "...", "group": "physical_access" } ],
   "trust_score": { "published": true, "score": 86, "based_on": 5,
     "breakdown": [ { "accommodation_id": 1, "name": "...", "delivered": 4, "partial": 1, "not_delivered": 0, "of": 5 } ] } }

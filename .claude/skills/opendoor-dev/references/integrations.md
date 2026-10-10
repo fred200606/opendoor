@@ -43,7 +43,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
 6. **Combine** and respond 200 even if some sources failed:
 ```json
 { "job_posting_id": 42,
-  "location": { "psgc_code": "137404000", "label": "Quezon City, Metro Manila, NCR", "lat": 14.6507, "lon": 121.0494, "precision": "street" },
+  "location": { "psgc_code": "1381300000", "label": "Quezon City, National Capital Region (NCR)", "lat": 14.6507, "lon": 121.0494, "precision": "street" },
   "employer_claims": { "physical_access": [ "Wheelchair-accessible entrance" ] },
   "community_verification": { "trust_score": 86, "based_on": 5, "breakdown": [ ... ] },
   "nearby_accessible": { "radius_m": 500, "transit_stops": [ { "name": "Quezon Ave. MRT Station", "wheelchair": "yes", "distance_m": 220 } ], "toilets": [], "parking": [], "other": [] },
@@ -53,7 +53,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
 ```
 `sources` values: `ok` | `cached` | `stale` | `unavailable`. `community_verification` is `null` when the score is unpublished.
 
-`GET /api/insights/locations/{regions|provinces|cities}?parent=<code>` proxies PSGC (`/regions`, `/regions/{code}/provinces`, `/provinces/{code}/cities-municipalities`; NCR has no provinces – use `/regions/{code}/cities-municipalities`), normalizes to `[{code, name, level}]` sorted by name, caches 7 days, and falls back to a bundled JSON of NCR + major cities.
+`GET /api/insights/locations/{regions|provinces|cities}?parent=<code>` proxies PSGC (`/regions`, `/regions/{code}/provinces`, `/provinces/{code}/cities-municipalities`; NCR has no provinces – use `/regions/{code}/cities-municipalities`), normalizes to `[{code, name, level}]` sorted by name, caches 7 days, and falls back to a bundled JSON of all regions, provinces and their cities/municipalities.
 - Codes: OpenDoor uses the official **10-digit** PSGC code (`psgc10DigitCode`) everywhere; the PSGC API's URLs take its 9-digit `code`. They differ by more than a digit (BARMM `150000000` ↔ `1900000000`), so cached items keep the API code as `ref` and parents are looked up, never converted. `parent` must match `^\d{10}$` (422 `VALIDATION_FAILED` with `errors.parent`); unknown region/province → 404.
 - Region names: `Ilocos Region (Region I)`, `National Capital Region (NCR)`. Levels: `region | province | city | municipality`.
 - Failure order: fresh cache (`cached`) → PSGC (`ok`) → expired entry (`stale`) → `src/data/psgc-fallback.json` (`fallback`; built by `npm run build:psgc-fallback`) → 503 `SERVICE_UNAVAILABLE`. Header `X-Data-Source` tells which. A failed source is skipped for 60 s (cooldown) so one request waits for one timeout at most; the same `createCached` helper is meant for Nominatim/Overpass.

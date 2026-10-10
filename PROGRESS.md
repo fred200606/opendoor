@@ -5,9 +5,9 @@
 
 ## Now
 
-- **Current phase:** Phase 7 – Mashup (Insights)
+- **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 7 SIA doc sync (`opendoor-sia-docs`): 4.5 snapshot (12 s budget, Core-only required source, place matching, `other` drops unnamed places, `nearby_accessible: null` rule), OpenAPI 503, T12/T13/T16 evidence (Postman 07 run 2026-10-07) and the frontend live check of 2026-10-10. Then Phase 7 is complete → Phase 8 (M10 moderation first).
+- **Next step:** Phase 8 – Core M10 moderation: `GET /admin/users`, `PATCH /admin/users/{id}/suspend` (suspend revokes all tokens), reports (`POST /job-postings/{id}/reports`, `GET/PATCH /admin/reports`), `GET /admin/feedback` + `PATCH /admin/feedback/{id}/hide` (trust score recalculated). Check `docs/openapi.yaml` and the built admin screens first.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -125,7 +125,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Frontend: admin employer verification screen shows registry result – live-checked 2026-10-06 (queue, ACTIVE 100% without warning, NOT_FOUND warning without score, approve, remove verification with reason, registry stopped → "did not respond" + ERROR row; focus stays on the check button; axe 0 on 4 views). No UI changes needed
 - [x] Postman: folder 08 (registry part) (15 requests: T14 ACTIVE + stored check, T15 NOT_FOUND via a throwaway employer, approve / remove verification / employer re-save restores the queue, 403/404/422; whole collection 125 requests / 607 assertions pass, re-runnable)
 
-### Phase 7 – Mashup (Insights)
+### Phase 7 – Mashup (Insights) – complete 2026-10-10 (SIA doc synced)
 - [x] Core: `/internal/job-postings/{id}/summary` + ServiceKey middleware (`tests/Feature/Internal` 13 tests incl. T16; 285 Core tests pass; live check 401/200/404 on MySQL)
 - [x] Insights: PSGC locations endpoints + cache + fallback JSON (scaffold: Express ESM on 8002, envelope, request ID, `/health`; 34 Jest/nock tests; live check through the gateway: ok → cached, BARMM lookup, PSGC down → cached/fallback in < 35 ms)
 - [x] Insights: Nominatim client (throttle 1/s, UA) + cache (`geocoder.js`, 21 nock tests; 145/145 bundled centroids built 2026-10-07 and compared with a first build – Davao, Zamboanga, Angeles, Bacolod, Lapu-Lapu, Iligan fixed; live snapshot through the gateway: street match 3.7 s → cached 0.1 s, city fallback + Overpass timeout 9.1 s)
@@ -167,6 +167,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – SIA doc synced for Phase 7 (4.1, 4.2 10-digit PSGC sample, 4.4 failure handling, 4.5 snapshot rules: Core-only required, 12 s budget, place matching, unnamed `other` dropped, `nearby_accessible: null`; 5.2/5.3 incl. Insights 422/503 and no automatic retries; T12/T13/T16 expected results; 8.2 env; App. B/F; refs Axios, nock, PSA PSGC); PDF 43 pages, no blank pages. Test-plan Actual/Status stay for the final run (Phase 9), like T01–T15. dev references: QC code 1381300000. **Phase 7 complete.**
 - 2026-10-10 – Phase 7 frontend live check done (snapshot incl. stale/unavailable/503, picker incl. NCR, saving posting + company); accessibility-review found + fixed a picker list race, lost focus, silent load error and reflow overflow. Next: Phase 7 SIA doc sync.
 - 2026-10-07 – Postman folder 07 Insights Mashup (T12, T13, T16) passes against the local stack; /doctor: `design` plugin off, preference saved to suggest off plugins when useful. Next: frontend snapshot + picker live check.
 - 2026-10-07 – Contact email set by the user; city centroids built (145/145) after fixing place matching (provinces/look-alikes rejected); live snapshot with Nominatim + Overpass through the gateway. Nominatim item done. Next: Postman 07.

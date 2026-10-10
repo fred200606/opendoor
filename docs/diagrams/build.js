@@ -270,9 +270,9 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "GET", "/api/admin/employers, /api/admin/employers/{id}", "Verification queue; one employer with its latest registry check", "→ AdminEmployer"],
   ["Core", "PATCH", "/api/admin/employers/{id}/verify", "Run registry check, approve or reject", "{action:'check'|'approve'|'reject', reason} → 200 {registry, verified_at}"],
   ["Core", "GET, POST, PUT, DELETE", "/api/admin/categories, /api/admin/accommodations", "Manage master data", "→ category / accommodation"],
-  ["Core (internal)", "GET", "/internal/job-postings/{id}/summary", "Posting data for the Insights Service (not routed by gateway)", "X-Service-Key → {address, psgc_code, accommodations, trust_score}"],
-  ["Insights", "GET", "/api/insights/job-postings/{id}", "Workplace Accessibility Snapshot (mashup)", "→ snapshot (Section 4.5)"],
-  ["Insights", "GET", "/api/insights/locations/{level}", "Normalized PSGC lists (regions, provinces, cities)", "?parent= → [{code,name,level}]"],
+  ["Core (internal)", "GET", "/internal/job-postings/{id}/summary", "Posting data for the Insights Service (not routed by gateway)", "X-Service-Key → {address, psgc_code, location_label, accommodations, trust_score}"],
+  ["Insights", "GET", "/api/insights/job-postings/{id}", "Workplace Accessibility Snapshot (mashup)", "→ 200 snapshot (Section 4.5); 404 posting not visible; 503 Core unreachable"],
+  ["Insights", "GET", "/api/insights/locations/{level}", "Normalized PSGC lists (regions, provinces, cities/municipalities)", "?parent=<10-digit PSGC code> → [{code,name,level}]; header `X-Data-Source`"],
   ["Registry (SOAP)", "POST", "/soap  (SOAPAction: VerifyBusinessRegistration)", "Legacy registry lookup (internal only)", "SOAP envelope → SOAP response / Fault (Section 4.3)"],
 ], [1250, 950, 2700, 2280, 2900], { size: 16 }));
 
@@ -286,7 +286,7 @@ C.push(...code(`
       "title": "Data Encoder",
       "employer": { "id": 7, "company_name": "Bright Path BPO Inc.", "verified": true },
       "category": { "id": 3, "name": "Administrative" },
-      "location": { "psgc_code": "137404000", "label": "Quezon City, NCR" },
+      "location": { "psgc_code": "1381300000", "label": "Quezon City, National Capital Region (NCR)" },
       "employment_type": "full_time",
       "work_setup": "hybrid",
       "interview_format": "online",
@@ -302,7 +302,7 @@ C.push(...code(`
   ],
   "meta": { "current_page": 1, "per_page": 12, "total": 12, "match_mode": true }
 }`));
-C.push(P("Important fields: `match.met`/`match.total` drive the \"Meets 4 of 5 of your needs\" badge and `missing` names the unmet accommodation; `trust_score.published` is false (and `score` null) until three feedback responses exist; `location.psgc_code` is the normalized PSGC code used by the Insights Service."));
+C.push(P("Important fields: `match.met`/`match.total` drive the \"Meets 4 of 5 of your needs\" badge and `missing` names the unmet accommodation; `trust_score.published` is false (and `score` null) until three feedback responses exist; `location.psgc_code` is the official 10-digit PSGC code chosen in the location picker (the label is stored with it) and is used by the Insights Service."));
 C.push(P("**Apply** – `POST /api/job-postings/42/applications`"));
 C.push(...code(`
 Request:  { "cover_note": "I have 3 years of encoding experience.",
@@ -425,37 +425,39 @@ C.push(P("**How the contract is used.** The Core Service sends the employer's `b
 
 C.push(H2("4.4 External REST API"));
 C.push(...table(["Provider", "Purpose", "Authentication", "Data Used", "Failure / Fallback Handling"], [
-  ["OpenStreetMap Nominatim (`/search`)", "Geocode a job posting's address to latitude/longitude", "None; identifying `User-Agent` and contact email required by usage policy", "`lat`, `lon`, `display_name`, `importance`", "Max 1 request/second (throttled queue); results cached 30 days; on error or timeout (5 s) fall back to the PSGC city centroid (`precision: \"city\"`), mark source `unavailable`"],
-  ["Overpass API (`/api/interpreter`)", "Find OSM elements tagged `wheelchair=yes|limited` within 500 m (transit stops, toilets, parking, entrances)", "None (fair-use limits)", "`elements[].tags` (`amenity`, `public_transport`, `highway`, `wheelchair`, `name`), `lat`, `lon`", "Cached 24 h; on 429/504 or timeout (8 s) return the last cached result and mark source `stale`, or omit the nearby section and mark source `unavailable`"],
-  ["PSGC API (psgc.gitlab.io/api)", "Official Philippine regions, provinces, cities/municipalities for location pickers and normalization", "None", "`code`, `name`, `regionCode`, `provinceCode`, `isCity`", "Lists cached 7 days (data rarely changes); a seeded copy of the NCR and major cities list is used if the API is unreachable"],
+  ["OpenStreetMap Nominatim (`/search`)", "Geocode a job posting's address to latitude/longitude", "None; identifying `User-Agent` and contact email required by usage policy", "`lat`, `lon`, `display_name`, `importance`", "Max 1 request/second (throttled queue; a request that would wait more than 2 s is not sent); results cached 30 days; street address not found → the city itself is searched (`precision: \"city\"`); on error or timeout (5 s) use an expired cache entry (`stale`), else a bundled city centre for the PSGC code (`precision: \"city\"`) and mark the source `unavailable`; Nominatim is never called without the contact email"],
+  ["Overpass API (`/api/interpreter`)", "Find OSM elements tagged `wheelchair=yes|limited` within 500 m (transit stops, toilets, parking, entrances)", "None (fair-use limits)", "`elements[].tags` (`amenity`, `public_transport`, `highway`, `wheelchair`, `name`), `lat`, `lon`", "Cached 24 h (point rounded to 4 decimals + radius); 429/504 pages, a `runtime error` remark or a timeout (8 s) count as failures and are never cached; then the last cached result is returned as `stale`, else `nearby_accessible` is null and the source `unavailable`"],
+  ["PSGC API (psgc.gitlab.io/api)", "Official Philippine regions, provinces, cities/municipalities for location pickers and normalization", "None", "`psgc10DigitCode`, `code`, `name`, `regionName`, `isCity`", "OpenDoor uses the official 10-digit codes; the API's own 9-digit code is kept only for follow-up requests. Lists cached 7 days; if the API is unreachable: expired cache entry (`stale`), then a bundled copy of all regions, provinces and their cities/municipalities (`fallback`), else 503 `SERVICE_UNAVAILABLE`"],
 ], [1800, 2000, 1700, 2100, 2480], { size: 16 }));
 
 C.push(H2("4.5 Mashup / Data Transformation"));
-C.push(P("The **Workplace Accessibility Snapshot** (`GET /api/insights/job-postings/{id}`) combines four sources into one result shown on the job details page:"));
+C.push(P("The **Workplace Accessibility Snapshot** (`GET /api/insights/job-postings/{id}`) combines four sources into one result shown on the job details page. Only the Core Service is required; the whole snapshot must be built within 12 seconds (the gateway allows 15):"));
 C.push(...numbered([
-  "**Extract – Core Service.** The Insights Service calls `GET /internal/job-postings/{id}/summary` (service key) to obtain the posting's street address, PSGC code, advertised accommodations (grouped) and the employer's published trust score.",
-  "**Extract – PSGC.** The PSGC code is resolved to a standard `City, Province, Region` label so that free-text locations such as \"QC\", \"Quezon City\" and \"Q.C.\" become one value.",
-  "**Extract – Nominatim.** The normalized address is geocoded to coordinates (cached).",
-  "**Extract – Overpass.** An Overpass QL query returns OSM elements within 500 m that carry a `wheelchair` tag.",
-  "**Transform.** OSM tags are mapped to four PWD-relevant categories (Accessible transit stops, Accessible toilets, Accessible parking, Other accessible places); distances are computed with the haversine formula; duplicates are removed; `limited` is reported separately from `yes`; the nearest three items per category are kept.",
-  "**Combine.** The result merges the employer's own claims (advertised physical-access accommodations), the community verification (trust score and per-accommodation breakdown) and the independent map data, plus a `sources` object that tells the client which parts are live, cached or unavailable.",
+  "**Extract – Core Service.** The Insights Service calls `GET /internal/job-postings/{id}/summary` (service key) to obtain the posting's street address, PSGC code and label, advertised accommodations (grouped) and the employer's trust score with its breakdown. Posting data is never cached by the Insights Service. Core 404 (posting missing, not open or not approved) → snapshot 404; any other Core failure (down, timeout, rejected key, unexpected answer) → 503 `SERVICE_UNAVAILABLE`.",
+  "**Extract – PSGC.** Locations are chosen from PSGC lists in the location picker instead of typed, so \"QC\", \"Quezon City\" and \"Q.C.\" all become code `1381300000`. The Insights Service resolves the code to the official `City, Province, Region` names (NCR has no province; highly urbanized cities such as Cebu City are searched across the region's provinces). If PSGC is unavailable, the label stored by the Core Service is used.",
+  "**Extract – Nominatim.** The query `street address, City, Province` is geocoded to coordinates (`precision: \"street\"`). If the street is not found, the city itself is searched (e.g. \"Makati, Metro Manila\"; for PSGC's \"City of X\" also \"X City, Province\" and \"X City\"), accepting only a city, town or municipality – or a result whose address names the city – so that provinces or same-name places elsewhere are not used (`precision: \"city\"`). If nothing is found or Nominatim fails, a bundled city centre for the PSGC code is used.",
+  "**Extract – Overpass.** An Overpass QL query (Appendix B) returns OSM elements within 500 m tagged `wheelchair=yes` or `limited`. Without coordinates, or when Overpass fails and nothing is cached, `nearby_accessible` is `null` (empty lists mean that nothing was found).",
+  "**Transform.** OSM tags are mapped to four PWD-relevant categories (Accessible transit stops, Accessible toilets, Accessible parking, Other accessible places); distances from the exact workplace point are computed with the haversine formula; duplicates are removed; `limited` is reported separately from `yes`; the nearest three items per category are kept.",
+  "**Combine.** The result merges the employer's own claims (advertised accommodations by group), the community verification (trust score and per-accommodation breakdown; `null` until the score is published) and the independent map data, plus a `sources` object that tells the client which parts are live (`ok`), cached, stale or unavailable. A source that has not answered when the 12-second budget is used up is reported `unavailable` and no further source is started; its request still completes and fills the cache for the next visitor.",
 ]));
 C.push(P("**OSM tag → category mapping** used in the Transform step (rules are checked top to bottom; the first match wins; only elements tagged `wheelchair=yes` or `wheelchair=limited` are kept):"));
 C.push(...table(["Snapshot category", "OSM tags that qualify", "Shown to the user as"], [
   ["`transit_stops`", "`public_transport=*`, `highway=bus_stop`, `railway=station|halt|tram_stop`, `amenity=bus_station`", "Accessible transit stops (e.g., \"Quezon Ave. MRT Station – 220 m away, wheelchair accessible\")"],
   ["`toilets`", "`amenity=toilets`, or any element with `toilets:wheelchair=yes`", "Accessible toilets"],
   ["`parking`", "`amenity=parking` (with `capacity:disabled` when present)", "Accessible parking"],
-  ["`other`", "Any other element with a `wheelchair` tag (shops, malls, offices, entrances)", "Other accessible places"],
+  ["`other`", "Any other **named** element with a `wheelchair` tag (shops, malls, offices); unnamed ones are dropped", "Other accessible places"],
 ], [1900, 4880, 3300], { size: 16 }));
-C.push(P("Each item keeps `name` (or null), `wheelchair` (`yes` / `limited`) and `distance_m` (haversine distance in whole metres). Elements are de-duplicated by OSM id; ways use their `center` coordinates."));
+C.push(P("Each item keeps `name` (or null), `wheelchair` (`yes` / `limited`) and `distance_m` (haversine distance in whole metres). Elements are de-duplicated by OSM id; ways use their `center` coordinates, and a way whose centre lies beyond 500 m is dropped. Unnamed transit stops, toilets and parking are kept, but unnamed `other` elements are dropped: in live data these were mostly entrances and kerbs that would only read as \"Unnamed place\"."));
 C.push(...code(`
 {
   "job_posting_id": 42,
-  "location": { "psgc_code": "137404000", "label": "Quezon City, Metro Manila, NCR",
+  "location": { "psgc_code": "1381300000", "label": "Quezon City, National Capital Region (NCR)",
                 "lat": 14.6507, "lon": 121.0494, "precision": "street" },
-  "employer_claims": { "physical_access": [ "Wheelchair-accessible entrance", "Elevator or ground-floor workspace" ] },
+  "employer_claims": { "physical_access": [ "Wheelchair-accessible entrance",
+                                           "Elevator or ground-floor workspace" ] },
   "community_verification": { "trust_score": 86, "based_on": 5,
-      "breakdown": [ { "accommodation": "Wheelchair-accessible entrance", "delivered": 5, "of": 5 } ] },
+      "breakdown": [ { "accommodation_id": 1, "name": "Wheelchair-accessible entrance",
+                       "delivered": 5, "partial": 0, "not_delivered": 0, "of": 5 } ] },
   "nearby_accessible": {
     "radius_m": 500,
     "transit_stops":  [ { "name": "Quezon Ave. MRT Station", "wheelchair": "yes", "distance_m": 220 } ],
@@ -479,11 +481,11 @@ C.push(...table(["Source", "Destination", "Trigger / Endpoint", "Data Exchanged"
   ["React SPA", "API Gateway", "Any `/api/*` call (HTTPS)", "JSON body, Bearer token", "Request routed with `X-Request-ID`; uniform error format on failure"],
   ["API Gateway", "Core Service", "`/api/*` (except insights) via `http://core-api.railway.internal:8001`", "Original request + `X-Request-ID`, `X-Forwarded-For`", "Core response passed back unchanged; 504 `UPSTREAM_TIMEOUT` after 10 s"],
   ["API Gateway", "Insights Service", "`/api/insights/*` via `http://insights.railway.internal:8002`", "Original request + `X-Request-ID`", "Snapshot or location list; 504 after 15 s"],
-  ["Insights Service", "Core Service", "`GET /internal/job-postings/{id}/summary` with `X-Service-Key`", "Address, PSGC code, accommodations, trust score", "200 summary; 404 if posting is not open/approved (snapshot not built)"],
+  ["Insights Service", "Core Service", "`GET /internal/job-postings/{id}/summary` with `X-Service-Key`", "Address, PSGC code and label, accommodations, trust score with breakdown", "200 summary (never cached); 404 if posting is not open/approved → snapshot 404; any other failure → snapshot 503"],
   ["Core Service", "Business Registry (legacy)", "SOAP `VerifyBusinessRegistration` on `PATCH /api/admin/employers/{id}/verify` (`action=check`)", "Registration number, registry type, business name; WS-Security UsernameToken", "Registry status and name-match score stored in `registry_checks`"],
-  ["Insights Service", "Nominatim (external)", "`GET /search?q=&countrycodes=ph&format=jsonv2&limit=1`", "Normalized address → lat/lon", "Coordinates cached 30 days"],
+  ["Insights Service", "Nominatim (external)", "`GET /search?q=&countrycodes=ph&format=jsonv2&limit=1` (city searches `limit=5`); `User-Agent` with contact email", "Street address and PSGC place names → lat/lon", "Coordinates cached 30 days (key: SHA-256 of the normalized query)"],
   ["Insights Service", "Overpass (external)", "`POST /api/interpreter` (Overpass QL, `around:500`)", "Coordinates → OSM elements with `wheelchair` tag", "Nearby accessible places cached 24 h"],
-  ["Insights Service", "PSGC API (external)", "`GET /regions`, `/regions/{code}/provinces`, `/provinces/{code}/cities-municipalities`", "PSGC codes and names", "Normalized location lists cached 7 days"],
+  ["Insights Service", "PSGC API (external)", "`GET /regions`, `/regions/{code}/provinces`, `/regions/{code}/cities-municipalities` (NCR), `/provinces/{code}/cities-municipalities`", "PSGC codes and names", "Normalized location lists (10-digit codes, sorted by name) cached 7 days"],
   ["Core Service", "Core Service (event)", "Application status change, feedback saved/hidden (observer)", "Application, feedback items", "Notification created; employer trust score and feedback count recalculated"],
 ], [1500, 1600, 2600, 2180, 2200], { size: 16 }));
 C.push(H2("5.3 Error Handling and Status Propagation"));
@@ -492,9 +494,9 @@ C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior
   ["400", "BAD_REQUEST", "Gateway, services", "Malformed JSON or query parameters"],
   ["401", "UNAUTHENTICATED", "Core", "Missing, invalid or revoked Sanctum token; the client logs the user out"],
   ["403", "FORBIDDEN / ACCOUNT_SUSPENDED", "Core", "Wrong role or Policy denies (e.g., editing another employer's posting); suspended account"],
-  ["404", "NOT_FOUND", "Core, Insights", "Unknown ID, or a posting that is not open and approved"],
+  ["404", "NOT_FOUND", "Core, Insights", "Unknown ID, or a posting that is not open and approved; unknown PSGC region/province"],
   ["409", "ALREADY_APPLIED / FEEDBACK_EXISTS", "Core", "Duplicate application or second feedback for the same application"],
-  ["422", "VALIDATION_FAILED", "Core", "Form Request validation fails; field errors returned in `errors`"],
+  ["422", "VALIDATION_FAILED", "Core, Insights", "Form Request validation fails, or a location list `parent` that is not a 10-digit PSGC code; field errors returned in `errors`"],
   ["422", "INVALID_STATUS_TRANSITION", "Core", "Transition not allowed by the ApplicationStatus enum (e.g., Rejected → Hired, Pending → Hired)"],
   ["422", "POSTING_CLOSED / FEEDBACK_NOT_OPEN", "Core", "Applying to a closed posting; feedback before calendar day 30 after the hire date (Asia/Manila)"],
   ["422", "REGISTRY_INVALID_REQUEST", "Core", "Registry returned `Client.Validation` (e.g., malformed registration number); the employer is asked to correct it"],
@@ -502,10 +504,10 @@ C.push(...table(["HTTP", "Application Error Code", "Raised by", "When / Behavior
   ["500", "SERVER_ERROR", "Core", "Unexpected server error; generic message only (no stack trace), details logged with the `request_id`"],
   ["502", "REGISTRY_UNAVAILABLE / REGISTRY_AUTH_FAILED", "Core", "`Server` / `Client.Authentication` fault, connection failure or 5-second timeout; employer remains in the manual review queue"],
   ["502", "UPSTREAM_ERROR", "Gateway", "Downstream service refused the connection or returned an invalid response"],
-  ["503", "SERVICE_UNAVAILABLE", "Gateway", "Health check shows the target service down (e.g., sleeping free-tier instance)"],
+  ["503", "SERVICE_UNAVAILABLE", "Gateway, Insights", "Gateway: target service down (e.g., sleeping free-tier instance). Insights: Core Service unreachable for a snapshot, or a PSGC list neither cached nor bundled"],
   ["504", "UPSTREAM_TIMEOUT", "Gateway", "Core > 10 s, Insights > 15 s"],
 ], [800, 3000, 1500, 4780], { size: 16 }));
-C.push(P("**Graceful degradation.** External and legacy integrations never block the core hiring transaction. The Insights Service uses per-source timeouts (Nominatim 5 s, Overpass 8 s, Core 3 s), returns HTTP 200 with whatever parts it could build, and reports each source as `ok`, `cached`, `stale` or `unavailable`; the client hides empty sections and shows \"Nearby accessibility information is temporarily unavailable.\" If the Insights Service itself is down, the job details page still renders the posting, match result and trust score from the Core Service. If the Business Registry is down, administrators can still verify manually and the check can be retried. Retries are limited to one retry with back-off for idempotent GET calls; POST/PATCH calls are never retried automatically."));
+C.push(P("**Graceful degradation.** External and legacy integrations never block the core hiring transaction. The Insights Service uses per-source timeouts (Core 3 s, PSGC 5 s, Nominatim 5 s, Overpass 8 s) within a 12-second budget for the whole snapshot, returns HTTP 200 with whatever parts it could build, and reports each source as `ok`, `cached`, `stale` or `unavailable`. A source that failed is skipped for 60 seconds (cooldown), so during an outage each request waits for at most one timeout and is answered from the cache. The client explains each gap in plain language (for example \"Nearby places could not be loaded right now. Please check again later.\" or, with city-level coordinates, that distances are measured from the city centre). If the snapshot fails (503) or the Insights Service itself is down, the job details page still renders the posting, match result and trust score from the Core Service and the snapshot section shows a short warning. If the Business Registry is down, administrators can still verify manually and the check can be repeated. Neither the gateway nor the services retry a call automatically; the user or administrator repeats the action."));
 
 // ---------- 6 Security ----------
 C.push(H1("6. Security Design"));
@@ -554,11 +556,11 @@ C.push(...table(["Test ID", "Scenario", "Type", "Expected Result", "Actual Resul
   ["T09", "Request without token to `/api/applications`", "Negative (security)", "401 `UNAUTHENTICATED`", "[[Actual]]", "[[PASS/FAIL]]"],
   ["T10", "Hired candidate submits feedback after 30 days; 3rd response for employer", "Functional", "201; trust score published with `based_on=3` and correct value", "[[Actual]]", "[[PASS/FAIL]]"],
   ["T11", "Feedback before 30 days after hire", "Negative", "422 `FEEDBACK_NOT_OPEN`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T12", "Get Accessibility Snapshot (Gateway → Insights → Core → Nominatim/Overpass/PSGC)", "Integration", "200; `location.lat/lon` present; `sources.core=ok`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T13", "Snapshot with Overpass unreachable (invalid URL in test env)", "Integration (degradation)", "200; `sources.overpass=unavailable`; other sections present", "[[Actual]]", "[[PASS/FAIL]]"],
+  ["T12", "Get Accessibility Snapshot (Gateway → Insights → Core → Nominatim/Overpass/PSGC)", "Integration", "200 within 15 s; `location` has the PSGC code, label and coordinates in the Philippines (`precision` street or city); `sources.core=ok`", "[[Actual]]", "[[PASS/FAIL]]"],
+  ["T13", "Snapshot with Overpass unreachable (invalid `OVERPASS_URL` in test env)", "Integration (degradation)", "200; `sources.overpass=unavailable` and `nearby_accessible=null` (`cached`/`stale` if a cached result exists); location and employer claims present", "[[Actual]]", "[[PASS/FAIL]]"],
   ["T14", "Admin registry check for a seeded ACTIVE SEC number", "Integration (SOAP)", "200; `registry.status=ACTIVE`; `name_match ≥ 0.80`; check stored", "[[Actual]]", "[[PASS/FAIL]]"],
   ["T15", "Registry check with an unknown number / wrong SOAP password", "Integration (negative)", "200 `status=NOT_FOUND` / 502 `REGISTRY_AUTH_FAILED`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T16", "Insights calls `/internal/...` without `X-Service-Key`", "Integration (security)", "401", "[[Actual]]", "[[PASS/FAIL]]"],
+  ["T16", "Call Core `/internal/job-postings/{id}/summary` without `X-Service-Key`", "Integration (security)", "401 `UNAUTHENTICATED`; the gateway does not route `/internal/*`", "[[Actual]]", "[[PASS/FAIL]]"],
 ], [700, 2800, 1300, 2700, 1500, 1080], { size: 16 }));
 C.push(H2("7.2 Postman / API Test Evidence"));
 C.push(P("The repository contains `tests/postman/OpenDoor.postman_collection.json` and environments `local.postman_environment.json` and `production.postman_environment.json` (variables: `baseUrl`, `candidateEmail`, `employerEmail`, `adminEmail`, passwords from secrets). The collection is organized in folders that run in order: **01 Auth**, **02 Master Data**, **03 Employer & Postings**, **04 Candidate & Matching**, **05 Applications & Status**, **06 Feedback & Trust Score**, **07 Insights Mashup**, **08 Admin & SOAP Registry**, **09 Negative & Security Cases**. Login requests save tokens to collection variables; create requests save IDs (`jobPostingId`, `applicationId`) for later requests."));
@@ -598,7 +600,7 @@ C.push(...table(["Component", "Provider / Platform", "URL / Host", "Configuratio
   ["React SPA", "Vercel (Hobby)", "[[https://opendoor.vercel.app]]", "Root `frontend/`; build `npm run build`; output `dist/`; `VITE_API_URL` = gateway URL; SPA rewrite to `index.html`"],
   ["API Gateway", "Railway service (Nixpacks/Node 22)", "[[https://opendoor-gateway.up.railway.app]] (public domain)", "`CORE_URL`, `INSIGHTS_URL` (internal hostnames), `CORS_ALLOWED_ORIGIN`, rate-limit settings; health check `/api/health`"],
   ["Core Service", "Railway service (Dockerfile: php-fpm + nginx)", "core-api.railway.internal:8001 (no public domain)", "`APP_ENV=production`, `APP_DEBUG=false`, `DB_*`, `REGISTRY_WSDL_URL`, `SERVICE_KEY_INSIGHTS`; release command `php artisan migrate --force`"],
-  ["Insights Service", "Railway service (Node 22)", "insights.railway.internal:8002 (no public domain)", "`CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_*`, timeouts"],
+  ["Insights Service", "Railway service (Node 22)", "insights.railway.internal:8002 (no public domain)", "`CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_*`; optional `PSGC_URL`, `NOMINATIM_URL`, `OVERPASS_URL` (e.g., a second Overpass instance)"],
   ["Business Registry (SOAP)", "Railway service (Dockerfile: PHP 8.3 + SoapServer)", "registry.railway.internal:8003 (no public domain)", "`REGISTRY_SOAP_USER/PASSWORD`; SQLite file seeded at build"],
   ["MySQL 8", "Railway managed database", "mysql.railway.internal:3306", "Schemas `opendoor_core` and `insights_cache` with separate users; daily backups (Railway)"],
 ], [1700, 2200, 2700, 3480], { size: 16 }));
@@ -735,6 +737,7 @@ C.push(H1("12. References"));
 [
   "Access Careers. (n.d.). Access Careers. Retrieved September 28, 2026, from http://careers.axlearning.org/",
   "Apache Software Foundation. (n.d.). Apache JMeter user's manual. https://jmeter.apache.org/usermanual/",
+  "Axios. (n.d.). Axios documentation. https://axios-http.com/docs/intro",
   "Department of Labor and Employment. (n.d.). PhilJobNet and PESO Employment Information System. Retrieved September 28, 2026, from https://philjobnet.gov.ph/",
   "Deque Systems. (n.d.). axe-core: Accessibility engine for automated web UI testing. https://github.com/dequelabs/axe-core",
   "Express.js. (n.d.). Express 4.x API reference. https://expressjs.com/",
@@ -742,11 +745,13 @@ C.push(H1("12. References"));
   "Laravel. (n.d.). Laravel 13.x documentation: Sanctum, Authorization, Validation. https://laravel.com/docs/13.x",
   "Meta Open Source. (n.d.). React documentation (version 19). https://react.dev/",
   "National Privacy Commission. (2016). Implementing rules and regulations of Republic Act No. 10173, known as the Data Privacy Act of 2012. https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/",
+  "nock. (n.d.). nock: HTTP server mocking and expectations library for Node.js. https://github.com/nock/nock",
   "OASIS. (2006). Web Services Security UsernameToken Profile 1.1. https://docs.oasis-open.org/wss/v1.1/",
   "OpenJS Foundation. (n.d.). Jest documentation. https://jestjs.io/",
   "OpenStreetMap Foundation. (n.d.). Nominatim usage policy. https://operations.osmfoundation.org/policies/nominatim/",
   "OpenStreetMap Wiki. (n.d.). Overpass API; Key:wheelchair. https://wiki.openstreetmap.org/wiki/Overpass_API",
   "Oxc Project. (n.d.). Oxlint linter. https://oxc.rs/docs/guide/usage/linter",
+  "Philippine Statistics Authority. (n.d.). Philippine Standard Geographic Code (PSGC). https://psa.gov.ph/classification/psgc",
   "PHP Group. (n.d.). SOAP extension (SoapServer, SoapClient). https://www.php.net/manual/en/book.soap.php",
   "Postman. (n.d.). Writing tests and running collections with Newman. https://learning.postman.com/docs/",
   "PSGC API. (n.d.). Philippine Standard Geographic Code API. https://psgc.gitlab.io/api/",
@@ -865,10 +870,12 @@ out center tags 50;`));
 C.push(P("**Internal summary returned by the Core Service** to the Insights Service:"));
 C.push(...code(`
 GET /internal/job-postings/42/summary      X-Service-Key: \${SERVICE_KEY_INSIGHTS}
-200 { "id": 42, "address": "123 Quezon Ave., Brgy. Paligsahan", "psgc_code": "137404000",
+200 { "id": 42, "address": "123 Quezon Ave., Brgy. Paligsahan", "psgc_code": "1381300000",
+      "location_label": "Quezon City, National Capital Region (NCR)",
       "accommodations": [ { "id": 1, "name": "Wheelchair-accessible entrance", "group": "physical_access" } ],
       "trust_score": { "published": true, "score": 86, "based_on": 5,
-                       "breakdown": [ { "accommodation_id": 1, "delivered": 5, "of": 5 } ] } }`));
+                       "breakdown": [ { "accommodation_id": 1, "name": "Wheelchair-accessible entrance",
+                                        "delivered": 5, "partial": 0, "not_delivered": 0, "of": 5 } ] } }`));
 
 C.push(H2("Appendix C - Postman collection and environment reference"));
 C.push(...table(["Item", "Reference"], [
@@ -933,12 +940,13 @@ C.push(...table(["Field", "Allowed values"], [
   ["feedback_items.rating", "`delivered` (1), `partial` (0.5), `not_delivered` (0)"],
   ["reports.status", "`open`, `dismissed`, `actioned`"],
   ["Snapshot `sources.*`", "`ok`, `cached`, `stale`, `unavailable`"],
+  ["Location lists `X-Data-Source`", "`ok`, `cached`, `stale`, `fallback`"],
 ], [3000, 7080], { kv: true, size: 16 }));
 C.push(P("**Insights Service cache** (MySQL `insights_cache`, owned only by the Insights Service) and **Business Registry** data (SQLite, owned only by the registry):"));
 C.push(...table(["Table", "Key Fields", "Expiry / Notes"], [
-  ["geocode_cache", "address_hash (PK), query, lat, lon, precision (`street` / `city`), fetched_at", "30 days"],
+  ["geocode_cache", "address_hash (PK, SHA-256 of the normalized query), query, lat, lon, precision (`street` / `city`), fetched_at", "30 days; bundled city centres (`city-centroids.json`, by PSGC code) when Nominatim fails"],
   ["overpass_cache", "key (PK, `lat,lon,radius` rounded to 4 decimals), payload (JSON), fetched_at", "24 hours; expired rows may be served as `stale` when Overpass fails"],
-  ["psgc_cache", "key (PK: `regions`, `provinces:{code}`, `cities:{code}`), payload (JSON), fetched_at", "7 days; bundled NCR + major cities JSON as fallback"],
+  ["psgc_cache", "key (PK: `regions`, `provinces:{code}`, `cities:{code}`), payload (JSON), fetched_at", "7 days; bundled JSON of all regions, provinces and their cities/municipalities (`psgc-fallback.json`) as fallback"],
   ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by `seed.php`: the two demo employers and three other businesses (ACTIVE), two EXPIRED and two CANCELLED samples"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("[[Insert the ERD image and any additional screenshots here.]]"));
