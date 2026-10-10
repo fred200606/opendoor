@@ -1214,6 +1214,12 @@ paths:
     get:
       tags: [M12 Saved jobs]
       summary: Saved postings
+      description: >-
+        Own bookmarks of visible postings (open, approved, not deleted), most recently saved first, 12 per page.
+        Each posting has `saved: true` and, for candidates with saved needs, `match`. A bookmark on a posting
+        that closes is kept and shows again if the posting reopens.
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
       responses:
         '200':
           description: Saved postings
@@ -1226,6 +1232,8 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/JobPosting' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /candidate/saved-jobs/{jobId}:
     parameters:
       - name: jobId
@@ -1235,13 +1243,29 @@ paths:
     post:
       tags: [M12 Saved jobs]
       summary: Save a posting
+      description: Idempotent. Only visible postings; drafts, pending, closed, deleted and unknown ids are 404.
       responses:
-        '201': { description: Saved }
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '200':
+          description: Was already saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobPosting' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [M12 Saved jobs]
       summary: Remove a saved posting
+      description: Idempotent, by id – also removes a bookmark whose posting has closed or been deleted; 204 when nothing was saved.
       responses:
         '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   # ---------------------------------------------------------------- Insights (routed to Insights Service)
   /insights/job-postings/{id}:
@@ -1693,6 +1717,9 @@ components:
         trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
         rejection_reason: { type: [string, 'null'], description: Only for the owning employer and admins }
         applicants_count: { type: integer, description: 'Only in GET /employer/job-postings (owner)' }
+        saved:
+          type: boolean
+          description: Only for logged-in candidates – in GET /job-postings/{id}, the saved-jobs list and the save response (M12)
         my_application:
           description: Only in GET /job-postings/{id} for a logged-in candidate – their application to this posting, or null
           oneOf:

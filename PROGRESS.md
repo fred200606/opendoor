@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 8 – Frontend live check (Core + gateway + Vite, demo accounts): admin users/reports/feedback/dashboard, candidate + employer dashboards, notification bell + page (incl. new `employer_verification` / `posting_review` notices), report button on job details; fix the `.stats__list` reflow (Known issues); `design:accessibility-review` + axe. First settle the suspended-employer postings question (Known issues). Then Postman folder 09, then SIA doc sync for M8–M10.
+- **Next step:** Phase 8 – Frontend live check (Core + gateway + Vite, demo accounts): admin users/reports/feedback/dashboard, candidate + employer dashboards, notification bell + page (incl. new `employer_verification` / `posting_review` notices), report button on job details; fix the `.stats__list` reflow (Known issues); `design:accessibility-review` + axe. First settle the suspended-employer postings question (Known issues). Then Postman folder 09, then SIA doc sync for M8–M10 and M12.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – M12 saved jobs pulled forward from Phase 9 (the Saved jobs page 404'd). Only visible postings can be saved (else 404) or are listed; a bookmark on a closed posting stays and shows again if it reopens. POST is idempotent (201 new, 200 already saved; returns the posting), DELETE is idempotent by plain id (204, also for closed/deleted postings). List newest-saved first, 12/page, with `match`. New `saved` boolean on JobPosting for candidates only (details, saved list, save response; not in search) so the details page shows the right state – OpenAPI updated, SIA doc not yet.
 - 2026-10-10 – M9: notifications for candidates and employers only (admins 403, as in the contract; the UI hides the bell for admins). Newest first (relation order; ids are random UUIDs), 12/page, `meta.unread_count` = all unread. Another user's or unknown id → 404; re-reading keeps the first `read_at`. New types `employer_verification` (approve/reject/remove, not `check`) and `posting_review` (approve → `/jobs/{id}`, reject → `/employer/jobs/{id}/edit`) with the admin's reason in the message.
 - 2026-10-10 – M8: dashboard counts are zero-filled for every status and equal the lists they link to – employer postings exclude soft-deleted ones, employer applicants include applications to deleted postings (as `GET /applications`), admin analytics leave out deleted postings and their applications. Candidate `matching_jobs` = visible postings offering every saved need (0 without needs); `feedback_due` = hired, unrated applications (also not-yet-open ones), earliest hire first. Employer without company → `exists:false`, zeros, unpublished trust score.
 - 2026-10-10 – M10: `reports` table adds `note`, `resolved_by`, `resolved_at` (PATCH accepted `note` but the model had no column); Report returns `note`/`resolved_at` to admins only. Reports only for visible postings (else 404), one **open** report per candidate + posting (422 `errors.reason`), resolve only while open (422 `errors.status`, row lock). Admin queue `status=open` oldest first, other lists newest first; users sorted by name; all 12 per page. Admins cannot suspend themselves (422 `errors.suspended`); suspend revokes all tokens in one transaction. Feedback hide → 204, score via the existing `FeedbackObserver`. Resolving a report does not change the posting.
@@ -146,7 +147,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Postman: folder 09 negative + security cases
 
 ### Phase 9 – Release
-- [ ] M12 saved jobs, M13 display settings (if time allows)
+- [x] M12 saved jobs – pulled forward 2026-10-10 (`SavedJobController`, `saved_jobs` table, `saved` on JobPosting; `tests/Feature/SavedJobs` 8 tests, also on MySQL; 328 Core tests; 102 Vitest; Postman 04 +8 requests; live-checked save → reload keeps "Saved" → list → remove, axe 0 on 3 views)
+- [ ] M13 display settings (if time allows)
 - [ ] GitHub Actions CI (lint, tests, build, Newman with mock externals)
 - [ ] Dockerfiles for Railway (core-api, registry); Railway project + private networking; Vercel project
 - [ ] Production seed; Newman smoke against production
@@ -156,6 +158,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- SIA doc: add M12 (saved-jobs rules, `saved_jobs` table, `saved` field on JobPosting) at the next doc sync (`opendoor-sia-docs`).
 - M10: suspending an employer leaves its open postings visible in search (business rules only say login is blocked + tokens revoked). Decide with the user whether suspension should hide/close them before the Phase 8 live check.
 - Dashboards: `.stats__list` uses `minmax(9rem, 1fr)` – likely sideways scroll at 360 px + 200% text (same bug as the location picker, fixed there with `min(…, 100%)`). Check/fix at the Phase 8 dashboard live check.
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
@@ -171,6 +174,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – M12 saved jobs built (the Saved jobs page showed "resource not found": Core had no endpoints). Core + `saved` flag + OpenAPI + Postman 04 + live check done. Next: Phase 8 frontend live check (unchanged).
 - 2026-10-10 – M9 notifications in Core (list/read/read-all + employer notices for verification and posting decisions; 7 tests, SQLite + MySQL). Phase 8 Core work complete. Next: frontend live check.
 - 2026-10-10 – M8 dashboards in Core (candidate/employer/admin, 7 tests on SQLite + MySQL). Next: M9 notifications.
 - 2026-10-10 – M10 moderation in Core: admin users list + suspend/reactivate, posting reports (candidate create, admin queue/resolve with note), admin feedback list + hide (21 tests, SQLite + MySQL). Next: M8 dashboards.

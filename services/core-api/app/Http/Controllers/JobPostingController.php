@@ -36,7 +36,7 @@ class JobPostingController extends Controller
         $jobPosting->load(self::RELATIONS);
         NeedsMatcher::for($viewer)?->annotate($jobPosting);
 
-        // A candidate sees an earlier application instead of the apply form.
+        // A candidate sees an earlier application instead of the apply form, and whether it is saved (M12).
         if ($viewer?->role === UserRole::Candidate) {
             $application = $jobPosting->applications()->whereHas('candidateProfile', fn ($profile) => $profile->where('user_id', $viewer->id))->first();
             $jobPosting->setAttribute('my_application', $application ? [
@@ -44,6 +44,7 @@ class JobPostingController extends Controller
                 'status' => $application->status,
                 'created_at' => $application->created_at->toIso8601String(),
             ] : null);
+            $jobPosting->setAttribute('saved', $jobPosting->savedBy()->where('user_id', $viewer->id)->exists());
         }
 
         return new JobPostingResource($jobPosting);

@@ -8,7 +8,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * JobPosting in docs/openapi.yaml. Load employer, category and accommodations before use.
- * `match` is filled by the matching service (M5); `rejection_reason` only for owner and admins.
+ * `match` is filled by the matching service (M5); `rejection_reason` only for owner and admins;
+ * `saved` (M12) only for candidates.
  *
  * @mixin JobPosting
  */
@@ -45,6 +46,8 @@ class JobPostingResource extends JsonResource
             'rejection_reason' => $this->when($privileged, $this->rejection_reason),
             // Details only, for candidates (null when they have not applied).
             'my_application' => $this->when(array_key_exists('my_application', $this->resource->getAttributes()), fn () => $this->resource->getAttribute('my_application')),
+            // Candidates only: details, saved-jobs list and the save response (M12).
+            'saved' => $this->when(array_key_exists('saved', $this->resource->getAttributes()), fn () => (bool) $this->resource->getAttribute('saved')),
             'applicants_count' => $this->when($privileged && isset($this->applications_count), fn () => $this->applications_count),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

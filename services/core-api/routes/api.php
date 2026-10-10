@@ -6,6 +6,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Candidate\ProfileController;
+use App\Http\Controllers\Candidate\SavedJobController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Employer\CompanyController;
@@ -63,6 +64,10 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('accommodations', [ProfileController::class, 'updateNeeds']);
         Route::post('resume', [ProfileController::class, 'uploadResume']);
         Route::get('dashboard', [DashboardController::class, 'candidate']);
+        // M12 Saved jobs – own bookmarks of visible postings
+        Route::get('saved-jobs', [SavedJobController::class, 'index']);
+        Route::post('saved-jobs/{jobPosting}', [SavedJobController::class, 'store']);
+        Route::delete('saved-jobs/{jobPosting}', [SavedJobController::class, 'destroy'])->whereNumber('jobPosting');
     });
 
     // M6 Applications – the candidate applies; both parties follow the status workflow (ApplicationPolicy)

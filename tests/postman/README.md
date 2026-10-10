@@ -34,6 +34,6 @@ Folder 07 needs the Insights Service (`:8002`) and calls the live PSGC, Nominati
 
 Run Newman from the **repo root**: folder 04 uploads `tests/postman/fixtures/cv.pdf` and `not-a-pdf.pdf` by that relative path.
 
-The gateway allows 120 requests per minute per IP (`RATE_LIMIT_PER_MIN`); a full run is now about 140 requests, so set `RATE_LIMIT_PER_MIN=300` in your local `gateway/.env` (keep 120 in production) and wait a minute between runs.
+The gateway allows 120 requests per minute per IP (`RATE_LIMIT_PER_MIN`); a full run is now about 150 requests, so set `RATE_LIMIT_PER_MIN=300` in your local `gateway/.env` (keep 120 in production) and wait a minute between runs.
 
 On Windows, `php artisan serve` is single-threaded, so a login/register (bcrypt) can occasionally exceed 1000 ms locally; rerun before treating it as a regression.

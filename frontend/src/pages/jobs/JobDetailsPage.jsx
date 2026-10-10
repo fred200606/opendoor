@@ -136,7 +136,7 @@ function JobActions({ job }) {
         <p>This job is no longer accepting applications.</p>
       )}
       <div className="actions">
-        <SaveButton jobId={job.id} />
+        <SaveButton jobId={job.id} initiallySaved={Boolean(job.saved)} />
         <ReportButton jobId={job.id} />
       </div>
     </section>
@@ -202,8 +202,8 @@ function ApplyForm({ job }) {
   );
 }
 
-function SaveButton({ jobId }) {
-  const [saved, setSaved] = useState(false);
+function SaveButton({ jobId, initiallySaved }) {
+  const [saved, setSaved] = useState(initiallySaved);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 

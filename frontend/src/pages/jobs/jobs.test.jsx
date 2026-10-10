@@ -136,6 +136,26 @@ describe('JobDetailsPage', () => {
     expect(screen.getByRole('link', { name: 'View your application' })).toHaveAttribute('href', '/candidate/applications/11');
     expect(screen.queryByRole('button', { name: 'Send application' })).not.toBeInTheDocument();
   });
+
+  test('a saved posting shows as saved and can be unsaved', async () => {
+    const { user, calls } = renderApp('/candidate/jobs/42', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'GET /job-postings/42': () => [200, { ...job, saved: true }],
+        'DELETE /candidate/saved-jobs/42': () => [204, ''],
+      },
+    });
+
+    const button = await screen.findByRole('button', { name: 'Saved' });
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(button);
+
+    expect(await screen.findByRole('button', { name: 'Save job' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Removed from saved jobs.')).toHaveAttribute('role', 'status');
+    expect(calls.some((call) => call.key === 'DELETE /candidate/saved-jobs/42')).toBe(true);
+  });
 });
 
 describe('EmployerPublicPage', () => {

@@ -73,6 +73,16 @@ class JobPosting extends Model
     }
 
     /** Open, approved and still before the end of `closes_at` (Manila) – the cron may not have run yet. */
+    /**
+     * Candidates who bookmarked this posting (M12).
+     *
+     * @return BelongsToMany<CandidateProfile, $this>
+     */
+    public function savedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(CandidateProfile::class, 'saved_jobs')->withTimestamps();
+    }
+
     public function acceptsApplications(): bool
     {
         return $this->isVisible() && ! $this->closes_at->copy()->endOfDay()->isPast();

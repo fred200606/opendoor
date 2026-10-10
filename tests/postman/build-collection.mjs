@@ -768,6 +768,65 @@ pm.test('each posting offers both', () => body.data.forEach((p) => pm.expect(p.a
       path: '/job-postings?sort=cheapest',
       tests: fieldError('sort'),
     }),
+    // M12 saved jobs – throwaway candidate, so demo bookmarks are untouched
+    request('M12 Candidate saves a posting → 201', {
+      method: 'POST',
+      path: '/candidate/saved-jobs/{{searchPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(201)}
+pm.test('returns the posting as saved', () => {
+  const p = pm.response.json();
+  pm.expect(p.id).to.eql(Number(pm.collectionVariables.get('searchPostingId')));
+  pm.expect(p.saved).to.eql(true);
+});`,
+    }),
+    request('M12 Saving it again → 200 (idempotent)', {
+      method: 'POST',
+      path: '/candidate/saved-jobs/{{searchPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: status(200),
+    }),
+    request('M12 Saved jobs list shows it', {
+      path: '/candidate/saved-jobs',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('one saved posting, marked saved, with match', () => {
+  pm.expect(body.meta.total).to.eql(1);
+  pm.expect(body.data[0].id).to.eql(Number(pm.collectionVariables.get('searchPostingId')));
+  pm.expect(body.data[0].saved).to.eql(true);
+  pm.expect(body.data[0].match).to.include.keys('met', 'total', 'missing');
+});`,
+    }),
+    request('M12 Job details say it is saved', {
+      path: '/job-postings/{{searchPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `${status(200)}\npm.test('saved is true', () => pm.expect(pm.response.json().saved).to.eql(true));`,
+    }),
+    request('M12 Unknown posting cannot be saved → 404', {
+      method: 'POST',
+      path: '/candidate/saved-jobs/999999',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('M12 Employer has no saved jobs → 403', {
+      path: '/candidate/saved-jobs',
+      auth: bearer('employerToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('M12 Candidate removes it → 204', {
+      method: 'DELETE',
+      path: '/candidate/saved-jobs/{{searchPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: status(204),
+    }),
+    request('M12 Saved jobs list is empty again', {
+      path: '/candidate/saved-jobs',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `${status(200)}\npm.test('no saved postings', () => pm.expect(pm.response.json().meta.total).to.eql(0));`,
+    }),
   ],
 );
 

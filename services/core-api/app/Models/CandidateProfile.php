@@ -57,6 +57,16 @@ class CandidateProfile extends Model
         return $this->hasMany(Application::class);
     }
 
+    /**
+     * M12 bookmarks; the pivot's created_at is when the candidate saved the posting.
+     *
+     * @return BelongsToMany<JobPosting, $this>
+     */
+    public function savedJobs(): BelongsToMany
+    {
+        return $this->belongsToMany(JobPosting::class, 'saved_jobs')->withTimestamps();
+    }
+
     /** The candidate's profile; a new candidate gets an empty one on first access (never a 404). */
     public static function for(User $user): self
     {
