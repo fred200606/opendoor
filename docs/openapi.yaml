@@ -815,32 +815,45 @@ paths:
     get:
       tags: [M8 Dashboards]
       summary: Candidate summary (applications by status, matches, pending feedback)
+      description: |
+        Counts are zero-filled for every status. `matching_jobs` = visible postings offering every saved need (0 without needs).
+        `feedback_due` = hired applications not rated yet, earliest hire first (also those whose window is not open yet).
       responses:
         '200':
           description: Summary
           content:
             application/json:
               schema: { $ref: '#/components/schemas/CandidateDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /employer/dashboard:
     get:
       tags: [M8 Dashboards]
       summary: Employer summary (postings, applicants, trust score, verification)
+      description: |
+        Postings exclude deleted ones (as the postings list); applications include those to deleted postings (as the applicants list).
+        Without a company: `exists:false`, zero counts and an unpublished trust score.
       responses:
         '200':
           description: Summary
           content:
             application/json:
               schema: { $ref: '#/components/schemas/EmployerDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /admin/dashboard:
     get:
       tags: [M8 Dashboards]
       summary: Admin analytics (users, postings, verification queue, reports)
+      description: Postings deleted by their employer, and applications to them, are left out. `verification_queue` uses the same rule as `GET /admin/employers?status=pending`.
       responses:
         '200':
           description: Summary
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AdminDashboard' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   # ---------------------------------------------------------------- M9 Notifications
   /notifications:

@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Candidate\ProfileController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Employer\CompanyController;
 use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
@@ -53,6 +54,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('profile', [ProfileController::class, 'update']);
         Route::put('accommodations', [ProfileController::class, 'updateNeeds']);
         Route::post('resume', [ProfileController::class, 'uploadResume']);
+        Route::get('dashboard', [DashboardController::class, 'candidate']);
     });
 
     // M6 Applications – the candidate applies; both parties follow the status workflow (ApplicationPolicy)
@@ -77,6 +79,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('company', [CompanyController::class, 'show']);
         Route::put('company', [CompanyController::class, 'update']);
         Route::get('job-postings', [PostingController::class, 'index']);
+        Route::get('dashboard', [DashboardController::class, 'employer']);
     });
 
     // M4 Job postings – an employer manages only its own (JobPostingPolicy)
@@ -89,6 +92,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::apiResource('categories', Admin\CategoryController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('accommodations', Admin\AccommodationController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('job-postings', [Admin\PostingApprovalController::class, 'index'])->name('job-postings.index');

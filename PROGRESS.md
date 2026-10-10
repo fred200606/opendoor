@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 8 – Core M8 dashboards (`GET /candidate/dashboard`, `/employer/dashboard`, `/admin/dashboard`; schemas CandidateDashboard/EmployerDashboard/AdminDashboard in `docs/openapi.yaml`; check the built dashboard pages first; analytics should ignore soft-deleted postings – see Known issues). SIA doc sync for M10 (Appendix A/F reports fields, 4.1) at the end of Phase 8.
+- **Next step:** Phase 8 – Core M9 notifications: `GET /notifications`, `PATCH /notifications/{id}/read`, `PATCH /notifications/read-all` (Laravel database notifications already written by M6; check `docs/openapi.yaml` Notification schema + the built bell/notifications page first). Also notify the employer of verification decisions (TODO in `EmployerVerificationController::verify`). SIA doc sync for M8 + M10 at the end of Phase 8.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – M8: dashboard counts are zero-filled for every status and equal the lists they link to – employer postings exclude soft-deleted ones, employer applicants include applications to deleted postings (as `GET /applications`), admin analytics leave out deleted postings and their applications. Candidate `matching_jobs` = visible postings offering every saved need (0 without needs); `feedback_due` = hired, unrated applications (also not-yet-open ones), earliest hire first. Employer without company → `exists:false`, zeros, unpublished trust score.
 - 2026-10-10 – M10: `reports` table adds `note`, `resolved_by`, `resolved_at` (PATCH accepted `note` but the model had no column); Report returns `note`/`resolved_at` to admins only. Reports only for visible postings (else 404), one **open** report per candidate + posting (422 `errors.reason`), resolve only while open (422 `errors.status`, row lock). Admin queue `status=open` oldest first, other lists newest first; users sorted by name; all 12 per page. Admins cannot suspend themselves (422 `errors.suspended`); suspend revokes all tokens in one transaction. Feedback hide → 204, score via the existing `FeedbackObserver`. Resolving a report does not change the posting.
 - 2026-10-07 – Nominatim place searches: queries "X, Province" → "X City, Province" → "X City" (last two only for PSGC "City of X"); top 5 per search; accept a city/town/municipality, else the first result whose address names the city. Replaces the plain first-result rule, which gave province centres (Davao, Zamboanga) and same-name places elsewhere (Lapu-Lapu bus stop in Cebu City). A region-name rule for independent cities was tried and dropped (Bacolod is now in the Negros Island Region). The contact email is set by the user in the local `.env` only. The build script retries a lookup twice (5 s, 10 s) on network errors.
 
@@ -138,7 +139,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ### Phase 8 – Administration
 - [x] Core: M10 users (suspend → revoke tokens), reports, feedback hide (`tests/Feature/Moderation` 21 tests, also on MySQL; 306 Core tests pass; OpenAPI 403/404/422 + Report `note`/`resolved_at`)
-- [ ] Core: M8 dashboards (candidate, employer, admin analytics)
+- [x] Core: M8 dashboards (candidate, employer, admin analytics) (`DashboardController`; `tests/Feature/Dashboards` 7 tests, also on MySQL; 313 Core tests pass; OpenAPI rules + 401/403)
 - [ ] Core: M9 notifications list / read / read-all
 - [ ] Frontend: admin screens, dashboards, notification bell wired – UI built 2026-10-04 against OpenAPI; tick after a live check with the real endpoints
 - [ ] Postman: folder 09 negative + security cases
@@ -158,7 +159,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Dashboards: `.stats__list` uses `minmax(9rem, 1fr)` – likely sideways scroll at 360 px + 200% text (same bug as the location picker, fixed there with `min(…, 100%)`). Check/fix at the Phase 8 dashboard live check.
 - `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
-- Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Fine locally; before the production smoke (Phase 9) run only read-only folders there, or make Phase 8 analytics ignore soft-deleted postings.
+- Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Admin analytics now ignore deleted postings (M8); the employer dashboard still counts that applicant (same as the applicants list). Before the production smoke (Phase 9) run only read-only folders there.
 - Gateway limit 120 req/min per IP: one Newman run is now about 140 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
 - Live checks: the Playwright MCP Chrome window is visible; clicking in it during a scripted check moves the page. Upload test files must be inside the repo (e.g. git-ignored `.playwright-mcp/`).
@@ -169,6 +170,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – M8 dashboards in Core (candidate/employer/admin, 7 tests on SQLite + MySQL). Next: M9 notifications.
 - 2026-10-10 – M10 moderation in Core: admin users list + suspend/reactivate, posting reports (candidate create, admin queue/resolve with note), admin feedback list + hide (21 tests, SQLite + MySQL). Next: M8 dashboards.
 - 2026-10-10 – SIA doc synced for Phase 7 (4.1, 4.2 10-digit PSGC sample, 4.4 failure handling, 4.5 snapshot rules: Core-only required, 12 s budget, place matching, unnamed `other` dropped, `nearby_accessible: null`; 5.2/5.3 incl. Insights 422/503 and no automatic retries; T12/T13/T16 expected results; 8.2 env; App. B/F; refs Axios, nock, PSA PSGC); PDF 43 pages, no blank pages. Test-plan Actual/Status stay for the final run (Phase 9), like T01–T15. dev references: QC code 1381300000. **Phase 7 complete.**
 - 2026-10-10 – Phase 7 frontend live check done (snapshot incl. stale/unavailable/503, picker incl. NCR, saving posting + company); accessibility-review found + fixed a picker list race, lost focus, silent load error and reflow overflow. Next: Phase 7 SIA doc sync.
