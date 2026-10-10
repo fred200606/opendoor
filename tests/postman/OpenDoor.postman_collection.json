@@ -190,6 +190,18 @@
     {
       "key": "gatewayRoot",
       "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": ""
+    },
+    {
+      "key": "pmUserId",
+      "value": ""
+    },
+    {
+      "key": "secPostingId",
+      "value": ""
     }
   ],
   "item": [
@@ -3699,7 +3711,7 @@
           ]
         },
         {
-          "name": "T03 Guest searches open postings",
+          "name": "Guest searches open postings",
           "request": {
             "method": "GET",
             "auth": {
@@ -3798,7 +3810,7 @@
           ]
         },
         {
-          "name": "T04 Demo candidate \"Matches my needs\" → ranked by needs met",
+          "name": "T03 Demo candidate \"Matches my needs\" → ranked by needs met",
           "request": {
             "method": "GET",
             "auth": {
@@ -3991,7 +4003,7 @@
           ]
         },
         {
-          "name": "T05 Job details show the match and the missing needs by name",
+          "name": "T03 Job details show the match and the missing needs by name",
           "request": {
             "method": "GET",
             "auth": {
@@ -4806,7 +4818,7 @@
           ]
         },
         {
-          "name": "Candidate applies with an interview accommodation request → 201",
+          "name": "T04 Candidate applies with an interview accommodation request → 201",
           "request": {
             "method": "POST",
             "auth": {
@@ -4875,7 +4887,58 @@
           ]
         },
         {
-          "name": "Applying again → 409 ALREADY_APPLIED",
+          "name": "T04 The employer is notified of the application",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('newest notice is application_received for this application', () => {",
+                  "  const n = body.data[0];",
+                  "  pm.expect(n.type).to.eql('application_received');",
+                  "  pm.expect(n.data.application_id).to.eql(pm.collectionVariables.get('applicationId'));",
+                  "  pm.expect(n.data.url).to.eql('/employer/applications/' + pm.collectionVariables.get('applicationId'));",
+                  "  pm.expect(n.read_at).to.eql(null);",
+                  "});",
+                  "pm.test('unread_count counts it', () => pm.expect(body.meta.unread_count).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T05 Applying again → 409 ALREADY_APPLIED",
           "request": {
             "method": "POST",
             "auth": {
@@ -8285,6 +8348,1538 @@
                   "const body = pm.response.json();",
                   "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
                   "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09 Negative & Security Cases",
+      "description": "T09 + role, ownership, privacy, injection, CORS/header and suspension cases. Uses the throwaway employer from 08 (password postman-pass-123): it posts, is suspended and reactivated, and deletes its posting again.",
+      "item": [
+        {
+          "name": "Admin user id (for the self-suspension case)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminUserId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Throwaway employer user id",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('pmUserId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Throwaway employer submits a posting → 201",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Suspension Test\",\n  \"description\": \"Created by the Postman run for folder 09. Deleted at the end.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('secPostingId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin approves it → open",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "job-postings",
+                "{{secPostingId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guest sees the open posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T09 GET /applications without a token → 401 UNAUTHENTICATED",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is UNAUTHENTICATED', () => pm.expect(body.error.code).to.eql('UNAUTHENTICATED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forged token → 401 UNAUTHENTICATED",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "1|forged-token-that-was-never-issued",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is UNAUTHENTICATED', () => pm.expect(body.error.code).to.eql('UNAUTHENTICATED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Candidate cannot open the admin dashboard → 403",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employer cannot list users → 403",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Candidate cannot edit a posting → 403",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another employer cannot close someone else's posting → 403",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Another employer cannot delete someone else's posting → 403",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A candidate cannot read another candidate's application → 403",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "An employer cannot read an application to another employer → 403 (needs stay private)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin cannot suspend their own account → 422 errors.suspended",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{adminUserId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{adminUserId}}",
+                "suspend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suspended\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.suspended is present', () => pm.expect(body.errors).to.have.property('suspended'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search text is never SQL: ' OR '1'='1 → 200, nothing matched",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?q=%27%20OR%20%271%27%3D%271",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "%27%20OR%20%271%27%3D%271"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no postings match the literal text', () => pm.expect(pm.response.json().meta.total).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search text over 100 characters → 422 errors.q",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.q is present', () => pm.expect(body.errors).to.have.property('q'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Malformed JSON → 422 envelope, no stack trace",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"x@opendoor.test\", ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('no exception details leak', () => {",
+                  "  pm.expect(body).to.not.have.any.keys('exception', 'trace', 'file', 'line');",
+                  "  pm.expect(pm.response.text()).to.not.include('vendor/laravel');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown origin gets no CORS allow header",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "https://evil.example"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no Access-Control-Allow-Origin', () => pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upstream stack is not disclosed (no X-Powered-By)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no X-Powered-By', () => pm.expect(pm.response.headers.has('X-Powered-By')).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin suspends the throwaway employer → 200",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{pmUserId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{pmUserId}}",
+                "suspend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suspended\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspended employer's old token → 401",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is UNAUTHENTICATED', () => pm.expect(body.error.code).to.eql('UNAUTHENTICATED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspended employer cannot log in → 403 ACCOUNT_SUSPENDED",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{pmEmployerEmail}}\",\n  \"password\": \"postman-pass-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is ACCOUNT_SUSPENDED', () => pm.expect(body.error.code).to.eql('ACCOUNT_SUSPENDED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspended employer's posting is hidden → 404",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspended employer's posting is not in search",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?q=Postman%20Suspension%20Test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Postman%20Suspension%20Test"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('not listed', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.not.include(Number(pm.collectionVariables.get('secPostingId'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Candidate cannot save it → 404",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateLoginToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/candidate/saved-jobs/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "candidate",
+                "saved-jobs",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Candidate cannot apply to it → 404",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateLoginToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}",
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin reactivates the employer → 200",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{pmUserId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{pmUserId}}",
+                "suspend"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"suspended\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('is_active is true', () => pm.expect(pm.response.json().is_active).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The posting is visible again",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('still open (nothing was changed)', () => pm.expect(pm.response.json().status).to.eql('open'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Throwaway employer logs in again",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{pmEmployerEmail}}\",\n  \"password\": \"postman-pass-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('pmEmployerToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cleanup: throwaway employer deletes the posting → 204",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{secPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{secPostingId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }

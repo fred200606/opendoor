@@ -62,13 +62,13 @@ const NO_AUTH = { type: 'noauth' };
  * form data: { field: 'tests/postman/fixtures/…' } – paths are relative to the repo root (Newman's cwd).
  * `raw` sends a JSON body as written, e.g. '{{payload}}' set by the pre-request script.
  */
-function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, body, raw, files, tests, prerequest, description }) {
+function request(name, { method = 'GET', path = '', url, auth = NO_AUTH, headers = {}, body, raw, files, tests, prerequest, description }) {
   const item = {
     name,
     request: {
       method,
       auth,
-      header: [{ key: 'Accept', value: 'application/json' }],
+      header: [{ key: 'Accept', value: 'application/json' }, ...Object.entries(headers).map(([key, value]) => ({ key, value }))],
       url: url ?? { raw: `{{baseUrl}}${path}`, host: ['{{baseUrl}}'], path: path.replace(/^\//, '').split('?')[0].split('/') },
       description,
     },
@@ -693,7 +693,7 @@ pm.test('inline PDF, not cached', () => {
       url: '{{resumeUrl}}0',
       tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
     }),
-    request('T03 Guest searches open postings', {
+    request('Guest searches open postings', {
       path: '/job-postings',
       tests: `
 ${searchList(false)}
@@ -709,7 +709,7 @@ pm.collectionVariables.set('filterAccB', first.accommodations[1].id);`,
       path: '/job-postings?match=1',
       tests: searchList(false),
     }),
-    request('T04 Demo candidate "Matches my needs" → ranked by needs met', {
+    request('T03 Demo candidate "Matches my needs" → ranked by needs met', {
       path: '/job-postings?match=1',
       auth: bearer('candidateToken'),
       tests: `${searchList(true)}\n${rankedByNeeds}`,
@@ -734,7 +734,7 @@ pm.test('closing date ascending within the same number of needs met', () => {
 ${searchList(true)}
 pm.test('total = 2 needs', () => body.data.forEach((p) => pm.expect(p.match.total).to.eql(2)));`,
     }),
-    request('T05 Job details show the match and the missing needs by name', {
+    request('T03 Job details show the match and the missing needs by name', {
       path: '/job-postings/{{searchPostingId}}',
       auth: bearer('candidateToken'),
       tests: `
@@ -864,7 +864,7 @@ const applications = folder(
       body: {},
       tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
     }),
-    request('Candidate applies with an interview accommodation request → 201', {
+    request('T04 Candidate applies with an interview accommodation request → 201', {
       method: 'POST',
       path: '/job-postings/{{appPostingId}}/applications',
       auth: bearer('newCandidateLoginToken'),
@@ -880,7 +880,22 @@ pm.test('pending, not hired, no candidate block for the candidate', () => {
 });
 pm.collectionVariables.set('applicationId', a.id);`,
     }),
-    request('Applying again → 409 ALREADY_APPLIED', {
+    request('T04 The employer is notified of the application', {
+      path: '/notifications',
+      auth: bearer('employerToken'),
+      tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('newest notice is application_received for this application', () => {
+  const n = body.data[0];
+  pm.expect(n.type).to.eql('application_received');
+  pm.expect(n.data.application_id).to.eql(pm.collectionVariables.get('applicationId'));
+  pm.expect(n.data.url).to.eql('/employer/applications/' + pm.collectionVariables.get('applicationId'));
+  pm.expect(n.read_at).to.eql(null);
+});
+pm.test('unread_count counts it', () => pm.expect(body.meta.unread_count).to.be.at.least(1));`,
+    }),
+    request('T05 Applying again → 409 ALREADY_APPLIED', {
       method: 'POST',
       path: '/job-postings/{{appPostingId}}/applications',
       auth: bearer('newCandidateLoginToken'),
@@ -1547,6 +1562,202 @@ pm.test('answers within 6 s (PSGC timeout + fallback)', () => pm.expect(pm.respo
   ],
 );
 
+// ---------------------------------------------------------------- 09 Negative & Security Cases
+
+const negativeSecurity = folder(
+  '09 Negative & Security Cases',
+  'T09 + role, ownership, privacy, injection, CORS/header and suspension cases. Uses the throwaway employer from 08 (password postman-pass-123): it posts, is suspended and reactivated, and deletes its posting again.',
+  [
+    request('Admin user id (for the self-suspension case)', {
+      path: '/me',
+      auth: bearer('adminToken'),
+      tests: `${status(200)}\npm.collectionVariables.set('adminUserId', pm.response.json().id);`,
+    }),
+    request('Throwaway employer user id', {
+      path: '/me',
+      auth: bearer('pmEmployerToken'),
+      tests: `${status(200)}\npm.collectionVariables.set('pmUserId', pm.response.json().id);`,
+    }),
+    request('Throwaway employer submits a posting → 201', {
+      method: 'POST',
+      path: '/job-postings',
+      auth: bearer('pmEmployerToken'),
+      prerequest: INT_IDS,
+      body: postingBody({ title: 'Postman Suspension Test', description: 'Created by the Postman run for folder 09. Deleted at the end.' }),
+      tests: `${status(201)}\npm.collectionVariables.set('secPostingId', pm.response.json().id);`,
+    }),
+    request('Admin approves it → open', {
+      method: 'PATCH',
+      path: '/admin/job-postings/{{secPostingId}}/approve',
+      auth: bearer('adminToken'),
+      body: { action: 'approve' },
+      tests: `${status(200)}\npm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+    }),
+    request('Guest sees the open posting', {
+      path: '/job-postings/{{secPostingId}}',
+      tests: status(200),
+    }),
+
+    // Authentication
+    request('T09 GET /applications without a token → 401 UNAUTHENTICATED', {
+      path: '/applications',
+      tests: `${status(401)}\n${envelope('UNAUTHENTICATED')}`,
+    }),
+    request('Forged token → 401 UNAUTHENTICATED', {
+      path: '/me',
+      auth: { type: 'bearer', bearer: [{ key: 'token', value: '1|forged-token-that-was-never-issued', type: 'string' }] },
+      tests: `${status(401)}\n${envelope('UNAUTHENTICATED')}`,
+    }),
+
+    // Roles and ownership (server-side, whatever the UI shows)
+    request('Candidate cannot open the admin dashboard → 403', {
+      path: '/admin/dashboard',
+      auth: bearer('candidateToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Employer cannot list users → 403', {
+      path: '/admin/users',
+      auth: bearer('employerToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Candidate cannot edit a posting → 403', {
+      method: 'PUT',
+      path: '/job-postings/{{secPostingId}}',
+      auth: bearer('candidateToken'),
+      prerequest: INT_IDS,
+      body: postingBody({ title: 'Hijacked' }),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request("Another employer cannot close someone else's posting → 403", {
+      method: 'PATCH',
+      path: '/job-postings/{{secPostingId}}/status',
+      auth: bearer('employer2Token'),
+      body: { status: 'closed' },
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request("Another employer cannot delete someone else's posting → 403", {
+      method: 'DELETE',
+      path: '/job-postings/{{secPostingId}}',
+      auth: bearer('employer2Token'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request("A candidate cannot read another candidate's application → 403", {
+      path: '/applications/{{applicationId}}',
+      auth: bearer('candidateToken'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('An employer cannot read an application to another employer → 403 (needs stay private)', {
+      path: '/applications/{{applicationId}}',
+      auth: bearer('employer2Token'),
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('Admin cannot suspend their own account → 422 errors.suspended', {
+      method: 'PATCH',
+      path: '/admin/users/{{adminUserId}}/suspend',
+      auth: bearer('adminToken'),
+      body: { suspended: true },
+      tests: fieldError('suspended'),
+    }),
+
+    // Input handling
+    request("Search text is never SQL: ' OR '1'='1 → 200, nothing matched", {
+      path: "/job-postings?q=%27%20OR%20%271%27%3D%271",
+      tests: `${status(200)}\npm.test('no postings match the literal text', () => pm.expect(pm.response.json().meta.total).to.eql(0));`,
+    }),
+    request('Search text over 100 characters → 422 errors.q', {
+      path: `/job-postings?q=${'a'.repeat(101)}`,
+      tests: fieldError('q'),
+    }),
+    request('Malformed JSON → 422 envelope, no stack trace', {
+      method: 'POST',
+      path: '/login',
+      raw: '{"email": "x@opendoor.test", ',
+      tests: `
+${status(422)}
+${envelope('VALIDATION_FAILED')}
+pm.test('no exception details leak', () => {
+  pm.expect(body).to.not.have.any.keys('exception', 'trace', 'file', 'line');
+  pm.expect(pm.response.text()).to.not.include('vendor/laravel');
+});`,
+    }),
+
+    // Gateway hardening
+    request('Unknown origin gets no CORS allow header', {
+      path: '/categories',
+      headers: { Origin: 'https://evil.example' },
+      tests: `${status(200)}\npm.test('no Access-Control-Allow-Origin', () => pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.eql(false));`,
+    }),
+    request('Upstream stack is not disclosed (no X-Powered-By)', {
+      path: '/categories',
+      tests: `${status(200)}\npm.test('no X-Powered-By', () => pm.expect(pm.response.headers.has('X-Powered-By')).to.eql(false));`,
+    }),
+
+    // Suspension (M10): login blocked, tokens revoked, postings hidden until reactivation
+    request('Admin suspends the throwaway employer → 200', {
+      method: 'PATCH',
+      path: '/admin/users/{{pmUserId}}/suspend',
+      auth: bearer('adminToken'),
+      body: { suspended: true },
+      tests: `${status(200)}\npm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));`,
+    }),
+    request("Suspended employer's old token → 401", {
+      path: '/me',
+      auth: bearer('pmEmployerToken'),
+      tests: `${status(401)}\n${envelope('UNAUTHENTICATED')}`,
+    }),
+    request('Suspended employer cannot log in → 403 ACCOUNT_SUSPENDED', {
+      method: 'POST',
+      path: '/login',
+      body: { email: '{{pmEmployerEmail}}', password: 'postman-pass-123' },
+      tests: `${status(403)}\n${envelope('ACCOUNT_SUSPENDED')}`,
+    }),
+    request("Suspended employer's posting is hidden → 404", {
+      path: '/job-postings/{{secPostingId}}',
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request("Suspended employer's posting is not in search", {
+      path: '/job-postings?q=Postman%20Suspension%20Test',
+      tests: `${status(200)}\npm.test('not listed', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.not.include(Number(pm.collectionVariables.get('secPostingId'))));`,
+    }),
+    request('Candidate cannot save it → 404', {
+      method: 'POST',
+      path: '/candidate/saved-jobs/{{secPostingId}}',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('Candidate cannot apply to it → 404', {
+      method: 'POST',
+      path: '/job-postings/{{secPostingId}}/applications',
+      auth: bearer('newCandidateLoginToken'),
+      body: {},
+      tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    }),
+    request('Admin reactivates the employer → 200', {
+      method: 'PATCH',
+      path: '/admin/users/{{pmUserId}}/suspend',
+      auth: bearer('adminToken'),
+      body: { suspended: false },
+      tests: `${status(200)}\npm.test('is_active is true', () => pm.expect(pm.response.json().is_active).to.eql(true));`,
+    }),
+    request('The posting is visible again', {
+      path: '/job-postings/{{secPostingId}}',
+      tests: `${status(200)}\npm.test('still open (nothing was changed)', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+    }),
+    request('Throwaway employer logs in again', {
+      method: 'POST',
+      path: '/login',
+      body: { email: '{{pmEmployerEmail}}', password: 'postman-pass-123' },
+      tests: `${status(200)}\npm.collectionVariables.set('pmEmployerToken', pm.response.json().token);`,
+    }),
+    request('Cleanup: throwaway employer deletes the posting → 204', {
+      method: 'DELETE',
+      path: '/job-postings/{{secPostingId}}',
+      auth: bearer('pmEmployerToken'),
+      tests: status(204),
+    }),
+  ],
+);
+
 // ---------------------------------------------------------------- collection
 
 const collection = {
@@ -1557,10 +1768,10 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId', 'insightsPostingId', 'insightsPsgcCode', 'gatewayRoot'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId', 'insightsPostingId', 'insightsPsgcCode', 'gatewayRoot', 'adminUserId', 'pmUserId', 'secPostingId'].map(
     (key) => ({ key, value: '' }),
   ),
-  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, insights, adminRegistry],
+  item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, insights, adminRegistry, negativeSecurity],
 };
 
 const target = fileURLToPath(new URL('./OpenDoor.postman_collection.json', import.meta.url));

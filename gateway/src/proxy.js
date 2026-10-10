@@ -33,9 +33,10 @@ export function serviceProxy({ name, target, timeoutMs, match }) {
       },
       proxyRes: (proxyRes) => {
         // The gateway alone decides CORS; Laravel's default `Access-Control-Allow-Origin: *`
-        // would otherwise overwrite the restricted origin.
+        // would otherwise overwrite the restricted origin. X-Powered-By (e.g. "PHP/8.4.0")
+        // would tell attackers the upstream stack and version.
         for (const header of Object.keys(proxyRes.headers)) {
-          if (header.startsWith('access-control-')) delete proxyRes.headers[header];
+          if (header.startsWith('access-control-') || header === 'x-powered-by') delete proxyRes.headers[header];
         }
       },
       error: (err, req, res) => {

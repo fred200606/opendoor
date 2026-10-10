@@ -44,7 +44,7 @@ cd services/core-api && composer install && php artisan key:generate
 php artisan migrate --seed && php artisan serve --port=8001
 
 # 4. Business Registry (SOAP)             http://localhost:8003/soap?wsdl
-cd services/business-registry-soap && php seed.php && php -S localhost:8003 -t public
+cd services/business-registry-soap && php seed.php && php -S 127.0.0.1:8003 -t public  # not "localhost": on Windows it may bind IPv6 only, and Core calls 127.0.0.1
 
 # 5. Insights Service and API Gateway     http://localhost:8002 · http://localhost:8080
 cd services/insights-service && npm ci && npm run dev

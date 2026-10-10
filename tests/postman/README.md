@@ -6,7 +6,7 @@
 node tests/postman/build-collection.mjs
 ```
 
-Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search · 05 Applications · 06 Feedback & Trust Score · 07 Insights Mashup · 08 Admin & SOAP Registry (09 is added with its backend phase). Folder 08 needs the Business Registry running (`php -S 127.0.0.1:8003 -t public` in `services/business-registry-soap`); it also creates a throwaway employer (`pm-employer-<timestamp>@opendoor.test`) and leaves Kalinga Foods (employer2@) pending as it found it. Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
+Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 Candidate & Search · 05 Applications · 06 Feedback & Trust Score · 07 Insights Mashup · 08 Admin & SOAP Registry · 09 Negative & Security Cases. Folder 08 needs the Business Registry running (`php -S 127.0.0.1:8003 -t public` in `services/business-registry-soap`); it also creates a throwaway employer (`pm-employer-<timestamp>@opendoor.test`) and leaves Kalinga Foods (employer2@) pending as it found it. Folder 09 needs 01, 03, 05 and 08 first (it reuses their tokens and the throwaway employer): T09, role/ownership and privacy checks, SQL-like search text, malformed JSON, CORS and X-Powered-By, and the suspension rule – the throwaway employer posts, is suspended (token revoked, login 403, posting hidden) and reactivated, then deletes its posting. Request names carry the SIA test-plan IDs (e.g. `T01 …`). Every request checks the `X-Request-ID` header and a response time under 1000 ms; negative cases check `error.code` and that `error.request_id` matches the header.
 
 ## Run with Newman
 
@@ -34,6 +34,6 @@ Folder 07 needs the Insights Service (`:8002`) and calls the live PSGC, Nominati
 
 Run Newman from the **repo root**: folder 04 uploads `tests/postman/fixtures/cv.pdf` and `not-a-pdf.pdf` by that relative path.
 
-The gateway allows 120 requests per minute per IP (`RATE_LIMIT_PER_MIN`); a full run is now about 150 requests, so set `RATE_LIMIT_PER_MIN=300` in your local `gateway/.env` (keep 120 in production) and wait a minute between runs.
+The gateway allows 120 requests per minute per IP (`RATE_LIMIT_PER_MIN`); a full run is now about 180 requests, so set `RATE_LIMIT_PER_MIN=300` in your local `gateway/.env` (keep 120 in production) and wait a minute between runs.
 
-On Windows, `php artisan serve` is single-threaded, so a login/register (bcrypt) can occasionally exceed 1000 ms locally; rerun before treating it as a regression.
+On Windows, `php artisan serve` is single-threaded, so a login/register (bcrypt) – or a fast request queued behind one – can occasionally exceed 1000 ms locally; rerun before treating it as a regression.

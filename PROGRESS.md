@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 8 – Administration
 - **In progress:** –
-- **Next step:** Phase 8 – Postman folder 09 (negative + security cases, incl. M12 and the suspended-employer rule), then SIA doc sync for M8–M10 and M12 (`opendoor-sia-docs`). Then Phase 9.
+- **Next step:** SIA doc sync for M8–M10, M12, the suspended-employer rule and Postman 09 (`opendoor-sia-docs`); then Phase 8 is complete → Phase 9 (first: GitHub Actions CI).
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-10 – Postman request names use the SIA test-plan numbering (T03 = match search, T04 = apply + employer notified, T05 = apply twice); folder 09 holds T09 and the other security cases, T08 stays in folder 03. Rate limiting (429) is not tested by Newman: it needs more requests than the local limit allows in one run; the gateway Jest tests cover it.
 - 2026-10-10 – Suspended employer: its postings are hidden while the owner is suspended (treated as not visible everywhere candidates and guests look: search, details, saved jobs, apply, Insights summary, public employer page). No data is changed, so lifting the suspension restores them. Candidates keep seeing their own existing applications.
 - 2026-10-10 – M12 saved jobs pulled forward from Phase 9 (the Saved jobs page 404'd). Only visible postings can be saved (else 404) or are listed; a bookmark on a closed posting stays and shows again if it reopens. POST is idempotent (201 new, 200 already saved; returns the posting), DELETE is idempotent by plain id (204, also for closed/deleted postings). List newest-saved first, 12/page, with `match`. New `saved` boolean on JobPosting for candidates only (details, saved list, save response; not in search) so the details page shows the right state – OpenAPI updated, SIA doc not yet.
 - 2026-10-10 – M9: notifications for candidates and employers only (admins 403, as in the contract; the UI hides the bell for admins). Newest first (relation order; ids are random UUIDs), 12/page, `meta.unread_count` = all unread. Another user's or unknown id → 404; re-reading keeps the first `read_at`. New types `employer_verification` (approve/reject/remove, not `check`) and `posting_review` (approve → `/jobs/{id}`, reject → `/employer/jobs/{id}/edit`) with the admin's reason in the message.
@@ -145,7 +146,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] Core: M8 dashboards (candidate, employer, admin analytics) (`DashboardController`; `tests/Feature/Dashboards` 7 tests, also on MySQL; 313 Core tests pass; OpenAPI rules + 401/403)
 - [x] Core: M9 notifications list / read / read-all (`NotificationController`; admin decisions now notify the employer: `employer_verification`, `posting_review`; `tests/Feature/Notifications` 7 tests, also on MySQL; 320 Core tests pass)
 - [x] Frontend: admin screens, dashboards, notification bell wired – live-checked 2026-10-10 with all three demo roles (dashboards match the API; report → admin dismiss with note; approve → employer `posting_review` notice → bell 7 → 6). Fixed: report dialog ErrorSummary, resolved reports show date + note, descriptive report/feedback button names, dangerous confirmations start on Cancel, bell follows "Mark all as read", stats sections labelled by their heading, `.stats__list` reflow, "1 open job offers". axe 0 on 11 views; 108 Vitest tests
-- [ ] Postman: folder 09 negative + security cases
+- [x] Postman: folder 09 negative + security cases – 2026-10-10: 31 requests (T09, forged token, role/ownership/privacy 403s, self-suspension 422, SQL-like search text, >100-char search 422, malformed JSON 422 without stack trace, unknown origin without CORS header, no X-Powered-By, suspension: old token 401, login 403 ACCOUNT_SUSPENDED, posting hidden/not saveable/not appliable, reactivation restores it, cleanup). T03–T05 labels now match the SIA test plan (T03 match search, T04 apply + employer notified – new request, T05 apply twice). Gateway now strips the upstream X-Powered-By (Core leaked PHP/8.4.0). Full run 179 requests / 860 assertions, 0 functional failures (2 local >1000 ms timings, see Known issues)
 
 ### Phase 9 – Release
 - [x] M12 saved jobs – pulled forward 2026-10-10 (`SavedJobController`, `saved_jobs` table, `saved` on JobPosting; `tests/Feature/SavedJobs` 8 tests, also on MySQL; 328 Core tests; 102 Vitest; Postman 04 +8 requests; live-checked save → reload keeps "Saved" → list → remove, axe 0 on 3 views)
@@ -175,6 +176,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-10 – Postman folder 09 (31 requests) + T03–T05 labels aligned with the SIA test plan; gateway strips X-Powered-By; README: registry must listen on 127.0.0.1 (localhost bound IPv6 only and Core got 502). Phase 8 code/tests complete. Next: SIA doc sync.
 - 2026-10-10 – Phase 8 frontend live check done (candidate, admin, employer; 8 small a11y/UX fixes, axe 0 on 11 views). Next: Postman folder 09.
 - 2026-10-10 – Suspended employer's postings now hidden until reactivation (`JobPosting::visible()`/`isVisible()` require an active owner; 5 tests, 333 Core tests, MySQL subset; admin suspend dialog explains it; live check 3 → 0 → 3). Next: Phase 8 frontend live check.
 - 2026-10-10 – M12 saved jobs built (the Saved jobs page showed "resource not found": Core had no endpoints). Core + `saved` flag + OpenAPI + Postman 04 + live check done. Next: Phase 8 frontend live check (unchanged).

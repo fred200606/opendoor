@@ -147,6 +147,17 @@ describe('routing', () => {
       expect(allowed.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     });
 
+    test('the upstream X-Powered-By header (stack and version) is not passed on', async () => {
+      await core.close();
+      core = await startUpstream((req, res) => json(res, 200, { ok: true }, { 'X-Powered-By': 'PHP/8.4.0' }));
+      app = buildApp({ coreUrl: core.url, insightsUrl: insights.url });
+
+      const res = await request(app).get('/api/categories');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['x-powered-by']).toBeUndefined();
+    });
+
     test('does not allow other origins', async () => {
       const res = await request(app).get('/api/categories').set('Origin', 'https://evil.example');
 
