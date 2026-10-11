@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** Phase 9 CI, in two parts – (a) `.github/workflows/ci.yml` validate & test jobs (frontend lint/test/build, gateway + insights lint/jest, core pint + tests on a MySQL service, registry `php -l` + `xmllint` + `tests/run.php`); (b) integration job: `docker-compose.yml` + `docker-compose.ci.yml` with `mock-external`, seed, Newman `ci` env, HTML report artifact. (a) written + all commands pass locally (Core 336 on MySQL, pint, registry 39, Jest 24 + 123, Vitest 109); next action: confirm the first GitHub run of (a) is green, then (b).
 - **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – CI triggers: push to `main` **and** `develop`, PRs to both, plus manual runs (the team commits straight to `main`, so push-to-develop only would never run). Jobs are path-filtered (`dorny/paths-filter`); a manual run runs all. Core tests run on a MySQL 8 service container (root, empty password, CI only). SIA 8.4 says "push to `develop`" – fix at the final doc pass.
 - 2026-10-11 – SIA doc screenshots and results are filled **only after the whole system is developed** (last Phase 9 step), not during development. Don't offer it earlier.
 - 2026-10-10 – Admin removal of postings (as in the SIA doc): `DELETE /admin/job-postings/{id}` with a required reason soft-deletes the posting (applications kept) and sends the employer a `posting_review` notice (decision `removed`, with the reason). Already deleted → 404. UI: Remove button on the admin postings screen.
 - 2026-10-10 – Postman request names use the SIA test-plan numbering (T03 = match search, T04 = apply + employer notified, T05 = apply twice); folder 09 holds T09 and the other security cases, T08 stays in folder 03. Rate limiting (429) is not tested by Newman: it needs more requests than the local limit allows in one run; the gateway Jest tests cover it.
