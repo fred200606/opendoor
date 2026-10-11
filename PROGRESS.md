@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** Phase 9 WCAG audit + multimodal – (A) WCAG 2.1 AA audit of all pages (automated: axe/Lighthouse; scripted: keyboard + focus visible, 320 px reflow, 200 % zoom, text spacing 1.4.12, high-contrast + 150 % text, page titles, autocomplete 1.3.5; manual review) → fixes → report `docs/accessibility/wcag-audit.md` with an NVDA script for a teammate; (B) Read aloud (SpeechSynthesis) on job details + candidate application pages; (C) Voice input (SpeechRecognition, Chrome/Edge) on keyword search + long text fields, with a one-time privacy notice; (D) recheck changed pages. Next action: (A) baseline scans.
 - **Next step:** Phase 9 – WCAG audit (Lighthouse, keyboard-only, 200 % zoom / 320 px reflow, contrast incl. high-contrast mode; axe already in CI; NVDA pass by a person), then deployment.
 - **Blockers:** –
 
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – Multimodal (user choice, beyond the SIA design): add **Read aloud** (browser text-to-speech, nothing leaves the device) and **Voice input** (browser speech recognition; Chrome/Edge send audio to their speech service → one-time notice before first use, never on by default). Not chosen: reading-comfort settings. SIA doc to mention both at the final doc pass.
 - 2026-10-11 – M13 = display settings only: `PUT /api/me/display-prefs` {text_size 100|125|150, contrast normal|high, motion normal|reduce}; `display_prefs` on login/register/`GET /me` via `AccountResource` (admin user lists keep `UserResource`, no prefs). The browser copy stays (guests, first paint); account settings win at login/page load. Email notifications (other half of M13, "Could have") not built: needs a mail service. SIA doc (1.4 scope, 4.1, Appendix A) to mention it at the final doc pass.
 - 2026-10-11 – JMeter: 5.6.3 in `C:\tools\apache-jmeter`; one plan (`tests/jmeter/opendoor-matching.jmx`) with `-J` properties for host/threads/loops (load 50×10, stress 100/200×5); extra JSON assertion `meta.per_page == ${pageSize}`. Data from `php artisan load-test:data` (not a seeder; `--remove`). The gateway limit (120/min per IP) must be raised for the test window only. Final numbers from the deployed stack; the local `php artisan serve` dry run is not representative.
 - 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (deadline asked, see Pending decisions). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
