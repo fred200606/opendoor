@@ -8,9 +8,10 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate, plural } from '../../lib/format.js';
+import { formatDate } from '../../lib/format.js';
 import { FEEDBACK_RATINGS } from '../../lib/labels.js';
 
 const VISIBILITY = [
@@ -44,13 +45,13 @@ export default function AdminFeedbackPage() {
       <SelectField label="Show" name="hidden" className="filter-inline" options={VISIBILITY} value={hidden} onChange={(event) => setParams(event.target.value ? { hidden: event.target.value } : {}, { replace: true })} />
       <ActionFeedback action={action} errorTitle="The response was not changed" />
 
+      <ResultCount state={state} one="response" />
       <AsyncContent state={state} label="Loading feedback">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title="No feedback responses here" />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'response')}</p>
               <ul className="result-list">
                 {data.map((feedback) => (
                   <li key={feedback.id}>

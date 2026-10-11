@@ -6,9 +6,9 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
-import { plural } from '../../lib/format.js';
 
 const STATUSES = [
   { value: 'pending', label: 'Waiting for verification' },
@@ -47,13 +47,13 @@ export default function AdminEmployersPage() {
         </button>
       </form>
 
+      <ResultCount state={state} one="employer" />
       <AsyncContent state={state} label="Loading employers">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title="No employers here" />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'employer')}</p>
               <div className="table-wrap">
                 <table className="table">
                   <caption className="visually-hidden">Employers</caption>

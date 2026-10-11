@@ -6,9 +6,10 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate, plural } from '../../lib/format.js';
+import { formatDate } from '../../lib/format.js';
 import { APPLICATION_STATUSES, toOptions } from '../../lib/labels.js';
 
 /** Applicants for one of the employer's own postings. */
@@ -34,13 +35,13 @@ export default function ApplicantsPage() {
         value={status}
         onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
       />
+      <ResultCount state={state} one="applicant" />
       <AsyncContent state={state} label="Loading applicants">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title="No applicants yet" />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'applicant')}</p>
               <div className="table-wrap">
                 <table className="table">
                   <caption className="visually-hidden">Applicants</caption>

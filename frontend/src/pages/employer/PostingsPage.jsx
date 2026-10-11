@@ -8,6 +8,7 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, plural } from '../../lib/format.js';
@@ -76,13 +77,13 @@ export default function PostingsPage() {
         onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
       />
 
+      <ResultCount state={state} one="posting" />
       <AsyncContent state={state} label="Loading your postings">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title={status ? 'No postings with this status' : 'You have not posted any jobs yet'} />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'posting')}</p>
               <div className="table-wrap">
                 <table className="table">
                   <caption className="visually-hidden">Your job postings</caption>

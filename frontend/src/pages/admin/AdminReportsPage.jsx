@@ -8,10 +8,11 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate, plural } from '../../lib/format.js';
+import { formatDate } from '../../lib/format.js';
 import { REPORT_STATUSES, toOptions } from '../../lib/labels.js';
 
 const RESOLUTIONS = {
@@ -46,13 +47,13 @@ export default function AdminReportsPage() {
       />
       <ActionFeedback action={action} errorTitle="The report was not updated" />
 
+      <ResultCount state={state} one="report" />
       <AsyncContent state={state} label="Loading reports">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title="No reports here" />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'report')}</p>
               <ul className="result-list">
                 {data.map((report) => (
                   <li key={report.id}>

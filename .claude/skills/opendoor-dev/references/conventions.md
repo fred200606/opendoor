@@ -28,7 +28,7 @@
 - Everything keyboard-operable, visible focus, skip-to-content link; focus moves to the page `<h1>` on route change.
 - Every input has a visible `<label>`; errors linked with `aria-describedby` and announced.
 - Contrast ≥ 4.5:1; status shown with text/icon, never color alone (StatusBadge, MatchBadge).
-- Result counts announced in an `aria-live="polite"` region ("12 jobs found").
+- Result counts announced in an `aria-live="polite"` region ("12 jobs found") that stays on the page, also for 0 results – for paged lists `components/ResultCount.jsx` above `<AsyncContent>`, never inside it.
 - Modals trap focus and close with Escape; no session time-outs during forms.
 - Never put native `disabled` on a button that can have focus (submit while sending, pagination edges, "done" states): it drops focus to `<body>`. Use `components/Button.jsx` (`aria-disabled` + ignored clicks).
 - Usable at 200% zoom and 360 px width.

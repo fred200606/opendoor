@@ -9,6 +9,7 @@ import { ConfirmDialog } from './Dialog.jsx';
 import LocationPicker from './LocationPicker.jsx';
 import MatchBadge from './MatchBadge.jsx';
 import Pagination from './Pagination.jsx';
+import ResultCount from './ResultCount.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
@@ -49,6 +50,27 @@ describe('TrustScoreCard', () => {
     expect(row).toHaveTextContent('1 of 3 delivered');
     // Scrolls sideways on narrow screens, so keyboard users can focus it.
     expect(screen.getByRole('region', { name: 'Each accommodation, as rated by hired employees' })).toHaveAttribute('tabindex', '0');
+  });
+});
+
+describe('ResultCount', () => {
+  test('announces every loaded total from a region that stays on the page; 0 is for screen readers only', () => {
+    const { rerender } = render(<ResultCount state={{ loading: true }} one="user" />);
+    const region = screen.getByRole('status');
+    expect(region).toBeEmptyDOMElement();
+
+    rerender(<ResultCount state={{ loading: false, data: { meta: { total: 3 } } }} one="user" />);
+    expect(region).toHaveTextContent('3 users');
+    expect(region).not.toHaveClass('visually-hidden');
+
+    // Cleared while a filter reloads, so the same total is announced again.
+    rerender(<ResultCount state={{ loading: true, data: { meta: { total: 3 } } }} one="user" />);
+    expect(region).toBeEmptyDOMElement();
+
+    rerender(<ResultCount state={{ loading: false, data: { meta: { total: 0 } } }} one="user" />);
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent('0 users');
+    expect(region).toHaveClass('visually-hidden');
   });
 });
 

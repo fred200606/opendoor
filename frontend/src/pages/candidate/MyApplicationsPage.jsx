@@ -5,9 +5,10 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate, plural } from '../../lib/format.js';
+import { formatDate } from '../../lib/format.js';
 import { APPLICATION_STATUSES, toOptions } from '../../lib/labels.js';
 
 export default function MyApplicationsPage() {
@@ -28,10 +29,10 @@ export default function MyApplicationsPage() {
         onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
       />
 
+      <ResultCount state={state} one="application" />
       <AsyncContent state={state} label="Loading your applications">
         {({ data, meta }) => (
           <>
-            <p aria-live="polite">{plural(meta.total, 'application')}</p>
             {data.length === 0 ? (
               <EmptyState title={status ? 'No applications with this status' : 'You have not applied to any jobs yet'}>
                 <p>

@@ -10,9 +10,9 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { plural } from '../../lib/format.js';
 import { toOptions } from '../../lib/labels.js';
 
 export default function AdminUsersPage() {
@@ -61,13 +61,13 @@ export default function AdminUsersPage() {
       </form>
       <ActionFeedback action={action} errorTitle="The account was not changed" />
 
+      <ResultCount state={state} one="user" />
       <AsyncContent state={state} label="Loading users">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title="No users found" />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'user')}</p>
               <div className="table-wrap">
                 <table className="table">
                   <caption className="visually-hidden">Users</caption>

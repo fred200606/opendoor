@@ -9,10 +9,11 @@ import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import ResultCount from '../../components/ResultCount.jsx';
 import StatusBadge, { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate, plural } from '../../lib/format.js';
+import { formatDate } from '../../lib/format.js';
 import { EMPLOYMENT_TYPES, POSTING_STATUSES, WORK_SETUPS, toOptions } from '../../lib/labels.js';
 
 /** Posting approval queue (pending_approval → open, or rejected with a reason); any posting can be removed. */
@@ -56,13 +57,13 @@ export default function AdminPostingsPage() {
       />
       <ActionFeedback action={action} />
 
+      <ResultCount state={state} one="posting" />
       <AsyncContent state={state} label="Loading postings">
         {({ data, meta }) =>
           data.length === 0 ? (
             <EmptyState title={status === 'pending_approval' ? 'No postings are waiting for approval' : 'No postings here'} />
           ) : (
             <>
-              <p aria-live="polite">{plural(meta.total, 'posting')}</p>
               <ul className="result-list">
                 {data.map((posting) => (
                   <li key={posting.id}>
