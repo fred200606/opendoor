@@ -1,5 +1,7 @@
 # OpenDoor CI – SIA documentation section 8.4.
-# Validate & test: one job per component, run only when that component (or this file) changed.
+# 1. Validate & test: one job per component, run only when that component (or this file) changed.
+# 2. Integration: the backend stack in docker compose (public APIs replaced by mock-external),
+#    migrate + seed, then the Postman collection with Newman; HTML reports as an artifact.
 # Every run of the workflow by hand (Actions → CI → Run workflow) runs all jobs.
 
 name: CI
@@ -35,6 +37,7 @@ jobs:
       insights: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.insights == 'true' }}
       core: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.core == 'true' }}
       registry: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.registry == 'true' }}
+      integration: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.integration == 'true' }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -59,6 +62,14 @@ jobs:
             registry:
               - *workflow
               - 'services/business-registry-soap/**'
+            integration:
+              - *workflow
+              - 'gateway/**'
+              - 'services/**'
+              - 'tests/postman/**'
+              - 'tests/mock-external/**'
+              - 'docker/**'
+              - 'docker-compose*.yml'
 
   frontend:
     name: Frontend (oxlint, Vitest, build)
@@ -191,3 +202,48 @@ jobs:
         run: xmllint --noout --nonet wsdl/*.wsdl
       - name: Unit + SOAP smoke tests
         run: php tests/run.php
+
+  integration:
+    name: Integration (docker compose + Newman)
+    needs: [changes, gateway, insights, core, registry]
+    # After the component jobs; a skipped job (component unchanged) does not block it.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.changes.outputs.integration == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.ci.yml
+    steps:
+      - uses: actions/checkout@v7
+      - name: Throwaway secrets for this run
+        run: |
+          for name in MYSQL_ROOT_PASSWORD CORE_DB_PASSWORD INSIGHTS_DB_PASSWORD SERVICE_KEY_INSIGHTS REGISTRY_SOAP_PASSWORD DEMO_PASSWORD; do
+            value="$(openssl rand -hex 24)"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+          key="base64:$(openssl rand -base64 32)"
+          echo "::add-mask::$key"
+          echo "APP_KEY=$key" >> "$GITHUB_ENV"
+      - name: Build and start the stack
+        run: $COMPOSE up --detach --build --wait --wait-timeout 300
+      - name: Migrate and seed Core
+        run: $COMPOSE exec -T core-api php artisan migrate --seed --force
+      - name: Newman – full collection
+        run: $COMPOSE run --rm newman tests/postman/run-ci.sh full
+      - name: Newman – T13 snapshot with Overpass unreachable
+        run: |
+          # Insights restarted with an unreachable Overpass and an in-memory cache (README in tests/postman).
+          OVERPASS_URL=http://127.0.0.1:9/api/interpreter INSIGHTS_CACHE_USER=             $COMPOSE up --detach --no-deps --force-recreate --wait insights-service
+          $COMPOSE run --rm newman tests/postman/run-ci.sh t13-overpass-down --folder "07 Insights Mashup" --env-var overpassDown=true
+      - name: Service logs
+        if: failure()
+        run: $COMPOSE logs --no-color --timestamps
+      - name: Upload Newman HTML reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: newman-reports
+          path: newman/*.html
+          if-no-files-found: ignore
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down --volumes

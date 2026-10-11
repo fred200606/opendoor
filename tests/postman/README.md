@@ -22,7 +22,7 @@ Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker com
 
 Folder 07 needs the Insights Service (`:8002`) and calls the live PSGC, Nominatim and Overpass APIs, so it checks the snapshot's shape and `sources` flags, not specific places. Two requests run only when asked:
 
-- **T16** (Core `/internal` without `X-Service-Key` → 401) calls Core directly. It runs when `coreUrl` is set; `local` sets it to `http://127.0.0.1:8001`, while `ci`/`production` leave it empty because Core is private there.
+- **T16** (Core `/internal` without `X-Service-Key` → 401) calls Core directly. It runs when `coreUrl` is set; `local` sets it to `http://127.0.0.1:8001`, `production` leaves it empty because Core is private there, and the CI runner (`run-ci.sh`, inside the compose network) passes `http://core-api:8001`.
 - **T13** (snapshot with Overpass down) runs only with `--env-var overpassDown=true`, after starting Insights with an unreachable Overpass and an in-memory cache, so no cached answer hides the outage:
 
   ```bash
@@ -37,3 +37,7 @@ Run Newman from the **repo root**: folder 04 uploads `tests/postman/fixtures/cv.
 The gateway allows 120 requests per minute per IP (`RATE_LIMIT_PER_MIN`); a full run is now about 180 requests, so set `RATE_LIMIT_PER_MIN=300` in your local `gateway/.env` (keep 120 in production) and wait a minute between runs.
 
 On Windows, `php artisan serve` is single-threaded, so a login/register (bcrypt) – or a fast request queued behind one – can occasionally exceed 1000 ms locally; rerun before treating it as a regression.
+
+## CI
+
+GitHub Actions runs the collection in its integration job (`.github/workflows/ci.yml`): the backend is started with `docker-compose.yml` + `docker-compose.ci.yml`, where Insights talks to `tests/mock-external` instead of the public PSGC, Nominatim and Overpass APIs, so the snapshot data is fixed. `run-ci.sh` runs inside the compose `newman` service with the `ci` environment and writes `newman/<name>.html`: `full` (the whole collection, T16 included) and `t13-overpass-down` (folder 07 again after Insights is restarted with an unreachable Overpass and an in-memory cache). Both reports are attached to the run as the `newman-reports` artifact.

@@ -1,0 +1,53 @@
+# CI overrides for docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
+# Insights talks to `mock-external` instead of the public PSGC, Nominatim and Overpass APIs, and
+# `newman` runs the Postman collection inside the network (ci environment: http://gateway:8080/api).
+
+services:
+  mock-external:
+    image: node:22-alpine
+    command: ['node', '/app/server.mjs']
+    environment:
+      PORT: 9000
+      PSGC_DATA: /data/psgc-fallback.json
+    volumes:
+      - ./tests/mock-external:/app:ro
+      - ./services/insights-service/src/data/psgc-fallback.json:/data/psgc-fallback.json:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:9000/health']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  insights-service:
+    environment:
+      PSGC_URL: http://mock-external:9000/psgc
+      NOMINATIM_URL: http://mock-external:9000/nominatim
+      NOMINATIM_CONTACT_EMAIL: ci@opendoor.test
+      # The T13 run sets OVERPASS_URL to an unreachable address.
+      OVERPASS_URL: ${OVERPASS_URL:-http://mock-external:9000/overpass/api/interpreter}
+    depends_on:
+      mock-external:
+        condition: service_healthy
+
+  core-api:
+    environment:
+      PUBLIC_API_URL: http://gateway:8080/api
+
+  gateway:
+    environment:
+      # One Newman run sends about 190 requests; production keeps 120.
+      RATE_LIMIT_PER_MIN: 300
+
+  newman:
+    image: postman/newman:6-alpine
+    profiles: [test]
+    working_dir: /work
+    entrypoint: ['/bin/sh']
+    environment:
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?}
+    volumes:
+      - ./:/work
+    depends_on:
+      gateway:
+        condition: service_healthy

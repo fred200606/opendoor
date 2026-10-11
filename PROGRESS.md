@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 CI part (b): integration job – Dockerfiles (core-api + registry on FrankenPHP, gateway + insights on node:22-alpine), `docker-compose.yml` + `docker-compose.ci.yml` (`mock-external` = `tests/mock-external/server.mjs`), migrate + seed, Newman full run + folder 07 with Overpass down (T13) + T16 via `coreUrl`, HTML reports as artifact. Part (a) validate & test jobs are green on GitHub (run 38129559699 + earlier runs). Next action: finish compose + workflow job, push, iterate until green.
+- **In progress:** Phase 9 CI part (b): integration job – Dockerfiles (core-api + registry on FrankenPHP, gateway + insights on node:22-alpine), `docker-compose.yml` + `docker-compose.ci.yml` (`mock-external` = `tests/mock-external/server.mjs`), migrate + seed, Newman full run + folder 07 with Overpass down (T13) + T16 via `coreUrl`, HTML reports as artifact. Part (a) validate & test jobs are green on GitHub (run 38129559699 + earlier runs). Files written + mock checked locally against Insights (all sources ok → cached); next action: get the first GitHub integration run green (no local Docker – iterate in CI).
 - **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 

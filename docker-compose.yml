@@ -1,0 +1,106 @@
+# OpenDoor stack in containers – used by the CI integration test only (SIA doc 8.4, Appendix E).
+# Local development runs natively (README). Railway builds the same Dockerfiles.
+#
+# Secrets come from the environment and are required (`:?`); the CI workflow generates
+# throwaway values for every run. docker-compose.ci.yml replaces the public PSGC, Nominatim
+# and Overpass APIs with the `mock-external` server and adds the Newman runner.
+
+name: opendoor
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?}
+      MYSQL_DATABASE: opendoor_core
+      MYSQL_USER: opendoor_core
+      MYSQL_PASSWORD: ${CORE_DB_PASSWORD:?}
+      INSIGHTS_DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:?}
+    volumes:
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Answers only once the init scripts are done (the init server does not listen on TCP).
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '--silent']
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  business-registry-soap:
+    build: ./services/business-registry-soap
+    environment:
+      PORT: 8003
+      REGISTRY_SOAP_USER: opendoor-core
+      REGISTRY_SOAP_PASSWORD: ${REGISTRY_SOAP_PASSWORD:?}
+
+  core-api:
+    build: ./services/core-api
+    environment:
+      PORT: 8001
+      APP_NAME: OpenDoor
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:?}
+      APP_DEBUG: 'false'
+      APP_URL: http://core-api:8001
+      APP_TIMEZONE: Asia/Manila
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: opendoor_core
+      DB_USERNAME: opendoor_core
+      DB_PASSWORD: ${CORE_DB_PASSWORD:?}
+      SESSION_DRIVER: array
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      FILESYSTEM_DISK: local
+      SERVICE_KEY_INSIGHTS: ${SERVICE_KEY_INSIGHTS:?}
+      REGISTRY_WSDL_URL: http://business-registry-soap:8003/soap?wsdl
+      REGISTRY_SOAP_USER: opendoor-core
+      REGISTRY_SOAP_PASSWORD: ${REGISTRY_SOAP_PASSWORD:?}
+      REGISTRY_TIMEOUT: 5
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?}
+      # Base of file links (résumés, logos) as the client sees the gateway.
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8080/api}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      business-registry-soap:
+        condition: service_healthy
+
+  insights-service:
+    build: ./services/insights-service
+    environment:
+      PORT: 8002
+      CORE_INTERNAL_URL: http://core-api:8001
+      SERVICE_KEY_INSIGHTS: ${SERVICE_KEY_INSIGHTS:?}
+      PSGC_URL: ${PSGC_URL:-https://psgc.gitlab.io/api}
+      NOMINATIM_URL: ${NOMINATIM_URL:-https://nominatim.openstreetmap.org}
+      # Empty = Nominatim is not called (its usage policy requires a contact address).
+      NOMINATIM_CONTACT_EMAIL: ${NOMINATIM_CONTACT_EMAIL:-}
+      OVERPASS_URL: ${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
+      CACHE_DB_HOST: mysql
+      CACHE_DB_PORT: 3306
+      CACHE_DB_NAME: insights_cache
+      # Set INSIGHTS_CACHE_USER to an empty value for an in-memory cache (T13 run).
+      CACHE_DB_USER: ${INSIGHTS_CACHE_USER-insights}
+      CACHE_DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:?}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway
+    environment:
+      PORT: 8080
+      CORE_URL: http://core-api:8001
+      INSIGHTS_URL: http://insights-service:8002
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      RATE_LIMIT_PER_MIN: ${RATE_LIMIT_PER_MIN:-120}
+      TRUST_PROXY: 0
+    ports:
+      - '8080:8080'
+    depends_on:
+      core-api:
+        condition: service_healthy
+      insights-service:
+        condition: service_healthy

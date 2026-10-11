@@ -67,8 +67,18 @@ Shared values that must match:
 cd services/core-api && php artisan test
 cd gateway && npm test
 cd services/insights-service && npm test
+cd services/business-registry-soap && php tests/run.php
+cd frontend && npm run lint && npm test
 npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json
 ```
+
+**CI** (`.github/workflows/ci.yml`, GitHub Actions) runs on every push and pull request to `main`/`develop`:
+lint + tests per component (only for the components that changed; Core tests on MySQL 8), then an
+integration job that builds the backend images, starts them with `docker-compose.yml` +
+`docker-compose.ci.yml` (PSGC, Nominatim and Overpass replaced by `tests/mock-external`), migrates and
+seeds Core, and runs the whole Postman collection with Newman (plus T13 with Overpass down). The Newman
+HTML reports are attached to the run as the `newman-reports` artifact. Secrets for CI are generated per
+run; nothing has to be configured in GitHub.
 
 ## Deployment
 

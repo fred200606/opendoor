@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * Front controller (php -S 0.0.0.0:8003 -t public, or php-fpm/nginx in the Docker image).
+ * Front controller (php -S 127.0.0.1:8003 -t public locally; FrankenPHP php-server in the Docker image).
  *   GET  /soap?wsdl  WSDL with soap:address pointing at the URL the client used
  *   POST /soap       SOAP 1.1 endpoint (VerifyBusinessRegistration)
  *   GET  /health     {"status":"ok"|"degraded","database":"ok"|"unavailable"}

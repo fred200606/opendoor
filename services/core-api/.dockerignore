@@ -1,0 +1,18 @@
+# Never ship local secrets, dependencies or uploaded files in the image.
+.env
+.env.*
+vendor
+node_modules
+tests
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+bootstrap/cache/*.php
+database/*.sqlite
+storage/app/private/*
+storage/app/public/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing
+storage/framework/views/*
+storage/logs/*
