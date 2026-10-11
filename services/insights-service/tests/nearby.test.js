@@ -114,7 +114,7 @@ describe('nearby (Overpass + cache)', () => {
     { type: 'relation', id: 33, tags: { amenity: 'toilets', wheelchair: 'yes' } },
   ];
 
-  function build({ store = createMemoryStore(), timeoutMs = 1_000, cooldownMs = 0 } = {}) {
+  function build({ store = createMemoryStore(), timeoutMs = 1_000, cooldownMs = 0, retryDelaysMs = [] } = {}) {
     const log = silentLog();
     const nearby = createNearby({
       overpass: createOverpassClient({ url: 'http://overpass.test/api/interpreter', timeoutMs, userAgent: 'OpenDoor/1.0 (team@opendoor.test)' }),
@@ -122,10 +122,21 @@ describe('nearby (Overpass + cache)', () => {
       ttlMs: 24 * HOUR,
       cooldownMs,
       radiusM: 500,
+      retryDelaysMs,
       log,
     });
     return { nearby, store, log };
   }
+
+  /** Waits (up to 2 s) until `check()` is true. */
+  async function until(check) {
+    const end = Date.now() + 2_000;
+    while (!(await check())) {
+      if (Date.now() > end) throw new Error('condition not met within 2 s');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+  const KEY = '14.6332,121.0193,500';
 
   beforeAll(() => nock.disableNetConnect());
   afterEach(() => nock.cleanAll());
@@ -249,6 +260,61 @@ describe('nearby (Overpass + cache)', () => {
     const { nearby } = build({ store: brokenStore() });
 
     expect((await nearby(ORIGIN)).source).toBe('ok');
+  });
+
+  test('after a failure the place is fetched again in the background; the next visitor gets it from the cache', async () => {
+    overpass().post('/api/interpreter').reply(504);
+    const retry = overpass().post('/api/interpreter').reply(200, answer(raw));
+    const { nearby, store, log } = build({ retryDelaysMs: [30, 60] });
+
+    expect((await nearby(ORIGIN)).source).toBe('unavailable');
+    await until(async () => (await store.get('overpass_cache', KEY)) !== null);
+
+    expect(retry.isDone()).toBe(true);
+    const later = await nearby(ORIGIN);
+    expect(later.source).toBe('cached');
+    expect(later.nearby.transit_stops).toHaveLength(1);
+    expect(log.lines.join('\n')).not.toContain('gave up');
+  });
+
+  test('retries stop after the last delay', async () => {
+    overpass().post('/api/interpreter').times(3).reply(504);
+    const extra = overpass().post('/api/interpreter').reply(200, answer(raw));
+    const { nearby, log } = build({ retryDelaysMs: [20, 20] });
+
+    await nearby(ORIGIN);
+    await until(() => log.lines.some((line) => line.includes('"result":"gave up"')));
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(log.lines.join('\n')).toContain('"retry":2,"result":"gave up"');
+    expect(extra.isDone()).toBe(false);
+  });
+
+  test('one retry chain per place, even when the page is opened again meanwhile', async () => {
+    overpass().post('/api/interpreter').times(2).reply(504);
+    overpass().post('/api/interpreter').reply(200, answer(raw));
+    const extra = overpass().post('/api/interpreter').reply(200, answer(raw));
+    const { nearby, store } = build({ retryDelaysMs: [40] });
+
+    await nearby(ORIGIN);
+    await nearby(ORIGIN);
+    await until(async () => (await store.get('overpass_cache', KEY)) !== null);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(extra.isDone()).toBe(false);
+  });
+
+  test('an expired entry served as stale is refreshed in the background', async () => {
+    overpass().post('/api/interpreter').reply(504);
+    overpass().post('/api/interpreter').reply(200, answer(raw));
+    const { nearby, store } = build({ retryDelaysMs: [30] });
+    const old = new Date(Date.now() - 72 * HOUR);
+    await store.put('overpass_cache', KEY, [raw[0]], old);
+
+    expect((await nearby(ORIGIN)).source).toBe('stale');
+    await until(async () => (await store.get('overpass_cache', KEY)).payload.length === 2);
+
+    expect((await nearby(ORIGIN)).source).toBe('cached');
   });
 });
 

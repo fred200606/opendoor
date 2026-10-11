@@ -56,6 +56,8 @@ export function loadConfig(env = process.env) {
     overpassFallbackUrl: read('OVERPASS_FALLBACK_URL') === '' ? null : url('OVERPASS_FALLBACK_URL'),
     // The fallback is also asked when the main server has not answered after this long.
     overpassHedgeMs: 5_000,
+    // After a failure the place is fetched again in the background (the first try after the cooldown).
+    overpassRetryDelaysMs: [90_000, 5 * 60_000, 15 * 60_000],
     nearbyRadiusM: 500,
     // The cache is optional at runtime: without a database every request goes to the sources.
     cacheDb: read('CACHE_DB_USER')

@@ -70,6 +70,7 @@ export function createApp(config, { store, psgcFallback, centroids = {}, log = c
     cached,
     ttlMs: config.ttl.overpass,
     cooldownMs: config.cooldowns.overpass,
+    retryDelaysMs: config.overpassRetryDelaysMs,
     radiusM: config.nearbyRadiusM,
     log,
   });

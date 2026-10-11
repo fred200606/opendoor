@@ -44,6 +44,8 @@ export function buildApp({
       cooldowns: { psgc: 0, nominatim: 0, overpass: 0, ...cooldowns },
       throttle: { nominatim: { intervalMs: 0, maxWaitMs: 2_000 } },
       snapshotBudgetMs: budgetMs ?? config.snapshotBudgetMs,
+      // No background Overpass retries (they would outlive the test); nearby.test.js covers them.
+      overpassRetryDelaysMs: [],
     },
     { store, psgcFallback, centroids, log },
   );
