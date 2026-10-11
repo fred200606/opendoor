@@ -85,6 +85,7 @@ const pages = [
   ['candidate', '/candidate/saved-jobs'],
   ['candidate', '/notifications'],
   ['candidate', '/account'],
+  ['candidate2', hire && `/candidate/applications/${hire.id}`],
   ['candidate2', hire && `/candidate/applications/${hire.id}/feedback`],
   ['employer', '/employer/dashboard'],
   ['employer', '/employer/company'],

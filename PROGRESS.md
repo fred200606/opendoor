@@ -6,16 +6,17 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 CI – (a), (b) green; (c) axe check added (32 pages, 0 violations locally after the notifications-link fix). Its first CI run failed earlier, in Newman T04: notices from the same second came back in any order – fixed in Core (UUIDv7 ids + `id` tie-breaker, new test; 337 Core tests, MySQL subset 150). Next action: confirm the full CI run incl. axe is green, then tick CI.
-- **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
+- **In progress:** –
+- **Next step:** Phase 9 – JMeter test plan (`tests/jmeter/` is empty): `opendoor-matching.jmx`, 500-posting seeder, `tokens.csv` generator, local dry run (JMeter not installed; Java 23 is). Final numbers later against production.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- (none)
+- Defense / submission date (asked 2026-10-11) – decides when to deploy (Railway + Vercel accounts also needed then).
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (deadline asked, see Pending decisions). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
 - 2026-10-11 – Notifications get time-ordered UUIDv7 ids (set in each notification's constructor) and the list orders by `created_at` desc, then `id` desc: `created_at` has whole seconds, so notices from the same second were listed in any order (CI Newman T04 got `posting_review` before `application_received`). Replaces "ids are random UUIDs" in the M9 decision.
 - 2026-10-11 – CI triggers: push to `main` **and** `develop`, PRs to both, plus manual runs (the team commits straight to `main`, so push-to-develop only would never run). Jobs are path-filtered (`dorny/paths-filter`); a manual run runs all. Core tests run on a MySQL 8 service container (root, empty password, CI only). SIA 8.4 says "push to `develop`" – fix at the final doc pass.
 - 2026-10-11 – SIA doc screenshots and results are filled **only after the whole system is developed** (last Phase 9 step), not during development. Don't offer it earlier.
@@ -156,8 +157,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] M12 saved jobs – pulled forward 2026-10-10 (`SavedJobController`, `saved_jobs` table, `saved` on JobPosting; `tests/Feature/SavedJobs` 8 tests, also on MySQL; 328 Core tests; 102 Vitest; Postman 04 +8 requests; live-checked save → reload keeps "Saved" → list → remove, axe 0 on 3 views)
 - [x] Admin removal of postings (SIA doc: Admin D on postings) – 2026-10-10: `DELETE /admin/job-postings/{id}` with required reason, soft delete, `posting_review` notice with `removed:true`; 3 Core tests (336 total, MySQL subset); Remove button + reason dialog on the admin postings screen (Vitest 109); Postman 09 +4 (full run 183 requests / 880 assertions / 0 failures); OpenAPI, SIA 4.1 + Appendix A, api-contract.md
 - [ ] M13 display settings (if time allows)
-- [ ] GitHub Actions CI (lint, tests, build, Newman with mock externals)
-- [ ] Dockerfiles for Railway (core-api, registry); Railway project + private networking; Vercel project
+- [x] GitHub Actions CI – 2026-10-11 (`.github/workflows/ci.yml`; run 38131735806 all green): path-filtered jobs frontend (oxlint, Vitest, build), gateway + insights (ESLint, Jest), core (Pint, PHPUnit on MySQL 8), registry (`php -l`, `xmllint`, SOAP smoke); integration job: Dockerfiles + `docker-compose.yml`/`docker-compose.ci.yml` with `tests/mock-external`, migrate + seed, Newman full (183 requests / 882 assertions / 0 failures, T16 included) + T13 run (87/87), axe WCAG 2.1 A/AA on 33 pages (`tests/a11y`), HTML reports artifact. Fixes found on the way: insights nock interceptors stacking per worker, throttle interval, Core notification order (UUIDv7), notifications link WCAG 2.5.3, 2 test races
+- [ ] Dockerfiles for Railway (core-api, registry); Railway project + private networking; Vercel project – Dockerfiles for all 4 backend services written + built in CI (2026-10-11); Railway/Vercel not started
 - [ ] Production seed; Newman smoke against production
 - [ ] JMeter load + stress runs; save reports
 - [ ] WCAG audit (Lighthouse, axe, NVDA); fixes
@@ -179,6 +180,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-11 – CI done (validate & test + docker compose integration with mock externals, Newman, axe); fixed 5 problems it found (2 real: notification order, notifications-link label). Pushed. User: deploy later; next JMeter.
 - 2026-10-11 – Progress report; listed the SIA doc placeholders (screenshots etc.). User: fill them only after development is done. Next: Phase 9 CI (unchanged).
 - 2026-10-10 – Admin posting removal built (user decision: match the SIA doc). Next: Phase 9 CI.
 - 2026-10-10 – SIA doc synced for Phase 8 (4.1 endpoints, 5.2 notices, 5.3 errors incl. 400/422/404 details, 6.1/6.4 suspension + no X-Powered-By, 7.1 test-ID note + folder 09, Appendix A matrix + visible-posting definition, data model rows; 1.4 saved jobs delivered); Postman folders 04/05 renamed to the documented names; PDF 44 pages, no empty pages. **Phase 8 complete.** Next: Phase 9 CI.
