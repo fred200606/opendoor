@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 CI, in two parts – (a) `.github/workflows/ci.yml` validate & test jobs (frontend lint/test/build, gateway + insights lint/jest, core pint + tests on a MySQL service, registry `php -l` + `xmllint` + `tests/run.php`); (b) integration job: `docker-compose.yml` + `docker-compose.ci.yml` with `mock-external`, seed, Newman `ci` env, HTML report artifact. (a) written; first GitHub run: frontend/gateway/registry green, Core failed 1 test (two notices in the same second, sort order) and Insights 3 `replyWithError` tests (several test files in one Jest worker on CI → stacked nock interceptors; reproducible locally with `npm test -- --runInBand`). Fixed: `travel(1)` in the test; `tests/setup.js` calls `nock.restore()` after each file; throttle now waits a full interval after the previous real start (timers fired early/late under load – also the old flaky throttle test). Next action: confirm the second GitHub run is green, then (b).
+- **In progress:** Phase 9 CI part (b): integration job – Dockerfiles (core-api + registry on FrankenPHP, gateway + insights on node:22-alpine), `docker-compose.yml` + `docker-compose.ci.yml` (`mock-external` = `tests/mock-external/server.mjs`), migrate + seed, Newman full run + folder 07 with Overpass down (T13) + T16 via `coreUrl`, HTML reports as artifact. Part (a) validate & test jobs are green on GitHub (run 38129559699 + earlier runs). Next action: finish compose + workflow job, push, iterate until green.
 - **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 
@@ -130,7 +130,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ### Phase 6 – Legacy SOAP integration
 - [x] Registry: WSDL, SoapServer handler, UsernameToken check, SQLite seed, faults (`php tests/run.php`: 39 checks incl. SoapClient smoke on its own port; faults namespace-qualified `SOAP-ENV:Client.*`)
 - [x] Core: `BusinessRegistryClient`, `registry_checks` table, `PATCH /admin/employers/{id}/verify` (check/approve/reject), fault mapping (+ `GET /admin/employers[/{id}]`; live calls to the running registry OK for ACTIVE / NOT_FOUND / 422 / auth 502 / unreachable 502)
-- [ ] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check – first two done (`tests/Feature/Registry` 14 tests, also on MySQL; registry `php tests/run.php` 39 checks); `xmllint` not installed locally → add to CI (Phase 9), then tick
+- [x] Tests: faked SoapClient in Core; registry smoke test; `xmllint` WSDL check (`tests/Feature/Registry` 14 tests, also on MySQL; registry `php tests/run.php` 39 checks; `xmllint --noout` runs in the CI registry job, green 2026-10-11)
 - [x] Frontend: admin employer verification screen shows registry result – live-checked 2026-10-06 (queue, ACTIVE 100% without warning, NOT_FOUND warning without score, approve, remove verification with reason, registry stopped → "did not respond" + ERROR row; focus stays on the check button; axe 0 on 4 views). No UI changes needed
 - [x] Postman: folder 08 (registry part) (15 requests: T14 ACTIVE + stored check, T15 NOT_FOUND via a throwaway employer, approve / remove verification / employer re-save restores the queue, 403/404/422; whole collection 125 requests / 607 assertions pass, re-runnable)
 
