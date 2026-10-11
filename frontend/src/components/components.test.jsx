@@ -13,6 +13,7 @@ import ReadAloud from './ReadAloud.jsx';
 import ResultCount from './ResultCount.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
+import { TextArea } from './form/fields.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
 import { readableChunks } from '../lib/readAloud.js';
@@ -198,6 +199,95 @@ describe('ReadAloud', () => {
 
   test('is not shown when the browser cannot speak', () => {
     render(<Job />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('Voice input', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.removeItem('opendoor.voiceNotice');
+  });
+
+  function recognitionMock() {
+    const instances = [];
+    vi.stubGlobal(
+      'webkitSpeechRecognition',
+      class {
+        constructor() {
+          instances.push(this);
+          this.start = vi.fn();
+          this.stop = vi.fn(() => this.onend());
+          this.abort = vi.fn();
+        }
+      },
+    );
+    return instances;
+  }
+
+  const said = (text) => ({ resultIndex: 0, results: [Object.assign([{ transcript: text }], { isFinal: true })] });
+
+  function CoverNote() {
+    const [value, setValue] = useState('I can start');
+    return <TextArea label="Cover note" name="cover_note" maxLength={40} voice value={value} onChange={(event) => setValue(event.target.value)} />;
+  }
+
+  test('asks once before the first use, then adds what is said to the end of the field', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    render(<CoverNote />);
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    const dialog = screen.getByRole('dialog', { name: 'Before you use voice input' });
+    expect(instances).toHaveLength(0); // nothing listens before the notice is accepted
+    await user.click(within(dialog).getByRole('button', { name: 'Use voice input' }));
+    expect(instances[0].start).toHaveBeenCalledTimes(1);
+    expect(instances[0].lang).toBe('en-PH');
+    expect(screen.getByRole('status')).toHaveTextContent('Listening');
+
+    const field = screen.getByRole('textbox', { name: 'Cover note' });
+    act(() => instances[0].onresult(said(' next month ')));
+    expect(field).toHaveValue('I can start next month');
+    expect(screen.getByRole('status')).toHaveTextContent('Added: next month');
+    act(() => instances[0].onresult(said('and work full time hours')));
+    expect(field).toHaveValue('I can start next month and work full time hours'.slice(0, 40));
+
+    await user.click(screen.getByRole('button', { name: 'Stop listening (Cover note)' }));
+    expect(instances[0].stop).toHaveBeenCalledTimes(1);
+    const speak = screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' });
+    expect(speak).toHaveFocus();
+
+    // The notice is not shown again.
+    await user.click(speak);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(instances).toHaveLength(2);
+  });
+
+  test('does not listen when the notice is cancelled; explains errors; stops when the page changes', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    const { unmount } = render(<CoverNote />);
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    expect(instances).toHaveLength(0);
+
+    localStorage.setItem('opendoor.voiceNotice', 'accepted');
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    act(() => {
+      instances[0].onerror({ error: 'not-allowed' });
+      instances[0].onend();
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('The microphone is blocked for this site');
+    expect(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    unmount();
+    expect(instances[1].abort).toHaveBeenCalledTimes(1);
+  });
+
+  test('is not shown when the browser has no speech recognition', () => {
+    render(<CoverNote />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

@@ -150,7 +150,7 @@ function ProfileSection({ profile }) {
       <form onSubmit={handleSubmit} noValidate>
         <TextField label="Headline" hint="For example: Data encoder with 3 years of experience." maxLength={255} error={form.fieldErrors.headline} {...form.bind('headline')} />
         <TextField label="Skills" hint="Separate skills with commas." error={form.fieldErrors.skills} {...form.bind('skills')} />
-        <TextArea label="Work experience" error={form.fieldErrors.experience} {...form.bind('experience')} />
+        <TextArea label="Work experience" voice error={form.fieldErrors.experience} {...form.bind('experience')} />
         <LocationPicker
           legend="Where you live"
           value={form.values.location_psgc}

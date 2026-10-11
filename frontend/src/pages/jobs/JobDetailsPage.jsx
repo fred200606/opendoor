@@ -185,6 +185,7 @@ function ApplyForm({ job }) {
       <form onSubmit={handleSubmit} noValidate>
         <TextArea
           label="Cover note"
+          voice
           id="cover_note"
           hint="Optional. Tell the employer why you are a good fit."
           maxLength={2000}
@@ -193,6 +194,7 @@ function ApplyForm({ job }) {
         />
         <TextArea
           label="Interview accommodation request"
+          voice
           id="interview_request"
           hint={`Optional. This job uses an ${job.interview_format === 'online' ? 'online' : 'on-site'} interview. For example: sign language interpreter, extra time, captions.`}
           maxLength={1000}

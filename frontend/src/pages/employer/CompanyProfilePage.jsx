@@ -138,7 +138,7 @@ function CompanyForm({ company, onSaved }) {
           onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
           error={form.fieldErrors.location_psgc}
         />
-        <TextArea label="About the company" hint="Optional. Include how you support employees with disabilities." error={form.fieldErrors.description} {...form.bind('description')} />
+        <TextArea label="About the company" voice hint="Optional. Include how you support employees with disabilities." error={form.fieldErrors.description} {...form.bind('description')} />
 
         {company?.logo_url && <img src={company.logo_url} alt="Current company logo" className="employer-logo" />}
         <TextField label="Logo" name="logo" type="file" accept={LOGO_TYPES.join(',')} hint={`Optional. PNG, JPG or WebP, up to ${LOGO_MAX_MB} MB.`} error={logoError ?? form.fieldErrors.logo} onChange={chooseLogo} />

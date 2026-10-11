@@ -72,6 +72,7 @@ export default function JobSearchPage() {
         <form className="search-filters" role="search" aria-label="Job filters" onSubmit={(event) => event.preventDefault()}>
           <TextField
             label="Keyword"
+            voice
             name="q"
             type="search"
             hint="Job title, description or company name."

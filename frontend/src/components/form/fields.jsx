@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { errorText } from '../../lib/errors.js';
+import VoiceInput from '../VoiceInput.jsx';
 
 function describedBy(...ids) {
   const list = ids.filter(Boolean).join(' ');
@@ -36,8 +37,9 @@ function Label({ htmlFor, required, children }) {
 /**
  * Text input, email, password, number, date… Error and hint are linked with aria-describedby.
  * Pass `id` when the ErrorSummary must link to the field (defaults to `name`).
+ * `voice` adds a "Speak" button (browser speech recognition, see VoiceInput).
  */
-export function TextField({ label, name, id = name, error, hint, required, className = '', ...inputProps }) {
+export function TextField({ label, name, id = name, error, hint, required, className = '', voice = false, ...inputProps }) {
   const hintId = hint ? `${id}-hint` : null;
   const errorId = error ? `${id}-error` : null;
 
@@ -57,11 +59,12 @@ export function TextField({ label, name, id = name, error, hint, required, class
         className="field__input"
         {...inputProps}
       />
+      {voice && <VoiceInput fieldLabel={label} name={name} value={inputProps.value ?? ''} onChange={inputProps.onChange} maxLength={inputProps.maxLength} />}
     </div>
   );
 }
 
-export function TextArea({ label, name, id = name, error, hint, required, maxLength, value = '', className = '', ...props }) {
+export function TextArea({ label, name, id = name, error, hint, required, maxLength, value = '', className = '', voice = false, ...props }) {
   const hintId = `${id}-hint`;
   const errorId = error ? `${id}-error` : null;
   const counter = maxLength ? `${value.length} of ${maxLength} characters used.` : null;
@@ -88,6 +91,7 @@ export function TextArea({ label, name, id = name, error, hint, required, maxLen
         className="field__input field__textarea"
         {...props}
       />
+      {voice && <VoiceInput fieldLabel={label} name={name} value={value} onChange={props.onChange} maxLength={maxLength} />}
     </div>
   );
 }

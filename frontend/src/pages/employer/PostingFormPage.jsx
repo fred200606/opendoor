@@ -121,7 +121,7 @@ function PostingForm({ categories, groups, job }) {
         }}
       >
         <TextField label="Job title" required maxLength={255} error={form.fieldErrors.title} {...form.bind('title')} />
-        <TextArea label="Job description" required hint="Duties, qualifications and working hours." error={form.fieldErrors.description} {...form.bind('description')} />
+        <TextArea label="Job description" voice required hint="Duties, qualifications and working hours." error={form.fieldErrors.description} {...form.bind('description')} />
         <SelectField
           label="Category"
           name="category_id"

@@ -130,7 +130,7 @@ function FeedbackForm({ applicationId, items }) {
             error={form.fieldErrors[`items.${index}.rating`]}
           />
         ))}
-        <TextArea label="Comments" hint="Optional. Do not include names." id="comments" maxLength={2000} error={form.fieldErrors.comments} {...form.bind('comments')} />
+        <TextArea label="Comments" voice hint="Optional. Do not include names." id="comments" maxLength={2000} error={form.fieldErrors.comments} {...form.bind('comments')} />
         <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Submit ratings'}
         </Button>

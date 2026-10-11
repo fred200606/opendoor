@@ -187,6 +187,18 @@ main:focus {
   margin-bottom: 1rem;
 }
 
+.voice-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.voice-input .field__hint {
+  margin: 0;
+}
+
 .loading {
   color: var(--text-muted);
 }
