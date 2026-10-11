@@ -1,6 +1,7 @@
-import http from 'node:http';
+import nock from 'nock';
 
-// Node 19+ keeps HTTP sockets alive by default, so nock's mock sockets are reused between tests.
-// On Linux (CI) an error reply (`replyWithError`) on a reused mock socket ended as an
-// "Unhandled error" event; one fresh socket per request avoids it.
-http.globalAgent = new http.Agent({ keepAlive: false });
+// Every test file gets its own copy of nock, and each copy patches Node's shared `http` module.
+// When Jest runs several files in one worker (CI runners have few cores), the patches of earlier
+// files stay active and wrap the next file's requests: error replies then surface as
+// "Unhandled error" events. Remove this file's interceptor when the file is done.
+afterAll(() => nock.restore());
