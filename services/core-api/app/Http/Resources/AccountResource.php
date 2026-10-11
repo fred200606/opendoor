@@ -15,10 +15,17 @@ class AccountResource extends UserResource
      */
     public function toArray(Request $request): array
     {
+        $prefs = $this->display_prefs;
+
         return [
             ...parent::toArray($request),
-            // {text_size, contrast, motion}, or null until the user saves them once.
-            'display_prefs' => $this->display_prefs,
+            // {text_size, contrast, motion}, or null until the user saves them once. Built key by
+            // key: MySQL's JSON column returns the keys in its own order.
+            'display_prefs' => $prefs === null ? null : [
+                'text_size' => $prefs['text_size'],
+                'contrast' => $prefs['contrast'],
+                'motion' => $prefs['motion'],
+            ],
         ];
     }
 }

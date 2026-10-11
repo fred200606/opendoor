@@ -75,7 +75,7 @@
 
 ## Environment notes
 
-- Core tests run on SQLite in memory. For new raw SQL, also run them on MySQL: copy `phpunit.xml` with `DB_CONNECTION=mysql`, `DB_DATABASE=opendoor_core_test` to a temporary `phpunit.mysql.tmp.xml` in `services/core-api`, run `vendor/bin/phpunit -c` with it, then delete it (MySQL 8 reserves words like `of` that SQLite accepts).
+- Core tests run on SQLite in memory. For new raw SQL, also run them on MySQL: copy `phpunit.xml` with `DB_CONNECTION=mysql`, `DB_DATABASE=opendoor_core_test` to a temporary `phpunit.mysql.tmp.xml` in `services/core-api`, run `vendor/bin/phpunit -c` with it, then delete it (MySQL 8 reserves words like `of` that SQLite accepts). Same for new JSON columns: MySQL returns JSON object keys in its own order (shortest first), so build API objects key by key.
 - Main dev machine (Windows 11): PHP 8.4 (Herd Lite), Composer (Herd Lite `composer.bat`), Node 22.15, npm 10.9, MySQL 8.0.42, Git 2.45. **Docker: not installed.** Claude Code CLI used in the VS Code terminal (PowerShell).
 
 ## Checklist
