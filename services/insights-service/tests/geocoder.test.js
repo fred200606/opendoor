@@ -1,6 +1,7 @@
 import nock from 'nock';
 import { createCached } from '../src/cache/cached.js';
 import { createMemoryStore } from '../src/cache/memoryStore.js';
+import { createThrottle } from '../src/lib/throttle.js';
 import { addressHash, createGeocoder } from '../src/services/geocoder.js';
 import { createNominatimClient } from '../src/sources/nominatim.js';
 import { brokenStore, silentLog } from './helpers.js';
@@ -220,21 +221,18 @@ describe('geocoder', () => {
 });
 
 describe('Nominatim rate limit', () => {
-  test('requests start at least the interval apart', async () => {
+  // Measured where the throttle starts the call: the time a request reaches nock also includes
+  // socket set-up, which varied by tens of ms under load.
+  test('calls start at least the interval apart, in arrival order', async () => {
+    const schedule = createThrottle({ intervalMs: 150, maxWaitMs: 2_000 });
     const started = [];
-    for (const q of ['1 A St., Quezon City', '2 B St., Quezon City', '3 C St., Quezon City']) {
-      search(q).reply(() => {
-        started.push(Date.now());
-        return [200, hit(14.6, 121)];
-      });
-    }
-    const { geocode } = build({ intervalMs: 150 });
 
-    await Promise.all(['1 A St.', '2 B St.', '3 C St.'].map((address) => geocode({ ...QC, address })));
+    await Promise.all([1, 2, 3].map((n) => schedule(() => started.push({ n, at: Date.now() }))));
 
-    expect(started).toHaveLength(3);
-    expect(started[1] - started[0]).toBeGreaterThanOrEqual(140);
-    expect(started[2] - started[1]).toBeGreaterThanOrEqual(140);
+    expect(started.map(({ n }) => n)).toEqual([1, 2, 3]);
+    // 149: the first call's own timestamp can be taken 1 ms after its start time.
+    expect(started[1].at - started[0].at).toBeGreaterThanOrEqual(149);
+    expect(started[2].at - started[1].at).toBeGreaterThanOrEqual(149);
   });
 
   test('a request that would queue too long is not sent and does not start a cooldown', async () => {

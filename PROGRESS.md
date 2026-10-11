@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 CI, in two parts – (a) `.github/workflows/ci.yml` validate & test jobs (frontend lint/test/build, gateway + insights lint/jest, core pint + tests on a MySQL service, registry `php -l` + `xmllint` + `tests/run.php`); (b) integration job: `docker-compose.yml` + `docker-compose.ci.yml` with `mock-external`, seed, Newman `ci` env, HTML report artifact. (a) written + all commands pass locally (Core 336 on MySQL, pint, registry 39, Jest 24 + 123, Vitest 109); next action: confirm the first GitHub run of (a) is green, then (b).
+- **In progress:** Phase 9 CI, in two parts – (a) `.github/workflows/ci.yml` validate & test jobs (frontend lint/test/build, gateway + insights lint/jest, core pint + tests on a MySQL service, registry `php -l` + `xmllint` + `tests/run.php`); (b) integration job: `docker-compose.yml` + `docker-compose.ci.yml` with `mock-external`, seed, Newman `ci` env, HTML report artifact. (a) written; first GitHub run: frontend/gateway/registry green, Core failed 1 test (two notices in the same second, sort order) and Insights 3 `replyWithError` tests (Linux only: "Unhandled error" on a reused keep-alive mock socket). Fixed: `travel(1)` in the test; Insights tests use a non-keep-alive agent (`tests/setup.js`); throttle now waits a full interval after the previous real start (timers fired early/late under load – also the old flaky throttle test). Next action: confirm the second GitHub run is green, then (b).
 - **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 
@@ -166,7 +166,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 - Vitest: `AdminEmployerPage > registry check result is shown…` failed once in a full run (passes alone and in 3 full reruns) – timing under load; use longer `findBy` timeouts if it recurs in CI.
 - Live checks did not include a real screen reader (NVDA) – covered by the Phase 9 WCAG audit.
-- `tests/geocoder.test.js` "requests start at least the interval apart" failed once in the full suite (122 ms < 140 ms; 8 reruns pass) – timer jitter under load; loosen the bound or use fake timers if it fails again (CI).
 - Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Admin analytics now ignore deleted postings (M8); the employer dashboard still counts that applicant (same as the applicants list). Before the production smoke (Phase 9) run only read-only folders there.
 - Gateway limit 120 req/min per IP: one Newman run is now about 140 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).

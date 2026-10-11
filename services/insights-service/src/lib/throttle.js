@@ -6,7 +6,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * so a burst of requests cannot pile up behind the limit.
  */
 export function createThrottle({ intervalMs, maxWaitMs }) {
-  let nextStart = 0;
+  let nextStart = 0; // slot reserved for the next arrival (decides QUEUE_FULL)
+  let lastStart = -Infinity; // when the previous call really started
 
   return async function schedule(call) {
     const now = Date.now();
@@ -15,7 +16,12 @@ export function createThrottle({ intervalMs, maxWaitMs }) {
       throw Object.assign(new Error('Request queue is full'), { code: 'QUEUE_FULL', noCooldown: true });
     }
     nextStart = start + intervalMs;
-    if (start > now) await sleep(start - now);
+    // Wait for the slot and for a full interval after the previous call: on a busy event loop
+    // a timer can fire late (the previous call started late) or early by Date.now() (timers
+    // count from the loop's cached clock).
+    const waitTime = () => Math.max(start, lastStart + intervalMs) - Date.now();
+    for (let wait = waitTime(); wait > 0; wait = waitTime()) await sleep(wait);
+    lastStart = Date.now();
     return call();
   };
 }

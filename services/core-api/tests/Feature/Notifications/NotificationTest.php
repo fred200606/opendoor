@@ -124,6 +124,7 @@ class NotificationTest extends TestCase
         $url = "/api/admin/employers/{$this->employer->id}/verify";
 
         $this->patchJson($url, ['action' => 'reject', 'reason' => 'Registration number not found'])->assertOk();
+        $this->travel(1)->seconds(); // both notices would otherwise share created_at and sort in any order
         $this->patchJson($url, ['action' => 'approve'])->assertOk();
 
         $notices = $this->employer->user->notifications()->get()->sortBy('created_at')->values();
