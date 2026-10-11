@@ -90,7 +90,7 @@ function EmployerReview({ employer, onChange }) {
   }
 
   return (
-    <Page title={employer.company_name}>
+    <Page title={employer.company_name} documentTitle={`${employer.company_name} – Employer verification`}>
       <p>
         <Link to="/admin/employers">Back to employers</Link>
       </p>

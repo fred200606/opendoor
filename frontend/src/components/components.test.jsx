@@ -47,6 +47,8 @@ describe('TrustScoreCard', () => {
     expect(screen.getByText(/Based on 5 responses/)).toBeInTheDocument();
     const row = screen.getByRole('row', { name: /Sign language interpreter/ });
     expect(row).toHaveTextContent('1 of 3 delivered');
+    // Scrolls sideways on narrow screens, so keyboard users can focus it.
+    expect(screen.getByRole('region', { name: 'Each accommodation, as rated by hired employees' })).toHaveAttribute('tabindex', '0');
   });
 });
 

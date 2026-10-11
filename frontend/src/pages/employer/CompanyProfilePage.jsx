@@ -112,7 +112,7 @@ function CompanyForm({ company, onSaved }) {
       <ApiErrorAlert error={form.formError} title="Your company profile was not saved" />
 
       <form onSubmit={handleSubmit} noValidate>
-        <TextField label="Company name" required hint="As registered with the DTI or SEC." error={form.fieldErrors.company_name} {...form.bind('company_name')} />
+        <TextField label="Company name" required autoComplete="organization" hint="As registered with the DTI or SEC." error={form.fieldErrors.company_name} {...form.bind('company_name')} />
         <RadioGroup
           legend="Registered with"
           name="registry_type"

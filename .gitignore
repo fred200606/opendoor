@@ -29,6 +29,7 @@ services/business-registry-soap/data/*.db
 tests/jmeter/results*.jtl
 tests/jmeter/report/
 tests/jmeter/tokens.csv
+tests/a11y/results/
 newman/
 tests/postman/reports/
 

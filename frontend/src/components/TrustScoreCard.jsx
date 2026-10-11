@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { plural } from '../lib/format.js';
 
 const MIN_RESPONSES = 3;
@@ -8,6 +9,7 @@ const MIN_RESPONSES = 3;
  */
 export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false }) {
   const Heading = `h${headingLevel}`;
+  const captionId = useId();
   const basedOn = trustScore?.based_on ?? 0;
 
   if (!trustScore?.published) {
@@ -31,33 +33,37 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
       <p className="trust-card__basis">Based on {plural(basedOn, 'response')} from employees hired through OpenDoor.</p>
 
       {breakdown?.length > 0 && (
-        <table className="table trust-card__table">
-          <caption>Each accommodation, as rated by hired employees</caption>
-          <thead>
-            <tr>
-              <th scope="col">Accommodation</th>
-              <th scope="col">Delivered</th>
-              <th scope="col">Partly</th>
-              <th scope="col">Not delivered</th>
-            </tr>
-          </thead>
-          <tbody>
-            {breakdown.map((row) => (
-              <tr key={row.accommodation_id}>
-                <th scope="row">
-                  {row.name}
-                  <span className="field__hint">
-                    {' '}
-                    ({row.delivered} of {row.of} delivered)
-                  </span>
-                </th>
-                <td>{row.delivered}</td>
-                <td>{row.partial}</td>
-                <td>{row.not_delivered}</td>
+        // Wider than a 320 px screen: the table scrolls inside its own box (WCAG 1.4.10 allows it for
+        // data tables), which takes keyboard focus because the table has nothing focusable.
+        <div className="table-wrap" role="region" aria-labelledby={captionId} tabIndex={0}>
+          <table className="table trust-card__table">
+            <caption id={captionId}>Each accommodation, as rated by hired employees</caption>
+            <thead>
+              <tr>
+                <th scope="col">Accommodation</th>
+                <th scope="col">Delivered</th>
+                <th scope="col">Partly</th>
+                <th scope="col">Not delivered</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {breakdown.map((row) => (
+                <tr key={row.accommodation_id}>
+                  <th scope="row">
+                    {row.name}
+                    <span className="field__hint">
+                      {' '}
+                      ({row.delivered} of {row.of} delivered)
+                    </span>
+                  </th>
+                  <td>{row.delivered}</td>
+                  <td>{row.partial}</td>
+                  <td>{row.not_delivered}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

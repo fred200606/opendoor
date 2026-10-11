@@ -80,7 +80,7 @@ function CategoriesSection() {
       </AsyncContent>
 
       <form onSubmit={create} noValidate className="inline-form">
-        <TextField label="New category" id="new-category" maxLength={100} error={add.fieldErrors.name} {...add.bind('name')} />
+        <TextField label="New category" id="new-category" maxLength={100} autoComplete="off" error={add.fieldErrors.name} {...add.bind('name')} />
         <Button type="submit" className="button" disabled={add.submitting}>
           Add category
         </Button>
@@ -121,7 +121,7 @@ function NameDialog({ title, initial, maxLength, onSave, onDone, onClose }) {
   return (
     <Dialog title={title} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate>
-        <TextField label="Name" id="rename-field" maxLength={maxLength} error={form.fieldErrors.name} {...form.bind('name')} />
+        <TextField label="Name" id="rename-field" maxLength={maxLength} autoComplete="off" error={form.fieldErrors.name} {...form.bind('name')} />
         <div className="dialog__actions">
           <Button type="submit" className="button" disabled={form.submitting}>
             Save
@@ -255,7 +255,7 @@ function AccommodationDialog({ accommodation, onDone, onClose }) {
   return (
     <Dialog title={isNew ? 'Add accommodation type' : `Edit “${accommodation.name}”`} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate>
-        <TextField label="Name" id="accommodation-name" required maxLength={150} error={form.fieldErrors.name} {...form.bind('name')} />
+        <TextField label="Name" id="accommodation-name" required maxLength={150} autoComplete="off" error={form.fieldErrors.name} {...form.bind('name')} />
         <SelectField label="Group" id="accommodation-group" name="group" required placeholder="Choose a group" options={toOptions(ACCOMMODATION_GROUPS)} error={form.fieldErrors.group} {...form.bind('group')} />
         <TextField label="Description" id="accommodation-description" hint="Optional. One short sentence shown under the checkbox." maxLength={255} error={form.fieldErrors.description} {...form.bind('description')} />
         <div className="dialog__actions">
