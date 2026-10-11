@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { updateDisplayPrefs } from '../../api/account.js';
 import { changePassword } from '../../api/auth.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABELS } from '../../auth/roles.js';
@@ -8,7 +9,7 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
-import { loadDisplayPrefs, saveDisplayPrefs } from '../../lib/displayPrefs.js';
+import { loadDisplayPrefs, saveDisplayPrefs, toApi } from '../../lib/displayPrefs.js';
 
 export default function AccountPage() {
   const { user } = useAuth();
@@ -43,18 +44,36 @@ const MOTION = [
 function DisplaySettings() {
   const [prefs, setPrefs] = useState(loadDisplayPrefs);
   const [message, setMessage] = useState('');
+  // Saves run one after another, so the account ends with the last choice even on a slow network;
+  // only the last one reports.
+  const saving = useRef(Promise.resolve());
+  const latest = useRef(0);
 
   function change(key, value) {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
-    saveDisplayPrefs(next);
-    setMessage('Display settings applied.');
+    saveDisplayPrefs(next); // applies at once, also if the account cannot be reached
+    const id = ++latest.current;
+    saving.current = saving.current.then(async () => {
+      let saved = true;
+      try {
+        await updateDisplayPrefs(toApi(next));
+      } catch {
+        saved = false;
+      }
+      if (id !== latest.current) return;
+      setMessage(
+        saved
+          ? 'Display settings applied and saved to your account.'
+          : 'Display settings applied on this device, but not saved to your account. Change a setting to try again.',
+      );
+    });
   }
 
   return (
     <section className="card" aria-labelledby="display-title">
       <h2 id="display-title">Display</h2>
-      <p className="field__hint">Changes apply immediately and are remembered on this device.</p>
+      <p className="field__hint">Changes apply immediately and are saved to your account, so they also apply when you log in on another device.</p>
       <RadioGroup legend="Text size" name="textSize" options={TEXT_SIZES} value={prefs.textSize} onChange={(value) => change('textSize', value)} />
       <RadioGroup legend="Colours" name="contrast" options={CONTRAST} value={prefs.contrast} onChange={(value) => change('contrast', value)} />
       <RadioGroup legend="Motion" name="motion" options={MOTION} value={prefs.motion} onChange={(value) => change('motion', value)} />

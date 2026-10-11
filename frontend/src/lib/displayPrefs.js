@@ -1,4 +1,6 @@
-// M13 display settings. Stored in this browser only until the API exposes users.display_prefs.
+// M13 display settings. Kept in this browser (applied before the first render, also for guests)
+// and, for a signed-in user, saved with the account (PUT /me/display-prefs) so they follow the
+// user to other devices; the account's settings are applied after login.
 
 const KEY = 'opendoor.display';
 
@@ -28,3 +30,7 @@ export function saveDisplayPrefs(prefs) {
   }
   applyDisplayPrefs(prefs);
 }
+
+/** API shape `{ text_size, contrast, motion }` ↔ the app's `{ textSize, contrast, motion }`. */
+export const fromApi = ({ text_size: textSize, contrast, motion }) => ({ textSize, contrast, motion });
+export const toApi = ({ textSize, contrast, motion }) => ({ text_size: textSize, contrast, motion });

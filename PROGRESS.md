@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 M13 display settings – (1) Core: `display_prefs` on `GET /me` + login, `PUT /api/me/display-prefs` {text_size, contrast, motion}, tests, OpenAPI, api-contract; (2) frontend: account page saves to the API, prefs from the account applied after login, browser copy kept; (3) Postman (throwaway user); (4) live check. Email notifications (other half of M13) not built – needs a mail service. Done: (1) Core (`AccountResource` = User + `display_prefs` for login/register/me; admin lists keep `UserResource`; 5 tests, 346 Core tests; OpenAPI valid; api-contract). Next action: (2) frontend.
+- **In progress:** Phase 9 M13 display settings – (1) Core: `display_prefs` on `GET /me` + login, `PUT /api/me/display-prefs` {text_size, contrast, motion}, tests, OpenAPI, api-contract; (2) frontend: account page saves to the API, prefs from the account applied after login, browser copy kept; (3) Postman (throwaway user); (4) live check. Email notifications (other half of M13) not built – needs a mail service. Done: (1) Core (`AccountResource` = User + `display_prefs` for login/register/me; admin lists keep `UserResource`; 5 tests, 346 Core tests; OpenAPI valid; api-contract). (2) frontend (account page saves to the API, serialized, message on failure; account settings applied in AuthContext before the user is set, so the page shows them on first render; 111 Vitest). Next action: (3) Postman.
 - **Next step:** Phase 9 – M13 display settings (endpoint for `users.display_prefs`; the screen saves to the browser today), then the WCAG audit, then deployment. JMeter is ready; its final runs wait for the deployed stack.
 - **Blockers:** –
 

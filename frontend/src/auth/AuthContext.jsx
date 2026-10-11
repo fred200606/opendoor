@@ -2,8 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useNavigate } from 'react-router-dom';
 import * as authApi from '../api/auth.js';
 import { setUnauthorizedHandler, tokenStore } from '../api/client.js';
+import { fromApi, saveDisplayPrefs } from '../lib/displayPrefs.js';
 
 const AuthContext = createContext(null);
+
+/**
+ * M13: settings saved with the account win over this browser's copy (null = never saved). Applied
+ * before the user is set, so pages that read the browser copy on their first render see them.
+ */
+function applyAccountDisplayPrefs(user) {
+  if (user?.display_prefs) saveDisplayPrefs(fromApi(user.display_prefs));
+}
 
 /**
  * Holds the logged-in user. `status` is 'loading' while a stored token is checked with GET /me,
@@ -25,6 +34,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const startSession = useCallback(({ token: newToken, user: newUser }, redirectTo) => {
+    applyAccountDisplayPrefs(newUser);
     tokenStore.set(newToken);
     setToken(newToken);
     setUser(newUser);
@@ -50,7 +60,9 @@ export function AuthProvider({ children }) {
     authApi
       .me()
       .then((currentUser) => {
-        if (!cancelled) setUser(currentUser);
+        if (cancelled) return;
+        applyAccountDisplayPrefs(currentUser);
+        setUser(currentUser);
       })
       .catch(() => {
         if (!cancelled) clearSession();

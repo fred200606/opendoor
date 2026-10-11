@@ -21,3 +21,11 @@ export async function markNotificationRead(id) {
 export async function markAllNotificationsRead() {
   await api.patch('/notifications/read-all');
 }
+
+// M13 Display settings
+
+/** prefs in the API shape `{ text_size, contrast, motion }` → the saved settings */
+export async function updateDisplayPrefs(prefs) {
+  const { data } = await api.put('/me/display-prefs', prefs);
+  return data;
+}
