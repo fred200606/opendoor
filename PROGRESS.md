@@ -6,20 +6,21 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 WCAG audit + multimodal – (A) WCAG 2.1 AA audit of all pages (automated: axe/Lighthouse; scripted: keyboard + focus visible, 320 px reflow, 200 % zoom, text spacing 1.4.12, high-contrast + 150 % text, page titles, autocomplete 1.3.5; manual review) → fixes → report `docs/accessibility/wcag-audit.md` with an NVDA script for a teammate; (B) Read aloud (SpeechSynthesis) on job details + candidate application pages; (C) Voice input (SpeechRecognition, Chrome/Edge) on keyword search + long text fields, with a one-time privacy notice; (D) recheck changed pages. Next action: (A) baseline scans.
-- **Next step:** Phase 9 – WCAG audit (Lighthouse, keyboard-only, 200 % zoom / 320 px reflow, contrast incl. high-contrast mode; axe already in CI; NVDA pass by a person), then deployment.
+- **In progress:** Phase 9 WCAG audit + multimodal – (A) WCAG 2.1 AA audit of all pages (automated: axe/Lighthouse; scripted: keyboard + focus visible, 320 px reflow, 200 % zoom, text spacing 1.4.12, high-contrast + 150 % text, page titles, autocomplete 1.3.5; manual review) → fixes → report `docs/accessibility/wcag-audit.md` with an NVDA script for a teammate; (B) Read aloud (SpeechSynthesis) on job details + candidate application pages; (C) Voice input (SpeechRecognition, Chrome/Edge) on keyword search + long text fields, with a one-time privacy notice; (D) recheck changed pages. State (uncommitted): `tests/a11y/site.mjs` (shared logins/pages/axe, `axe-pages.mjs` now uses it) + `tests/a11y/wcag-checks.mjs`; first run → `tests/a11y/results/wcag-baseline.json` (19:37, script edited at 19:41 after it). Its "not reached by Tab" on every page lists only the header links (skip link check passes) → likely a checker bug in the Tab walk after `reload`. Next action: fix the Tab walk, rerun, decide whether `results/` is committed or ignored, commit `wip(a11y)`; then fix the real findings (320 px overflow on 7 pages, 200 % text on /admin/users, 2 fields without autocomplete, 4 shared titles).
+- **Next step:** Phase 9 – WCAG audit (A–D above), then further development/improvements. Deployment only when the user says so.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- Defense / submission date (asked 2026-10-11) – decides when to deploy (Railway + Vercel accounts also needed then).
+- –
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – Deployment timing: the user says when to deploy; until then work on development and improving the system. Don't ask for the defense/submission date again.
 - 2026-10-11 – Multimodal (user choice, beyond the SIA design): add **Read aloud** (browser text-to-speech, nothing leaves the device) and **Voice input** (browser speech recognition; Chrome/Edge send audio to their speech service → one-time notice before first use, never on by default). Not chosen: reading-comfort settings. SIA doc to mention both at the final doc pass.
 - 2026-10-11 – M13 = display settings only: `PUT /api/me/display-prefs` {text_size 100|125|150, contrast normal|high, motion normal|reduce}; `display_prefs` on login/register/`GET /me` via `AccountResource` (admin user lists keep `UserResource`, no prefs). The browser copy stays (guests, first paint); account settings win at login/page load. Email notifications (other half of M13, "Could have") not built: needs a mail service. SIA doc (1.4 scope, 4.1, Appendix A) to mention it at the final doc pass.
 - 2026-10-11 – JMeter: 5.6.3 in `C:\tools\apache-jmeter`; one plan (`tests/jmeter/opendoor-matching.jmx`) with `-J` properties for host/threads/loops (load 50×10, stress 100/200×5); extra JSON assertion `meta.per_page == ${pageSize}`. Data from `php artisan load-test:data` (not a seeder; `--remove`). The gateway limit (120/min per IP) must be raised for the test window only. Final numbers from the deployed stack; the local `php artisan serve` dry run is not representative.
-- 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (deadline asked, see Pending decisions). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
+- 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (when: the user says, see the later 2026-10-11 decision). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
 - 2026-10-11 – Notifications get time-ordered UUIDv7 ids (set in each notification's constructor) and the list orders by `created_at` desc, then `id` desc: `created_at` has whole seconds, so notices from the same second were listed in any order (CI Newman T04 got `posting_review` before `application_received`). Replaces "ids are random UUIDs" in the M9 decision.
 - 2026-10-11 – CI triggers: push to `main` **and** `develop`, PRs to both, plus manual runs (the team commits straight to `main`, so push-to-develop only would never run). Jobs are path-filtered (`dorny/paths-filter`); a manual run runs all. Core tests run on a MySQL 8 service container (root, empty password, CI only). SIA 8.4 says "push to `develop`" – fix at the final doc pass.
 - 2026-10-11 – SIA doc screenshots and results are filled **only after the whole system is developed** (last Phase 9 step), not during development. Don't offer it earlier.
@@ -182,6 +183,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 
 ## Session log (newest first)
+
+- 2026-10-11 – Status check + progress report. User: they will say when to deploy; focus on development. WCAG audit (A) baseline found uncommitted, state written to "Now". Next: fix the checker's Tab walk.
 
 - 2026-10-11 – M13 display settings done (Core, frontend, Postman, live check across two browsers). Fixed a garbled path in Decisions. Next: WCAG audit.
 - 2026-10-11 – JMeter ready: JMeter 5.6.3 installed, `load-test:data` command (4 tests), `.jmx` per Appendix D, README; local dry run OK (bad token correctly fails the match_mode assertion). Local load-test data removed again. Next: M13.
