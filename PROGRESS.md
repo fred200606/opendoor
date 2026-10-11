@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** Phase 9 JMeter (SIA 7.3 + Appendix D) – (1) JMeter 5.6.x to `C:	oolspache-jmeter` (outside the repo); (2) Core artisan command for load-test data (500 postings, 50 candidates with needs, `tests/jmeter/tokens.csv`; no Faker so it also runs in the production image; removable); (3) `tests/jmeter/opendoor-matching.jmx` per Appendix D, threads/loops/host as `-J` properties; (4) local dry run. Done: (1) JMeter 5.6.3 in `C:	oolspache-jmeter` (SHA-512 checked); (2) `php artisan load-test:data` (+ `--remove`; 4 tests, also on MySQL). Next action: (3) the .jmx.
 - **Next step:** Phase 9 – JMeter test plan (`tests/jmeter/` is empty): `opendoor-matching.jmx`, 500-posting seeder, `tokens.csv` generator, local dry run (JMeter not installed; Java 23 is). Final numbers later against production.
 - **Blockers:** –
 
