@@ -36,8 +36,11 @@ describe('JobSearchPage', () => {
     await user.type(screen.getByLabelText('Keyword'), 'encoder');
 
     await waitFor(() => expect(location()).toBe('/candidate/jobs?category=3&acc=5&q=encoder'));
-    const last = calls.filter((call) => call.key === 'GET /job-postings').at(-1).config.params;
-    expect(Object.fromEntries(last)).toEqual({ q: 'encoder', category: '3', 'accommodations[]': '5', match: '1', sort: 'best' });
+    // The request for the new URL is sent by an effect after the render, so wait for it too.
+    await waitFor(() => {
+      const last = calls.filter((call) => call.key === 'GET /job-postings').at(-1).config.params;
+      expect(Object.fromEntries(last)).toEqual({ q: 'encoder', category: '3', 'accommodations[]': '5', match: '1', sort: 'best' });
+    });
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
   });
 
