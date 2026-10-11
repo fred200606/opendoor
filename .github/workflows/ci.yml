@@ -1,7 +1,8 @@
 # OpenDoor CI – SIA documentation section 8.4.
 # 1. Validate & test: one job per component, run only when that component (or this file) changed.
 # 2. Integration: the backend stack in docker compose (public APIs replaced by mock-external),
-#    migrate + seed, then the Postman collection with Newman; HTML reports as an artifact.
+#    migrate + seed, then the Postman collection with Newman (HTML reports as an artifact) and an
+#    axe-core WCAG 2.1 A/AA check of the built frontend's main pages against that stack.
 # Every run of the workflow by hand (Actions → CI → Run workflow) runs all jobs.
 
 name: CI
@@ -64,10 +65,12 @@ jobs:
               - 'services/business-registry-soap/**'
             integration:
               - *workflow
+              - 'frontend/**'
               - 'gateway/**'
               - 'services/**'
               - 'tests/postman/**'
               - 'tests/mock-external/**'
+              - 'tests/a11y/**'
               - 'docker/**'
               - 'docker-compose*.yml'
 
@@ -205,12 +208,14 @@ jobs:
 
   integration:
     name: Integration (docker compose + Newman)
-    needs: [changes, gateway, insights, core, registry]
+    needs: [changes, frontend, gateway, insights, core, registry]
     # After the component jobs; a skipped job (component unchanged) does not block it.
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.changes.outputs.integration == 'true' }}
     runs-on: ubuntu-latest
     env:
       COMPOSE: docker compose -f docker-compose.yml -f docker-compose.ci.yml
+      # The gateway must allow the built frontend served by `vite preview` (axe step).
+      CORS_ALLOWED_ORIGIN: http://localhost:4173
     steps:
       - uses: actions/checkout@v7
       - name: Throwaway secrets for this run
@@ -234,6 +239,31 @@ jobs:
           # Insights restarted with an unreachable Overpass and an in-memory cache (README in tests/postman).
           OVERPASS_URL=http://127.0.0.1:9/api/interpreter INSIGHTS_CACHE_USER=             $COMPOSE up --detach --no-deps --force-recreate --wait insights-service
           $COMPOSE run --rm newman tests/postman/run-ci.sh t13-overpass-down --folder "07 Insights Mashup" --env-var overpassDown=true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tests/a11y/package-lock.json
+      - name: Build the frontend for the stack
+        working-directory: frontend
+        run: npm ci && npm run build
+        env:
+          VITE_API_URL: http://localhost:8080/api
+      - name: Install the axe check (Playwright Chromium)
+        working-directory: tests/a11y
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: axe – WCAG 2.1 A/AA on the main pages of every role
+        run: |
+          # Logo and résumé links point at http://gateway:8080 (PUBLIC_API_URL inside the network).
+          echo "127.0.0.1 gateway" | sudo tee -a /etc/hosts > /dev/null
+          (cd frontend && npx vite preview --port 4173 --strictPort > /tmp/vite-preview.log 2>&1 &)
+          for i in $(seq 30); do curl -sf http://localhost:4173/ > /dev/null && break; sleep 1; done
+          node tests/a11y/axe-pages.mjs
+        env:
+          APP_URL: http://localhost:4173
+          API_URL: http://localhost:8080/api
       - name: Service logs
         if: failure()
         run: $COMPOSE logs --no-color --timestamps

@@ -36,8 +36,9 @@ services:
 
   gateway:
     environment:
-      # One Newman run sends about 190 requests; production keeps 120.
-      RATE_LIMIT_PER_MIN: 300
+      # Newman (about 200 requests) and the axe check (about 150) run within a minute or two;
+      # production keeps 120.
+      RATE_LIMIT_PER_MIN: 1000
 
   newman:
     image: postman/newman:6-alpine

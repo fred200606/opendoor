@@ -88,7 +88,7 @@ describe('NotificationsPage', () => {
       routes: { 'GET /notifications': () => [200, paged(notifications, { unread_count: 2 })], 'GET /candidate/saved-jobs': () => [200, paged([])] },
     });
 
-    expect(await screen.findByRole('link', { name: 'Notifications, 2 unread' })).toHaveAttribute('href', '/notifications');
+    expect(await screen.findByRole('link', { name: 'Notifications 2 unread' })).toHaveAttribute('href', '/notifications');
   });
 
   test('the header count follows "Mark all as read" without a page change', async () => {
@@ -104,7 +104,7 @@ describe('NotificationsPage', () => {
       },
     });
 
-    expect(await screen.findByRole('link', { name: 'Notifications, 2 unread' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Notifications 2 unread' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Mark all as read' }));
 
     expect(await screen.findByRole('link', { name: 'Notifications' })).not.toHaveAttribute('aria-label');

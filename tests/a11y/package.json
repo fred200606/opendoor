@@ -1,0 +1,16 @@
+{
+  "name": "opendoor-a11y",
+  "private": true,
+  "description": "axe-core check of the built frontend's main pages (CI integration job)",
+  "type": "module",
+  "scripts": {
+    "axe": "node axe-pages.mjs"
+  },
+  "engines": {
+    "node": ">=22.15"
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0",
+    "playwright": "^1.64.0"
+  }
+}

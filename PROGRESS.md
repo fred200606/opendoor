@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 CI – (a) validate & test jobs and (b) integration job are green on GitHub (run 38129848329: compose stack built and seeded, Newman full 183 requests / 882 assertions / 0 failures, T13 run 87/87; avg 37 ms). Frontend Vitest race fixed (job search read the last API call before the effect sent it). Next action: confirm the frontend job is green, then (c) axe check on the built pages (SIA 8.4) – Playwright + axe against `vite preview` with the compose gateway.
+- **In progress:** Phase 9 CI – (a) and (b) green on GitHub (Newman in CI: 183 requests / 882 assertions / 0 failures + T13 87/87). (c) axe check written: `tests/a11y/axe-pages.mjs` (Playwright + axe-core 4.14, WCAG 2.0/2.1 A+AA, 33 pages of all roles), run in the integration job against `vite preview` + the compose gateway. Locally it found 1 real issue on every employer page – WCAG 2.5.3 Label in Name on the notifications link (aria-label "Notifications, 18 unread" vs text "Notifications18") – fixed: name from content ("Notifications 18 unread"), link inline-flex; then 32 pages, 0 violations. Next action: confirm the integration run with axe is green, then tick CI.
 - **Next step:** Phase 9 – GitHub Actions CI (lint, tests, build, Newman with mock externals).
 - **Blockers:** –
 

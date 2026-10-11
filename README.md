@@ -76,8 +76,9 @@ npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/l
 lint + tests per component (only for the components that changed; Core tests on MySQL 8), then an
 integration job that builds the backend images, starts them with `docker-compose.yml` +
 `docker-compose.ci.yml` (PSGC, Nominatim and Overpass replaced by `tests/mock-external`), migrates and
-seeds Core, and runs the whole Postman collection with Newman (plus T13 with Overpass down). The Newman
-HTML reports are attached to the run as the `newman-reports` artifact. Secrets for CI are generated per
+seeds Core, and runs the whole Postman collection with Newman (plus T13 with Overpass down) and an
+axe-core WCAG 2.1 A/AA check of the built frontend's main pages for every role (`tests/a11y`). The
+Newman HTML reports are attached to the run as the `newman-reports` artifact. Secrets for CI are generated per
 run; nothing has to be configured in GitHub.
 
 ## Deployment

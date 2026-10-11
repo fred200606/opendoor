@@ -23,16 +23,16 @@ export default function NotificationsLink() {
   }, [location.pathname]);
 
   return (
-    <NavLink
-      to="/notifications"
-      className="notifications-link"
-      aria-label={unread > 0 ? `Notifications, ${unread} unread` : undefined}
-    >
+    // The name comes from the content ("Notifications 2 unread") so it starts with the visible
+    // text "Notifications 2" (WCAG 2.5.3 Label in Name – voice control users say what they see).
+    <NavLink to="/notifications" className="notifications-link">
       Notifications
       {unread > 0 && (
-        <span className="count-badge" aria-hidden="true">
-          {unread}
-        </span>
+        <>
+          {' '}
+          <span className="count-badge">{unread}</span>{' '}
+          <span className="visually-hidden">unread</span>
+        </>
       )}
     </NavLink>
   );
