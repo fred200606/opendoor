@@ -26,7 +26,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
    **Budget** (`src/services/snapshot.js`): the whole snapshot gets 12 s (gateway allows 15 s); a source still running at the deadline is `unavailable` and nothing new is started, but its request continues and fills the cache.
 3. **Nominatim** – `GET /search?q=<address, label>&countrycodes=ph&format=jsonv2&limit=1` with header `User-Agent: OpenDoor/1.0 (${NOMINATIM_CONTACT_EMAIL})`; max 1 request/second (queue); timeout 5 s; cache 30 days. On failure fall back to the city centroid, `precision: "city"`, and report `sources.nominatim: "unavailable"`.
    As built (`src/services/geocoder.js`): no street match → search the place (`precision: "city"`, cached under the same address hash). Place queries (`placeQueries`): "X, Province" (NCR "Metro Manila"; PSGC's "City of" dropped), then for "City of X" also "X City, Province" and "X City". Each place search takes the top 5 and accepts a city/town/municipality first, else the first result whose address names the city (free-text search often has no city boundary – Mandaue, Ormoc – and the bare name also finds provinces, villages and streets elsewhere: "Davao, Davao del Sur" = the province); no match at all → bundled centroid with `nominatim: "ok"`; queue wait > 2 s → not sent (no cooldown); failure → 60 s cooldown, stale entry, bundled centroid (`src/data/city-centroids.json`, PSGC code → `{lat, lon}`, built with `npm run build:city-centroids`), else `lat/lon/precision: null`. No contact email → Nominatim never called.
-4. **Overpass** – POST to `${OVERPASS_URL}` (timeout 8 s, cache 24 h):
+4. **Overpass** – POST to `${OVERPASS_URL}` (client timeout 25 s per server, cache 24 h; second server `${OVERPASS_FALLBACK_URL}` – see "As built"):
    ```
    [out:json][timeout:8];
    ( node(around:500,LAT,LON)["wheelchair"~"yes|limited"];
@@ -40,6 +40,7 @@ Simulated DTI/SEC registry. Must stay a genuine SOAP integration: published WSDL
    - `other`: everything else
    Distance with haversine (metres, integer); de-duplicate by OSM id; keep the nearest 3 per category; keep `wheelchair` as `yes` or `limited`.
    As built (`src/services/nearby.js`): cache key = point rounded to 4 dp + radius, payload = trimmed elements, distances from the exact point; way centres beyond the radius dropped; unnamed places dropped from `other` only; 429/504 HTML or a `runtime error` remark = failure (never cached) → stale entry, else `nearby_accessible: null`; 60 s cooldown. The public overpass-api.de instance is often busy (seen 504 after 16 s on 2026-10-07) – the 8 s timeout + cooldown + cache keep the snapshot fast.
+   Second server (`src/sources/overpass.js`, 2026-10-11): `OVERPASS_FALLBACK_URL` (default `https://overpass.private.coffee/api/interpreter`, empty = none; empty in tests and CI) is asked when the main server fails or has not answered after 5 s; the first good answer wins, the other request is aborted (an abort does not count as a failure); each server has its own 60 s cooldown. The client waits up to 25 s (the query keeps `[timeout:8]`): the snapshot still answers within its 12 s budget, a later answer fills the cache.
 6. **Combine** and respond 200 even if some sources failed:
 ```json
 { "job_posting_id": 42,

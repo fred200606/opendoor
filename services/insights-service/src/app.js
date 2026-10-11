@@ -58,7 +58,15 @@ export function createApp(config, { store, psgcFallback, centroids = {}, log = c
   });
 
   const nearby = createNearby({
-    overpass: createOverpassClient({ url: config.overpassUrl, timeoutMs: config.timeouts.overpass, userAgent }),
+    overpass: createOverpassClient({
+      url: config.overpassUrl,
+      fallbackUrl: config.overpassFallbackUrl,
+      timeoutMs: config.timeouts.overpass,
+      hedgeMs: config.overpassHedgeMs,
+      cooldownMs: config.cooldowns.overpass,
+      userAgent,
+      log,
+    }),
     cached,
     ttlMs: config.ttl.overpass,
     cooldownMs: config.cooldowns.overpass,

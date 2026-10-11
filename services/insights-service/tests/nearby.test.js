@@ -251,3 +251,117 @@ describe('nearby (Overpass + cache)', () => {
     expect((await nearby(ORIGIN)).source).toBe('ok');
   });
 });
+
+describe('nearby with a second Overpass server', () => {
+  const main = () => nock('http://overpass.test').post('/api/interpreter');
+  const backup = () => nock('http://overpass-backup.test').post('/api/interpreter');
+  const answer = (elements) => ({ version: 0.6, generator: 'Overpass API', elements });
+  const station = { type: 'node', id: 11, ...north(220), tags: { railway: 'station', name: 'Quezon Ave. MRT Station', wheelchair: 'yes' } };
+  const toilet = { type: 'node', id: 44, ...north(90), tags: { amenity: 'toilets', wheelchair: 'yes' } };
+  const OTHER_POINT = { lat: 14.5547, lon: 121.0244 };
+
+  function build({ hedgeMs = 1_000, cooldownMs = 0 } = {}) {
+    const log = silentLog();
+    const nearby = createNearby({
+      overpass: createOverpassClient({
+        url: 'http://overpass.test/api/interpreter',
+        fallbackUrl: 'http://overpass-backup.test/api/interpreter',
+        timeoutMs: 1_000,
+        hedgeMs,
+        cooldownMs,
+        userAgent: 'OpenDoor/1.0 (team@opendoor.test)',
+        log,
+      }),
+      cached: createCached(createMemoryStore(), { log }),
+      ttlMs: 24 * HOUR,
+      cooldownMs: 0,
+      radiusM: 500,
+      log,
+    });
+    return { nearby, log };
+  }
+
+  beforeAll(() => nock.disableNetConnect());
+  afterEach(() => nock.cleanAll());
+  afterAll(() => nock.enableNetConnect());
+
+  test('a quick answer from the main server: the second one is not asked', async () => {
+    main().reply(200, answer([station]));
+    const second = backup().reply(200, answer([toilet]));
+    const { nearby } = build();
+
+    const result = await nearby(ORIGIN);
+
+    expect(result.nearby.transit_stops).toHaveLength(1);
+    expect(second.isDone()).toBe(false);
+  });
+
+  test('the main server fails → the second one answers', async () => {
+    main().reply(504, '<html>The server is probably too busy</html>', { 'Content-Type': 'text/html' });
+    backup().reply(200, answer([toilet]));
+    const { nearby, log } = build();
+
+    const result = await nearby(ORIGIN);
+
+    expect(result.source).toBe('ok');
+    expect(result.nearby.toilets).toEqual([{ name: null, wheelchair: 'yes', distance_m: 90 }]);
+    expect(log.lines.join('\n')).toContain('"server":"overpass.test","error":504');
+  });
+
+  test('the main server is slow → the second one is asked too; the first good answer wins', async () => {
+    main().delay(400).reply(200, answer([station]));
+    backup().reply(200, answer([toilet]));
+    const { nearby } = build({ hedgeMs: 50 });
+
+    const result = await nearby(ORIGIN);
+
+    expect(result.nearby.toilets).toHaveLength(1);
+    expect(result.nearby.transit_stops).toEqual([]);
+  });
+
+  test('a cancelled slow request does not put the main server on cooldown', async () => {
+    main().delay(400).reply(200, answer([station]));
+    backup().reply(200, answer([toilet]));
+    const { nearby } = build({ hedgeMs: 50, cooldownMs: 60_000 });
+    await nearby(ORIGIN);
+
+    main().reply(200, answer([station]));
+    const result = await nearby(OTHER_POINT);
+
+    expect(result.source).toBe('ok');
+  });
+
+  test('after a failure the main server is skipped for the cooldown; the second one is asked at once', async () => {
+    main().reply(504);
+    backup().reply(200, answer([toilet]));
+    const { nearby } = build({ cooldownMs: 60_000 });
+    await nearby(ORIGIN);
+
+    const skipped = main().reply(200, answer([station]));
+    backup().reply(200, answer([toilet]));
+    const result = await nearby(OTHER_POINT);
+
+    expect(result.source).toBe('ok');
+    expect(skipped.isDone()).toBe(false);
+  });
+
+  test('both servers fail → unavailable', async () => {
+    main().reply(504);
+    backup().reply(500, '<html>Internal Server Error</html>', { 'Content-Type': 'text/html' });
+    const { nearby, log } = build();
+
+    expect(await nearby(ORIGIN)).toEqual({ nearby: null, source: 'unavailable' });
+    expect(log.lines.join('\n')).toContain('"server":"overpass-backup.test","error":500');
+  });
+
+  test('the second server fails quickly while the main one is still working → the main answer is used', async () => {
+    main().delay(300).reply(200, answer([station]));
+    backup().reply(500);
+    const { nearby } = build({ hedgeMs: 50 });
+
+    const result = await nearby(ORIGIN);
+
+    expect(result.source).toBe('ok');
+    expect(result.nearby.transit_stops).toHaveLength(1);
+  });
+});

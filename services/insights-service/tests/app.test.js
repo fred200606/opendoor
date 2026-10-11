@@ -91,6 +91,15 @@ describe('config', () => {
   test('rejects URLs without a scheme', () => {
     expect(() => loadConfig({ PSGC_URL: 'psgc.gitlab.io/api' })).toThrow(/PSGC_URL must be an http\(s\) URL/);
   });
+
+  test('a second Overpass server by default; an empty value turns it off', () => {
+    expect(loadConfig({})).toMatchObject({
+      overpassUrl: 'https://overpass-api.de/api/interpreter',
+      overpassFallbackUrl: 'https://overpass.private.coffee/api/interpreter',
+    });
+    expect(loadConfig({ OVERPASS_FALLBACK_URL: '' }).overpassFallbackUrl).toBeNull();
+    expect(() => loadConfig({ OVERPASS_FALLBACK_URL: 'overpass.example' })).toThrow(/OVERPASS_FALLBACK_URL must be an http\(s\) URL/);
+  });
 });
 
 describe('bundled PSGC fallback', () => {

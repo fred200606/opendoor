@@ -18,6 +18,8 @@ export const TEST_ENV = {
   NOMINATIM_URL: 'http://nominatim.test',
   NOMINATIM_CONTACT_EMAIL: 'team@opendoor.test',
   OVERPASS_URL: 'http://overpass.test/api/interpreter',
+  // No second server unless a test sets one (never a real one).
+  OVERPASS_FALLBACK_URL: '',
 };
 
 /**

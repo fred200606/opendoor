@@ -26,6 +26,8 @@ services:
       NOMINATIM_CONTACT_EMAIL: ci@opendoor.test
       # The T13 run sets OVERPASS_URL to an unreachable address.
       OVERPASS_URL: ${OVERPASS_URL:-http://mock-external:9000/overpass/api/interpreter}
+      # No second server: CI never calls a real Overpass, and T13 needs Overpass to fail.
+      OVERPASS_FALLBACK_URL: ""
     depends_on:
       mock-external:
         condition: service_healthy

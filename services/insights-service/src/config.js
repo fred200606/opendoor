@@ -8,6 +8,7 @@ const DEFAULTS = {
   PSGC_URL: 'https://psgc.gitlab.io/api',
   NOMINATIM_URL: 'https://nominatim.openstreetmap.org',
   OVERPASS_URL: 'https://overpass-api.de/api/interpreter',
+  OVERPASS_FALLBACK_URL: 'https://overpass.private.coffee/api/interpreter',
   CACHE_DB_HOST: '127.0.0.1',
   CACHE_DB_PORT: '3306',
   CACHE_DB_NAME: 'insights_cache',
@@ -51,6 +52,10 @@ export function loadConfig(env = process.env) {
     nominatimUrl: url('NOMINATIM_URL'),
     nominatimContactEmail: contactEmail || null,
     overpassUrl: url('OVERPASS_URL'),
+    // Second public Overpass server; empty = none (tests and CI must not reach a real one).
+    overpassFallbackUrl: read('OVERPASS_FALLBACK_URL') === '' ? null : url('OVERPASS_FALLBACK_URL'),
+    // The fallback is also asked when the main server has not answered after this long.
+    overpassHedgeMs: 5_000,
     nearbyRadiusM: 500,
     // The cache is optional at runtime: without a database every request goes to the sources.
     cacheDb: read('CACHE_DB_USER')
@@ -62,7 +67,8 @@ export function loadConfig(env = process.env) {
           password: read('CACHE_DB_PASSWORD') ?? '',
         }
       : null,
-    timeouts: { core: 3_000, psgc: 5_000, nominatim: 5_000, overpass: 8_000 },
+    // Overpass is often slow: an answer later than the snapshot budget still fills the cache.
+    timeouts: { core: 3_000, psgc: 5_000, nominatim: 5_000, overpass: 25_000 },
     // Whole snapshot, below the gateway's 15 s Insights timeout.
     snapshotBudgetMs: 12_000,
     ttl: { psgc: 7 * DAY, geocode: 30 * DAY, overpass: DAY },

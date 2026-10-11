@@ -78,6 +78,7 @@ services:
       # Empty = Nominatim is not called (its usage policy requires a contact address).
       NOMINATIM_CONTACT_EMAIL: ${NOMINATIM_CONTACT_EMAIL:-}
       OVERPASS_URL: ${OVERPASS_URL:-https://overpass-api.de/api/interpreter}
+      OVERPASS_FALLBACK_URL: ${OVERPASS_FALLBACK_URL-https://overpass.private.coffee/api/interpreter}
       CACHE_DB_HOST: mysql
       CACHE_DB_PORT: 3306
       CACHE_DB_NAME: insights_cache

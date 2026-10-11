@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** WCAG audit + multimodal done (2026-10-11, see the Phase 9 checklist; only the NVDA run by a teammate is open – `docs/accessibility/wcag-audit.md` section 7). Next: ask the user which improvement to work on (candidates from Known issues: second Overpass instance via `OVERPASS_URL`, Vitest `AdminEmployerPage` timing flake, Railway volume for uploads; or new features). Deployment only when the user says so.
+- **Next step:** Ask the user what to improve next. Overpass: optional follow-up = background retry after a failure so the cache fills without a visitor (see Known issues). Other candidates: Vitest `AdminEmployerPage` timing flake; Railway volume for uploads (at deployment). Deployment only when the user says so; NVDA run by a teammate.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – Overpass reliability: client timeout 25 s per server (was 8 s; the query keeps `[timeout:8]`) – the snapshot still answers within 12 s and a later answer fills the cache. Second server `OVERPASS_FALLBACK_URL` (default `https://overpass.private.coffee/api/interpreter`, independent operator; empty = off, set empty in tests and `docker-compose.ci.yml` – CI never calls a real Overpass and T13 needs it to fail), asked when the main one fails or after 5 s; first good answer wins, the other is aborted (no cooldown for an abort); per-server 60 s cooldown. SIA 4.5 (Overpass timeout 8 s) to update at the final doc pass.
 - 2026-10-11 – WCAG checker results (`tests/a11y/results/`) are git-ignored like JMeter results; the audit report `docs/accessibility/wcag-audit.md` holds the summary.
 - 2026-10-11 – Deployment timing: the user says when to deploy; until then work on development and improving the system. Don't ask for the defense/submission date again.
 - 2026-10-11 – Multimodal (user choice, beyond the SIA design): add **Read aloud** (browser text-to-speech, nothing leaves the device) and **Voice input** (browser speech recognition; Chrome/Edge send audio to their speech service → one-time notice before first use, never on by default). Not chosen: reading-comfort settings. SIA doc to mention both at the final doc pass.
@@ -167,14 +168,14 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [ ] Production seed; Newman smoke against production
 - [ ] JMeter load + stress runs; save reports – plan, data command and local dry run done 2026-10-11 (`tests/jmeter/README.md`; load profile locally: 1,000 requests, all 200, P95 2,714 ms on single-threaded `artisan serve`); production runs after deployment
 - [ ] WCAG audit (Lighthouse, axe, NVDA); fixes – done 2026-10-11 except the NVDA run (teammate, script in `docs/accessibility/wcag-audit.md` §7): axe 0 and scripted checks pass on 33 pages (final run at `463ce7c`), Lighthouse 100 on 6 guest pages, fixed 4.1.3 result counts, 1.4.10 trust table, 1.3.5 autocomplete, 2.4.2 title (`8b6560d`, `5be71dd`); multimodal: Read aloud (`1121d88`) + Voice input with privacy notice (`463ce7c`), 119 Vitest. SIA doc to mention both at the final doc pass
-- [ ] SIA documentation: fill placeholders with real results (use `opendoor-sia-docs`) – **do last, after development is done** (Decision 2026-10-11). Includes: Appendix D says 20 accommodation types (seed has 18), a "seeder" for tokens (it is `php artisan load-test:data`) and lists one JSON assertion (plan also checks `meta.per_page`); SIA 8.4 axe step is in the integration job; 9 screenshots in 9.1 (Playwright, demo accounts, Overpass must answer for the snapshot), ERD image (appendix), Newman HTML report + totals (7.2), align 9.2 scenario numbers with the demo data (text says 86% / 5 hires / posting 42; seed gives 79% from 3 ratings), JMeter (7.3), 7.1 Actual/Status, production URLs, then team-only items (members, contribution %, lessons, objectives, defects – candidates from the session log: Laravel `*` CORS leak, X-Powered-By leak, MySQL reserved alias `of`)
+- [ ] SIA documentation: fill placeholders with real results (use `opendoor-sia-docs`) – **do last, after development is done** (Decision 2026-10-11). Includes: Appendix D says 20 accommodation types (seed has 18), a "seeder" for tokens (it is `php artisan load-test:data`) and lists one JSON assertion (plan also checks `meta.per_page`); SIA 8.4 axe step is in the integration job; 9 screenshots in 9.1 (Playwright, demo accounts, Overpass must answer for the snapshot), ERD image (appendix), Newman HTML report + totals (7.2), align 9.2 scenario numbers with the demo data (text says 86% / 5 hires / posting 42; seed gives 79% from 3 ratings), JMeter (7.3), 7.1 Actual/Status, production URLs, then team-only items (members, contribution %, lessons, objectives, defects – candidates from the session log: Laravel `*` CORS leak, X-Powered-By leak, MySQL reserved alias `of`) Also: 4.5 Overpass client timeout 25 s + second server (Decision 2026-10-11).
 
 ## Known issues / TODO later
 
 - Main machine has 7.3 GB RAM and runs out with VS Code, the Claude desktop app and the full stack open: Vitest workers abort (exit 134) and Claude Code sessions die mid-command (4 sessions on 2026-10-11). Run `npx vitest run --maxWorkers=2` and never Vitest and the Playwright a11y checker at the same time. (User declined putting the worker limit into `vite.config.js`.)
 - Vitest: `AdminEmployerPage > registry check result is shown…` failed once in a full run (passes alone and in 3 full reruns) – timing under load; use longer `findBy` timeouts if it recurs in CI.
 - Live checks did not include a real screen reader (NVDA) – covered by the Phase 9 WCAG audit.
-- Overpass (overpass-api.de) still times out often (8 s): snapshots then show `overpass: unavailable` until a later request fills the cache. Consider a second instance (e.g. `overpass.kumi.systems`) via `OVERPASS_URL` before the demo.
+- Overpass public servers are often overloaded. Probe 2026-10-11 ~23:00: overpass-api.de (and its machines lz4/z) 504 after 6–10 s, earlier 200 in 5.9 s / 6.7 s; private.coffee + kumi.systems 500 within 1 s; osm.jp, maps.mail.ru unreachable. Built: 25 s wait + second server (Decisions). Before a demo open each posting's job page once so its snapshot is cached (24 h fresh, then served stale if Overpass fails). Possible follow-up: retry in the background after a failure (in-memory, a few attempts with backoff) so the cache fills without a visitor.
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Admin analytics now ignore deleted postings (M8); the employer dashboard still counts that applicant (same as the applicants list). Before the production smoke (Phase 9) run only read-only folders there.
 - Gateway limit 120 req/min per IP: one Newman run is now about 140 requests. Local `gateway/.env` uses `RATE_LIMIT_PER_MIN=300` (set 2026-10-06); CI needs the same; keep 120 in production (folder 09 may test 429).
 - Windows: stopping a background `npm run …`/`npx …` task leaves its `node` child listening (Vite 5173 / gateway 8080). Start dev servers with `node` directly, or free the port (`Get-NetTCPConnection -LocalPort …`) after stopping.
@@ -186,6 +187,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-11 – Overpass: 25 s wait + second server with hedge after 5 s (`src/sources/overpass.js`), 131 Insights tests; live: failover path works, but all public Overpass servers were overloaded at the time. Next: ask the user.
 - 2026-10-11 – WCAG audit report written; Read aloud + Voice input built; recheck of all 33 pages clean. Next: ask the user what to improve next (NVDA run is for a teammate).
 - 2026-10-11 – Sessions kept dying from low RAM (7.3 GB; see Known issues). WCAG (A): scripted checks pass on all 33 pages, 4.1.3 result counts fixed, Lighthouse 100 on 6 public pages, manual review clean. Next: write docs/accessibility/wcag-audit.md.
 - 2026-10-11 – Status check + progress report. User: they will say when to deploy; focus on development. WCAG audit (A) baseline found uncommitted, state written to "Now". Next: fix the checker's Tab walk.
