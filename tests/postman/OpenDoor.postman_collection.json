@@ -207,7 +207,7 @@
   "item": [
     {
       "name": "01 Auth",
-      "description": "M1: register, login, me, password, logout. Demo passwords come from --env-var demoPassword.",
+      "description": "M1: register, login, me, password, logout; M13 display settings on the new candidate. Demo passwords come from --env-var demoPassword.",
       "item": [
         {
           "name": "Gateway health",
@@ -304,14 +304,26 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
                   "  pm.expect(body.user.role).to.eql('candidate');",
+                  "  pm.expect(body.user.display_prefs).to.eql(null);",
                   "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));",
                   "});",
                   "pm.collectionVariables.set('newCandidateToken', body.token);"
@@ -368,10 +380,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -593,10 +616,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -656,10 +690,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -719,10 +764,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -827,12 +883,23 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('matches the User schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
+                  "pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "}));",
@@ -938,6 +1005,176 @@
                   "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
                   "",
                   "pm.test('errors.current_password is present', () => pm.expect(body.errors).to.have.property('current_password'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Save display settings → 200",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/display-prefs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "display-prefs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text_size\": \"150\",\n  \"contrast\": \"high\",\n  \"motion\": \"reduce\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the saved settings', () => pm.expect(pm.response.json()).to.eql({ text_size: '150', contrast: 'high', motion: 'reduce' }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Settings follow the account: log in again → user.display_prefs",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newCandidateEmail}}\",\n  \"password\": \"postman-pass-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('login returns the saved settings', () => pm.expect(pm.response.json().user.display_prefs).to.eql({ text_size: '150', contrast: 'high', motion: 'reduce' }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Unknown text size and missing values → 422",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/display-prefs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "display-prefs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text_size\": \"300\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.text_size is present', () => pm.expect(body.errors).to.have.property('text_size'));",
+                  "",
+                  "pm.test('contrast and motion are required too', () => pm.expect(body.errors).to.have.all.keys('text_size', 'contrast', 'motion'));"
                 ]
               }
             }
@@ -2242,10 +2479,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -5801,10 +6049,21 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
-                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
+                  "    display_prefs: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['text_size', 'contrast', 'motion'],",
+                  "          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -9402,7 +9661,16 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));"
+                  "pm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));",
+                  "pm.test('admin view is the plain User: no display settings', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
+                  "  type: 'object',",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active'],",
+                  "  properties: {",
+                  "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
+                  "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' }",
+                  "  },",
+                  "  additionalProperties: false",
+                  "}));"
                 ]
               }
             }

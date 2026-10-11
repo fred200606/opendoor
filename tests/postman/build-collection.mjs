@@ -41,12 +41,34 @@ const userSchema = `{
   additionalProperties: false
 }`;
 
+/** The signed-in user's own account (register, login, /me): User + M13 display settings. */
+const accountSchema = `{
+  type: 'object',
+  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],
+  properties: {
+    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },
+    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },
+    display_prefs: {
+      oneOf: [
+        { type: 'null' },
+        {
+          type: 'object',
+          required: ['text_size', 'contrast', 'motion'],
+          properties: { text_size: { enum: ['100', '125', '150'] }, contrast: { enum: ['normal', 'high'] }, motion: { enum: ['normal', 'reduce'] } },
+          additionalProperties: false
+        }
+      ]
+    }
+  },
+  additionalProperties: false
+}`;
+
 const authResponse = (role, tokenVar) => `
 ${status(200)}
 const body = pm.response.json();
 pm.test('returns a token and the user', () => {
   pm.expect(body.token).to.be.a('string').and.not.empty;
-  pm.expect(body.user).to.be.jsonSchema(${userSchema});
+  pm.expect(body.user).to.be.jsonSchema(${accountSchema});
 });
 pm.test('role is ${role}', () => pm.expect(body.user.role).to.eql('${role}'));
 pm.collectionVariables.set('${tokenVar}', body.token);
@@ -97,7 +119,7 @@ const folder = (name, description, item) => ({ name, description, item });
 
 // ---------------------------------------------------------------- 01 Auth
 
-const auth = folder('01 Auth', 'M1: register, login, me, password, logout. Demo passwords come from --env-var demoPassword.', [
+const auth = folder('01 Auth', 'M1: register, login, me, password, logout; M13 display settings on the new candidate. Demo passwords come from --env-var demoPassword.', [
   request('Gateway health', {
     path: '/health',
     tests: `
@@ -123,8 +145,9 @@ ${status(201)}
 const body = pm.response.json();
 pm.test('returns a token and a candidate user', () => {
   pm.expect(body.token).to.be.a('string').and.not.empty;
-  pm.expect(body.user).to.be.jsonSchema(${userSchema});
+  pm.expect(body.user).to.be.jsonSchema(${accountSchema});
   pm.expect(body.user.role).to.eql('candidate');
+  pm.expect(body.user.display_prefs).to.eql(null);
   pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));
 });
 pm.collectionVariables.set('newCandidateToken', body.token);`,
@@ -184,7 +207,7 @@ pm.test('no token is returned', () => pm.expect(body).to.not.have.property('toke
     auth: bearer('candidateToken'),
     tests: `
 ${status(200)}
-pm.test('matches the User schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema(${userSchema}));
+pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema(${accountSchema}));
 pm.test('role is candidate', () => pm.expect(pm.response.json().role).to.eql('candidate'));`,
   }),
   request('GET /me without a token → 401 UNAUTHENTICATED', {
@@ -197,6 +220,32 @@ pm.test('role is candidate', () => pm.expect(pm.response.json().role).to.eql('ca
     auth: bearer('newCandidateToken'),
     body: { current_password: 'wrong-password', password: 'another-pass-123', password_confirmation: 'another-pass-123' },
     tests: fieldError('current_password'),
+  }),
+  request('M13 Save display settings → 200', {
+    method: 'PUT',
+    path: '/me/display-prefs',
+    auth: bearer('newCandidateToken'),
+    body: { text_size: '150', contrast: 'high', motion: 'reduce' },
+    tests: `
+${status(200)}
+pm.test('returns the saved settings', () => pm.expect(pm.response.json()).to.eql({ text_size: '150', contrast: 'high', motion: 'reduce' }));`,
+  }),
+  request('M13 Settings follow the account: log in again → user.display_prefs', {
+    method: 'POST',
+    path: '/login',
+    body: { email: '{{newCandidateEmail}}', password: 'postman-pass-123' },
+    tests: `
+${status(200)}
+pm.test('login returns the saved settings', () => pm.expect(pm.response.json().user.display_prefs).to.eql({ text_size: '150', contrast: 'high', motion: 'reduce' }));`,
+  }),
+  request('M13 Unknown text size and missing values → 422', {
+    method: 'PUT',
+    path: '/me/display-prefs',
+    auth: bearer('newCandidateToken'),
+    body: { text_size: '300' },
+    tests: `
+${fieldError('text_size')}
+pm.test('contrast and motion are required too', () => pm.expect(body.errors).to.have.all.keys('text_size', 'contrast', 'motion'));`,
   }),
   request('Log out the new candidate → 204', {
     method: 'POST',
@@ -1698,7 +1747,9 @@ pm.test('no exception details leak', () => {
       path: '/admin/users/{{pmUserId}}/suspend',
       auth: bearer('adminToken'),
       body: { suspended: true },
-      tests: `${status(200)}\npm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));`,
+      tests: `${status(200)}
+pm.test('is_active is false', () => pm.expect(pm.response.json().is_active).to.eql(false));
+pm.test('admin view is the plain User: no display settings', () => pm.expect(pm.response.json()).to.be.jsonSchema(${userSchema}));`,
     }),
     request("Suspended employer's old token → 401", {
       path: '/me',
