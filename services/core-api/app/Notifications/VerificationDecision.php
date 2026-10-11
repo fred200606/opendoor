@@ -9,7 +9,10 @@ use Illuminate\Support\Str;
 /** M9 in-app notice to the employer when an admin approves or rejects (or removes) the company verification. */
 class VerificationDecision extends Notification
 {
-    public function __construct(private readonly Employer $employer) {}
+    public function __construct(private readonly Employer $employer)
+    {
+        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+    }
 
     /** @return list<string> */
     public function via(object $notifiable): array

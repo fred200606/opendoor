@@ -67,6 +67,22 @@ class NotificationTest extends TestCase
         $this->getJson('/api/notifications?page=2')->assertJsonCount(1, 'data')->assertJsonPath('meta.unread_count', 12)->assertJsonPath('data.0.read_at', fn ($value) => $value !== null);
     }
 
+    public function test_notices_from_the_same_second_are_still_newest_first(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
+        $this->freezeSecond(function () use ($posting) {
+            $this->employer->user->notify(new PostingReviewed($posting));
+            $this->employer->user->notify(new VerificationDecision($this->employer));
+        });
+        Sanctum::actingAs($this->employer->user);
+
+        $response = $this->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonPath('data.0.type', 'employer_verification')
+            ->assertJsonPath('data.1.type', 'posting_review');
+        $this->assertSame($response->json('data.0.created_at'), $response->json('data.1.created_at'));
+    }
+
     public function test_marks_one_notification_read_once(): void
     {
         $this->notifyEmployer(2);

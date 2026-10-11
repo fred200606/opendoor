@@ -6,6 +6,7 @@ use App\Enums\ApplicationStatus;
 use App\Enums\HireConfirmedBy;
 use App\Models\Application;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /**
  * M9 in-app notice for the other party whenever an application is created or changes status.
@@ -13,7 +14,10 @@ use Illuminate\Notifications\Notification;
  */
 class ApplicationUpdate extends Notification
 {
-    public function __construct(private readonly Application $application) {}
+    public function __construct(private readonly Application $application)
+    {
+        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+    }
 
     /** Notifies the party that did not make the change (needs jobPosting.employer.user, candidateProfile.user). */
     public static function sendFor(Application $application): void

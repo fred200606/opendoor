@@ -13,7 +13,10 @@ use Illuminate\Support\Str;
  */
 class PostingReviewed extends Notification
 {
-    public function __construct(private readonly JobPosting $posting, private readonly ?string $removedReason = null) {}
+    public function __construct(private readonly JobPosting $posting, private readonly ?string $removedReason = null)
+    {
+        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+    }
 
     /** @return list<string> */
     public function via(object $notifiable): array

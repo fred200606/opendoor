@@ -16,8 +16,10 @@ class NotificationController extends Controller
         $request->validate(['page' => ['nullable', 'integer', 'min:1']]);
         $user = $request->user();
 
-        // notifications() is already newest first; the ids are random UUIDs.
-        return NotificationResource::collection($user->notifications()->paginate(12)->withQueryString())
+        // notifications() is newest first by created_at, which has whole seconds only. Our notices
+        // get time-ordered UUIDv7 ids (set in their constructors; each instance is sent to one
+        // user), so the id puts notices from the same second in order too.
+        return NotificationResource::collection($user->notifications()->orderByDesc('id')->paginate(12)->withQueryString())
             ->additional(['meta' => ['unread_count' => $user->unreadNotifications()->count()]]);
     }
 
