@@ -1,7 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
-import { describe, expect, test, vi } from 'vitest';
+import { useRef, useState } from 'react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { fakeApi } from '../test/fakeApi.js';
 import AccommodationPicker from './AccommodationPicker.jsx';
 import Button from './Button.jsx';
@@ -9,11 +9,13 @@ import { ConfirmDialog } from './Dialog.jsx';
 import LocationPicker from './LocationPicker.jsx';
 import MatchBadge from './MatchBadge.jsx';
 import Pagination from './Pagination.jsx';
+import ReadAloud from './ReadAloud.jsx';
 import ResultCount from './ResultCount.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
+import { readableChunks } from '../lib/readAloud.js';
 
 const groups = [
   {
@@ -71,6 +73,132 @@ describe('ResultCount', () => {
     expect(screen.getByRole('status')).toBe(region);
     expect(region).toHaveTextContent('0 users');
     expect(region).toHaveClass('visually-hidden');
+  });
+});
+
+describe('ReadAloud', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function speechMock() {
+    const spoken = [];
+    const synth = {
+      speak: vi.fn((utterance) => spoken.push(utterance)),
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      getVoices: () => [
+        { name: 'Online', lang: 'en-US', localService: false, default: true },
+        { name: 'On this device', lang: 'en-GB', localService: true, default: false },
+      ],
+    };
+    vi.stubGlobal('speechSynthesis', synth);
+    vi.stubGlobal(
+      'SpeechSynthesisUtterance',
+      class {
+        constructor(text) {
+          this.text = text;
+        }
+      },
+    );
+    return { synth, spoken };
+  }
+
+  function Job() {
+    const ref = useRef(null);
+    return (
+      <>
+        <ReadAloud targetRef={ref} title="Junior Web Developer" label="Read this job aloud" />
+        <div ref={ref}>
+          <p>Makati City</p>
+        </div>
+      </>
+    );
+  }
+
+  test('reads the text of a section block by block, without controls, hidden icons, messages or table data', () => {
+    const long = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ');
+    render(
+      <div data-testid="root">
+        <p>
+          Bayanihan Tech{' '}
+          <span className="badge">
+            <span aria-hidden="true">✓ </span>Verified employer
+          </span>
+        </p>
+        <dl>
+          <dt>Category</dt>
+          <dd>Accounting</dd>
+        </dl>
+        <div className="match">
+          <span>Meets 3 of your 4 needs</span>
+        </div>
+        <div className="prose">{`First paragraph.\n\nSecond paragraph. ${long}`}</div>
+        <table>
+          <caption>Each accommodation</caption>
+          <thead>
+            <tr>
+              <th scope="col">Accommodation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Ramp (2 of 3 delivered)</th>
+              <td>2</td>
+            </tr>
+          </tbody>
+        </table>
+        <p role="status">Saved.</p>
+        <button type="button">Apply</button>
+      </div>,
+    );
+
+    const chunks = readableChunks(screen.getByTestId('root'));
+    expect(chunks.slice(0, 4)).toEqual(['Bayanihan Tech Verified employer', 'Category: Accounting', 'Meets 3 of your 4 needs', 'First paragraph.']);
+    expect(chunks.slice(-2)).toEqual(['Each accommodation', 'Ramp (2 of 3 delivered)']);
+    // Long text is spoken in short pieces (Chrome cuts off long utterances), nothing lost.
+    const second = chunks.slice(4, -2);
+    expect(second.length).toBeGreaterThan(1);
+    expect(second.every((chunk) => chunk.length <= 200)).toBe(true);
+    expect(second.join(' ')).toBe(`Second paragraph. ${long}`);
+  });
+
+  test('reads the title and the section with a voice on the device; pause, resume and stop', async () => {
+    const user = userEvent.setup();
+    const { synth, spoken } = speechMock();
+    render(<Job />);
+
+    await user.click(screen.getByRole('button', { name: 'Read this job aloud' }));
+    expect(spoken.map((utterance) => utterance.text)).toEqual(['Junior Web Developer', 'Makati City']);
+    expect(spoken[0].voice.name).toBe('On this device');
+
+    await user.click(screen.getByRole('button', { name: 'Pause reading' }));
+    expect(synth.pause).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Resume reading' }));
+    expect(synth.resume).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', { name: 'Stop reading' }));
+    expect(synth.cancel).toHaveBeenCalledTimes(2); // before speaking + stop
+    expect(screen.getByRole('button', { name: 'Read this job aloud' })).toHaveFocus();
+    expect(screen.queryByRole('button', { name: 'Stop reading' })).not.toBeInTheDocument();
+  });
+
+  test('is ready again after the last piece; leaving the page stops the speech', async () => {
+    const user = userEvent.setup();
+    const { synth, spoken } = speechMock();
+    const { unmount } = render(<Job />);
+
+    await user.click(screen.getByRole('button', { name: 'Read this job aloud' }));
+    act(() => spoken.at(-1).onend());
+    expect(screen.getByRole('button', { name: 'Read this job aloud' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Read this job aloud' }));
+    unmount();
+    expect(synth.cancel).toHaveBeenCalledTimes(3);
+  });
+
+  test('is not shown when the browser cannot speak', () => {
+    render(<Job />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
 

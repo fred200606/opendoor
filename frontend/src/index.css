@@ -183,6 +183,10 @@ main:focus {
   gap: 0.75rem;
 }
 
+.read-aloud {
+  margin-bottom: 1rem;
+}
+
 .loading {
   color: var(--text-muted);
 }

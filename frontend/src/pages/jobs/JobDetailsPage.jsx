@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
 import { getJob, reportPosting, saveJob, unsaveJob } from '../../api/jobs.js';
@@ -12,6 +12,7 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { TextArea } from '../../components/form/fields.jsx';
 import MatchBadge from '../../components/MatchBadge.jsx';
 import Page from '../../components/Page.jsx';
+import ReadAloud from '../../components/ReadAloud.jsx';
 import StatusBadge, { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
@@ -39,61 +40,65 @@ function JobDetails({ job }) {
   const { user } = useAuth();
   const isCandidate = user?.role === 'candidate';
   const accommodationsByGroup = Object.groupBy(job.accommodations ?? [], (item) => item.group);
+  const readRef = useRef(null);
 
   return (
     <Page title={job.title}>
-      <p className="job-employer">
-        <Link to={`/employers/${job.employer?.id}`}>{job.employer?.company_name}</Link> <VerifiedBadge verified={job.employer?.verified} />
-      </p>
-      {job.status !== 'open' && (
-        <p>
-          <StatusBadge kind="posting" status={job.status} />
+      <ReadAloud targetRef={readRef} title={job.title} label="Read this job aloud" />
+      <div ref={readRef}>
+        <p className="job-employer">
+          <Link to={`/employers/${job.employer?.id}`}>{job.employer?.company_name}</Link> <VerifiedBadge verified={job.employer?.verified} />
         </p>
-      )}
+        {job.status !== 'open' && (
+          <p>
+            <StatusBadge kind="posting" status={job.status} />
+          </p>
+        )}
 
-      <dl className="details-list">
-        <dt>Category</dt>
-        <dd>{job.category?.name}</dd>
-        <dt>Employment</dt>
-        <dd>{EMPLOYMENT_TYPES[job.employment_type]}</dd>
-        <dt>Work setup</dt>
-        <dd>{WORK_SETUPS[job.work_setup]}</dd>
-        <dt>Interview</dt>
-        <dd>{INTERVIEW_FORMATS[job.interview_format]}</dd>
-        <dt>Address</dt>
-        <dd>
-          {job.address}
-          {job.location?.label && `, ${job.location.label}`}
-        </dd>
-        <dt>Apply by</dt>
-        <dd>{formatDate(job.closes_at)}</dd>
-      </dl>
+        <dl className="details-list">
+          <dt>Category</dt>
+          <dd>{job.category?.name}</dd>
+          <dt>Employment</dt>
+          <dd>{EMPLOYMENT_TYPES[job.employment_type]}</dd>
+          <dt>Work setup</dt>
+          <dd>{WORK_SETUPS[job.work_setup]}</dd>
+          <dt>Interview</dt>
+          <dd>{INTERVIEW_FORMATS[job.interview_format]}</dd>
+          <dt>Address</dt>
+          <dd>
+            {job.address}
+            {job.location?.label && `, ${job.location.label}`}
+          </dd>
+          <dt>Apply by</dt>
+          <dd>{formatDate(job.closes_at)}</dd>
+        </dl>
 
-      {isCandidate && <MatchBadge match={job.match} detailed />}
+        {isCandidate && <MatchBadge match={job.match} detailed />}
 
-      <h2>About the job</h2>
-      <div className="prose">{job.description}</div>
+        <h2>About the job</h2>
+        <div className="prose">{job.description}</div>
 
-      <h2>Accommodations offered</h2>
-      {(job.accommodations ?? []).length === 0 ? (
-        <p>The employer did not list any accommodations.</p>
-      ) : (
-        Object.entries(accommodationsByGroup).map(([group, items]) => (
-          <div key={group}>
-            <h3 className="snapshot__group">{ACCOMMODATION_GROUPS[group] ?? group}</h3>
-            <ul>
-              {items.map((item) => (
-                <li key={item.id}>
-                  {item.name}
-                  {item.note && <span className="field__hint"> – {item.note}</span>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))
-      )}
+        <h2>Accommodations offered</h2>
+        {(job.accommodations ?? []).length === 0 ? (
+          <p>The employer did not list any accommodations.</p>
+        ) : (
+          Object.entries(accommodationsByGroup).map(([group, items]) => (
+            <div key={group}>
+              <h3 className="snapshot__group">{ACCOMMODATION_GROUPS[group] ?? group}</h3>
+              <ul>
+                {items.map((item) => (
+                  <li key={item.id}>
+                    {item.name}
+                    {item.note && <span className="field__hint"> – {item.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        )}
 
-      <TrustScoreCard trustScore={job.trust_score} />
+        <TrustScoreCard trustScore={job.trust_score} />
+      </div>
 
       <JobActions job={job} />
 
