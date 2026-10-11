@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Phase 9 JMeter (SIA 7.3 + Appendix D) – (1) JMeter 5.6.x to `C:	oolspache-jmeter` (outside the repo); (2) Core artisan command for load-test data (500 postings, 50 candidates with needs, `tests/jmeter/tokens.csv`; no Faker so it also runs in the production image; removable); (3) `tests/jmeter/opendoor-matching.jmx` per Appendix D, threads/loops/host as `-J` properties; (4) local dry run. Done: (1) JMeter 5.6.3 in `C:	oolspache-jmeter` (SHA-512 checked); (2) `php artisan load-test:data` (+ `--remove`; 4 tests, also on MySQL). Next action: (3) the .jmx.
-- **Next step:** Phase 9 – JMeter test plan (`tests/jmeter/` is empty): `opendoor-matching.jmx`, 500-posting seeder, `tokens.csv` generator, local dry run (JMeter not installed; Java 23 is). Final numbers later against production.
+- **In progress:** –
+- **Next step:** Phase 9 – M13 display settings (endpoint for `users.display_prefs`; the screen saves to the browser today), then the WCAG audit, then deployment. JMeter is ready; its final runs wait for the deployed stack.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-11 – JMeter: 5.6.3 in `C:	oolspache-jmeter`; one plan (`tests/jmeter/opendoor-matching.jmx`) with `-J` properties for host/threads/loops (load 50×10, stress 100/200×5); extra JSON assertion `meta.per_page == ${pageSize}`. Data from `php artisan load-test:data` (not a seeder; `--remove`). The gateway limit (120/min per IP) must be raised for the test window only. Final numbers from the deployed stack; the local `php artisan serve` dry run is not representative.
 - 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (deadline asked, see Pending decisions). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
 - 2026-10-11 – Notifications get time-ordered UUIDv7 ids (set in each notification's constructor) and the list orders by `created_at` desc, then `id` desc: `created_at` has whole seconds, so notices from the same second were listed in any order (CI Newman T04 got `posting_review` before `application_received`). Replaces "ids are random UUIDs" in the M9 decision.
 - 2026-10-11 – CI triggers: push to `main` **and** `develop`, PRs to both, plus manual runs (the team commits straight to `main`, so push-to-develop only would never run). Jobs are path-filtered (`dorny/paths-filter`); a manual run runs all. Core tests run on a MySQL 8 service container (root, empty password, CI only). SIA 8.4 says "push to `develop`" – fix at the final doc pass.
@@ -160,9 +161,9 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] GitHub Actions CI – 2026-10-11 (`.github/workflows/ci.yml`; run 38131735806 all green): path-filtered jobs frontend (oxlint, Vitest, build), gateway + insights (ESLint, Jest), core (Pint, PHPUnit on MySQL 8), registry (`php -l`, `xmllint`, SOAP smoke); integration job: Dockerfiles + `docker-compose.yml`/`docker-compose.ci.yml` with `tests/mock-external`, migrate + seed, Newman full (183 requests / 882 assertions / 0 failures, T16 included) + T13 run (87/87), axe WCAG 2.1 A/AA on 33 pages (`tests/a11y`), HTML reports artifact. Fixes found on the way: insights nock interceptors stacking per worker, throttle interval, Core notification order (UUIDv7), notifications link WCAG 2.5.3, 2 test races
 - [ ] Dockerfiles for Railway (core-api, registry); Railway project + private networking; Vercel project – Dockerfiles for all 4 backend services written + built in CI (2026-10-11); Railway/Vercel not started
 - [ ] Production seed; Newman smoke against production
-- [ ] JMeter load + stress runs; save reports
+- [ ] JMeter load + stress runs; save reports – plan, data command and local dry run done 2026-10-11 (`tests/jmeter/README.md`; load profile locally: 1,000 requests, all 200, P95 2,714 ms on single-threaded `artisan serve`); production runs after deployment
 - [ ] WCAG audit (Lighthouse, axe, NVDA); fixes
-- [ ] SIA documentation: fill placeholders with real results (use `opendoor-sia-docs`) – **do last, after development is done** (Decision 2026-10-11). Includes: 9 screenshots in 9.1 (Playwright, demo accounts, Overpass must answer for the snapshot), ERD image (appendix), Newman HTML report + totals (7.2), align 9.2 scenario numbers with the demo data (text says 86% / 5 hires / posting 42; seed gives 79% from 3 ratings), JMeter (7.3), 7.1 Actual/Status, production URLs, then team-only items (members, contribution %, lessons, objectives, defects – candidates from the session log: Laravel `*` CORS leak, X-Powered-By leak, MySQL reserved alias `of`)
+- [ ] SIA documentation: fill placeholders with real results (use `opendoor-sia-docs`) – **do last, after development is done** (Decision 2026-10-11). Includes: Appendix D says 20 accommodation types (seed has 18), a "seeder" for tokens (it is `php artisan load-test:data`) and lists one JSON assertion (plan also checks `meta.per_page`); SIA 8.4 axe step is in the integration job; 9 screenshots in 9.1 (Playwright, demo accounts, Overpass must answer for the snapshot), ERD image (appendix), Newman HTML report + totals (7.2), align 9.2 scenario numbers with the demo data (text says 86% / 5 hires / posting 42; seed gives 79% from 3 ratings), JMeter (7.3), 7.1 Actual/Status, production URLs, then team-only items (members, contribution %, lessons, objectives, defects – candidates from the session log: Laravel `*` CORS leak, X-Powered-By leak, MySQL reserved alias `of`)
 
 ## Known issues / TODO later
 
@@ -180,6 +181,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-11 – JMeter ready: JMeter 5.6.3 installed, `load-test:data` command (4 tests), `.jmx` per Appendix D, README; local dry run OK (bad token correctly fails the match_mode assertion). Local load-test data removed again. Next: M13.
 - 2026-10-11 – CI done (validate & test + docker compose integration with mock externals, Newman, axe); fixed 5 problems it found (2 real: notification order, notifications-link label). Pushed. User: deploy later; next JMeter.
 - 2026-10-11 – Progress report; listed the SIA doc placeholders (screenshots etc.). User: fill them only after development is done. Next: Phase 9 CI (unchanged).
 - 2026-10-10 – Admin posting removal built (user decision: match the SIA doc). Next: Phase 9 CI.
