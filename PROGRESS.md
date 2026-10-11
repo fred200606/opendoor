@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** Ask the user what to improve next (candidates: Vitest `AdminEmployerPage` timing flake; Railway volume for uploads at deployment). Deployment only when the user says so; NVDA run by a teammate. The local stack is not running (stopped for low memory 2026-10-12) – start it only when needed.
+- **Next step:** Ask the user what to improve next (no open development item; Railway volume for uploads belongs to the deployment). Deployment only when the user says so; NVDA run by a teammate. The local stack is not running (stopped for low memory 2026-10-12) – start it only when needed.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -174,7 +174,6 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 ## Known issues / TODO later
 
 - Main machine has 7.3 GB RAM and runs out with VS Code, the Claude desktop app and the full stack open: Vitest workers abort (exit 134) and Claude Code sessions die mid-command (4 sessions on 2026-10-11). Run `npx vitest run --maxWorkers=2` and never Vitest and the Playwright a11y checker at the same time. (User declined putting the worker limit into `vite.config.js`.)
-- Vitest: `AdminEmployerPage > registry check result is shown…` failed once in a full run (passes alone and in 3 full reruns) – timing under load; use longer `findBy` timeouts if it recurs in CI.
 - Live checks did not include a real screen reader (NVDA) – covered by the Phase 9 WCAG audit.
 - Overpass public servers are often overloaded. Probe 2026-10-11 ~23:00: overpass-api.de (and its machines lz4/z) 504 after 6–10 s, earlier 200 in 5.9 s / 6.7 s; private.coffee + kumi.systems 500 within 1 s; osm.jp, maps.mail.ru unreachable. Built: 25 s wait + second server (Decisions). Before a demo open each posting's job page once so its snapshot is cached (24 h fresh, then served stale if Overpass fails). Background retry built 2026-10-12 (Decisions).
 - Postman runs leave one hired application (on a soft-deleted posting) + notifications for the demo employer per run. Admin analytics now ignore deleted postings (M8); the employer dashboard still counts that applicant (same as the applicants list). Before the production smoke (Phase 9) run only read-only folders there.
@@ -188,6 +187,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-12 – Fixed the Vitest flake (Known issue): cold first full-app render per test file took 381 ms idle / 629 ms with all cores busy against the 1 s `findBy` limit → `configure({ asyncUtilTimeout: 3_000 })` in `src/test/setup.js`; 119 Vitest pass (2 workers, 31.9 s). Next: ask the user.
 - 2026-10-12 – Overpass background retry (`nearby.js`), 135 Insights tests (nearby tests 3× stable); live: failed place filled by the first retry. Local stack was stopped by Claude Code for low memory. Next: ask the user.
 - 2026-10-11 – Overpass: 25 s wait + second server with hedge after 5 s (`src/sources/overpass.js`), 131 Insights tests; live: failover path works, but all public Overpass servers were overloaded at the time. Next: ask the user.
 - 2026-10-11 – WCAG audit report written; Read aloud + Voice input built; recheck of all 33 pages clean. Next: ask the user what to improve next (NVDA run is for a teammate).
