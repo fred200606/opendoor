@@ -13,7 +13,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M1 Auth | POST | /register | P | `{name,email,password,password_confirmation,role:'candidate'|'employer',consent:true}` → 201 `{user, token}` |
 | M1 Auth | POST | /login | P | `{email,password}` → 200 `{token, user:{id,name,email,role}}` (rate-limited 5/min) |
 | M1 Auth | POST | /logout | any | revoke token → 204 |
-| M1 Auth | GET | /me | any | current user + role |
+| M1 Auth | GET | /me | any | current user + role + `display_prefs` (M13; null until saved; also in the login/register `user`, not in admin user lists) |
 | M1 Auth | PUT | /me/password | any | `{current_password,password,password_confirmation}` |
 | M2 Profile | GET, PUT | /candidate/profile | C | `{headline,skills[],experience,location_psgc,location_label,disability_type?,show_disability}`; GET never 404s (empty profile created on first access) |
 | M2 Profile | PUT | /candidate/accommodations | C | `{accommodation_ids:[...]}` replaces needs |
@@ -52,6 +52,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M4 Postings | GET | /admin/job-postings | A | `?status=` (default pending_approval) for the approval queue |
 | M10 Moderation | GET | /admin/feedback | A | `?employer_id=&hidden=0|1`; anonymous AdminFeedback (no author) |
 | M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks of visible postings, newest saved first, with `match` and `saved:true`; POST 201 (200 if already saved; hidden → 404); DELETE by id, idempotent → 204 |
+| M13 Display settings | PUT | /me/display-prefs | any | `{text_size:'100'|'125'|'150', contrast:'normal'|'high', motion:'normal'|'reduce'}` (all required) → 200 the saved settings; follow the user to other devices |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
 | Insights | GET | /insights/locations/{regions|provinces|cities}?parent= | P | `[{code,name,level}]` |
 | Internal (Core) | GET | /internal/job-postings/{id}/summary | S | not routed by gateway |

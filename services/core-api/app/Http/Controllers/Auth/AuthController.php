@@ -6,7 +6,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\AccountResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,7 +64,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'token' => $user->createToken(self::TOKEN_NAME)->plainTextToken,
-            'user' => new UserResource($user),
+            'user' => new AccountResource($user),
         ], $status);
     }
 }

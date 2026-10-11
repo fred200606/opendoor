@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** Phase 9 M13 display settings – (1) Core: `display_prefs` on `GET /me` + login, `PUT /api/me/display-prefs` {text_size, contrast, motion}, tests, OpenAPI, api-contract; (2) frontend: account page saves to the API, prefs from the account applied after login, browser copy kept; (3) Postman (throwaway user); (4) live check. Email notifications (other half of M13) not built – needs a mail service. Done: (1) Core (`AccountResource` = User + `display_prefs` for login/register/me; admin lists keep `UserResource`; 5 tests, 346 Core tests; OpenAPI valid; api-contract). Next action: (2) frontend.
 - **Next step:** Phase 9 – M13 display settings (endpoint for `users.display_prefs`; the screen saves to the browser today), then the WCAG audit, then deployment. JMeter is ready; its final runs wait for the deployed stack.
 - **Blockers:** –
 
@@ -16,7 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
-- 2026-10-11 – JMeter: 5.6.3 in `C:	oolspache-jmeter`; one plan (`tests/jmeter/opendoor-matching.jmx`) with `-J` properties for host/threads/loops (load 50×10, stress 100/200×5); extra JSON assertion `meta.per_page == ${pageSize}`. Data from `php artisan load-test:data` (not a seeder; `--remove`). The gateway limit (120/min per IP) must be raised for the test window only. Final numbers from the deployed stack; the local `php artisan serve` dry run is not representative.
+- 2026-10-11 – JMeter: 5.6.3 in `C:\tools\apache-jmeter`; one plan (`tests/jmeter/opendoor-matching.jmx`) with `-J` properties for host/threads/loops (load 50×10, stress 100/200×5); extra JSON assertion `meta.per_page == ${pageSize}`. Data from `php artisan load-test:data` (not a seeder; `--remove`). The gateway limit (120/min per IP) must be raised for the test window only. Final numbers from the deployed stack; the local `php artisan serve` dry run is not representative.
 - 2026-10-11 – Deployment waits: first JMeter, M13, WCAG audit (no deployment needed), then deploy with a buffer before the defense (deadline asked, see Pending decisions). CI uses per-run generated secrets (nothing in GitHub secrets). PHP images use FrankenPHP (`php-server`); Node images `node:22-alpine`. The axe check runs in the CI **integration** job (needs the API), not the frontend job as SIA 8.4 says – fix at the final doc pass.
 - 2026-10-11 – Notifications get time-ordered UUIDv7 ids (set in each notification's constructor) and the list orders by `created_at` desc, then `id` desc: `created_at` has whole seconds, so notices from the same second were listed in any order (CI Newman T04 got `posting_review` before `application_received`). Replaces "ids are random UUIDs" in the M9 decision.
 - 2026-10-11 – CI triggers: push to `main` **and** `develop`, PRs to both, plus manual runs (the team commits straight to `main`, so push-to-develop only would never run). Jobs are path-filtered (`dorny/paths-filter`); a manual run runs all. Core tests run on a MySQL 8 service container (root, empty password, CI only). SIA 8.4 says "push to `develop`" – fix at the final doc pass.

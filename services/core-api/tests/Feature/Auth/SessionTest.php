@@ -42,6 +42,7 @@ class SessionTest extends TestCase
                 'email' => $user->email,
                 'role' => 'employer',
                 'is_active' => true,
+                'display_prefs' => null,
             ]);
     }
 

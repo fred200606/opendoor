@@ -37,6 +37,7 @@ tags:
   - name: M10 Moderation
   - name: M11 Master data
   - name: M12 Saved jobs
+  - name: M13 Display settings
   - name: Insights
   - name: Internal
 security:
@@ -133,10 +134,10 @@ paths:
       summary: Current user and role
       responses:
         '200':
-          description: Current user
+          description: Current user, with the M13 display settings
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/User' }
+              schema: { $ref: '#/components/schemas/Account' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
   /me/password:
     put:
@@ -156,6 +157,24 @@ paths:
                 password_confirmation: { type: string }
       responses:
         '204': { description: Password changed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /me/display-prefs:
+    put:
+      tags: [M13 Display settings]
+      summary: Save the display settings with the account
+      description: Any role. Replaces all three settings; they follow the user to other devices (returned by GET /me and login). The client also keeps a copy in the browser for guests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DisplayPrefs' }
+      responses:
+        '200':
+          description: Saved settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DisplayPrefs' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
 
@@ -1563,12 +1582,30 @@ components:
         email: { type: string, format: email }
         role: { $ref: '#/components/schemas/Role' }
         is_active: { type: boolean }
+    Account:
+      description: The signed-in user's own account (login, register, GET /me). Admin user lists use User, without display settings.
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            display_prefs:
+              description: null until the user saves them once
+              oneOf:
+                - $ref: '#/components/schemas/DisplayPrefs'
+                - type: 'null'
+    DisplayPrefs:
+      type: object
+      required: [text_size, contrast, motion]
+      properties:
+        text_size: { type: string, enum: ['100', '125', '150'], description: Text size in percent }
+        contrast: { type: string, enum: [normal, high] }
+        motion: { type: string, enum: [normal, reduce] }
     AuthResponse:
       type: object
       required: [token, user]
       properties:
         token: { type: string }
-        user: { $ref: '#/components/schemas/User' }
+        user: { $ref: '#/components/schemas/Account' }
     CandidateProfileInput:
       type: object
       properties:
