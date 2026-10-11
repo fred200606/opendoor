@@ -4,9 +4,9 @@
 |---|---|
 | Standard | WCAG 2.1, levels A and AA |
 | Date | 2026-10-11 |
-| Build | `main` at `5be71dd` – production build (`vite build`) served by `vite preview`, local stack with the demo seed |
+| Build | `main` at `5be71dd` (audit and fixes), rechecked at `463ce7c` after Read aloud and Voice input – production build (`vite build`) served by `vite preview`, local stack with the demo seed |
 | Pages | 33 pages for guests, candidates, employers and admins (list below) |
-| Status | Automated, scripted and code review done – **no open failures**. Screen-reader test with NVDA still to do (script in section 6). |
+| Status | Automated, scripted and code review done – **no open failures**. Screen-reader test with NVDA still to do (script in section 7). |
 
 ## 1. Pages
 
@@ -28,7 +28,7 @@ The first candidate's own application page was skipped (the demo candidate had n
 | Automated rules (cross-check) | Lighthouse 12.6.1, accessibility category | The 6 guest pages (Lighthouse cannot sign in). |
 | Scripted checks | `tests/a11y/wcag-checks.mjs` (Playwright) | What axe cannot decide on its own – see the table in section 3. |
 | Code review | Reading the React components and shared form, dialog and status code | Error handling, status messages, time limits, grouping, images, contrast tokens. |
-| Screen reader | NVDA + Chrome (by a teammate) | **Not done yet** – section 6. |
+| Screen reader | NVDA + Chrome (by a teammate) | **Not done yet** – section 7. |
 
 Rerun (stack running, frontend served on port 4173, gateway allowing that origin):
 
@@ -44,11 +44,11 @@ Results files go to `tests/a11y/results/` (git-ignored). Run the checker alone: 
 
 ### Automated
 
-- **axe:** 33 pages, **0 violations**.
+- **axe:** 33 pages, **0 violations** (also in the final run at `463ce7c`).
 - **axe in the app's high-contrast mode at 150 % text** (M13 display settings): 33 pages, **0 violations**.
 - **Lighthouse accessibility:** **100** on `/`, `/jobs`, `/jobs/3`, `/employers/1`, `/login`, `/register`.
 
-### Scripted checks (`wcag-checks.mjs`, final run: all 33 pages pass)
+### Scripted checks (`wcag-checks.mjs`, final run at `463ce7c`: all 33 pages pass)
 
 | Criterion | Check | Result |
 |---|---|---|
@@ -96,7 +96,22 @@ Earlier runs of the checker were used to debug the checker itself (for example i
 - **Date field (posting deadline):** Tab stops on the month, day and year parts of the field. This is Chrome's own date input, not an extra stop added by the app.
 - **Coverage limits:** Chrome only; Lighthouse on guest pages only; no mobile screen reader (TalkBack/VoiceOver) test.
 
-## 6. NVDA test script (for a teammate)
+## 6. Read aloud and voice input (multimodal)
+
+Two optional ways to use the pages, beyond what WCAG 2.1 AA requires. Both use only the browser's own speech features and are never on by default.
+
+| | Read aloud | Voice input |
+|---|---|---|
+| For | People who find reading tiring or slow (low vision without a screen reader, dyslexia, cognitive disabilities) | People for whom typing is hard (motor disabilities, RSI) |
+| Where | Job details ("Read this job aloud"), candidate application ("Read this application aloud") | "Speak" under the job keyword search, cover note, interview accommodation request, work experience, job description, about the company, feedback comments |
+| Browser feature | Speech synthesis (all current browsers) | Speech recognition (Chrome and Edge; the button is not shown in other browsers) |
+| Privacy | A voice on the device is chosen when the browser has one, so the text normally stays on the device | Chrome and Edge send the audio to Google or Microsoft. A notice says so before the first use; nothing listens until the user accepts it and selects "Speak". OpenDoor never receives audio – only the text in the field when the form is sent. |
+| Control | One button: Read → Pause → Resume; "Stop reading" while it reads; leaving the page stops it | "Speak" ↔ "Stop listening"; leaving the page stops it; text is added at the end of the field, within its character limit |
+| Accessibility of the controls | Native buttons with visible text; focus stays on the button (moves back to it after Stop); controls, hidden icons, passing messages and table data cells are not read; labels are read with their values ("Category: Information Technology") | Native buttons; the field name is part of the button's accessible name ("Speak instead of typing (Cover note)"); "Listening…", what was added and errors (microphone blocked, no microphone, no speech heard, service unreachable) are shown as text in a status line |
+
+Checked with unit tests (mocked speech APIs) and live in Chrome: both pages read in the right order; the voice-input notice, the "microphone blocked" message and the return of focus; axe 0 on the job search page (also with the notice open), job details and application pages. The recheck of all pages is in section 3 (final run).
+
+## 7. NVDA test script (for a teammate)
 
 **Set-up:** Windows, NVDA (latest), Chrome. Use the demo accounts (`candidate@opendoor.test`, `employer@opendoor.test`, `admin@opendoor.test`; the password is in the team's notes, not in the repo). Turn the monitor off or look away for the main tasks – use only the keyboard and speech.
 
@@ -123,5 +138,7 @@ Record each step as **Pass**, **Problem** (what was heard) or **Blocked**.
 | 15 | Employers: open an employer under review and run the registry check. | "The registry check is done." is announced; the "Business registry result" section reads the result as text (or explains in words when the registry did not respond). |
 | 16 | Account settings: set text size 150 % and high contrast, save. | The setting change is announced; the page stays readable and in order. |
 | 17 | Open any notification from the notifications link. | The link says how many are unread ("Notifications, 3 unread"); the list is read in order, newest first. |
+| 18 | On a job page, press "Read this job aloud", then the same button again, then "Stop reading". (Turn NVDA speech off with `Insert+S` to hear the app's voice.) | The button is read as "Pause reading", then "Resume reading"; after Stop, focus is on "Read this job aloud". |
+| 19 | On Find jobs, press "Speak" under Keyword (Chrome or Edge). | The button is read as "Speak instead of typing (Keyword)". A dialog explains that the browser sends audio to its speech service; Cancel closes it without listening. After "Use voice input", "Listening…" is announced; what you say appears in the field and "Added: …" is announced. |
 
 Report problems to the team with the page, the step number and what NVDA said; fix and rerun the scripted checks (section 2).
