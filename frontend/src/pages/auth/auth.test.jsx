@@ -132,3 +132,82 @@ describe('RegisterPage', () => {
     expect(screen.getByLabelText(/I agree/)).toHaveAccessibleDescription(/must agree/);
   });
 });
+
+describe('Forgot and reset password', () => {
+  const SENT = { message: 'If an account exists for this email, we sent a link to reset the password.' };
+
+  test('Log in links to the form, which gives the same answer for every email', async () => {
+    const { user, calls, location } = renderApp('/login', { routes: { 'POST /forgot-password': () => [200, SENT] } });
+
+    await user.click(screen.getByRole('link', { name: 'Forgot your password?' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Reset your password' })).toBeInTheDocument();
+    expect(location()).toBe('/forgot-password');
+
+    await user.type(screen.getByLabelText(/Email address/), 'maria@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+
+    expect(await screen.findByText(/If an OpenDoor account exists for maria@example.com/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Check your email');
+    expect(calls.find((call) => call.key === 'POST /forgot-password').data).toEqual({ email: 'maria@example.com' });
+    expect(screen.getByRole('link', { name: 'Back to log in' })).toHaveAttribute('href', '/login');
+  });
+
+  test('too many requests and a wrong email format get plain messages', async () => {
+    let answer = validationError({ email: ['The email field must be a valid email address.'] });
+    const { user } = renderApp('/forgot-password', { routes: { 'POST /forgot-password': () => answer } });
+
+    await user.type(await screen.findByLabelText(/Email address/), 'maria');
+    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+    await user.click(await screen.findByRole('link', { name: 'The email field must be a valid email address.' }));
+    expect(screen.getByLabelText(/Email address/)).toHaveFocus();
+
+    answer = apiError(429, 'RATE_LIMITED');
+    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+    expect(await screen.findByText('Too many requests')).toBeInTheDocument();
+  });
+
+  test('the emailed link sets a new password and returns to Log in', async () => {
+    const { user, calls, location } = renderApp('/reset-password?token=abc123&email=maria%40example.com', {
+      routes: { 'POST /reset-password': () => [200, { message: 'Your password is changed. Log in with your new password.' }] },
+    });
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Choose a new password' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email address/)).toHaveValue('maria@example.com');
+    expect(screen.getByLabelText(/^New password/)).toHaveAttribute('autocomplete', 'new-password');
+    await user.type(screen.getByLabelText(/^New password/), 'a-new-password');
+    await user.type(screen.getByLabelText(/Confirm new password/), 'a-new-password');
+    await user.click(screen.getByRole('button', { name: 'Save new password' }));
+
+    expect(await screen.findByText('Your password is changed')).toBeInTheDocument();
+    expect(location()).toBe('/login');
+    expect(calls.find((call) => call.key === 'POST /reset-password').data).toEqual({
+      token: 'abc123',
+      email: 'maria@example.com',
+      password: 'a-new-password',
+      password_confirmation: 'a-new-password',
+    });
+  });
+
+  test('an expired link offers a new one; a weak password is linked to its field', async () => {
+    let answer = validationError({ password: ['The password field must be at least 8 characters.'] });
+    const { user } = renderApp('/reset-password?token=old&email=maria%40example.com', { routes: { 'POST /reset-password': () => answer } });
+
+    await user.type(await screen.findByLabelText(/^New password/), 'short');
+    await user.type(screen.getByLabelText(/Confirm new password/), 'short');
+    await user.click(screen.getByRole('button', { name: 'Save new password' }));
+    expect(await screen.findByRole('link', { name: 'The password field must be at least 8 characters.' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/^New password/)).toHaveAttribute('aria-invalid', 'true');
+
+    answer = validationError({ token: ['This reset link is invalid or has expired. Ask for a new one.'] });
+    await user.click(screen.getByRole('button', { name: 'Save new password' }));
+    expect(await screen.findByText('This link cannot be used')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ask for a new link' })).toHaveAttribute('href', '/forgot-password');
+  });
+
+  test('a link without a token says so', async () => {
+    renderApp('/reset-password');
+
+    expect(await screen.findByText('This link is incomplete')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'ask for a new link' })).toHaveAttribute('href', '/forgot-password');
+  });
+});

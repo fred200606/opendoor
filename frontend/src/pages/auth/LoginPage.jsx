@@ -35,6 +35,7 @@ export default function LoginPage() {
   const location = useLocation();
   const form = useApiForm({ email: '', password: '' });
   const expired = location.state?.reason === 'expired';
+  const passwordReset = location.state?.reason === 'reset';
   const known = form.formError && MESSAGES[form.formError.code];
 
   async function handleSubmit(event) {
@@ -47,6 +48,11 @@ export default function LoginPage() {
       {expired && !form.formError && (
         <Alert type="info" title="Your session has ended">
           <p>Please log in again to continue.</p>
+        </Alert>
+      )}
+      {passwordReset && !form.formError && (
+        <Alert type="success" live="polite" title="Your password is changed">
+          <p>Log in with your new password.</p>
         </Alert>
       )}
 
@@ -81,6 +87,9 @@ export default function LoginPage() {
         </Button>
       </form>
 
+      <p className="form-footer">
+        <Link to="/forgot-password">Forgot your password?</Link>
+      </p>
       <p className="form-footer">
         New to OpenDoor? <Link to="/register">Create an account</Link>
       </p>

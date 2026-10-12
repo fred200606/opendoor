@@ -2,8 +2,10 @@ import { Route, Routes } from 'react-router-dom';
 import GuestRoute from './auth/GuestRoute.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
 import AppLayout from './components/AppLayout.jsx';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CandidateApplicationPage from './pages/candidate/CandidateApplicationPage.jsx';
 import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage.jsx';
@@ -44,6 +46,8 @@ export default function App() {
         <Route element={<GuestRoute />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
         </Route>
 
         <Route path="candidate" element={<ProtectedRoute role="candidate" />}>

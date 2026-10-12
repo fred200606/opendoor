@@ -35,3 +35,17 @@ export async function changePassword({ currentPassword, password, passwordConfir
     password_confirmation: passwordConfirmation,
   });
 }
+
+// Forgot password (decision 2026-10-13)
+
+/** The same answer for every email, so it never tells whether an account exists. */
+export async function forgotPassword(email) {
+  const { data } = await api.post('/forgot-password', { email });
+  return data; // { message }
+}
+
+/** token and email come from the emailed link. */
+export async function resetPassword({ token, email, password, passwordConfirmation }) {
+  const { data } = await api.post('/reset-password', { token, email, password, password_confirmation: passwordConfirmation });
+  return data; // { message }
+}
