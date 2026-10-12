@@ -57,7 +57,7 @@ const toc = [
     ...section.screens.map((screen, index) => [screen.id, `${section.number}.${index + 1}`, screen.title, true]),
   ]),
   ['gallery', String(N.gallery), 'Dialogs, states and phone layout'],
-  ['planned', String(N.planned), 'Planned: email notifications'],
+  ['planned', String(N.planned), 'Email notifications'],
   ['foundations', String(N.foundations), 'Design foundations'],
   ['components', String(N.components), 'Shared components'],
   ['appendix-a', 'A', 'Route map'],
@@ -183,7 +183,7 @@ const gallery = `
 
 const planned = `
 <section class="chapter" id="planned">
-  <h1><span class="no">${N.planned}</span>Planned: email notifications ${tag('Planned', 'planned')}</h1>
+  <h1><span class="no">${N.planned}</span>Email notifications ${tag('New', 'new')}</h1>
   <p class="lead">${C.planned.intro}</p>
   <table class="meta wide">${C.planned.items.map(([title, text]) => `<tr><th>${title}</th><td>${text}</td></tr>`).join('')}</table>
 </section>`;
@@ -242,7 +242,7 @@ const appendices = `
 </section>
 <section class="chapter" id="appendix-c">
   <h1><span class="no">C</span>Notification texts</h1>
-  <p class="lead">Each notice has a message and a link; the planned emails repeat the same text (section ${N.planned}).</p>
+  <p class="lead">Each notice has a message and a link; the emails repeat the same text (section ${N.planned}).</p>
   <table class="grid">
     <thead><tr><th>To</th><th>When</th><th>Message</th><th>Opens</th></tr></thead>
     <tbody>${C.notices.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody>

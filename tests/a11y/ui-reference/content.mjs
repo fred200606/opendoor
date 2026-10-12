@@ -13,7 +13,7 @@ export const meta = {
 export const howToRead = [
   'Every screen has the same blocks: <strong>Route</strong> (address in the app), <strong>Who</strong> (roles that can open it), <strong>Purpose</strong>, <strong>On the screen</strong>, <strong>Actions</strong>, <strong>Messages and states</strong> and <strong>API</strong> (calls made through the gateway, base <code>/api</code>).',
   'Labels in quotes are the exact texts used today. A redesign can change the look, but keep the meaning of the texts, the order of steps and the accessibility behaviour described in sections 10–11 and Appendix D.',
-  '<span class="tag tag--new">New</span> marks features added after the first SIA screen list (October 10–12, 2026). <span class="tag tag--planned">Planned</span> marks work that is being built now and has no screen yet.',
+  '<span class="tag tag--new">New</span> marks features added after the first SIA screen list (October 10–12, 2026).',
   'Screenshots are 1,200 px wide (desktop) unless the caption says otherwise. Long pages are cut into parts. The demo people and companies are fictional.',
 ];
 
@@ -53,11 +53,11 @@ export const modules = [
   ['M6', 'Applications', 'Apply with a cover note and an interview accommodation request; statuses Submitted → Reviewed → Hired / Not selected, or Withdrawn by the job seeker.', 'Job seeker, Employer', 'Job details, My applications, Application details, Applicants, Application review'],
   ['M7', 'Feedback and trust score', '30 days after a hire the employee rates each promised accommodation (delivered, partly, not delivered). The employer\'s trust score is published from 3 responses.', 'Job seeker, Employer, public', 'Rate your accommodations, Trust score, Employer page'],
   ['M8', 'Dashboards', 'Summary numbers per role that link to the matching lists.', 'All signed-in roles', 'Dashboards'],
-  ['M9', 'Notifications', 'In-app notices for application changes and admin decisions, unread count in the header.', 'Job seeker, Employer', 'Notifications'],
+  ['M9', 'Notifications', 'In-app notices for application changes, admin decisions and the rating reminder, unread count in the header; each notice is also emailed (M13).', 'Job seeker, Employer', 'Notifications'],
   ['M10', 'Moderation', 'Suspend and reactivate users, handle posting reports, hide abusive feedback.', 'Admin (reports filed by job seekers)', 'Users, Reports, Feedback'],
   ['M11', 'Master data', 'Job categories and accommodation types (5 groups). In-use items are retired instead of deleted.', 'Admin', 'Master data'],
   ['M12', 'Saved jobs <span class="tag tag--new">New</span>', 'Bookmark jobs from the job page; list and remove them.', 'Job seeker', 'Job details, Saved jobs'],
-  ['M13', 'Accessibility settings <span class="tag tag--new">New</span>', 'Text size, high contrast and reduced motion saved to the account. Email notifications switch <span class="tag tag--planned">Planned</span>.', 'All', 'Account settings'],
+  ['M13', 'Accessibility settings <span class="tag tag--new">New</span>', 'Text size, high contrast and reduced motion saved to the account; notices also sent by email, with an on/off switch, and a rating reminder on day 30.', 'All', 'Account settings'],
   ['–', 'Accessibility Snapshot (Insights mashup)', 'On every job page: employer claims, community verification and wheelchair-accessible places within 500 m (OpenStreetMap), official place names (PSGC).', 'Everyone', 'Job details'],
   ['–', 'Read aloud and Voice input <span class="tag tag--new">New</span>', 'Browser text-to-speech on job and application pages; browser speech-to-text on search and long text fields (privacy notice first).', 'Everyone', 'Job details, Application details, forms'],
 ];
@@ -73,7 +73,7 @@ export const whatsNew = [
   ['Oct 11', 'Voice input', '"Speak" button under the search keyword and long text fields, with a one-time privacy notice.'],
   ['Oct 11', 'WCAG 2.1 AA audit fixes', 'Result counts announced also when zero, scrollable trust-score table, autocomplete on personal fields, unique page titles.'],
   ['Oct 11–12', 'Snapshot reliability', 'Second map server and background retry; the snapshot says when it shows an older saved copy.'],
-  ['Oct 12', 'Email notifications <span class="tag tag--planned">Planned</span>', 'Backend switch done; Account settings switch and a rating reminder are being built (section 9).'],
+  ['Oct 12', 'Email notifications (M13)', 'Every notice is also emailed (on by default); "Email notifications" card in Account settings; rating reminder when the feedback form opens (section 9).'],
 ];
 
 export const tokens = [
@@ -456,7 +456,7 @@ export const sections = [
       {
         id: 'notifications', title: 'Notifications', shots: [['emp-notifications', 'Employer'], ['cand-notifications', 'Job seeker']],
         route: '/notifications', who: 'Job seeker, Employer', purpose: 'In-app notices, newest first (12 per page).',
-        parts: ['Line "2 unread notifications" / "Everything is read." and button "Mark all as read"', 'List: "New" badge on unread items, the message as a link to the related page, date and time; "Mark as read" for notices without a link', 'Header link "Notifications" with a red count badge'],
+        parts: ['Line "2 unread notifications" / "Everything is read." and button "Mark all as read"', 'List: "New" badge on unread items, the message as a link to the related page, date and time; "Mark as read" for notices without a link', 'Header link "Notifications" with a red count badge', 'Each notice is also emailed unless the user turned emails off in Account settings (section 9)'],
         actions: ['Open a notice → its page, and it is marked read', 'Mark all as read → "All notifications are marked as read."'],
         states: ['"No notifications yet – You will be told here when an application or posting changes."'],
         api: ['GET /notifications?page=', 'PATCH /notifications/{id}/read', 'PATCH /notifications/read-all'],
@@ -468,11 +468,11 @@ export const sections = [
           'Line "{name} · {email} · {role}"',
           'Card "Display": "Changes apply immediately and are saved to your account…"; radio groups Text size (Standard, Large (125%), Extra large (150%)), Colours (Standard colours, High contrast), Motion (Allow animations, Reduce motion); status "Display settings applied and saved to your account."',
           'Card "Change password": Current password, New password ("At least 8 characters, different from the current one."), Confirm new password, button "Change password"',
-          '<span class="tag tag--planned">Planned</span> Card "Email notifications" (section 9)',
+          'Card "Email notifications" (job seekers and employers only) <span class="tag tag--new">New</span>: checkbox "Send me an email for each notification" (hint: "The email repeats the notice and links to OpenDoor. It never includes disability or accommodation details."), status line below',
         ],
-        actions: ['A display change applies at once on this device and is saved to the account (other devices get it at the next login)', 'Change password → "Your password is changed. You were signed out on your other devices."'],
-        states: ['Saving failed: "Display settings applied on this device, but not saved to your account. Change a setting to try again."'],
-        api: ['PUT /me/display-prefs {text_size, contrast, motion}', 'PUT /me/password', 'Planned: PUT /me/email-notifications {enabled}'],
+        actions: ['A display change applies at once on this device and is saved to the account (other devices get it at the next login)', 'The email checkbox saves at once: "Email notifications are on." / "Email notifications are off. You still see every notice under Notifications."', 'Change password → "Your password is changed. You were signed out on your other devices."'],
+        states: ['Saving failed: "Display settings applied on this device, but not saved to your account. Change a setting to try again."', 'Email choice not saved: the checkbox goes back and "Your choice was not saved. Please try again."'],
+        api: ['PUT /me/display-prefs {text_size, contrast, motion}', 'PUT /me/email-notifications {enabled}', 'PUT /me/password'],
       },
     ],
   },
@@ -494,12 +494,14 @@ export const phones = {
 };
 
 export const planned = {
-  intro: 'The second half of M13. The user chose on October 12, 2026: email notifications are <strong>on by default</strong> and can be turned off in Account settings. The backend part is done; these screens are still to be designed and built.',
+  intro: 'The second half of M13, built on October 12, 2026 (user choice: <strong>on by default</strong>, can be turned off). Every in-app notice is also sent by email to job seekers and employers. Administrators receive no notices and have no switch.',
   items: [
-    ['Account settings – "Email notifications" card', 'A switch (checkbox) "Send me an email for each notification" for job seekers and employers only (administrators get no notices). It saves at once, like the display settings, with a status line such as "Email notifications are on." Current value: <code>email_notifications</code> in <code>GET /me</code> and the login response. Save: <code>PUT /me/email-notifications {"enabled": true|false}</code>.'],
-    ['Which emails', 'The same events as the in-app notices (Appendix C): new application (employer), status changed by the other side (job seeker or employer), employer verification decision and posting review or removal (employer, with the admin\'s reason). Suspended accounts get no email.'],
-    ['Email content', 'Subject such as "New application for Data Encoder" or "Your job posting Data Encoder was approved"; greeting with the name, the notice text, a button "Open in OpenDoor" to the same page as the in-app link, and a footer explaining how to turn the emails off in Account settings. No disability or accommodation-need details.'],
-    ['Rating reminder', 'New notice (in-app and email) to a hired job seeker on the day the feedback form opens (30 days after the hire), linking to "Rate your accommodations". The dashboard already lists these under "Ratings to give".'],
+    ['Account settings – "Email notifications" card', 'Checkbox "Send me an email for each notification", saved at once with a status line (see 7.2). Value: <code>email_notifications</code> in <code>GET /me</code> and the login response. Save: <code>PUT /me/email-notifications {"enabled": true|false}</code>.'],
+    ['Which emails', 'The same events as the in-app notices (Appendix C): new application (employer), status changed by the other side (job seeker or employer), employer verification decision and posting review or removal (employer, with the admin\'s reason), and the rating reminder (job seeker). Suspended accounts get no email.'],
+    ['Email content', 'Subject such as "New application for Data Encoder", "Your job posting Data Encoder was approved" or "Rate the accommodations for Data Encoder"; greeting with the name, the notice text, a button "Open in OpenDoor" to the same page as the in-app link, and a footer explaining how to turn the emails off in Account settings. No disability, accommodation-need or interview-request details.'],
+    ['Timing and failures', 'Sent right after the action has answered, so a slow mail server never delays the user. A mail server failure is logged and never undoes the action; the in-app notice is always there.'],
+    ['Rating reminder', 'Notice type <code>feedback_reminder</code> (in-app and email) to a hired job seeker on the day the feedback form opens (daily run at 08:00, Philippine time), linking to "Rate your accommodations". Once per hire; missed days are caught up; suspended accounts get it after reactivation.'],
+    ['Still to set up', 'The mail provider (SMTP) is chosen at deployment; locally the emails are written to the Core log.'],
   ],
 };
 
@@ -539,14 +541,14 @@ export const notices = [
   ['Employer', 'Job seeker withdraws / confirms hire', '"… withdrew the application for {job}." / "… confirmed being hired for {job}."', 'Application review'],
   ['Employer', 'Admin approves or rejects the company', '"{company} is now verified. Candidates see the Verified badge on your postings." / "{company} was not verified: {reason}. Update your company profile to be checked again."', 'Company profile'],
   ['Employer', 'Admin approves, rejects or removes a posting', '"Your posting {job} was approved and is now open to candidates." / "…was not approved: {reason}. Edit it and submit it again." / "…was removed by an administrator: {reason}."', 'Job page / edit form / Job postings'],
-  ['Job seeker', '<span class="tag tag--planned">Planned</span> Feedback form opens (day 30)', 'Rating reminder', 'Rate your accommodations'],
+  ['Job seeker', 'Feedback form opens (day 30 after the hire; daily run at 08:00)', '"You can now rate the accommodations {company} promised for {job}. Your answers are anonymous."', 'Rate your accommodations'],
 ];
 
 export const rules = [
   'Postings appear in search only when <strong>open, approved, not deleted and the employer is not suspended</strong>. Drafts and postings waiting for approval are visible only to their owner and admins.',
   'Applications: Submitted → Reviewed (employer opens it) → Hired or Not selected (employer); the job seeker can withdraw while Submitted or Reviewed and can confirm "I was hired" while Reviewed. One application per job.',
   'Applying closes on the "Apply by" date (Philippine time); a daily job closes expired postings at 00:05.',
-  'Feedback opens on calendar day 30 after the hire, once per hire, and rates the accommodations the posting listed at the time of hire.',
+  'Feedback opens on calendar day 30 after the hire, once per hire, and rates the accommodations the posting listed at the time of hire. That morning the job seeker gets a reminder (in-app and email).',
   'Trust score = delivered ÷ rated, partly delivered counts as half, shown as a whole percent, published from 3 responses.',
   'Needs are used only for matching; employers see them only for applications to their own jobs. Disability type is optional, never used for matching and shown to employers only if the job seeker allows it.',
   'The business registry result is advice: an administrator always decides. Changing the registration number removes the Verified badge until checked again.',
