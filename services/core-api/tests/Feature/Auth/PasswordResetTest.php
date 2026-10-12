@@ -4,6 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
@@ -83,6 +85,33 @@ class PasswordResetTest extends TestCase
 
         $this->assertCount(0, $this->sentEmails());
         $this->assertDatabaseCount('password_reset_tokens', 0);
+    }
+
+    public function test_on_the_database_queue_every_request_only_queues_a_job_and_the_worker_sends_the_link(): void
+    {
+        config(['opendoor.password_reset_queue' => 'database']); // the production default
+        User::factory()->candidate()->create(['email' => 'maria@example.com']);
+
+        // Known and unknown emails do exactly the same in the request: one queued job, nothing else.
+        $this->postJson('/api/forgot-password', ['email' => 'maria@example.com'])->assertOk()->assertExactJson(self::SENT);
+        $this->postJson('/api/forgot-password', ['email' => 'nobody@example.com'])->assertOk()->assertExactJson(self::SENT);
+        $this->assertDatabaseCount('jobs', 2);
+        $this->assertDatabaseCount('password_reset_tokens', 0);
+        $this->assertCount(0, $this->sentEmails());
+
+        $this->artisan('queue:work', ['connection' => 'database', '--stop-when-empty' => true])->assertSuccessful();
+
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertSame('maria@example.com', $this->sentEmails()->sole()->getTo()[0]->getAddress());
+        $this->assertDatabaseCount('password_reset_tokens', 1);
+    }
+
+    public function test_the_scheduler_works_the_queue_every_minute(): void
+    {
+        $event = collect(app(Schedule::class)->events())->sole(fn (Event $event) => str_contains($event->command, 'queue:work database'));
+
+        $this->assertSame('* * * * *', $event->expression);
+        $this->assertStringContainsString('--stop-when-empty', $event->command);
     }
 
     public function test_a_second_request_within_a_minute_sends_no_new_link(): void

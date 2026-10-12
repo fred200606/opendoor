@@ -126,10 +126,11 @@ paths:
       tags: [M1 Auth]
       summary: Email a link to reset the password (5 requests per minute)
       description: |
-        Always 200 with the same message, whatever the email, so it never reveals which emails have an account.
-        After the response, an active account gets an email with a link to the React page
-        `{PUBLIC_APP_URL}/reset-password?token=…&email=…`, valid 60 minutes and once. Suspended accounts get no
-        link. A second request for the same account within 60 seconds sends nothing new. The email is sent even when
+        Always 200 with the same message, whatever the email. Every request only queues a job (the same small
+        work for every email), so neither the answer nor its timing reveals which emails have an account. The job
+        (database queue, worked every minute by the scheduler) sends an active account an email within about a
+        minute, with a link to the React page `{PUBLIC_APP_URL}/reset-password?token=…&email=…`, valid 60 minutes
+        and once. Suspended accounts get no link. A second request for the same account within 60 seconds sends nothing new. The email is sent even when
         the user turned notification emails off (security email). Limit is per email + IP.
       security: []
       requestBody:

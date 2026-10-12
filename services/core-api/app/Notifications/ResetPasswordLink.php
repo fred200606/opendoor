@@ -8,8 +8,8 @@ use Illuminate\Notifications\Notification;
 
 /**
  * Forgot password email with a link to the React reset page. Email only (no in-app notice) and
- * sent regardless of the M13 email switch, as it is a security email. Sent at once: the
- * controller already runs it after the response. A mail failure is logged (SafeMailChannel).
+ * sent regardless of the M13 email switch, as it is a security email. Sent at once from the
+ * queued SendPasswordResetLink job. A mail failure is logged (SafeMailChannel).
  */
 class ResetPasswordLink extends Notification
 {

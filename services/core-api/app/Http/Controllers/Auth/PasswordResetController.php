@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Jobs\SendPasswordResetLink;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-
-use function Illuminate\Support\defer;
 
 /**
  * Forgot password (user decision 2026-10-13, beyond the SIA M1 list): an emailed link (valid
@@ -23,20 +22,13 @@ class PasswordResetController extends Controller
     public const LINK_SENT = 'If an account exists for this email, we sent a link to reset the password.';
 
     /**
-     * Answers the same for every email, and only after the response looks the account up and sends
-     * the link, so neither the answer nor its timing reveals which emails have an account.
-     * Suspended accounts cannot log in, so they get no link. A second request within
-     * auth.passwords.users.throttle seconds sends nothing new.
+     * Answers the same for every email and only queues SendPasswordResetLink – for every email, so
+     * neither the answer nor its timing reveals which emails have an account (an OpenDoor account
+     * hints at a disability). The job looks the account up and sends the link.
      */
     public function sendLink(ForgotPasswordRequest $request): JsonResponse
     {
-        $email = $request->validated('email');
-
-        defer(function () use ($email) {
-            if (User::where('email', $email)->where('is_active', true)->exists()) {
-                Password::broker()->sendResetLink(['email' => $email]);
-            }
-        });
+        SendPasswordResetLink::dispatch($request->validated('email'));
 
         return response()->json(['message' => self::LINK_SENT]);
     }

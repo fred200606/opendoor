@@ -20,6 +20,13 @@ return [
     'public_app_url' => rtrim((string) env('PUBLIC_APP_URL', 'http://localhost:5173'), '/'),
 
     /*
+    | Forgot password: queue connection for the reset-link job. `database` (default) keeps every
+    | POST /forgot-password equally short, so its timing reveals no account; the scheduler works the
+    | queue every minute. `sync` sends the email at once (tests; local use only).
+    */
+    'password_reset_queue' => env('PASSWORD_RESET_QUEUE', 'database'),
+
+    /*
     | Upload limits (kilobytes), shared with the frontend and docs/openapi.yaml.
     */
     'logo_max_kb' => 2048,
