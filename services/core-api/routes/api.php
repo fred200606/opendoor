@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\MeController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Candidate\ProfileController;
 use App\Http\Controllers\Candidate\SavedJobController;
 use App\Http\Controllers\CategoryController;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Route;
 // M1 Auth – public
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:password-reset');
+Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
 
 // M11 Master data – public filter options
 Route::get('categories', [CategoryController::class, 'index']);

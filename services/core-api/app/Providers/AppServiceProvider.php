@@ -37,5 +37,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(
             mb_strtolower((string) $request->input('email')).'|'.$request->ip(),
         ));
+
+        // Forgot / reset password: the same limit, counted separately from logins.
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(5)->by(
+            'reset|'.mb_strtolower((string) $request->input('email')).'|'.$request->ip(),
+        ));
     }
 }
