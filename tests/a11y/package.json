@@ -4,7 +4,8 @@
   "description": "axe-core check of the built frontend's main pages (CI integration job)",
   "type": "module",
   "scripts": {
-    "axe": "node axe-pages.mjs"
+    "axe": "node axe-pages.mjs",
+    "ui-reference": "node ui-reference/capture.mjs && node ui-reference/build.mjs"
   },
   "engines": {
     "node": ">=22.15"
