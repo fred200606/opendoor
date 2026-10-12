@@ -121,6 +121,71 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /forgot-password:
+    post:
+      tags: [M1 Auth]
+      summary: Email a link to reset the password (5 requests per minute)
+      description: |
+        Always 200 with the same message, whatever the email, so it never reveals which emails have an account.
+        After the response, an active account gets an email with a link to the React page
+        `{PUBLIC_APP_URL}/reset-password?token=…&email=…`, valid 60 minutes and once. Suspended accounts get no
+        link. A second request for the same account within 60 seconds sends nothing new. The email is sent even when
+        the user turned notification emails off (security email). Limit is per email + IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, maxLength: 255 }
+      responses:
+        '200':
+          description: The same answer for every email
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string, example: 'If an account exists for this email, we sent a link to reset the password.' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /reset-password:
+    post:
+      tags: [M1 Auth]
+      summary: Set a new password with the emailed link (5 requests per minute)
+      description: |
+        `token` and `email` come from the link. Success signs the user out on every device (all tokens revoked);
+        the user then logs in with the new password. A wrong, used or expired token, or an email without an
+        account → 422 with `errors.token` (one message for all, so no account is revealed).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, email, password, password_confirmation]
+              properties:
+                token: { type: string }
+                email: { type: string, format: email, maxLength: 255 }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string }
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string, example: 'Your password is changed. Log in with your new password.' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /logout:
     post:
       tags: [M1 Auth]

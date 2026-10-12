@@ -120,7 +120,7 @@ const folder = (name, description, item) => ({ name, description, item });
 
 // ---------------------------------------------------------------- 01 Auth
 
-const auth = folder('01 Auth', 'M1: register, login, me, password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.', [
+const auth = folder('01 Auth', 'M1: register, login, me, password, forgot/reset password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.', [
   request('Gateway health', {
     path: '/health',
     tests: `
@@ -222,6 +222,31 @@ pm.test('role is candidate', () => pm.expect(pm.response.json().role).to.eql('ca
     auth: bearer('newCandidateToken'),
     body: { current_password: 'wrong-password', password: 'another-pass-123', password_confirmation: 'another-pass-123' },
     tests: fieldError('current_password'),
+  }),
+  request('Forgot password for the new candidate → 200', {
+    method: 'POST',
+    path: '/forgot-password',
+    body: { email: '{{newCandidateEmail}}' },
+    tests: `
+${status(200)}
+const body = pm.response.json();
+pm.test('answers with a message only', () => pm.expect(body).to.have.all.keys('message'));
+pm.collectionVariables.set('forgotPasswordMessage', body.message);`,
+  }),
+  request('Forgot password for an unknown email → the same 200', {
+    method: 'POST',
+    path: '/forgot-password',
+    body: { email: 'pm-nobody-{{$timestamp}}@opendoor.test' },
+    tests: `
+${status(200)}
+pm.test('the answer does not reveal whether the account exists', () =>
+  pm.expect(pm.response.json()).to.eql({ message: pm.collectionVariables.get('forgotPasswordMessage') }));`,
+  }),
+  request('Reset password with a wrong token → 422', {
+    method: 'POST',
+    path: '/reset-password',
+    body: { token: 'not-a-reset-token', email: '{{newCandidateEmail}}', password: 'another-pass-123', password_confirmation: 'another-pass-123' },
+    tests: fieldError('token'),
   }),
   request('M13 Save display settings → 200', {
     method: 'PUT',

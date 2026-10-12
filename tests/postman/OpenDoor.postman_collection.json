@@ -207,7 +207,7 @@
   "item": [
     {
       "name": "01 Auth",
-      "description": "M1: register, login, me, password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.",
+      "description": "M1: register, login, me, password, forgot/reset password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.",
       "item": [
         {
           "name": "Gateway health",
@@ -1012,6 +1012,161 @@
                   "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
                   "",
                   "pm.test('errors.current_password is present', () => pm.expect(body.errors).to.have.property('current_password'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot password for the new candidate → 200",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{newCandidateEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('answers with a message only', () => pm.expect(body).to.have.all.keys('message'));",
+                  "pm.collectionVariables.set('forgotPasswordMessage', body.message);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot password for an unknown email → the same 200",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pm-nobody-{{$timestamp}}@opendoor.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('the answer does not reveal whether the account exists', () =>",
+                  "  pm.expect(pm.response.json()).to.eql({ message: pm.collectionVariables.get('forgotPasswordMessage') }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password with a wrong token → 422",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reset-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"not-a-reset-token\",\n  \"email\": \"{{newCandidateEmail}}\",\n  \"password\": \"another-pass-123\",\n  \"password_confirmation\": \"another-pass-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.token is present', () => pm.expect(body.errors).to.have.property('token'));"
                 ]
               }
             }
