@@ -7,9 +7,9 @@ import { AuthProvider } from '../auth/AuthContext.jsx';
 import { fakeApi } from './fakeApi.js';
 
 export const users = {
-  candidate: { id: 2, name: 'Maria Santos', email: 'candidate@opendoor.test', role: 'candidate', is_active: true },
-  employer: { id: 4, name: 'Ana Reyes', email: 'employer@opendoor.test', role: 'employer', is_active: true },
-  admin: { id: 1, name: 'OpenDoor Admin', email: 'admin@opendoor.test', role: 'admin', is_active: true },
+  candidate: { id: 2, name: 'Maria Santos', email: 'candidate@opendoor.test', role: 'candidate', is_active: true, email_notifications: true },
+  employer: { id: 4, name: 'Ana Reyes', email: 'employer@opendoor.test', role: 'employer', is_active: true, email_notifications: true },
+  admin: { id: 1, name: 'OpenDoor Admin', email: 'admin@opendoor.test', role: 'admin', is_active: true, email_notifications: true },
 };
 
 /** Shows the current path so tests can assert navigation. */

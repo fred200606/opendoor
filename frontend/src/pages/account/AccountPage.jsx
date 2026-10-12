@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import { updateDisplayPrefs } from '../../api/account.js';
+import { updateDisplayPrefs, updateEmailNotifications } from '../../api/account.js';
 import { changePassword } from '../../api/auth.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABELS } from '../../auth/roles.js';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
-import { RadioGroup, TextField } from '../../components/form/fields.jsx';
+import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { loadDisplayPrefs, saveDisplayPrefs, toApi } from '../../lib/displayPrefs.js';
@@ -20,6 +20,7 @@ export default function AccountPage() {
         {user.name} · {user.email} · {ROLE_LABELS[user.role]}
       </p>
       <DisplaySettings />
+      {user.role !== 'admin' && <EmailSettings />}
       <PasswordSection />
     </Page>
   );
@@ -84,7 +85,53 @@ function DisplaySettings() {
   );
 }
 
-const PASSWORD_FIELDS = { current_password: { id: 'current_password' }, password: { id: 'new_password' } };
+/** M13: emails for the in-app notices. On by default; administrators receive no notices. */
+function EmailSettings() {
+  const { user, updateUser } = useAuth();
+  const [enabled, setEnabled] = useState(user.email_notifications !== false);
+  const [message, setMessage] = useState('');
+  // Same as the display settings: saves run in order and only the last one reports.
+  const saving = useRef(Promise.resolve());
+  const latest = useRef(0);
+
+  function change(event) {
+    const next = event.target.checked;
+    setEnabled(next);
+    const id = ++latest.current;
+    saving.current = saving.current.then(async () => {
+      try {
+        await updateEmailNotifications(next);
+        updateUser({ email_notifications: next });
+        if (id === latest.current) {
+          setMessage(next ? 'Email notifications are on.' : 'Email notifications are off. You still see every notice under Notifications.');
+        }
+      } catch {
+        if (id === latest.current) {
+          setEnabled(!next);
+          setMessage('Your choice was not saved. Please try again.');
+        }
+      }
+    });
+  }
+
+  return (
+    <section className="card" aria-labelledby="email-title">
+      <h2 id="email-title">Email notifications</h2>
+      <CheckboxField
+        name="email_notifications"
+        label="Send me an email for each notification"
+        hint="The email repeats the notice and links to OpenDoor. It never includes disability or accommodation details."
+        checked={enabled}
+        onChange={change}
+      />
+      <p role="status" className="save-status">
+        {message}
+      </p>
+    </section>
+  );
+}
+
+const PASSWORD_FIELDS ={ current_password: { id: 'current_password' }, password: { id: 'new_password' } };
 
 function PasswordSection() {
   const form = useApiForm({ currentPassword: '', password: '', passwordConfirmation: '' });

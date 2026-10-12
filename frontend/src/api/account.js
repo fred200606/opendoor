@@ -29,3 +29,11 @@ export async function updateDisplayPrefs(prefs) {
   const { data } = await api.put('/me/display-prefs', prefs);
   return data;
 }
+
+// M13 Email notifications (job seekers and employers)
+
+/** → { enabled } */
+export async function updateEmailNotifications(enabled) {
+  const { data } = await api.put('/me/email-notifications', { enabled });
+  return data;
+}

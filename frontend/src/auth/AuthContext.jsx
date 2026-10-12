@@ -98,9 +98,12 @@ export function AuthProvider({ children }) {
     setStatus('signedOut'); // ProtectedRoute sends the user home instead of to /login
   }, [clearSession]);
 
+  /** Keeps the signed-in user in step with a setting saved to the account (e.g. email_notifications). */
+  const updateUser = useCallback((changes) => setUser((current) => (current ? { ...current, ...changes } : current)), []);
+
   const value = useMemo(
-    () => ({ user, role: user?.role ?? null, token, status, afterLogin, login, register, logout }),
-    [user, token, status, afterLogin, login, register, logout],
+    () => ({ user, role: user?.role ?? null, token, status, afterLogin, login, register, logout, updateUser }),
+    [user, token, status, afterLogin, login, register, logout, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -75,6 +75,53 @@ describe('AccountPage', () => {
     expect(JSON.parse(localStorage.getItem('opendoor.display'))).toEqual({ textSize: '125', contrast: 'high', motion: 'reduce' });
   });
 
+  test('email notifications are turned off and on, and the choice stays after moving around', async () => {
+    const { user, calls } = renderApp('/account', {
+      as: 'candidate',
+      routes: { 'PUT /me/email-notifications': (config) => [200, JSON.parse(config.data)] },
+    });
+
+    const toggle = await screen.findByRole('checkbox', { name: 'Send me an email for each notification' });
+    expect(toggle).toBeChecked();
+    expect(toggle).toHaveAccessibleDescription(/never includes disability or accommodation details/);
+
+    await user.click(toggle);
+    expect(await screen.findByText(/Email notifications are off\. You still see every notice/)).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'PUT /me/email-notifications').data).toEqual({ enabled: false });
+
+    await user.click(screen.getByRole('link', { name: /^Notifications/ }));
+    await user.click(await screen.findByRole('link', { name: /Maria Santos/ }));
+    expect(await screen.findByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Send me an email for each notification' }));
+    expect(await screen.findByText('Email notifications are on.')).toBeInTheDocument();
+  });
+
+  test('email notifications show the choice saved with the account', async () => {
+    renderApp('/account', { as: 'employer', routes: { 'GET /me': () => [200, { ...users.employer, email_notifications: false }] } });
+
+    expect(await screen.findByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();
+  });
+
+  test('a choice that cannot be saved is put back', async () => {
+    const { user } = renderApp('/account', {
+      as: 'employer',
+      routes: { 'PUT /me/email-notifications': () => [503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'Down', request_id: 'x' } }] },
+    });
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Send me an email for each notification' }));
+
+    expect(await screen.findByText('Your choice was not saved. Please try again.')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Send me an email for each notification' })).toBeChecked();
+  });
+
+  test('administrators have no email switch (they receive no notifications)', async () => {
+    renderApp('/account', { as: 'admin' });
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Display' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Email notifications' })).not.toBeInTheDocument();
+  });
+
   test('guests are sent to log in', async () => {
     renderApp('/account');
 
