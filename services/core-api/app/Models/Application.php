@@ -40,6 +40,7 @@ class Application extends Model
             'status' => ApplicationStatus::class,
             'hire_confirmed_by' => HireConfirmedBy::class,
             'hired_at' => 'datetime',
+            'feedback_reminded_at' => 'datetime',
         ];
     }
 
