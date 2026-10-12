@@ -15,6 +15,11 @@ return [
     'public_api_url' => rtrim((string) env('PUBLIC_API_URL', 'http://localhost:8080/api'), '/'),
 
     /*
+    | Public base URL of the React app, for links in emails (M13).
+    */
+    'public_app_url' => rtrim((string) env('PUBLIC_APP_URL', 'http://localhost:5173'), '/'),
+
+    /*
     | Upload limits (kilobytes), shared with the frontend and docs/openapi.yaml.
     */
     'logo_max_kb' => 2048,

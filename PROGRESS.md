@@ -6,7 +6,7 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** M13 email notifications (user asked 2026-10-12). Steps: (1) Core: `users.email_notifications` (default true) + endpoint + `AccountResource`; mail channel on the 3 existing notifications, sent after the response, failures logged never break the action; (2) rating reminder: daily command, in-app + email when the feedback form opens; (3) frontend switch in Account settings; (4) OpenAPI + Postman + docs. Step 1 code written, no new tests yet (wip commit 2026-10-12): migration, `User` cast + default, `PUT /me/email-notifications {enabled}` (candidate/employer), `AccountResource.email_notifications`, `AppNotice` base class (database `sync` + `SafeMailChannel` on the built-in `deferred` queue connection), subjects on the 3 notices, `PUBLIC_APP_URL` + mail vars in `.env.example`; the existing 346 Core tests pass. Next action: step-1 feature tests (endpoint 200/422/403 admin; mail sent when on, not when off or suspended; a mail failure is logged and the action still succeeds; mail body has no needs/disability), MySQL run, then step 2.
 - **Next step:** Ask the user what to improve next (no open development item; Railway volume for uploads belongs to the deployment). Deployment only when the user says so; NVDA run by a teammate. The local stack is not running (stopped for low memory 2026-10-12) – start it only when needed.
 - **Blockers:** –
 
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-12 – M13 email notifications (user choices): **on by default** for new and existing accounts, a switch in Account settings turns them off. Events: application updates (employer: new application; candidate: status changed by the other side), admin decisions (employer verification, posting review – with the reason), and a **new rating reminder** to hired candidates when the feedback form opens (also as an in-app notice). Emails carry no disability or needs details – what happened + a link. Mail provider chosen at deployment; locally the `log` mailer.
 - 2026-10-12 – Overpass background retry: a place that failed (`unavailable`) or was served `stale` is fetched again after 90 s, 5 min, 15 min until the cache is filled; one chain per place, max 50 places, in memory only. Live check: first visit failed (both servers), the retry filled the cache 18 s later, the next visit was `cached`. SIA 4.5 to mention it at the final doc pass.
 - 2026-10-11 – Overpass reliability: client timeout 25 s per server (was 8 s; the query keeps `[timeout:8]`) – the snapshot still answers within 12 s and a later answer fills the cache. Second server `OVERPASS_FALLBACK_URL` (default `https://overpass.private.coffee/api/interpreter`, independent operator; empty = off, set empty in tests and `docker-compose.ci.yml` – CI never calls a real Overpass and T13 needs it to fail), asked when the main one fails or after 5 s; first good answer wins, the other is aborted (no cooldown for an abort); per-server 60 s cooldown. SIA 4.5 (Overpass timeout 8 s) to update at the final doc pass.
 - 2026-10-11 – WCAG checker results (`tests/a11y/results/`) are git-ignored like JMeter results; the audit report `docs/accessibility/wcag-audit.md` holds the summary.
@@ -187,6 +188,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-12 – Progress report. M13 email step 1 found uncommitted; 346 Core tests pass with it → committed as wip. Next: step-1 feature tests.
 - 2026-10-12 – Fixed the Vitest flake (Known issue): cold first full-app render per test file took 381 ms idle / 629 ms with all cores busy against the 1 s `findBy` limit → `configure({ asyncUtilTimeout: 3_000 })` in `src/test/setup.js`; 119 Vitest pass (2 workers, 31.9 s). Next: ask the user.
 - 2026-10-12 – Overpass background retry (`nearby.js`), 135 Insights tests (nearby tests 3× stable); live: failed place filled by the first retry. Local stack was stopped by Claude Code for low memory. Next: ask the user.
 - 2026-10-11 – Overpass: 25 s wait + second server with hedge after 5 s (`src/sources/overpass.js`), 131 Insights tests; live: failover path works, but all public Overpass servers were overloaded at the time. Next: ask the user.

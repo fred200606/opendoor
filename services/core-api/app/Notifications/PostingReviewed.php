@@ -4,24 +4,28 @@ namespace App\Notifications;
 
 use App\Enums\JobPostingStatus;
 use App\Models\JobPosting;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
 /**
- * M9 in-app notice to the employer when an admin approves a posting (now open), sends it back to
- * draft, or removes it (with `$removedReason`).
+ * M9 in-app notice (and M13 email) to the employer when an admin approves a posting (now open),
+ * sends it back to draft, or removes it (with `$removedReason`).
  */
-class PostingReviewed extends Notification
+class PostingReviewed extends AppNotice
 {
     public function __construct(private readonly JobPosting $posting, private readonly ?string $removedReason = null)
     {
-        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+        parent::__construct();
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    protected function subject(object $notifiable): string
     {
-        return ['database'];
+        $outcome = match (true) {
+            $this->removedReason !== null => 'removed',
+            $this->posting->status === JobPostingStatus::Open => 'approved',
+            default => 'not approved',
+        };
+
+        return "Your job posting {$this->posting->title} was {$outcome}";
     }
 
     public function databaseType(object $notifiable): string

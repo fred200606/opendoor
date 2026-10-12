@@ -43,6 +43,7 @@ class SessionTest extends TestCase
                 'role' => 'employer',
                 'is_active' => true,
                 'display_prefs' => null,
+                'email_notifications' => true,
             ]);
     }
 

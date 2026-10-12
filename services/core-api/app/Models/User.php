@@ -17,7 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
  * role, is_active and consented_at are deliberately not fillable: set them
  * explicitly (forceFill) so a request can never promote itself to admin.
  */
-#[Fillable(['name', 'email', 'password', 'display_prefs'])]
+#[Fillable(['name', 'email', 'password', 'display_prefs', 'email_notifications'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -27,6 +27,8 @@ class User extends Authenticatable
     /** @var array<string, mixed> */
     protected $attributes = [
         'is_active' => true,
+        // M13: on unless the user turns them off (same default as the column).
+        'email_notifications' => true,
     ];
 
     /**
@@ -43,6 +45,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'consented_at' => 'datetime',
             'display_prefs' => 'array',
+            'email_notifications' => 'boolean',
         ];
     }
 

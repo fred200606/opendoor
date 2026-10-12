@@ -5,18 +5,17 @@ namespace App\Notifications;
 use App\Enums\ApplicationStatus;
 use App\Enums\HireConfirmedBy;
 use App\Models\Application;
-use Illuminate\Notifications\Notification;
-use Illuminate\Support\Str;
 
 /**
- * M9 in-app notice for the other party whenever an application is created or changes status.
- * `data.message` is plain language; `data.url` is the in-app page to open (OpenAPI Notification).
+ * M9 in-app notice (and M13 email) for the other party whenever an application is created or
+ * changes status. `data.message` is plain language; `data.url` is the in-app page to open
+ * (OpenAPI Notification).
  */
-class ApplicationUpdate extends Notification
+class ApplicationUpdate extends AppNotice
 {
     public function __construct(private readonly Application $application)
     {
-        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+        parent::__construct();
     }
 
     /** Notifies the party that did not make the change (needs jobPosting.employer.user, candidateProfile.user). */
@@ -39,10 +38,11 @@ class ApplicationUpdate extends Notification
         };
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    protected function subject(object $notifiable): string
     {
-        return ['database'];
+        $title = $this->application->jobPosting->title;
+
+        return $this->application->status === ApplicationStatus::Pending ? "New application for {$title}" : "Application update: {$title}";
     }
 
     public function databaseType(object $notifiable): string

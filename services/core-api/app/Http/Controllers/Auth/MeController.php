@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UpdateDisplayPrefsRequest;
+use App\Http\Requests\Auth\UpdateEmailNotificationsRequest;
 use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Resources\AccountResource;
 use Illuminate\Http\JsonResponse;
@@ -35,5 +36,14 @@ class MeController extends Controller
         $request->user()->update(['display_prefs' => $prefs]);
 
         return response()->json($prefs);
+    }
+
+    /** M13: emails for the in-app notices (on by default). Admins receive no notices (route: 403). */
+    public function updateEmailNotifications(UpdateEmailNotificationsRequest $request): JsonResponse
+    {
+        $enabled = $request->boolean('enabled');
+        $request->user()->update(['email_notifications' => $enabled]);
+
+        return response()->json(['enabled' => $enabled]);
     }
 }

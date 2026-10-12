@@ -3,21 +3,21 @@
 namespace App\Notifications;
 
 use App\Models\Employer;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
-/** M9 in-app notice to the employer when an admin approves or rejects (or removes) the company verification. */
-class VerificationDecision extends Notification
+/** M9 in-app notice (and M13 email) to the employer when an admin approves or rejects (or removes) the company verification. */
+class VerificationDecision extends AppNotice
 {
     public function __construct(private readonly Employer $employer)
     {
-        $this->id = (string) Str::uuid7(); // time-ordered: see NotificationController::index
+        parent::__construct();
     }
 
-    /** @return list<string> */
-    public function via(object $notifiable): array
+    protected function subject(object $notifiable): string
     {
-        return ['database'];
+        return $this->employer->isVerified()
+            ? "{$this->employer->company_name} is now verified on OpenDoor"
+            : "{$this->employer->company_name} was not verified on OpenDoor";
     }
 
     public function databaseType(object $notifiable): string
