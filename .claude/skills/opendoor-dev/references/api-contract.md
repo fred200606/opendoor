@@ -13,7 +13,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M1 Auth | POST | /register | P | `{name,email,password,password_confirmation,role:'candidate'|'employer',consent:true}` → 201 `{user, token}` |
 | M1 Auth | POST | /login | P | `{email,password}` → 200 `{token, user:{id,name,email,role}}` (rate-limited 5/min) |
 | M1 Auth | POST | /logout | any | revoke token → 204 |
-| M1 Auth | GET | /me | any | current user + role + `display_prefs` (M13; null until saved; also in the login/register `user`, not in admin user lists) |
+| M1 Auth | GET | /me | any | current user + role + `display_prefs` (M13; null until saved) + `email_notifications` (M13; bool, default true) – also in the login/register `user`, not in admin user lists |
 | M1 Auth | PUT | /me/password | any | `{current_password,password,password_confirmation}` |
 | M2 Profile | GET, PUT | /candidate/profile | C | `{headline,skills[],experience,location_psgc,location_label,disability_type?,show_disability}`; GET never 404s (empty profile created on first access) |
 | M2 Profile | PUT | /candidate/accommodations | C | `{accommodation_ids:[...]}` replaces needs |
@@ -39,7 +39,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M7 Feedback | POST | /applications/{id}/feedback | C (hired, ≥30 days) | `{items:[{accommodation_id,rating:'delivered'|'partial'|'not_delivered'}],comments?}` → 201 `{id,application_id,items_rated}`; every form item rated once |
 | M7 Feedback | GET | /employers/{id}/trust-score | P | `{published, score, based_on, breakdown:[{accommodation_id,name,delivered,partial,not_delivered,of}]}`; breakdown `[]` until published |
 | M8 Dashboards | GET | /candidate/dashboard, /employer/dashboard, /admin/dashboard | C / E / A | summaries (OpenAPI schemas); counts zero-filled per status and equal to the linked lists: employer postings without deleted ones, employer applicants incl. deleted postings, admin analytics without deleted postings; candidate `matching_jobs` = visible postings with all needs (0 without needs), `feedback_due` = hired + unrated, earliest hire first |
-| M9 Notifications | GET | /notifications | C, E | newest first, 12/page (`meta.unread_count` = all unread); types `application_received`, `application_status_changed`, `employer_verification`, `posting_review` (admin decisions → employer) |
+| M9 Notifications | GET | /notifications | C, E | newest first, 12/page (`meta.unread_count` = all unread); types `application_received`, `application_status_changed`, `employer_verification`, `posting_review` (admin decisions → employer), `feedback_reminder` (daily `feedback:remind` → hired candidate when the feedback form opens); each is also emailed when `email_notifications` is on (M13) |
 | M9 Notifications | PATCH | /notifications/{id}/read, /notifications/read-all | C, E | 204; another user's / unknown id → 404; re-read keeps the first `read_at` |
 | M10 Moderation | GET | /admin/users | A | `?role=&q=` (name/email); sorted by name |
 | M10 Moderation | PATCH | /admin/users/{id}/suspend | A | `{suspended:bool}` → User; suspend revokes all tokens; own account → 422 `errors.suspended` |
@@ -53,6 +53,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M10 Moderation | GET | /admin/feedback | A | `?employer_id=&hidden=0|1`; anonymous AdminFeedback (no author) |
 | M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks of visible postings, newest saved first, with `match` and `saved:true`; POST 201 (200 if already saved; hidden → 404); DELETE by id, idempotent → 204 |
 | M13 Display settings | PUT | /me/display-prefs | any | `{text_size:'100'|'125'|'150', contrast:'normal'|'high', motion:'normal'|'reduce'}` (all required) → 200 the saved settings; follow the user to other devices |
+| M13 Email notifications | PUT | /me/email-notifications | C, E | `{enabled:bool}` → 200 `{enabled}` (admins 403). Emails = notice text + link to `PUBLIC_APP_URL` + path, never needs/disability; sent after the response (`deferred` queue), not to suspended users; mail failures are logged, never fail the action |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
 | Insights | GET | /insights/locations/{regions|provinces|cities}?parent= | P | `[{code,name,level}]` |
 | Internal (Core) | GET | /internal/job-postings/{id}/summary | S | not routed by gateway |

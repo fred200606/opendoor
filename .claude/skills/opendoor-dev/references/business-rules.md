@@ -33,6 +33,7 @@ These are enforced on the server and covered by feature tests.
 ## Feedback and trust score
 
 - Only an application with status `hired` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the hire date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= hired_at->timezone('Asia/Manila')->startOfDay()->addDays(30)` – hired on 1 Oct (any time) → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
+- Reminder (M13): the daily `feedback:remind` (08:00) sends each hired, unrated candidate one `feedback_reminder` notice (+ email) once the form is open; missed days are caught up; suspended candidates are reminded after reactivation (`applications.feedback_reminded_at`).
 - The form lists the accommodations the posting advertised at the time of hire (recorded in `application_accommodation` when the status becomes `hired`); one rating per item, every item must be rated.
 - Values: delivered = 1, partial = 0.5, not_delivered = 0.
 - `trust_score = round(sum(values) / count(rated items) * 100)` → a **whole percentage 0–100** (integer, e.g. `86`; PHP `round()` half away from zero) across all non-hidden feedback items for the employer; store on `employers.trust_score` and `feedback_count` (number of non-hidden feedback responses). The API returns an integer, the UI shows `86%`.

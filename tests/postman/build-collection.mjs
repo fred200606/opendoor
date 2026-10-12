@@ -41,10 +41,10 @@ const userSchema = `{
   additionalProperties: false
 }`;
 
-/** The signed-in user's own account (register, login, /me): User + M13 display settings. */
+/** The signed-in user's own account (register, login, /me): User + M13 display settings and email switch. */
 const accountSchema = `{
   type: 'object',
-  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],
+  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],
   properties: {
     id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },
     role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },
@@ -58,7 +58,8 @@ const accountSchema = `{
           additionalProperties: false
         }
       ]
-    }
+    },
+    email_notifications: { type: 'boolean' }
   },
   additionalProperties: false
 }`;
@@ -119,7 +120,7 @@ const folder = (name, description, item) => ({ name, description, item });
 
 // ---------------------------------------------------------------- 01 Auth
 
-const auth = folder('01 Auth', 'M1: register, login, me, password, logout; M13 display settings on the new candidate. Demo passwords come from --env-var demoPassword.', [
+const auth = folder('01 Auth', 'M1: register, login, me, password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.', [
   request('Gateway health', {
     path: '/health',
     tests: `
@@ -148,6 +149,7 @@ pm.test('returns a token and a candidate user', () => {
   pm.expect(body.user).to.be.jsonSchema(${accountSchema});
   pm.expect(body.user.role).to.eql('candidate');
   pm.expect(body.user.display_prefs).to.eql(null);
+  pm.expect(body.user.email_notifications, 'emails are on for new accounts').to.eql(true);
   pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));
 });
 pm.collectionVariables.set('newCandidateToken', body.token);`,
@@ -246,6 +248,37 @@ pm.test('login returns the saved settings', () => pm.expect(pm.response.json().u
     tests: `
 ${fieldError('text_size')}
 pm.test('contrast and motion are required too', () => pm.expect(body.errors).to.have.all.keys('text_size', 'contrast', 'motion'));`,
+  }),
+  request('M13 Turn email notifications off → 200', {
+    method: 'PUT',
+    path: '/me/email-notifications',
+    auth: bearer('newCandidateToken'),
+    body: { enabled: false },
+    tests: `
+${status(200)}
+pm.test('returns the saved choice', () => pm.expect(pm.response.json()).to.eql({ enabled: false }));`,
+  }),
+  request('M13 The email choice is on the account: GET /me', {
+    path: '/me',
+    auth: bearer('newCandidateToken'),
+    tests: `
+${status(200)}
+pm.test('email_notifications is false', () => pm.expect(pm.response.json().email_notifications).to.eql(false));`,
+  }),
+  request('M13 Email switch needs true or false → 422', {
+    method: 'PUT',
+    path: '/me/email-notifications',
+    auth: bearer('newCandidateToken'),
+    body: { enabled: 'sometimes' },
+    tests: fieldError('enabled'),
+  }),
+  request('M13 Admins have no email switch → 403', {
+    method: 'PUT',
+    path: '/me/email-notifications',
+    auth: bearer('adminToken'),
+    body: { enabled: false },
+    tests: `${status(403)}
+${envelope('FORBIDDEN')}`,
   }),
   request('Log out the new candidate → 204', {
     method: 'POST',

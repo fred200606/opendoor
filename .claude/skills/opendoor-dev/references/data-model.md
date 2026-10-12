@@ -6,7 +6,7 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 
 | Table | Fields | Constraints / notes |
 |---|---|---|
-| users | id, name, email, password, role enum(candidate, employer, admin), is_active bool default true, consented_at timestamp null, display_prefs json null, timestamps | unique email; admins never self-register |
+| users | id, name, email, password, role enum(candidate, employer, admin), is_active bool default true, consented_at timestamp null, display_prefs json null, email_notifications bool default true, timestamps | unique email; admins never self-register |
 | personal_access_tokens, password_reset_tokens, notifications | Laravel/Sanctum defaults | – |
 | candidate_profiles | id, user_id FK unique, headline, skills json, experience text, location_psgc string(10) null, disability_type string null, show_disability bool default false, resume_path null, timestamps | 1:1 with candidate users |
 | employers | id, user_id FK unique, company_name, business_reg_no, registry_type enum(DTI, SEC), industry, address, location_psgc null, location_label null, description null, logo_path null, verified_at null, verification_rejected_reason null, trust_score unsigned tinyint null (whole % 0–100), feedback_count int default 0, timestamps | changing business_reg_no / registry_type clears verified_at; unique(registry_type, business_reg_no); saving after a rejection clears the reason |
@@ -16,7 +16,7 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 | job_postings | id, employer_id FK, category_id FK, title, description, address, location_psgc, employment_type enum(full_time, part_time, contract, internship), work_setup enum(onsite, hybrid, remote), interview_format enum(online, onsite), status enum(draft, pending_approval, open, closed), closes_at date, is_approved bool, rejection_reason null, deleted_at, timestamps | soft deletes; index(status, category_id); fulltext(title, description) |
 | job_posting_accommodation | job_posting_id, accommodation_id, note string null | composite PK |
 | candidate_accommodation | candidate_profile_id, accommodation_id | composite PK |
-| applications | id, job_posting_id, candidate_profile_id, status enum(pending, reviewed, hired, rejected, withdrawn), cover_note null, interview_request null, hired_at null, hire_confirmed_by enum(employer, candidate) null, timestamps | unique(job_posting_id, candidate_profile_id); never hard-deleted |
+| applications | id, job_posting_id, candidate_profile_id, status enum(pending, reviewed, hired, rejected, withdrawn), cover_note null, interview_request null, hired_at null, hire_confirmed_by enum(employer, candidate) null, feedback_reminded_at timestamp null (M13 reminder sent), timestamps | unique(job_posting_id, candidate_profile_id); never hard-deleted |
 | application_accommodation | application_id, accommodation_id | composite PK; the posting's accommodations recorded when the application becomes hired = the items the candidate rates |
 | feedback | id, application_id unique, comments null, is_hidden bool default false, timestamps | anonymous to employers |
 | feedback_items | id, feedback_id, accommodation_id, rating enum(delivered, partial, not_delivered) | unique(feedback_id, accommodation_id) |

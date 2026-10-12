@@ -37,7 +37,7 @@ tags:
   - name: M10 Moderation
   - name: M11 Master data
   - name: M12 Saved jobs
-  - name: M13 Display settings
+  - name: M13 Accessibility settings
   - name: Insights
   - name: Internal
 security:
@@ -161,7 +161,7 @@ paths:
         '422': { $ref: '#/components/responses/ValidationFailed' }
   /me/display-prefs:
     put:
-      tags: [M13 Display settings]
+      tags: [M13 Accessibility settings]
       summary: Save the display settings with the account
       description: Any role. Replaces all three settings; they follow the user to other devices (returned by GET /me and login). The client also keeps a copy in the browser for guests.
       requestBody:
@@ -176,6 +176,37 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/DisplayPrefs' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /me/email-notifications:
+    put:
+      tags: [M13 Accessibility settings]
+      summary: Turn the emails for notifications on or off
+      description: |
+        Candidates and employers (administrators receive no notifications → 403). On by default for every
+        account. When on, each in-app notification (see Notification.type) is also emailed after the response:
+        the notice text and a link to the same page in the app – never disability or accommodation-need
+        details. Suspended accounts get no email. A mail server failure is logged and never fails the action.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Saved choice
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled]
+                properties:
+                  enabled: { type: boolean }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
 
   # ---------------------------------------------------------------- M2 Candidate profile
@@ -1583,7 +1614,7 @@ components:
         role: { $ref: '#/components/schemas/Role' }
         is_active: { type: boolean }
     Account:
-      description: The signed-in user's own account (login, register, GET /me). Admin user lists use User, without display settings.
+      description: The signed-in user's own account (login, register, GET /me). Admin user lists use User, without these settings.
       allOf:
         - $ref: '#/components/schemas/User'
         - type: object
@@ -1593,6 +1624,9 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/DisplayPrefs'
                 - type: 'null'
+            email_notifications:
+              type: boolean
+              description: Notifications are also emailed (default true; PUT /me/email-notifications). Not used for administrators.
     DisplayPrefs:
       type: object
       required: [text_size, contrast, motion]
@@ -1831,11 +1865,13 @@ components:
         id: { type: string, format: uuid }
         type:
           type: string
-          enum: [application_received, application_status_changed, employer_verification, posting_review]
+          enum: [application_received, application_status_changed, employer_verification, posting_review, feedback_reminder]
           description: |
             application_received (to the employer), application_status_changed (to the party that did not act),
             employer_verification (admin approved/rejected the company; data.verified),
-            posting_review (admin approved/rejected a posting; data.job_posting_id, data.approved)
+            posting_review (admin approved/rejected a posting; data.job_posting_id, data.approved),
+            feedback_reminder (to a hired candidate on the day the feedback form opens; data.application_id).
+            Each one is also emailed when the user's email_notifications is on.
           example: application_status_changed
         data:
           type: object

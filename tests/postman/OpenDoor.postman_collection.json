@@ -207,7 +207,7 @@
   "item": [
     {
       "name": "01 Auth",
-      "description": "M1: register, login, me, password, logout; M13 display settings on the new candidate. Demo passwords come from --env-var demoPassword.",
+      "description": "M1: register, login, me, password, logout; M13 display settings and email switch on the new candidate. Demo passwords come from --env-var demoPassword.",
       "item": [
         {
           "name": "Gateway health",
@@ -304,7 +304,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -318,12 +318,14 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
                   "  pm.expect(body.user.role).to.eql('candidate');",
                   "  pm.expect(body.user.display_prefs).to.eql(null);",
+                  "  pm.expect(body.user.email_notifications, 'emails are on for new accounts').to.eql(true);",
                   "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));",
                   "});",
                   "pm.collectionVariables.set('newCandidateToken', body.token);"
@@ -380,7 +382,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -394,7 +396,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -616,7 +619,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -630,7 +633,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -690,7 +694,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -704,7 +708,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -764,7 +769,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -778,7 +783,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -885,7 +891,7 @@
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -899,7 +905,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "}));",
@@ -1175,6 +1182,228 @@
                   "pm.test('errors.text_size is present', () => pm.expect(body.errors).to.have.property('text_size'));",
                   "",
                   "pm.test('contrast and motion are required too', () => pm.expect(body.errors).to.have.all.keys('text_size', 'contrast', 'motion'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Turn email notifications off → 200",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/email-notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "email-notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns the saved choice', () => pm.expect(pm.response.json()).to.eql({ enabled: false }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 The email choice is on the account: GET /me",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('email_notifications is false', () => pm.expect(pm.response.json().email_notifications).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Email switch needs true or false → 422",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/email-notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "email-notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": \"sometimes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.enabled is present', () => pm.expect(body.errors).to.have.property('enabled'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "M13 Admins have no email switch → 403",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/email-notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "email-notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
                 ]
               }
             }
@@ -2479,7 +2708,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -2493,7 +2722,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -6049,7 +6279,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -6063,7 +6293,8 @@
                   "          additionalProperties: false",
                   "        }",
                   "      ]",
-                  "    }",
+                  "    },",
+                  "    email_notifications: { type: 'boolean' }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
