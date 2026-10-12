@@ -6,13 +6,13 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
+- **In progress:** Figma UI (file `qWZDnximz7Tc47qu0WXSG5` "OpenDoor — SIA UI"). **Step 1 (inventory) done 2026-10-13**: page "Screens · Desktop" (1:2) has 55 frames in 5 sections (Guest 3:320, Job seeker 5:1066, Employer 6:2046, Administrator 7:3067, Shared 8:3959) matching the UI reference numbering; page "Foundations & Components" (0:1) has tokens as CSS names `--od-*` with High-contrast values, Lexend (headings) + Atkinson Hyperlegible (body), 38 Lucide icons, components Button/Badge/Alert/Field/Checkbox/Radio/Tag/IconTile/NavItem/Header(role)/Utility bar/Footer/StatTile/JobCard/Pagination; a third page "Mobile, Dialogs & States" exists but its node id is unknown (ask for the link). Contrast checked: all text/control pairs pass AA (buttons 6.7:1, links 10.9:1, inputs 5.6:1). Waiting for the answers in Pending decisions; then step 2 = tokens + fonts + icons + shared components (look changes everywhere, behaviour unchanged).
 - **Next step:** The Figma UI: the user will send the Figma link (plan agreed 2026-10-13: compare design vs app first, then tokens → shared components → screens; ask about coverage and WCAG conflicts). Otherwise ask the user what next; deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate. Local stack stopped again by Claude Code for low memory (2026-10-13, 0.3 GB free); Core was back on the main DB `opendoor_core`. Start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- –
+- Figma UI (asked 2026-10-13): (1) design features that need backend work – Save on search result cards (`saved` in search results), dates in the application "Where it stands" timeline (no `reviewed_at` yet), employer dashboard "View" on application tiles (no employer-wide applications list), Quiet mode / Compact menu saved with the account; (2) new pages – Privacy, Accessibility statement, Contact us (needs real contact details), "How trust scores work"; (3) new frontend packages `lucide-react` + self-hosted fonts (`@fontsource/lexend`, `@fontsource/atkinson-hyperlegible`); (4) the link to the "Mobile, Dialogs & States" page.
 
 ## Decisions (final – do not re-ask)
 
