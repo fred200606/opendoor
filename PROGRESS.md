@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** Get the user's answer to the pending forgot-password timing decision, then build it. Otherwise ask the user what next; deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate. Local stack running since 2026-10-13 at the user's request (Core on the main DB `opendoor_core`).
+- **Next step:** Get the user's answer to the pending forgot-password timing decision, then build it. Otherwise ask the user what next; deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate. Local stack stopped again by Claude Code for low memory (2026-10-13, 0.3 GB free); Core was back on the main DB `opendoor_core`. Start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
