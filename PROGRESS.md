@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** Ask the user what to improve next (no open development item). Deployment only when the user says so (needs a mail provider for M13 emails and a scheduler process – see Known issues); NVDA run by a teammate. The local stack was started 2026-10-12 at the user's request (Core on the main DB `opendoor_core`, both M13 migrations applied there).
+- **Next step:** Ask the user what to improve next (no open development item). Deployment only when the user says so (needs a mail provider for M13 emails and a scheduler process – see Known issues); NVDA run by a teammate. The local stack is not running (stopped by Claude Code for low memory, 2026-10-12, 0.4 GB free); both M13 migrations are applied to the main DB `opendoor_core`. Start it only when needed.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
