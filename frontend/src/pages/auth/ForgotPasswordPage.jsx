@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     const result = await form.submit((values) => forgotPassword(values.email));
-    if (result) setSentTo(form.values.email.trim());
+    if (result) setSentTo(form.values.email.trim().toLowerCase()); // as stored and as the email will show it
   }
 
   return (

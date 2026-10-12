@@ -242,6 +242,27 @@ try {
       await crop(page, 'error-summary', '.error-summary');
     },
   });
+  await shot('guest-forgot', null, '/forgot-password');
+  await shot('guest-forgot-sent', null, '/forgot-password', {
+    mode: 'viewport',
+    before: async (page) => {
+      await page.getByLabel(/Email address/).fill('candidate@opendoor.test');
+      await page.getByRole('button', { name: 'Send reset link' }).click();
+      await page.getByText('Check your email').waitFor();
+    },
+  });
+  // The page as the emailed link opens it (a made-up token: the form looks the same).
+  const resetLink = '/reset-password?token=example-token&email=candidate%40opendoor.test';
+  await shot('guest-reset', null, resetLink);
+  await shot('guest-reset-bad', null, resetLink, {
+    mode: 'viewport',
+    before: async (page) => {
+      await page.getByLabel(/^New password/).fill('a-new-password');
+      await page.getByLabel(/Confirm new password/).fill('a-new-password');
+      await page.getByRole('button', { name: 'Save new password' }).click();
+      await page.getByText('This link cannot be used').waitFor();
+    },
+  });
   await shot('guest-register', null, '/register');
   await shot('guest-register-errors', null, '/register', {
     before: async (page) => {

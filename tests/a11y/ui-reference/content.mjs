@@ -45,7 +45,7 @@ export const roles = [
 ];
 
 export const modules = [
-  ['M1', 'Authentication and accounts', 'Register (job seeker or employer, with data-privacy consent), log in, log out, change password, session expiry. Login limited to 5 tries per minute; suspended accounts are refused.', 'All', 'Log in, Create account, Account settings'],
+  ['M1', 'Authentication and accounts', 'Register (job seeker or employer, with data-privacy consent), log in, log out, change password, forgot password with an emailed reset link <span class="tag tag--new">New</span>, session expiry. Login and reset requests limited to 5 per minute; suspended accounts are refused.', 'All', 'Log in, Forgot password, Reset password, Create account, Account settings'],
   ['M2', 'Job seeker profile and needs', 'Accommodation needs (grouped checklist), headline, skills, experience, home location (PSGC), optional disability type with a separate "show to employers" choice, PDF résumé (5 MB).', 'Job seeker', 'Profile and needs'],
   ['M3', 'Company profile and verification', 'Company details, DTI/SEC registration number, office location, logo. An administrator checks the registration with the SOAP business registry and approves or rejects with a reason.', 'Employer, Admin', 'Company profile, Employers, Employer verification'],
   ['M4', 'Job postings', 'Create, edit, save as draft, submit for approval, close, reopen, delete. Each posting lists accommodations with optional details. Admin approves, rejects with a reason or removes.', 'Employer, Admin', 'Job postings, Post a new job, Edit posting, Admin postings'],
@@ -73,6 +73,7 @@ export const whatsNew = [
   ['Oct 11', 'Voice input', '"Speak" button under the search keyword and long text fields, with a one-time privacy notice.'],
   ['Oct 11', 'WCAG 2.1 AA audit fixes', 'Result counts announced also when zero, scrollable trust-score table, autocomplete on personal fields, unique page titles.'],
   ['Oct 11–12', 'Snapshot reliability', 'Second map server and background retry; the snapshot says when it shows an older saved copy.'],
+  ['Oct 13', 'Forgot password (M1)', '"Forgot your password?" on Log in, a page that emails a reset link (the same answer for every email), and a page to choose a new password.'],
   ['Oct 12', 'Email notifications (M13)', 'Every notice is also emailed (on by default); "Email notifications" card in Account settings; rating reminder when the feedback form opens (section 9).'],
 ];
 
@@ -182,10 +183,28 @@ export const sections = [
         id: 'login', title: 'Log in', shots: [['guest-login'], ['guest-login-errors', 'After "Log in" with empty fields: error summary and field errors']],
         route: '/login', who: 'Guests (signed-in users are sent to their dashboard)',
         purpose: 'Sign in with email and password.',
-        parts: ['Email address (required), Password (required)', '"Log in" button ("Logging in…" while busy)', '"New to OpenDoor? Create an account"'],
-        actions: ['Log in → the role\'s dashboard, or back to the page the user was sent from (only inside their own portal)'],
-        states: ['"Your session has ended – Please log in again to continue." (expired token)', 'Wrong email or password: error under Email', '"Your account is suspended – Please contact the OpenDoor administrator…"', '"Too many login attempts – For your security, please wait one minute and try again." (5 per minute)'],
+        parts: ['Email address (required), Password (required)', '"Log in" button ("Logging in…" while busy)', 'Link "Forgot your password?" <span class="tag tag--new">New</span>', '"New to OpenDoor? Create an account"'],
+        actions: ['Log in → the role\'s dashboard, or back to the page the user was sent from (only inside their own portal)', 'Forgot your password? → 3.6'],
+        states: ['"Your session has ended – Please log in again to continue." (expired token)', 'After a password reset: success "Your password is changed – Log in with your new password."', 'Wrong email or password: error under Email', '"Your account is suspended – Please contact the OpenDoor administrator…"', '"Too many login attempts – For your security, please wait one minute and try again." (5 per minute)'],
         api: ['POST /login'],
+      },
+      {
+        id: 'forgot-password', title: 'Forgot password', isNew: true, shots: [['guest-forgot'], ['guest-forgot-sent', 'After "Send reset link": the same answer for every email']],
+        route: '/forgot-password', who: 'Guests',
+        purpose: 'Ask for a link to choose a new password, without revealing whether an email has an account.',
+        parts: ['h1 "Reset your password", short explanation', 'Email address (required)', 'Button "Send reset link" ("Sending…")', '"Remembered it? Back to log in"'],
+        actions: ['Send reset link → "Check your email – If an OpenDoor account exists for {email}, we sent it a link to choose a new password. The link works for 60 minutes." with "Back to log in" and "Send another link"', 'The email ("Reset your OpenDoor password", button "Choose a new password") goes only to active accounts and also when notification emails are turned off'],
+        states: ['Wrong email format: error summary linked to the field', '"Too many requests – For your security, please wait one minute and try again." (5 per minute)', 'One new link per account per minute; the link works once, for 60 minutes'],
+        api: ['POST /forgot-password {email} → always 200 with the same message'],
+      },
+      {
+        id: 'reset-password', title: 'Reset password', isNew: true, shots: [['guest-reset', 'Opened from the emailed link'], ['guest-reset-bad', 'A used or expired link']],
+        route: '/reset-password?token=…&email=…', who: 'Guests (opened from the email)',
+        purpose: 'Choose a new password with the emailed link.',
+        parts: ['h1 "Choose a new password", note that the user will be signed out on all devices', 'Email address (filled in from the link), New password ("At least 8 characters."), Confirm new password', 'Button "Save new password" ("Saving…")'],
+        actions: ['Save → back to Log in with "Your password is changed – Log in with your new password."; every device is signed out'],
+        states: ['Used, expired or wrong link: "This link cannot be used – This reset link is invalid or has expired. Ask for a new one." with a link "Ask for a new link"', 'Link without a token: "This link is incomplete – Open the link from the email again, or ask for a new link."', 'Weak or mismatched password: error summary linked to the field'],
+        api: ['POST /reset-password {token, email, password, password_confirmation}'],
       },
       {
         id: 'register', title: 'Create account', shots: [['guest-register'], ['guest-register-errors', 'After "Create account" with empty fields']],
@@ -556,7 +575,7 @@ export const rules = [
 
 export const routes = [
   ['/', 'Home', 'Everyone'], ['/jobs', 'Find jobs', 'Everyone'], ['/jobs/{id}', 'Job details', 'Everyone'], ['/employers/{id}', 'Employer page', 'Everyone'],
-  ['/login', 'Log in', 'Guests'], ['/register', 'Create account', 'Guests'],
+  ['/login', 'Log in', 'Guests'], ['/forgot-password', 'Forgot password', 'Guests'], ['/reset-password', 'Reset password (from the email)', 'Guests'], ['/register', 'Create account', 'Guests'],
   ['/candidate/dashboard', 'Dashboard', 'Job seeker'], ['/candidate/jobs', 'Find jobs (match mode)', 'Job seeker'], ['/candidate/jobs/{id}', 'Job details (apply, save, report)', 'Job seeker'],
   ['/candidate/applications', 'My applications', 'Job seeker'], ['/candidate/applications/{id}', 'Application details', 'Job seeker'], ['/candidate/applications/{id}/feedback', 'Rate your accommodations', 'Job seeker'],
   ['/candidate/saved-jobs', 'Saved jobs', 'Job seeker'], ['/candidate/profile', 'Profile and needs', 'Job seeker'],
