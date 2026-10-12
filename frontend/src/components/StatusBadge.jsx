@@ -1,14 +1,15 @@
+import { Check, Circle, Minus, TriangleAlert, X } from 'lucide-react';
 import { APPLICATION_STATUSES, POSTING_STATUSES, REGISTRY_STATUSES, REPORT_STATUSES } from '../lib/labels.js';
 
-// Status = text + icon + color; color is never the only signal.
+// Status = text + icon + colour; colour is never the only signal (Figma "Status badge" tones).
 const KINDS = {
   application: {
     labels: APPLICATION_STATUSES,
-    tone: { pending: 'neutral', reviewed: 'info', hired: 'success', rejected: 'muted', withdrawn: 'muted' },
+    tone: { pending: 'neutral', reviewed: 'info', hired: 'success', rejected: 'neutral', withdrawn: 'neutral' },
   },
   posting: {
     labels: POSTING_STATUSES,
-    tone: { draft: 'muted', pending_approval: 'warning', open: 'success', closed: 'muted' },
+    tone: { draft: 'neutral', pending_approval: 'warning', open: 'success', closed: 'neutral' },
   },
   registry: {
     labels: REGISTRY_STATUSES,
@@ -16,11 +17,17 @@ const KINDS = {
   },
   report: {
     labels: REPORT_STATUSES,
-    tone: { open: 'warning', dismissed: 'muted', actioned: 'success' },
+    tone: { open: 'warning', dismissed: 'neutral', actioned: 'success' },
   },
 };
 
-const ICONS = { success: '✓', danger: '✕', warning: '!', info: '•', neutral: '•', muted: '–' };
+const ICONS = { success: Check, danger: X, warning: TriangleAlert, info: Circle, neutral: Minus };
+
+/** Icon for a badge tone (decorative: the word carries the meaning). */
+export function BadgeIcon({ tone }) {
+  const Icon = ICONS[tone] ?? Minus;
+  return <Icon aria-hidden="true" focusable="false" strokeWidth={2.5} />;
+}
 
 export default function StatusBadge({ kind, status }) {
   const config = KINDS[kind];
@@ -28,7 +35,7 @@ export default function StatusBadge({ kind, status }) {
 
   return (
     <span className={`badge badge--${tone}`}>
-      <span aria-hidden="true">{ICONS[tone]} </span>
+      <BadgeIcon tone={tone} />
       {config.labels[status] ?? status}
     </span>
   );
@@ -38,7 +45,8 @@ export function VerifiedBadge({ verified }) {
   if (!verified) return null;
   return (
     <span className="badge badge--success" title="Business registration checked by OpenDoor">
-      <span aria-hidden="true">✓ </span>Verified employer
+      <BadgeIcon tone="success" />
+      Verified employer
     </span>
   );
 }

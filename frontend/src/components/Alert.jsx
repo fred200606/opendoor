@@ -1,4 +1,6 @@
-const ICONS = { info: 'ℹ', success: '✓', warning: '!', error: '⚠' };
+import { Check, Info, TriangleAlert } from 'lucide-react';
+
+const ICONS = { info: Info, success: Check, warning: TriangleAlert, error: TriangleAlert };
 const LABELS = { info: 'Information', success: 'Success', warning: 'Warning', error: 'Error' };
 
 /**
@@ -7,11 +9,12 @@ const LABELS = { info: 'Information', success: 'Success', warning: 'Warning', er
  */
 export default function Alert({ type = 'info', title, children, live, requestId, className = '' }) {
   const role = live === 'assertive' ? 'alert' : live === 'polite' ? 'status' : undefined;
+  const Icon = ICONS[type];
 
   return (
     <div className={`alert alert--${type} ${className}`.trim()} role={role}>
       <span className="alert__icon" aria-hidden="true">
-        {ICONS[type]}
+        <Icon focusable="false" />
       </span>
       <div className="alert__body">
         <span className="visually-hidden">{LABELS[type]}: </span>

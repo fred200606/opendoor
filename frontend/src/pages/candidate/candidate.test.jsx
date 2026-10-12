@@ -272,7 +272,7 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
     });
 
     expect(await screen.findByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Submitted' }).closest('li')).toHaveTextContent('2');
+    expect(screen.getByRole('link', { name: 'View Submitted (2)' })).toHaveAttribute('href', '/candidate/applications?status=pending');
     expect(screen.getByRole('link', { name: 'rate the accommodations now' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
     expect(screen.getByRole('region', { name: 'Jobs for you' })).toHaveTextContent('4 open jobs offer all the accommodations you need.');
   });

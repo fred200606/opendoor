@@ -1,3 +1,5 @@
+import { BadgeIcon } from './StatusBadge.jsx';
+
 /**
  * "Meets 3 of your 4 needs" for candidates with saved needs (`match` from the API).
  * `detailed` also lists the needs the posting does not mention.
@@ -6,11 +8,12 @@ export default function MatchBadge({ match, detailed = false }) {
   if (!match || !match.total) return null;
 
   const full = match.met === match.total;
+  const tone = full ? 'success' : 'info';
 
   return (
     <div className="match">
-      <span className={`badge ${full ? 'badge--success' : 'badge--info'}`}>
-        <span aria-hidden="true">{full ? '★ ' : '◐ '}</span>
+      <span className={`badge badge--${tone}`}>
+        <BadgeIcon tone={tone} />
         {full ? `Meets all ${match.total} of your needs` : `Meets ${match.met} of your ${match.total} needs`}
       </span>
       {detailed && match.missing?.length > 0 && (

@@ -266,18 +266,23 @@ main:focus {
 
 /* ---------- buttons */
 
+/* Figma "Button": pills, MD 52 px / SM 44 px tall, Lexend SemiBold 18 / 16. */
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem; /* 44 px touch target */
-  padding: 0.5rem 1.25rem;
+  gap: 0.625rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 1.5rem;
   border: 2px solid var(--primary);
-  border-radius: var(--radius);
+  border-radius: var(--pill);
   background: var(--primary);
   color: var(--od-text-on-primary);
-  font: inherit;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
   font-weight: 600;
+  line-height: 1.5rem;
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
 }
@@ -286,6 +291,12 @@ main:focus {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
   color: var(--od-text-on-primary);
+}
+
+.button svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .button--secondary {
@@ -299,17 +310,29 @@ main:focus {
 }
 
 .button--small {
-  min-height: 2.5rem;
-  padding: 0.25rem 0.875rem;
+  min-height: 2.75rem;
+  padding: 0.5625rem 1.125rem;
+  font-size: 1rem;
+  line-height: 1.375rem;
 }
 
+.button--small svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Text-style action ("Report this job", "Delete" in a table). Underlined so it reads as a link. */
 .button--link {
   min-height: auto;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: none;
-  color: var(--primary);
-  font-weight: 400;
+  color: var(--link);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.375rem;
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
@@ -317,6 +340,24 @@ main:focus {
 .button--link:hover {
   background: none;
   color: var(--primary-dark);
+  text-decoration-thickness: 2px;
+}
+
+/* Decorative orange arrow on call-to-action buttons; hidden in Quiet mode. */
+.button__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--pill);
+  background: var(--od-accent-orange);
+  color: var(--od-text-default);
+}
+
+.button__arrow svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .button:disabled,
@@ -368,38 +409,58 @@ main:focus {
   margin: 0 0 1.25rem;
 }
 
+/* Figma "Form controls": label above (Atkinson Bold 17), hint (16, muted), then the control. */
 .field__label {
   display: block;
-  font-weight: 600;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.5rem;
   margin-bottom: 0.25rem;
 }
 
 .field__required {
-  font-weight: 400;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: inherit;
 }
 
 .field__hint {
-  margin: 0 0 0.375rem;
+  margin: 0 0 0.5rem;
   color: var(--text-muted);
+  line-height: 1.375rem;
 }
 
 .field__error {
-  margin: 0 0 0.375rem;
+  margin: 0 0 0.5rem;
   color: var(--danger);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .field__input {
   display: block;
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.75rem;
+  max-width: 40rem;
+  min-height: 3.625rem;
+  padding: 0.875rem 1rem;
   border: 2px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
   font: inherit;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+}
+
+select.field__input {
+  padding-right: 2.75rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23241b3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1.25rem;
+}
+
+input[type='file'].field__input {
+  font-size: 1rem;
 }
 
 .field__textarea {
@@ -407,12 +468,12 @@ main:focus {
   resize: vertical;
 }
 
-.field--invalid .field__input,
-.field--invalid.fieldset {
+.field--invalid .field__input {
   border-color: var(--danger);
+  background-color: var(--danger-bg);
 }
 
-.field--invalid {
+.field--invalid.fieldset {
   padding-left: 0.75rem;
   border-left: 4px solid var(--danger);
 }
@@ -427,25 +488,57 @@ main:focus {
   outline: none;
 }
 
+/* Figma "Checkbox" / "Radio": 24 px controls (6 px corners / round), checked = brand fill. */
 .checkbox,
 .radio {
   display: grid;
   grid-template-columns: 1.5rem 1fr;
-  gap: 0 0.625rem;
+  gap: 0 0.75rem;
   align-items: start;
-  margin: 0.5rem 0;
+  margin: 0.625rem 0;
 }
 
 .checkbox input,
 .radio input {
-  width: 1.375rem;
-  height: 1.375rem;
-  margin: 0.125rem 0 0;
-  accent-color: var(--primary);
+  appearance: none;
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.0625rem 0 0;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg) center / 1rem no-repeat;
+  cursor: pointer;
+}
+
+.radio input {
+  border-radius: 50%;
+}
+
+.checkbox input:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+
+.radio input:checked {
+  border-color: var(--primary);
+  background: radial-gradient(circle, var(--bg) 0 0.3rem, var(--primary) 0.34rem);
+}
+
+/* Windows high-contrast themes draw native controls; custom ones would vanish. */
+@media (forced-colors: active) {
+  .checkbox input,
+  .radio input {
+    appearance: auto;
+  }
 }
 
 .checkbox label,
 .radio label {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.625rem;
   cursor: pointer;
 }
 
@@ -455,20 +548,28 @@ main:focus {
 
 /* ---------- alerts and error summary */
 
+/* Figma "Alert": tone border and background, 24 px icon, bold title in the tone, body 18. */
 .alert {
   display: flex;
   gap: 0.75rem;
+  max-width: 48rem;
   margin: 0 0 1.5rem;
-  padding: 0.875rem 1rem;
+  padding: 1rem 1.25rem;
   border: 2px solid currentColor;
-  border-radius: var(--radius);
+  border-radius: 14px;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
 }
 
 .alert__icon {
   flex: none;
-  font-weight: 700;
-  font-size: 1.125rem;
-  line-height: 1.4;
+  display: flex;
+  padding-top: 0.0625rem;
+}
+
+.alert__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .alert__body > :last-child {
@@ -477,16 +578,17 @@ main:focus {
 
 .alert__title {
   font-weight: 700;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem;
 }
 
 .alert__reference {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--text-muted);
 }
 
 .alert--info {
-  color: var(--primary-dark);
+  color: var(--od-text-accent);
+  border-color: var(--info);
   background: var(--info-bg);
 }
 
@@ -514,10 +616,12 @@ main:focus {
 }
 
 .error-summary {
+  max-width: 48rem;
   margin: 0 0 1.5rem;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
   border: 3px solid var(--danger);
   border-radius: var(--radius);
+  background: var(--danger-bg);
 }
 
 .error-summary:focus {
@@ -526,7 +630,7 @@ main:focus {
 }
 
 .error-summary__title {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   color: var(--danger);
 }
 
@@ -542,40 +646,89 @@ main:focus {
 
 /* ---------- badges and tags */
 
+/* Figma "Status badge": icon + word + colour, always (Atkinson Bold 15). */
 .badge {
-  display: inline-block;
-  padding: 0.125rem 0.625rem;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.6;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.625rem;
+  border: 1.5px solid currentColor;
+  border-radius: var(--pill);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.badge--info svg {
+  width: 0.625rem; /* the small ring of the Figma Info badge */
+  height: 0.625rem;
+  margin: 0 0.1875rem;
 }
 
 .badge--success { color: var(--success); background: var(--success-bg); }
 .badge--danger { color: var(--danger); background: var(--danger-bg); }
 .badge--warning { color: var(--warning); background: var(--warning-bg); }
-.badge--info { color: var(--info); background: var(--od-surface-tint); }
-.badge--neutral { color: var(--text); background: var(--surface); }
-.badge--muted { color: var(--text-muted); background: var(--surface); }
+.badge--info { color: var(--od-text-accent); border-color: var(--info); background: var(--od-surface-tint); }
+.badge--neutral,
+.badge--muted { color: var(--text); border-color: var(--text-muted); background: var(--surface); }
 
+/* Figma "Tag": accommodations on cards. */
 .tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
-  margin: 0.5rem 0;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
   padding: 0;
   list-style: none;
 }
 
 .tag {
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
-  background: var(--surface);
-  font-size: 0.875rem;
+  padding: 0.25rem 0.875rem;
+  border-radius: var(--pill);
+  background: var(--od-surface-tint);
+  line-height: 1.5rem;
 }
+
+/* Figma "Icon tile": 44 px (12 px corners) or 80 px (22 px corners), icon in text colour. */
+.icon-tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--od-accent-orange);
+  color: var(--od-text-default);
+}
+
+.icon-tile svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.icon-tile--lg {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 22px;
+}
+
+.icon-tile--lg svg {
+  width: 2.375rem;
+  height: 2.375rem;
+}
+
+.icon-tile--pink { background: var(--od-accent-pink); }
+.icon-tile--sky { background: var(--od-accent-sky); }
+.icon-tile--lilac { background: var(--od-accent-lilac); }
 
 .tag--more {
   color: var(--text-muted);
@@ -583,36 +736,78 @@ main:focus {
 
 /* ---------- cards, lists, tables */
 
+/* Cards: 2 px subtle border, 20 px corners. */
 .card,
 .job-card {
   margin: 0 0 1rem;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
   background: var(--bg);
 }
 
-.job-card__title {
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+/* Figma "Job card": icon tile, title link (Lexend 22), company + Verified, meta, tags, footer. */
+.job-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
 }
 
-.job-card__employer,
-.job-card__meta {
-  margin: 0 0 0.25rem;
+.job-card__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.job-card__title {
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  margin: 0;
+}
+
+.job-card__title a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.job-card__title a:hover,
+.job-card__title a:focus-visible {
+  text-decoration: underline;
+}
+
+.job-card__employer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 .job-card__meta,
 .job-card__footer {
+  margin: 0;
   color: var(--text-muted);
+  line-height: 1.375rem;
 }
 
 .job-card__footer {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1.5rem;
-  margin: 0.5rem 0 0;
-  font-size: 0.9375rem;
+}
+
+.job-card__action {
+  flex: none;
+}
+
+@media (max-width: 30rem) {
+  .job-card {
+    flex-wrap: wrap;
+  }
 }
 
 .result-list {
@@ -643,21 +838,43 @@ main:focus {
 
 .table thead th {
   border-bottom: 2px solid var(--border);
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.table th,
+.table td {
+  padding: 0.875rem 0.75rem;
 }
 
 .table-wrap {
   overflow-x: auto;
+  margin: 0 0 1.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+}
+
+.table-wrap .table {
+  margin: 0;
+}
+
+.table-wrap .table tr:last-child > * {
+  border-bottom: 0;
 }
 
 .empty-state {
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   border: 2px dashed var(--divider);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   text-align: center;
 }
 
 .empty-state__title {
-  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
   margin-left: auto;
   margin-right: auto;
 }
@@ -667,42 +884,76 @@ main:focus {
   margin-right: auto;
 }
 
+/* Figma "Pagination": text links with chevrons around "Page 1 of 3". */
 .pagination {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.75rem 1.25rem;
   margin: 1.5rem 0;
+}
+
+.pagination .button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.pagination .button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.pagination .button[aria-disabled='true'] {
+  color: var(--text-muted);
+  text-decoration: none;
 }
 
 .pagination__status {
   margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
 }
 
 /* ---------- trust score and match */
 
 .trust-card {
   margin: 0 0 1.5rem;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
   background: var(--surface);
 }
 
 .trust-card--compact {
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.25rem;
 }
 
 .trust-card__title {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
 }
 
+/* Figma "Number/Score": Lexend Bold 56. */
 .trust-card__value {
-  font-size: 2rem;
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
   font-weight: 700;
-  color: var(--success);
+  line-height: 1.15;
+  color: var(--od-text-accent);
   margin-right: 0.25rem;
+}
+
+.trust-card--compact .trust-card__value {
+  display: inline;
+  font-size: 2.375rem;
 }
 
 .trust-card__basis {
@@ -727,19 +978,25 @@ main:focus {
 .accommodation-picker__group {
   min-width: 0; /* fieldsets default to min-content and overflow narrow screens */
   margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
 }
 
 .accommodation-picker__group > legend {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
   font-weight: 600;
-  padding: 0 0.25rem;
+  padding: 0 0.375rem;
 }
 
 .accommodation-picker__desc,
 .accommodation-picker__note {
-  margin-left: 2.125rem;
+  margin-left: 2.25rem;
+}
+
+.accommodation-picker__item .checkbox {
+  margin-bottom: 0.125rem;
 }
 
 .location-picker {
@@ -751,15 +1008,16 @@ main:focus {
 /* ---------- dialog */
 
 .dialog {
-  width: min(32rem, calc(100vw - 2rem));
-  padding: 1.5rem;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
+  width: min(36rem, calc(100vw - 2rem));
+  padding: 2rem;
+  border: 2px solid var(--primary-dark);
+  border-radius: var(--radius-lg);
   color: var(--text);
+  background: var(--bg);
 }
 
 .dialog::backdrop {
-  background: rgb(0 0 0 / 0.5);
+  background: rgb(36 27 58 / 0.55);
 }
 
 .dialog__title {
@@ -849,9 +1107,9 @@ main:focus {
 }
 
 .search-filters {
-  padding: 1rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
   background: var(--surface);
 }
 
@@ -941,28 +1199,75 @@ main:focus {
 
 /* ---------- dashboards and status lines */
 
+/* Figma "Stat tile": icon tile, number (Lexend Bold 38), label, "View"; the whole tile is the link. */
 .stats__list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+  gap: 1rem;
   margin: 0 0 1.5rem;
   padding: 0;
   list-style: none;
 }
 
 .stats__item {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius);
+  align-items: flex-start;
+  gap: 0.375rem;
+  padding: 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.stats__item:has(a:hover) {
+  border-color: var(--primary);
   background: var(--surface);
 }
 
+.stats__item .icon-tile {
+  margin-bottom: 0.375rem;
+}
+
 .stats__value {
-  font-size: 1.75rem;
+  font-family: var(--font-heading);
+  font-size: 2.375rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 2.75rem;
+  color: var(--od-text-accent);
+}
+
+.stats__label {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.stats__view {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* The link covers the tile, so the tile is one click target with one accessible name. */
+.stats__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stats__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.stats__link:focus-visible {
+  outline: none;
+}
+
+.stats__item:has(.stats__link:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .callout {
@@ -971,9 +1276,11 @@ main:focus {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1.5rem;
+  max-width: 64rem;
   margin: 0 0 1.5rem;
-  padding: 1rem 1.25rem;
-  border-left: 4px solid var(--primary);
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--info);
+  border-radius: var(--radius);
   background: var(--info-bg);
 }
 
