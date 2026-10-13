@@ -73,8 +73,7 @@ export default function PostingFormPage() {
 function PostingForm({ categories, groups, job }) {
   const navigate = useNavigate();
   const isEdit = Boolean(job);
-  // Editing starts on the review, which shows everything and links to each part.
-  const [step, setStep] = useState(isEdit ? REVIEW : 0);
+  const [step, setStep] = useState(0);
   const stepRef = useRef(null);
   const moved = useRef(false);
   const form = useApiForm({
@@ -158,30 +157,47 @@ function PostingForm({ categories, groups, job }) {
     }
   }
 
-  const draftButton = canDraft && (
+  // A submitted posting cannot go back to draft (Core refuses it): Cancel instead (Figma 16:6324).
+  const draftButton = canDraft ? (
     <Button type="button" className="button button--secondary" disabled={form.submitting} onClick={() => save(false)}>
       Save as draft
     </Button>
+  ) : (
+    <Link to="/employer/jobs" className="button button--secondary">
+      Cancel
+    </Link>
   );
 
   return (
     <Page
       title={isEdit ? `Edit “${job.title}”` : 'Post a new job'}
       documentTitle={`${isEdit ? `Edit “${job.title}”` : 'Post a new job'} (step ${step + 1} of ${STEPS.length})`}
-      subtitle={<p className="page__subtitle">{STEPS[step].intro}</p>}
+      back={isEdit ? { to: '/employer/jobs', label: 'Back to job postings' } : undefined}
+      subtitle={
+        isEdit ? (
+          <p className="posting-status">
+            Status: <StatusBadge kind="posting" status={job.status} />
+          </p>
+        ) : (
+          <p className="page__subtitle">{STEPS[step].intro}</p>
+        )
+      }
     >
-      {isEdit && (
-        <p>
-          Status: <StatusBadge kind="posting" status={job.status} />
-        </p>
-      )}
-      {job?.rejection_reason && (
-        <Alert type="error" title="This posting was not approved">
-          <p>Reason: {job.rejection_reason}</p>
-        </Alert>
-      )}
-
       <div className={step === 2 ? 'posting-wizard posting-wizard--wide' : 'posting-wizard'}>
+        {job?.rejection_reason ? (
+          <Alert type="error" title="This posting was not approved">
+            <p>Reason: {job.rejection_reason} Edit it and submit it again.</p>
+          </Alert>
+        ) : (
+          isEdit &&
+          job.status !== 'draft' && (
+            // Core sets an edited posting back to "waiting for approval", which hides it from search.
+            <Alert type="info" title="Saving changes sends this job back for approval.">
+              <p>It is hidden from job seekers until an administrator approves it again.</p>
+            </Alert>
+          )
+        )}
+
         <WizardProgress steps={STEPS} current={step} headingRef={stepRef} />
 
         {fieldErrors.company && (

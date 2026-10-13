@@ -202,6 +202,14 @@ describe('PostingFormPage', () => {
     expect(screen.queryByText('There is a problem')).not.toBeInTheDocument();
   });
 
+  test('editing an open posting says it goes back for approval and offers Cancel, not draft', async () => {
+    renderApp('/employer/jobs/42/edit', { as: 'employer', routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'open' }] } });
+
+    expect(await screen.findByText('Saving changes sends this job back for approval.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/employer/jobs');
+    expect(screen.queryByRole('button', { name: 'Save as draft' })).not.toBeInTheDocument();
+  });
+
   test('editing loads the posting and shows a rejection reason', async () => {
     const { user } = renderApp('/employer/jobs/42/edit', {
       as: 'employer',
@@ -210,9 +218,11 @@ describe('PostingFormPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Edit “Data Encoder”' })).toBeInTheDocument();
     expect(screen.getByText(/Please describe the hours/)).toBeInTheDocument();
-    // Editing opens on the review; Change leads to each step with the saved values.
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and submit' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Change accommodations' }));
+    expect(screen.getByRole('link', { name: 'Back to job postings' })).toHaveAttribute('href', '/employer/jobs');
+    // Editing starts at step 1 with the saved values; each step keeps them.
+    expect(screen.getByLabelText(/Job title/)).toHaveValue('Data Encoder');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByLabelText('Wheelchair-accessible entrance')).toBeChecked();
     expect(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/)).toHaveValue('Ramp at main entrance');
   });
