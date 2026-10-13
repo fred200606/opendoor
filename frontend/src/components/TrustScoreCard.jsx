@@ -7,12 +7,16 @@ const MIN_RESPONSES = 3;
 /**
  * Employer trust score: share of advertised accommodations that hired employees confirmed as
  * delivered. Published only from 3 responses. `breakdown` (optional) lists each accommodation;
- * `explain` adds the "How trust scores work" link.
+ * `explain` adds the "How trust scores work" link, `link` ({ to, label }) another one (shown only
+ * with a published score). `showTitle={false}` when the page already has a "Trust score" heading.
  */
-export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false, explain = false }) {
+export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false, explain = false, link, showTitle = true }) {
   const Heading = `h${headingLevel}`;
   const captionId = useId();
   const basedOn = trustScore?.based_on ?? 0;
+  const withTitle = showTitle && !compact;
+  const Wrapper = showTitle ? 'section' : 'div';
+  const label = showTitle ? 'Trust score' : undefined;
   const explainLink = explain && (
     <p className="trust-card__link">
       <Link to="/trust-scores">How trust scores work</Link>
@@ -21,25 +25,30 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
 
   if (!trustScore?.published) {
     return (
-      <section className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label="Trust score">
-        {!compact && <Heading className="trust-card__title">Trust score</Heading>}
+      <Wrapper className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label={label}>
+        {withTitle && <Heading className="trust-card__title">Trust score</Heading>}
         <p>
           <strong>Not published yet.</strong> A score appears after {MIN_RESPONSES} hired employees have rated this employer
           ({basedOn} of {MIN_RESPONSES} so far).
         </p>
         {explainLink}
-      </section>
+      </Wrapper>
     );
   }
 
   return (
-    <section className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label="Trust score">
-      {!compact && <Heading className="trust-card__title">Trust score</Heading>}
+    <Wrapper className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label={label}>
+      {withTitle && <Heading className="trust-card__title">Trust score</Heading>}
       <p className="trust-card__score">
         <span className="trust-card__value">{trustScore.score}%</span> of promised accommodations were delivered. Based on{' '}
         {plural(basedOn, 'response')}.
       </p>
       {explainLink}
+      {link && (
+        <p className="trust-card__link">
+          <Link to={link.to}>{link.label}</Link>
+        </p>
+      )}
 
       {breakdown?.length > 0 && (
         // Wider than a 320 px screen: the table scrolls inside its own box (WCAG 1.4.10 allows it for
@@ -77,6 +86,6 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
           </table>
         </div>
       )}
-    </section>
+    </Wrapper>
   );
 }

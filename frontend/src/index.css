@@ -1776,7 +1776,6 @@ input[type='file'].field__input {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 1.5rem;
-  max-width: 64rem;
   margin: 0 0 1.5rem;
   padding: 1.25rem 1.5rem;
   border: 2px solid var(--info);
@@ -2904,4 +2903,40 @@ input[type='file']::file-selector-button {
 .undo-bar .alert {
   max-width: none;
   margin: 0;
+}
+
+/* ---------- Figma "5.1 Dashboard" (employer) */
+
+@media (min-width: 64rem) {
+  .dashboard-layout--employer {
+    grid-template-columns: minmax(0, 560fr) minmax(0, 672fr);
+  }
+}
+
+.stats--compact .stats__list {
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+}
+
+.dashboard-side .trust-card {
+  margin: 0;
+}
+
+.dashboard-side .trust-card > :last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-notice {
+  max-width: none;
+}
+
+.callout__icon {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--od-text-accent);
+}
+
+.callout > p {
+  flex: 1 1 20rem;
+  max-width: none;
 }

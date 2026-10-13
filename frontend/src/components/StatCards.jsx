@@ -7,12 +7,12 @@ import IconTile from './IconTile.jsx';
  * visual grid). An item with `to` gets a "View" link that covers the whole tile, named
  * "View Submitted (2)". `icon` (Lucide) and `tone` add the coloured icon tile.
  */
-export default function StatCards({ title, items, headingLevel = 2 }) {
+export default function StatCards({ title, items, headingLevel = 2, className = '' }) {
   const Heading = `h${headingLevel}`;
   const headingId = useId();
 
   return (
-    <section className="stats" aria-labelledby={headingId}>
+    <section className={`stats ${className}`.trim()} aria-labelledby={headingId}>
       <Heading id={headingId}>{title}</Heading>
       <ul className="stats__list">
         {items.map((item) => (

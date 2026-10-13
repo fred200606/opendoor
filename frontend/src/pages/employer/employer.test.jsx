@@ -281,4 +281,29 @@ describe('Employer trust score and dashboard', () => {
     expect(await screen.findByRole('link', { name: 'Set up company' })).toHaveAttribute('href', '/employer/company');
     expect(screen.getByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
   });
+
+  test('dashboard says when jobs wait for approval and links to the score breakdown', async () => {
+    renderApp('/employer/dashboard', {
+      as: 'employer',
+      routes: {
+        'GET /employer/dashboard': () => [
+          200,
+          {
+            company: { exists: true, verified: true },
+            postings: { draft: 1, pending_approval: 2, open: 2 },
+            applications: { pending: 3, reviewed: 2, hired: 1 },
+            trust_score: { published: true, score: 79, based_on: 3 },
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByText('2 jobs are waiting for approval.')).toBeInTheDocument();
+    const applications = screen.getByRole('region', { name: 'Applications received' });
+    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Submitted', '2Reviewed', '1Hired']);
+    expect(within(applications).queryByRole('link')).not.toBeInTheDocument();
+    const trust = screen.getByRole('region', { name: 'Trust score' });
+    expect(within(trust).getByText('79%')).toBeInTheDocument();
+    expect(within(trust).getByRole('link', { name: 'See each accommodation' })).toHaveAttribute('href', '/employer/trust-score');
+  });
 });
