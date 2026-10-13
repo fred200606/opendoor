@@ -1186,25 +1186,36 @@ input[type='file'].field__input {
   border-bottom: 0;
 }
 
+/* Figma "Empty state": a card with an icon tile, title, help text and an action. */
 .empty-state {
-  padding: 2rem 1.5rem;
-  border: 2px dashed var(--divider);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 31rem;
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  text-align: center;
+  background: var(--bg);
+}
+
+.empty-state .icon-tile {
+  margin-bottom: 0.25rem;
 }
 
 .empty-state__title {
+  margin: 0;
   font-family: var(--font-heading);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .empty-state p {
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0;
+}
+
+.empty-state .button {
+  margin-top: 0.5rem;
 }
 
 /* Figma "Pagination": text links with chevrons around "Page 1 of 3". */
@@ -2829,4 +2840,68 @@ input[type='file']::file-selector-button {
   .timeline__step + .timeline__step::before {
     display: none;
   }
+}
+
+.application-page .alert {
+  max-width: 36rem;
+}
+
+/* ---------- Figma "4.6 Rate your accommodations": one card per accommodation, options in a row */
+
+.narrow-form {
+  max-width: 36rem;
+}
+
+.narrow-form .field__input {
+  max-width: none;
+}
+
+.fieldset--card {
+  min-width: 0;
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1.125rem 0.625rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+.fieldset--card > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.fieldset--card > legend + * {
+  clear: both;
+}
+
+.radio-group--inline .radio {
+  display: inline-grid;
+  margin: 0.375rem 1.5rem 0.375rem 0;
+}
+
+/* ---------- Figma "4.7 Saved jobs": removal message with Undo beside it */
+
+.undo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.undo-bar:not(:has(.alert)) {
+  margin: 0;
+}
+
+.undo-bar__message {
+  flex: 1 1 24rem;
+}
+
+.undo-bar .alert {
+  max-width: none;
+  margin: 0;
 }

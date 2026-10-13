@@ -88,11 +88,7 @@ function ApplicationDetails({ application, onChange }) {
         />
       }
     >
-      {message && (
-        <Alert type="success" live="polite">
-          <p>{message}</p>
-        </Alert>
-      )}
+      {message && <Alert type="success" live="polite" title={message} />}
       <ApiErrorAlert error={error} title="The status was not changed" />
 
       <div ref={readRef} className="application-page__body">
@@ -150,7 +146,7 @@ function FeedbackPrompt({ application }) {
   const isOpen = opensOn && opensOn <= todayInManila();
 
   return (
-    <section className="card" aria-labelledby="feedback-title">
+    <section className={`card ${application.feedback_submitted ? '' : 'card--tint'}`.trim()} aria-labelledby="feedback-title">
       <h2 id="feedback-title">Rate your accommodations</h2>
       {application.feedback_submitted ? (
         <p>You have rated the accommodations for this job. Thank you – your answers are anonymous.</p>

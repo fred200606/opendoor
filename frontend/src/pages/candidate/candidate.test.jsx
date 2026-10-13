@@ -326,6 +326,7 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
       routes: {
         'GET /candidate/saved-jobs': () => [200, paged([application.job_posting])],
         'DELETE /candidate/saved-jobs/42': () => [204, ''],
+        'POST /candidate/saved-jobs/42': () => [200, { ...application.job_posting, saved: true }],
       },
     });
 
@@ -333,5 +334,14 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
 
     expect(await screen.findByText('No saved jobs')).toBeInTheDocument();
     expect(calls.some((call) => call.key === 'DELETE /candidate/saved-jobs/42')).toBe(true);
+    expect(screen.getByRole('status')).toHaveTextContent('Removed “Data Encoder” from saved jobs.');
+
+    // Undo takes focus and puts the job back (focus returns to its Remove button).
+    const undo = screen.getByRole('button', { name: 'Undo removing “Data Encoder”' });
+    expect(undo).toHaveFocus();
+    await user.click(undo);
+    expect(await screen.findByRole('button', { name: /Remove “Data Encoder”/ })).toHaveFocus();
+    expect(calls.some((call) => call.key === 'POST /candidate/saved-jobs/42')).toBe(true);
+    expect(screen.getByRole('status')).toHaveTextContent('“Data Encoder” is back in your saved jobs.');
   });
 });

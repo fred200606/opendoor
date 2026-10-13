@@ -24,7 +24,16 @@ export default function FeedbackPage() {
   const state = useAsync(() => getFeedbackForm(id), [id]);
 
   return (
-    <Page title="Rate your accommodations">
+    <Page
+      title="Rate your accommodations"
+      back={{ to: `/candidate/applications/${id}`, label: 'Back to application' }}
+      subtitle={
+        <p className="page__subtitle">
+          Were the promised accommodations really provided? Your answers are anonymous. The employer sees only the combined
+          score.
+        </p>
+      }
+    >
       <AsyncContent state={state} label="Loading the feedback form">
         {(form) => {
           if (form.submitted) {
@@ -103,11 +112,7 @@ function FeedbackForm({ applicationId, items }) {
   const known = form.formError && SUBMIT_ERRORS[form.formError.code];
 
   return (
-    <>
-      <p>
-        For each accommodation the employer promised in the job posting, tell us whether you actually received it. Your
-        answers are anonymous: the employer sees only the combined score, never your name or your individual answers.
-      </p>
+    <div className="narrow-form">
       <ErrorSummary errors={form.fieldErrors} fields={fieldIds} />
       {known ? (
         <Alert type="error" live="assertive">
@@ -124,6 +129,7 @@ function FeedbackForm({ applicationId, items }) {
             name={`rating-${item.accommodation_id}`}
             legend={item.name}
             required
+            className="fieldset--card radio-group--inline"
             options={RATING_OPTIONS}
             value={form.values.ratings[item.accommodation_id] ?? ''}
             onChange={(rating) => form.setValue('ratings', { ...form.values.ratings, [item.accommodation_id]: rating })}
@@ -135,6 +141,6 @@ function FeedbackForm({ applicationId, items }) {
           {form.submitting ? 'Saving…' : 'Submit ratings'}
         </Button>
       </form>
-    </>
+    </div>
   );
 }
