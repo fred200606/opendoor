@@ -10,10 +10,11 @@ const MAX_TAGS = 3;
 const TONES = ['orange', 'pink', 'lilac'];
 
 /**
- * One search result (Figma "Job card"). `to` is the details link (public or candidate portal).
+ * One search result (Figma "Job card"). `to` is the details link (public or candidate portal);
+ * `state` goes with it (e.g. where the job page's back link returns to).
  * `children` (e.g. Save or Remove) sit at the right of the card.
  */
-export default function JobCard({ job, to, headingLevel = 2, children }) {
+export default function JobCard({ job, to, state, headingLevel = 2, children }) {
   const Heading = `h${headingLevel}`;
   const accommodations = job.accommodations ?? [];
   const footer = [
@@ -28,7 +29,9 @@ export default function JobCard({ job, to, headingLevel = 2, children }) {
       <IconTile icon={Briefcase} tone={TONES[Math.abs(job.id - 1) % TONES.length]} />
       <div className="job-card__content">
         <Heading className="job-card__title">
-          <Link to={to}>{job.title}</Link>
+          <Link to={to} state={state}>
+            {job.title}
+          </Link>
         </Heading>
         <p className="job-card__employer">
           {job.employer?.company_name} <VerifiedBadge verified={job.employer?.verified} />

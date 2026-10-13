@@ -482,6 +482,10 @@ main:focus {
   margin-bottom: 1rem;
 }
 
+.page__actions .read-aloud {
+  margin: 0;
+}
+
 .voice-input {
   display: flex;
   flex-wrap: wrap;
@@ -1203,21 +1207,32 @@ input[type='file'].field__input {
   font-size: 2.375rem;
 }
 
+.trust-card__score {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
 .trust-card__basis {
   color: var(--text-muted);
 }
 
 .match {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
   margin: 0.5rem 0;
 }
 
 .match__missing {
-  margin-top: 0.5rem;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
-.match__missing p,
-.match__missing ul {
-  margin-bottom: 0.25rem;
+.trust-card__link {
+  margin: 0;
+  font-weight: 700;
 }
 
 /* ---------- pickers */
@@ -1399,19 +1414,36 @@ input[type='file'].field__input {
   font-size: 1.125rem;
 }
 
+/* Figma "Details list": muted label column (180 px), bold value. Stacks on narrow screens. */
 .details-list {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.25rem 1.5rem;
+  grid-template-columns: minmax(0, 11.25rem) minmax(0, 1fr);
+  gap: 0.625rem 1rem;
   margin: 0 0 1.5rem;
 }
 
 .details-list dt {
-  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.5rem;
 }
 
 .details-list dd {
   margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.625rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 30rem) {
+  .details-list {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .details-list dd {
+    margin-bottom: 0.625rem;
+  }
 }
 
 .prose {
@@ -1420,26 +1452,128 @@ input[type='file'].field__input {
   margin: 0 0 1.5rem;
 }
 
+/* Figma "Accordion: snapshot" (closed: one 16 px-corner row) and "Snapshot (open)". */
 .snapshot {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid var(--divider);
+  font-size: 1.125rem;
+}
+
+.snapshot:not(.snapshot--open) {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius);
+}
+
+.snapshot__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.snapshot__header h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.snapshot:not(.snapshot--open) .snapshot__header h2 {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.disclosure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.disclosure-button:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.disclosure-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.snapshot__body {
+  margin-top: 0.875rem;
+}
+
+.snapshot__body p,
+.snapshot__body ul {
+  margin: 0 0 0.875rem;
 }
 
 .snapshot h3 {
-  margin-top: 1.5rem;
-  font-size: 1.25rem;
+  margin: 0 0 0.875rem;
+  color: var(--od-text-accent);
+  font-size: 1.125rem;
 }
 
 .snapshot__group {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.snapshot__hint,
+.snapshot__disclaimer {
+  color: var(--text-muted);
   font-size: 1rem;
-  margin: 0.75rem 0 0.25rem;
+}
+
+.snapshot__places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.snapshot__place {
+  flex: 0 1 11.25rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.snapshot__place--wide {
+  flex: 0 1 35rem;
+}
+
+.snapshot__place h4 {
+  margin: 0 0 0.375rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.snapshot .snapshot__place p,
+.snapshot .snapshot__place ul {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.snapshot__place p {
+  color: var(--text-muted);
+}
+
+.snapshot__place ul {
+  padding: 0;
+  list-style: none;
 }
 
 .snapshot__disclaimer {
-  margin-top: 1.5rem;
-  color: var(--text-muted);
-  font-size: 0.9375rem;
+  margin: 0;
 }
 
 .employer-header {
@@ -1935,4 +2069,149 @@ input[type='file'].field__input {
 
 :root[data-quiet='on'] .home__step-arrow {
   display: none;
+}
+
+/* ---------- Figma "3.3 Job details" */
+
+.back-link {
+  margin: 0 0 1.5rem;
+}
+
+.back-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 700;
+}
+
+.back-link svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Heading with a button to its right (Read aloud, Post a new job). */
+.page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page__heading {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.page__heading h1 {
+  margin-bottom: 0.5rem;
+}
+
+.page__heading > :last-child {
+  margin-bottom: 0;
+}
+
+.job-employer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.job-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .job-layout {
+    grid-template-columns: minmax(0, 1fr) 23.75rem;
+    align-items: start;
+  }
+}
+
+.job-layout__main,
+.job-layout__side,
+.job-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.job-layout .card,
+.job-layout .trust-card,
+.job-layout .match,
+.job-actions-group .alert {
+  margin: 0;
+}
+
+.job-layout .card > h2 {
+  margin-bottom: 1rem;
+}
+
+.job-layout .details-list,
+.job-layout .prose {
+  margin: 0;
+}
+
+.job-layout .prose {
+  font-size: 1.125rem;
+}
+
+.job-notes {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+}
+
+.job-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-layout .job-actions > h2,
+.job-actions > p {
+  margin: 0;
+}
+
+.job-actions__lead {
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.job-actions .field {
+  margin-bottom: 1rem;
+}
+
+.job-actions__more {
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.button--block {
+  width: 100%;
+}
+
+.button--link:disabled {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: default;
+  opacity: 1;
+}
+
+.focus-target:focus {
+  outline: none;
+}
+
+.focus-target:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 14px;
 }

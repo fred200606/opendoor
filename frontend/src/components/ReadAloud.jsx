@@ -1,3 +1,4 @@
+import { Pause, Play, Square, Volume2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { pickVoice, readableChunks } from '../lib/readAloud.js';
 
@@ -73,11 +74,19 @@ export default function ReadAloud({ targetRef, title, label = 'Read aloud' }) {
 
   return (
     <div className="actions read-aloud">
-      <button ref={mainRef} type="button" className="button button--secondary" onClick={toggle}>
+      <button ref={mainRef} type="button" className="button button--secondary button--small" onClick={toggle}>
+        {status === 'idle' ? (
+          <Volume2 aria-hidden="true" focusable="false" />
+        ) : status === 'speaking' ? (
+          <Pause aria-hidden="true" focusable="false" />
+        ) : (
+          <Play aria-hidden="true" focusable="false" />
+        )}
         {status === 'idle' ? label : status === 'speaking' ? 'Pause reading' : 'Resume reading'}
       </button>
       {status !== 'idle' && (
-        <button ref={stopRef} type="button" className="button button--secondary" onClick={stop}>
+        <button ref={stopRef} type="button" className="button button--secondary button--small" onClick={stop}>
+          <Square aria-hidden="true" focusable="false" />
           Stop reading
         </button>
       )}

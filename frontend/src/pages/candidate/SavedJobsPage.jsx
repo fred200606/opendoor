@@ -46,7 +46,7 @@ export default function SavedJobsPage() {
               <ul className="result-list">
                 {data.map((job) => (
                   <li key={job.id}>
-                    <JobCard job={job} to={`/candidate/jobs/${job.id}`}>
+                    <JobCard job={job} to={`/candidate/jobs/${job.id}`} state={{ back: { to: '/candidate/saved-jobs', label: 'Back to saved jobs' } }}>
                       <button
                         type="button"
                         className="button button--secondary button--small"

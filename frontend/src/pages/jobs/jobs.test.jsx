@@ -61,22 +61,34 @@ describe('JobDetailsPage', () => {
     'GET /insights/job-postings/42': () => [200, snapshot],
   };
 
+  const openSnapshot = async (user) => {
+    const button = await screen.findByRole('button', { name: 'Show Workplace Accessibility Snapshot' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await user.click(button);
+    expect(screen.getByRole('button', { name: 'Hide Workplace Accessibility Snapshot' })).toHaveAttribute('aria-expanded', 'true');
+  };
+
   test('shows details, notes, missing needs, trust score and the snapshot', async () => {
-    renderApp('/candidate/jobs/42', { as: 'candidate', routes });
+    const { user, calls } = renderApp('/candidate/jobs/42', { as: 'candidate', routes });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Data Encoder' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to job results' })).toHaveAttribute('href', '/candidate/jobs');
     expect(screen.getByText(/Ramp at main entrance/)).toBeInTheDocument();
     expect(screen.getByText('Meets 1 of your 2 needs')).toBeInTheDocument();
-    expect(screen.getByText('Accessible restroom')).toBeInTheDocument();
+    expect(screen.getByText('Not mentioned in this posting: Accessible restroom')).toBeInTheDocument();
     expect(screen.getByText('86%')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'How trust scores work' })).toHaveAttribute('href', '/trust-scores');
 
-    const snapshotSection = await screen.findByRole('region', { name: 'Workplace Accessibility Snapshot' });
+    // The snapshot is closed at first and is only requested when opened.
+    expect(calls.some((call) => call.key === 'GET /insights/job-postings/42')).toBe(false);
+    await openSnapshot(user);
+    const snapshotSection = screen.getByRole('region', { name: 'Workplace Accessibility Snapshot' });
     expect(await within(snapshotSection).findByText(/Quezon Ave. MRT Station – 220 m away, wheelchair accessible/)).toBeInTheDocument();
     expect(within(snapshotSection).getByText(/Unnamed place – 1.5 km away, partly wheelchair accessible/)).toBeInTheDocument();
   });
 
   test('snapshot explains failed sources in words', async () => {
-    renderApp('/jobs/42', {
+    const { user } = renderApp('/jobs/42', {
       routes: {
         ...routes,
         'GET /insights/job-postings/42': () => [
@@ -86,15 +98,17 @@ describe('JobDetailsPage', () => {
       },
     });
 
+    await openSnapshot(user);
     expect(await screen.findByText(/distances are measured from the city centre/)).toBeInTheDocument();
     expect(screen.getByText(/Nearby places could not be loaded right now/)).toBeInTheDocument();
   });
 
   test('the job still shows when the Insights Service is down', async () => {
-    renderApp('/jobs/42', {
+    const { user } = renderApp('/jobs/42', {
       routes: { ...routes, 'GET /insights/job-postings/42': () => apiError(503, 'SERVICE_UNAVAILABLE') },
     });
 
+    await openSnapshot(user);
     expect(await screen.findByText(/accessibility snapshot is not available right now/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Data Encoder' })).toBeInTheDocument();
   });
@@ -115,6 +129,8 @@ describe('JobDetailsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Send application' }));
 
     expect(await screen.findByText('Application sent')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your application' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View your application' })).toHaveAttribute('href', '/candidate/applications/11');
     expect(calls.find((call) => call.key === 'POST /job-postings/42/applications').data).toEqual({ interview_request: 'Captions, please.' });
   });
 

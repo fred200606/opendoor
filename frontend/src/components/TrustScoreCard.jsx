@@ -1,16 +1,23 @@
 import { useId } from 'react';
+import { Link } from 'react-router-dom';
 import { plural } from '../lib/format.js';
 
 const MIN_RESPONSES = 3;
 
 /**
  * Employer trust score: share of advertised accommodations that hired employees confirmed as
- * delivered. Published only from 3 responses. `breakdown` (optional) lists each accommodation.
+ * delivered. Published only from 3 responses. `breakdown` (optional) lists each accommodation;
+ * `explain` adds the "How trust scores work" link.
  */
-export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false }) {
+export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2, compact = false, explain = false }) {
   const Heading = `h${headingLevel}`;
   const captionId = useId();
   const basedOn = trustScore?.based_on ?? 0;
+  const explainLink = explain && (
+    <p className="trust-card__link">
+      <Link to="/trust-scores">How trust scores work</Link>
+    </p>
+  );
 
   if (!trustScore?.published) {
     return (
@@ -20,6 +27,7 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
           <strong>Not published yet.</strong> A score appears after {MIN_RESPONSES} hired employees have rated this employer
           ({basedOn} of {MIN_RESPONSES} so far).
         </p>
+        {explainLink}
       </section>
     );
   }
@@ -31,6 +39,7 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
         <span className="trust-card__value">{trustScore.score}%</span> of promised accommodations were delivered
       </p>
       <p className="trust-card__basis">Based on {plural(basedOn, 'response')} from employees hired through OpenDoor.</p>
+      {explainLink}
 
       {breakdown?.length > 0 && (
         // Wider than a 320 px screen: the table scrolls inside its own box (WCAG 1.4.10 allows it for

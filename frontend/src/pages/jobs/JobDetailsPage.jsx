@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Bookmark, Check, Flag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
 import { getJob, reportPosting, saveJob, unsaveJob } from '../../api/jobs.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -18,7 +19,7 @@ import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
-import { ACCOMMODATION_GROUPS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
+import { EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
 
 const APPLY_ERRORS = {
   ALREADY_APPLIED: 'You have already applied to this job. You can follow it in My applications.',
@@ -38,135 +39,185 @@ export default function JobDetailsPage() {
 
 function JobDetails({ job }) {
   const { user } = useAuth();
+  const { state } = useLocation();
   const isCandidate = user?.role === 'candidate';
-  const accommodationsByGroup = Object.groupBy(job.accommodations ?? [], (item) => item.group);
   const readRef = useRef(null);
+  const back = isBackLink(state?.back) ? state.back : { to: isCandidate ? '/candidate/jobs' : '/jobs', label: 'Back to job results' };
+  const trustScore = <TrustScoreCard trustScore={job.trust_score} explain />;
+
+  const details = (
+    <section key="details" className="card">
+      <h2>Details</h2>
+      <dl className="details-list">
+        <dt>Category</dt>
+        <dd>{job.category?.name}</dd>
+        <dt>Employment</dt>
+        <dd>{EMPLOYMENT_TYPES[job.employment_type]}</dd>
+        <dt>Work setup</dt>
+        <dd>{WORK_SETUPS[job.work_setup]}</dd>
+        <dt>Interview</dt>
+        <dd>{INTERVIEW_FORMATS[job.interview_format]}</dd>
+        <dt>Address</dt>
+        <dd>
+          {job.address}
+          {job.location?.label && `, ${job.location.label}`}
+        </dd>
+        <dt>Apply by</dt>
+        <dd>{formatDate(job.closes_at)}</dd>
+      </dl>
+    </section>
+  );
+  const about = (
+    <section key="about" className="card">
+      <h2>About the job</h2>
+      <div className="prose">{job.description}</div>
+    </section>
+  );
+  const accommodations = <OfferedAccommodations key="accommodations" items={job.accommodations ?? []} />;
 
   return (
-    <Page title={job.title}>
-      <ReadAloud targetRef={readRef} title={job.title} label="Read this job aloud" />
-      <div ref={readRef}>
+    <Page
+      title={job.title}
+      className="job-page"
+      back={back}
+      subtitle={
         <p className="job-employer">
           <Link to={`/employers/${job.employer?.id}`}>{job.employer?.company_name}</Link> <VerifiedBadge verified={job.employer?.verified} />
+          {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
         </p>
-        {job.status !== 'open' && (
-          <p>
-            <StatusBadge kind="posting" status={job.status} />
-          </p>
-        )}
-
-        <dl className="details-list">
-          <dt>Category</dt>
-          <dd>{job.category?.name}</dd>
-          <dt>Employment</dt>
-          <dd>{EMPLOYMENT_TYPES[job.employment_type]}</dd>
-          <dt>Work setup</dt>
-          <dd>{WORK_SETUPS[job.work_setup]}</dd>
-          <dt>Interview</dt>
-          <dd>{INTERVIEW_FORMATS[job.interview_format]}</dd>
-          <dt>Address</dt>
-          <dd>
-            {job.address}
-            {job.location?.label && `, ${job.location.label}`}
-          </dd>
-          <dt>Apply by</dt>
-          <dd>{formatDate(job.closes_at)}</dd>
-        </dl>
-
-        {isCandidate && <MatchBadge match={job.match} detailed />}
-
-        <h2>About the job</h2>
-        <div className="prose">{job.description}</div>
-
-        <h2>Accommodations offered</h2>
-        {(job.accommodations ?? []).length === 0 ? (
-          <p>The employer did not list any accommodations.</p>
-        ) : (
-          Object.entries(accommodationsByGroup).map(([group, items]) => (
-            <div key={group}>
-              <h3 className="snapshot__group">{ACCOMMODATION_GROUPS[group] ?? group}</h3>
-              <ul>
-                {items.map((item) => (
-                  <li key={item.id}>
-                    {item.name}
-                    {item.note && <span className="field__hint"> – {item.note}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))
-        )}
-
-        <TrustScoreCard trustScore={job.trust_score} />
+      }
+      actions={<ReadAloud targetRef={readRef} title={[job.title, job.employer?.company_name].filter(Boolean).join('. ')} label="Read this job aloud" />}
+    >
+      <div ref={readRef} className="job-layout">
+        <div className="job-layout__main">
+          {isCandidate && <MatchBadge match={job.match} detailed />}
+          {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
+          {isCandidate ? [accommodations, details, about] : [details, about, accommodations]}
+          <AccessibilitySnapshot jobId={job.id} />
+        </div>
+        <div className="job-layout__side">
+          {!isCandidate && trustScore}
+          <JobActions job={job} />
+          {isCandidate && trustScore}
+        </div>
       </div>
-
-      <JobActions job={job} />
-
-      <AccessibilitySnapshot jobId={job.id} />
     </Page>
+  );
+}
+
+/** A back link handed over by the page that linked here (search, saved jobs, employer page). */
+function isBackLink(back) {
+  return typeof back?.to === 'string' && back.to.startsWith('/') && typeof back.label === 'string';
+}
+
+function OfferedAccommodations({ items }) {
+  const notes = items.filter((item) => item.note);
+
+  return (
+    <section className="card">
+      <h2>Accommodations offered</h2>
+      {items.length === 0 ? (
+        <p>The employer did not list any accommodations.</p>
+      ) : (
+        <>
+          <ul className="tag-list">
+            {items.map((item) => (
+              <li key={item.id} className="tag">
+                {item.name}
+              </li>
+            ))}
+          </ul>
+          {notes.length > 0 && (
+            <ul className="job-notes">
+              {notes.map((item) => (
+                <li key={item.id}>
+                  {item.name}: {item.note}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
 function JobActions({ job }) {
   const { user } = useAuth();
+  const [mine, setMine] = useState(job.my_application ?? null);
+  const [justApplied, setJustApplied] = useState(false);
+  const sentRef = useRef(null);
+
+  useEffect(() => {
+    if (justApplied) sentRef.current?.focus();
+  }, [justApplied]);
 
   if (!user) {
     return (
-      <section className="card" aria-labelledby="apply-title">
+      <section className="card job-actions" aria-labelledby="apply-title" data-read-aloud="skip">
         <h2 id="apply-title">Interested?</h2>
-        <p>
-          <Link to="/login" state={{ from: { pathname: `/candidate/jobs/${job.id}` } }} className="button">
-            Log in to apply
-          </Link>{' '}
-          or <Link to="/register">create an account</Link>.
-        </p>
+        <p className="job-actions__lead">Log in to apply, or create an account. It takes about 2 minutes.</p>
+        <Link to="/login" state={{ from: { pathname: `/candidate/jobs/${job.id}` } }} className="button button--block">
+          Log in to apply
+        </Link>
+        <Link to="/register" className="button button--secondary button--block">
+          Create an account
+        </Link>
       </section>
     );
   }
   if (user.role !== 'candidate') return null;
 
-  const mine = job.my_application;
-
   return (
-    <section className="card" aria-labelledby="apply-title">
-      <h2 id="apply-title">{mine ? 'Your application' : 'Apply for this job'}</h2>
-      {mine ? (
-        <p>
-          You applied on {formatDate(mine.created_at)}. Status: <StatusBadge kind="application" status={mine.status} />{' '}
-          <Link to={`/candidate/applications/${mine.id}`}>View your application</Link>
-        </p>
-      ) : job.status === 'open' ? (
-        <ApplyForm job={job} />
-      ) : (
-        <p>This job is no longer accepting applications.</p>
+    <div className="job-actions-group" data-read-aloud="skip">
+      {justApplied && (
+        <div ref={sentRef} tabIndex={-1} className="focus-target">
+          <Alert type="success" live="polite" title="Application sent">
+            <p>
+              The employer will review it. You can follow its status in <Link to="/candidate/applications">My applications</Link>.
+            </p>
+          </Alert>
+        </div>
       )}
-      <div className="actions">
+      <section className="card job-actions" aria-labelledby="apply-title">
+        <h2 id="apply-title">{mine ? 'Your application' : 'Apply for this job'}</h2>
+        {mine ? (
+          <>
+            <p>
+              You applied on {formatDate(mine.created_at)}. Status: <StatusBadge kind="application" status={mine.status} />
+            </p>
+            <p>
+              <Link to={`/candidate/applications/${mine.id}`}>View your application</Link>
+            </p>
+          </>
+        ) : job.status === 'open' ? (
+          <ApplyForm
+            job={job}
+            onApplied={(application) => {
+              setMine({ created_at: new Date().toISOString(), ...application });
+              setJustApplied(true);
+            }}
+          />
+        ) : (
+          <p>This job is no longer accepting applications.</p>
+        )}
+      </section>
+      <div className="actions job-actions__more">
         <SaveButton jobId={job.id} initiallySaved={Boolean(job.saved)} />
         <ReportButton jobId={job.id} />
       </div>
-    </section>
+    </div>
   );
 }
 
-function ApplyForm({ job }) {
+function ApplyForm({ job, onApplied }) {
   const form = useApiForm({ coverNote: '', interviewRequest: '' });
-  const [applied, setApplied] = useState(null);
   const knownError = form.formError && APPLY_ERRORS[form.formError.code];
 
   async function handleSubmit(event) {
     event.preventDefault();
     const result = await form.submit((values) => applyToJob(job.id, values));
-    if (result) setApplied(result);
-  }
-
-  if (applied) {
-    return (
-      <Alert type="success" live="polite" title="Application sent">
-        <p>
-          The employer will review it. You can follow its status in <Link to="/candidate/applications">My applications</Link>.
-        </p>
-      </Alert>
-    );
+    if (result) onApplied(result);
   }
 
   return (
@@ -187,7 +238,7 @@ function ApplyForm({ job }) {
           label="Cover note"
           voice
           id="cover_note"
-          hint="Optional. Tell the employer why you are a good fit."
+          hint="Optional."
           maxLength={2000}
           error={form.fieldErrors.cover_note}
           {...form.bind('coverNote')}
@@ -196,12 +247,12 @@ function ApplyForm({ job }) {
           label="Interview accommodation request"
           voice
           id="interview_request"
-          hint={`Optional. This job uses an ${job.interview_format === 'online' ? 'online' : 'on-site'} interview. For example: sign language interpreter, extra time, captions.`}
+          hint={`${job.interview_format === 'online' ? 'Online' : 'On-site'} interview. Optional. For example: sign language interpreter, extra time, captions.`}
           maxLength={1000}
           error={form.fieldErrors.interview_request}
           {...form.bind('interviewRequest')}
         />
-        <Button type="submit" className="button" disabled={form.submitting}>
+        <Button type="submit" className="button button--block" disabled={form.submitting}>
           {form.submitting ? 'Sending…' : 'Send application'}
         </Button>
       </form>
@@ -230,7 +281,8 @@ function SaveButton({ jobId, initiallySaved }) {
 
   return (
     <>
-      <Button type="button" className="button button--secondary" aria-pressed={saved} disabled={busy} onClick={toggle}>
+      <Button type="button" className={`button button--small ${saved ? '' : 'button--secondary'}`.trim()} aria-pressed={saved} disabled={busy} onClick={toggle}>
+        {saved ? <Check aria-hidden="true" focusable="false" /> : <Bookmark aria-hidden="true" focusable="false" />}
         {saved ? 'Saved' : 'Save job'}
       </Button>
       <p className="visually-hidden" role="status">
@@ -256,7 +308,8 @@ function ReportButton({ jobId }) {
 
   return (
     <>
-      <Button type="button" className="button button--link" onClick={() => setOpen(true)} disabled={done}>
+      <Button type="button" className="button button--link button--icon-link" onClick={() => setOpen(true)} disabled={done}>
+        {!done && <Flag aria-hidden="true" focusable="false" />}
         {done ? 'Reported – thank you' : 'Report this job'}
       </Button>
       {open && (

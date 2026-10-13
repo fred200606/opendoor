@@ -43,7 +43,12 @@ export default function EmployerPublicPage() {
             <ul className="result-list">
               {employer.open_postings.map((job) => (
                 <li key={job.id}>
-                  <JobCard job={{ ...job, employer: job.employer ?? employer }} to={jobPath(user?.role, job.id)} headingLevel={3} />
+                  <JobCard
+                    job={{ ...job, employer: job.employer ?? employer }}
+                    to={jobPath(user?.role, job.id)}
+                    state={{ back: { to: `/employers/${employer.id}`, label: `Back to ${employer.company_name}` } }}
+                    headingLevel={3}
+                  />
                 </li>
               ))}
             </ul>

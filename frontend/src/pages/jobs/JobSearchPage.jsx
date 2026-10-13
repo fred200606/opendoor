@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { searchJobs } from '../../api/jobs.js';
 import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -35,6 +35,8 @@ export default function JobSearchPage() {
   const { user } = useAuth();
   const isCandidate = user?.role === 'candidate';
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const backHere = { back: { to: `${location.pathname}${location.search}`, label: 'Back to job results' } };
   const filters = readFilters(params, isCandidate);
 
   const [keyword, setKeyword] = useState(filters.q);
@@ -168,7 +170,7 @@ export default function JobSearchPage() {
           <ul className="result-list" aria-busy={results.loading}>
             {jobs.map((job) => (
               <li key={job.id}>
-                <JobCard job={job} to={jobPath(user?.role, job.id)} headingLevel={3} />
+                <JobCard job={job} to={jobPath(user?.role, job.id)} state={backHere} headingLevel={3} />
               </li>
             ))}
           </ul>

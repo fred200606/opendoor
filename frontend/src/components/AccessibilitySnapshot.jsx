@@ -1,3 +1,5 @@
+import { ChevronDown } from 'lucide-react';
+import { useId, useState } from 'react';
 import { getSnapshot } from '../api/insights.js';
 import { useAsync } from '../hooks/useAsync.js';
 import { formatDateTime, formatDistance, plural } from '../lib/format.js';
@@ -30,15 +32,44 @@ function sourceNotes(sources = {}, precision) {
 
 /**
  * Workplace Accessibility Snapshot (Insights mashup): employer claims, community verification
- * and accessible places within 500 m. Loads independently so the job page never waits for it.
+ * and accessible places within 500 m. Closed at first (Figma "Accordion: snapshot"); it loads when
+ * first opened, so the job page never waits for it, and stays loaded while hidden again.
  */
 export default function AccessibilitySnapshot({ jobId }) {
+  const [open, setOpen] = useState(false);
+  const [requested, setRequested] = useState(false);
+  const bodyId = useId();
+
+  return (
+    <section className={`card snapshot ${open ? 'snapshot--open' : ''}`.trim()} aria-labelledby="snapshot-title" data-read-aloud="skip">
+      <div className="snapshot__header">
+        <h2 id="snapshot-title">Workplace Accessibility Snapshot</h2>
+        <button
+          type="button"
+          className="disclosure-button"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={() => {
+            setOpen(!open);
+            setRequested(true);
+          }}
+        >
+          {open ? 'Hide' : 'Show'} <span className="visually-hidden">Workplace Accessibility Snapshot</span>
+          <ChevronDown aria-hidden="true" focusable="false" />
+        </button>
+      </div>
+      <div id={bodyId} className="snapshot__body" hidden={!open}>
+        {requested && <SnapshotContent jobId={jobId} />}
+      </div>
+    </section>
+  );
+}
+
+function SnapshotContent({ jobId }) {
   const state = useAsync(() => getSnapshot(jobId), [jobId]);
 
   return (
-    <section className="snapshot" aria-labelledby="snapshot-title">
-      <h2 id="snapshot-title">Workplace Accessibility Snapshot</h2>
-
+    <>
       {state.loading && !state.data && <Loading label="Loading the accessibility snapshot" />}
       {state.error && (
         <Alert type="warning">
@@ -46,7 +77,7 @@ export default function AccessibilitySnapshot({ jobId }) {
         </Alert>
       )}
       {state.data && <SnapshotBody snapshot={state.data} />}
-    </section>
+    </>
   );
 }
 
@@ -98,23 +129,25 @@ function SnapshotBody({ snapshot }) {
       <h3>Accessible places nearby</h3>
       {nearby ? (
         <>
-          <p>Places within {nearby.radius_m} m that are marked wheelchair accessible on OpenStreetMap.</p>
-          {PLACE_TYPES.map(([key, label]) => (
-            <div key={key}>
-              <h4 className="snapshot__group">{label}</h4>
-              {nearby[key]?.length ? (
-                <ul>
-                  {nearby[key].map((place, index) => (
-                    <li key={`${place.name}-${index}`}>
-                      {place.name || 'Unnamed place'} – {formatDistance(place.distance_m)}, {WHEELCHAIR[place.wheelchair] ?? 'accessibility unknown'}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="field__hint">None found nearby.</p>
-              )}
-            </div>
-          ))}
+          <p className="snapshot__hint">Places within {nearby.radius_m} m that are marked wheelchair accessible on OpenStreetMap.</p>
+          <div className="snapshot__places">
+            {PLACE_TYPES.map(([key, label]) => (
+              <div key={key} className={`snapshot__place ${nearby[key]?.length ? 'snapshot__place--wide' : ''}`.trim()}>
+                <h4>{label}</h4>
+                {nearby[key]?.length ? (
+                  <ul>
+                    {nearby[key].map((place, index) => (
+                      <li key={`${place.name}-${index}`}>
+                        {place.name || 'Unnamed place'} – {formatDistance(place.distance_m)}, {WHEELCHAIR[place.wheelchair] ?? 'accessibility unknown'}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>None found nearby.</p>
+                )}
+              </div>
+            ))}
+          </div>
         </>
       ) : (
         <p>Nearby places are not available for this job.</p>

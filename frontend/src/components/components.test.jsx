@@ -299,7 +299,8 @@ describe('MatchBadge', () => {
 
     rerender(<MatchBadge detailed match={{ met: 1, total: 2, missing: [{ id: 5, name: 'Sign language interpreter' }] }} />);
     expect(screen.getByText('Meets 1 of your 2 needs')).toBeInTheDocument();
-    expect(screen.getByRole('listitem')).toHaveTextContent('Sign language interpreter');
+    expect(screen.getByText('Not mentioned in this posting: Sign language interpreter')).toBeInTheDocument();
+    expect(screen.getByText('You can ask the employer about this when you apply.')).toBeInTheDocument();
   });
 
   test('renders nothing without needs', () => {
