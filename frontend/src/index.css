@@ -3112,3 +3112,82 @@ input[type='file']::file-selector-button {
 .admin-dashboard .stats__list {
   margin-bottom: 1.75rem;
 }
+
+/* Filter row with labels above the fields (Figma "6.2 Employers"): the button lines up with the fields. */
+.filter-bar--fields {
+  align-items: flex-end;
+}
+
+.filter-bar--fields .field {
+  margin: 0;
+}
+
+.filter-bar--fields .field__input {
+  width: auto;
+  min-width: 13rem;
+}
+
+.result-count > p {
+  margin: 0 0 1rem;
+}
+
+/* ---------- Figma "6.3 Employer verification": company left, registry and decision right */
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .review-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.review-layout .card {
+  margin: 0;
+}
+
+.review-layout .card > h2 {
+  margin-bottom: 1rem;
+}
+
+.review-layout .details-list {
+  margin: 0;
+}
+
+.review-layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.review-layout__side > p,
+.review-layout__side .alert {
+  max-width: none;
+  margin: 0;
+}
+
+.registry-status {
+  margin-bottom: 0.875rem;
+}
+
+/* ---------- Figma "6.4 Postings" (admin approval queue) */
+
+.review-posting .job-card__meta {
+  margin-bottom: 0.875rem;
+}
+
+.review-posting .filter-details {
+  margin-bottom: 1rem;
+}
+
+.review-posting .filter-details .prose {
+  max-width: none;
+}
+
+.filter-bar--fields > .button {
+  margin-bottom: 0;
+}

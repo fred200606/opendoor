@@ -46,18 +46,20 @@ export default function AdminPostingsPage() {
   }
 
   return (
-    <Page title="Job postings">
-      <SelectField
-        label="Show"
-        name="status"
-        className="filter-inline"
-        options={toOptions(POSTING_STATUSES)}
-        value={status}
-        onChange={(event) => setParams({ status: event.target.value }, { replace: true })}
-      />
+    <Page title="Postings" subtitle={<p className="page__subtitle">Approve new or edited jobs, or remove any posting.</p>}>
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="status"
+          className="field--inline"
+          options={toOptions(POSTING_STATUSES)}
+          value={status}
+          onChange={(event) => setParams({ status: event.target.value }, { replace: true })}
+        />
+        <ResultCount state={state} one="posting" />
+      </div>
       <ActionFeedback action={action} />
 
-      <ResultCount state={state} one="posting" />
       <AsyncContent state={state} label="Loading postings">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -67,9 +69,9 @@ export default function AdminPostingsPage() {
               <ul className="result-list">
                 {data.map((posting) => (
                   <li key={posting.id}>
-                    <article className="card">
+                    <article className="card review-posting">
                       <h2 className="job-card__title">{posting.title}</h2>
-                      <p>
+                      <p className="job-card__employer">
                         {posting.employer?.company_name} <VerifiedBadge verified={posting.employer?.verified} />{' '}
                         <StatusBadge kind="posting" status={posting.status} />
                       </p>
@@ -78,7 +80,7 @@ export default function AdminPostingsPage() {
                           .filter(Boolean)
                           .join(' · ')}
                       </p>
-                      <details>
+                      <details className="filter-details">
                         <summary>Description and accommodations</summary>
                         <div className="prose">{posting.description}</div>
                         <ul>
@@ -101,7 +103,7 @@ export default function AdminPostingsPage() {
                             </Button>
                           </>
                         )}
-                        <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Remove ${posting.title}`} onClick={() => setRemoving(posting)}>
+                        <Button type="button" className="button button--danger-outline" disabled={action.busy} aria-label={`Remove ${posting.title}`} onClick={() => setRemoving(posting)}>
                           Remove
                         </Button>
                       </div>

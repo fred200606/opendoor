@@ -7,13 +7,13 @@ import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import ResultCount from '../../components/ResultCount.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
+import StatusBadge, { BadgeIcon } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 
 const STATUSES = [
-  { value: 'pending', label: 'Waiting for verification' },
-  { value: 'verified', label: 'Verified' },
-  { value: 'rejected', label: 'Not approved' },
+  { value: 'pending', label: 'Waiting for verification', intro: 'Companies waiting to be verified.' },
+  { value: 'verified', label: 'Verified', intro: 'Companies whose registration was checked.' },
+  { value: 'rejected', label: 'Not approved', intro: 'Companies whose verification was not approved.' },
 ];
 
 export default function AdminEmployersPage() {
@@ -30,9 +30,9 @@ export default function AdminEmployersPage() {
   }
 
   return (
-    <Page title="Employers">
+    <Page title="Employers" subtitle={<p className="page__subtitle">{STATUSES.find((item) => item.value === status)?.intro}</p>}>
       <form
-        className="filter-bar"
+        className="filter-bar filter-bar--fields"
         role="search"
         aria-label="Filter employers"
         onSubmit={(event) => {
@@ -42,12 +42,14 @@ export default function AdminEmployersPage() {
       >
         <SelectField label="Show" name="status" options={STATUSES} value={status} onChange={(event) => update({ status: event.target.value })} />
         <TextField label="Company or registration number" name="q" type="search" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <button type="submit" className="button button--secondary">
+        <button type="submit" className="button">
           Search
         </button>
       </form>
 
-      <ResultCount state={state} one="employer" />
+      <div className="result-count">
+        <ResultCount state={state} one="employer" />
+      </div>
       <AsyncContent state={state} label="Loading employers">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -71,14 +73,15 @@ export default function AdminEmployersPage() {
                         <th scope="row">
                           <Link to={`/admin/employers/${employer.id}`}>{employer.company_name}</Link>
                         </th>
-                        <td>
-                          {employer.registry_type} {employer.business_reg_no}
-                        </td>
+                        <td>{[employer.registry_type, employer.business_reg_no].filter(Boolean).join(' · ')}</td>
                         <td>
                           {employer.latest_registry_check ? (
                             <StatusBadge kind="registry" status={employer.latest_registry_check.status} />
                           ) : (
-                            'Not checked yet'
+                            <span className="badge badge--neutral">
+                              <BadgeIcon tone="neutral" />
+                              Not checked yet
+                            </span>
                           )}
                         </td>
                         <td>{employer.owner?.email}</td>
