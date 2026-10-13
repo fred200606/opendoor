@@ -96,6 +96,7 @@ describe('role routing', () => {
     fakeApi({});
     renderAt('/no-such-page');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'We could not find that page' })).toBeInTheDocument();
+    expect(document.title).toBe('Page not found – OpenDoor');
   });
 });
