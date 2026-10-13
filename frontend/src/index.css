@@ -1314,12 +1314,12 @@ input[type='file'].field__input {
 
 .search-layout {
   display: grid;
-  gap: 1.5rem 2rem;
+  gap: 1.5rem;
 }
 
 @media (min-width: 56rem) {
   .search-layout {
-    grid-template-columns: 18rem 1fr;
+    grid-template-columns: 20rem 1fr;
     align-items: start;
   }
 }
@@ -1331,19 +1331,72 @@ input[type='file'].field__input {
   background: var(--surface);
 }
 
+.search-filters__title {
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+}
+
+.search-filters .field__input {
+  max-width: none;
+}
+
+.search-filters__hint {
+  margin: 0.75rem 0 0;
+}
+
+/* Figma "Accordion: accommodations": a bordered box with a chevron that turns when open. */
 .filter-details {
-  margin: 0 0 1rem;
+  margin: 0 0 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: 14px;
+  background: var(--bg);
 }
 
 .filter-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
-  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.filter-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-details summary::after {
+  content: '';
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23241b3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.filter-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.filter-details > :not(summary) {
+  margin: 0 1rem 1rem;
 }
 
 .result-count {
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 700;
   min-height: 1.5rem;
+}
+
+/* Muted line under a page heading (Figma page headings). */
+.page__subtitle {
+  margin-top: -0.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  font-size: 1.125rem;
 }
 
 .details-list {

@@ -17,13 +17,15 @@ export default function JobCard({ job, to, headingLevel = 2, children }) {
   const Heading = `h${headingLevel}`;
   const accommodations = job.accommodations ?? [];
   const footer = [
-    job.trust_score?.published ? `Trust score ${job.trust_score.score}%` : 'Trust score not published yet',
+    job.trust_score?.published
+      ? `Trust score ${job.trust_score.score}%`
+      : `Trust score not published yet${job.trust_score?.based_on != null ? ` (${job.trust_score.based_on} of 3 responses)` : ''}`,
     job.closes_at && `Apply by ${formatDate(job.closes_at)}`,
   ].filter(Boolean);
 
   return (
     <article className="job-card">
-      <IconTile icon={Briefcase} tone={TONES[job.id % TONES.length]} />
+      <IconTile icon={Briefcase} tone={TONES[Math.abs(job.id - 1) % TONES.length]} />
       <div className="job-card__content">
         <Heading className="job-card__title">
           <Link to={to}>{job.title}</Link>

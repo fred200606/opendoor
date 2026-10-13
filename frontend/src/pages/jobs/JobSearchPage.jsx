@@ -68,8 +68,12 @@ export default function JobSearchPage() {
 
   return (
     <Page title="Find jobs">
+      <p className="page__subtitle">Search open jobs and filter by the support you need.</p>
       <div className="search-layout">
-        <form className="search-filters" role="search" aria-label="Job filters" onSubmit={(event) => event.preventDefault()}>
+        <form className="search-filters" role="search" aria-labelledby="filters-title" onSubmit={(event) => event.preventDefault()}>
+          <h2 id="filters-title" className="search-filters__title">
+            Filter jobs
+          </h2>
           <TextField
             label="Keyword"
             voice
@@ -122,18 +126,17 @@ export default function JobSearchPage() {
             )}
           </details>
 
-          {(filters.q || filters.category || filters.accommodations.length > 0 || filters.sort !== 'best') && (
-            <button
-              type="button"
-              className="button button--secondary"
-              onClick={() => {
-                setKeyword('');
-                setParams(isCandidate && !filters.match ? { match: '0' } : {}, { replace: true });
-              }}
-            >
-              Clear filters
-            </button>
-          )}
+          <button
+            type="button"
+            className="button button--link"
+            onClick={() => {
+              setKeyword('');
+              setParams(isCandidate && !filters.match ? { match: '0' } : {}, { replace: true });
+            }}
+          >
+            Clear filters
+          </button>
+          <p className="field__hint search-filters__hint">Results update as you type.</p>
         </form>
 
         <section className="search-results" aria-labelledby="results-heading">
@@ -165,7 +168,7 @@ export default function JobSearchPage() {
           <ul className="result-list" aria-busy={results.loading}>
             {jobs.map((job) => (
               <li key={job.id}>
-                <JobCard job={job} to={jobPath(user?.role, job.id)} />
+                <JobCard job={job} to={jobPath(user?.role, job.id)} headingLevel={3} />
               </li>
             ))}
           </ul>

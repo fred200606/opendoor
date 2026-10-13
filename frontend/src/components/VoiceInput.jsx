@@ -1,3 +1,4 @@
+import { Mic, MicOff } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from './Dialog.jsx';
 
@@ -104,6 +105,7 @@ export default function VoiceInput({ fieldLabel, name, value, onChange, maxLengt
   return (
     <div className="voice-input">
       <button type="button" className="button button--secondary button--small" onClick={handleClick}>
+        {listening ? <MicOff aria-hidden="true" focusable="false" /> : <Mic aria-hidden="true" focusable="false" />}
         {listening ? 'Stop listening' : 'Speak'}{' '}
         <span className="visually-hidden">{listening ? `(${fieldLabel})` : `instead of typing (${fieldLabel})`}</span>
       </button>
