@@ -1,4 +1,4 @@
-import { Briefcase, Check, Clock, FileText, Info, Search, X } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -9,20 +9,10 @@ import StatCards from '../../components/StatCards.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { APPLICATION_STATUSES, POSTING_STATUSES } from '../../lib/labels.js';
+import { APPLICATION_TILES, POSTING_TILES } from '../../lib/statusTiles.js';
 
-// Figma "5.1 Dashboard" (employer): an icon tile per status.
-const POSTING_TILES = {
-  draft: { icon: FileText, tone: 'lilac' },
-  pending_approval: { icon: Clock, tone: 'orange' },
-  open: { icon: Briefcase, tone: 'sky' },
-  closed: { icon: X, tone: 'pink' },
-};
 // The three counts the design shows; there is no employer-wide applications list (decision 2026-10-13).
-const APPLICATION_TILES = {
-  pending: { icon: FileText, tone: 'pink' },
-  reviewed: { icon: Search, tone: 'lilac' },
-  hired: { icon: Check, tone: 'sky' },
-};
+const RECEIVED = ['pending', 'reviewed', 'hired'];
 
 /** GET /employer/dashboard – shape documented in docs/openapi.yaml (EmployerDashboard). */
 export default function EmployerDashboardPage() {
@@ -81,10 +71,10 @@ export default function EmployerDashboardPage() {
                   <StatCards
                     title="Applications received"
                     className="stats--compact"
-                    items={Object.entries(APPLICATION_TILES).map(([status, tile]) => ({
+                    items={RECEIVED.map((status) => ({
                       label: APPLICATION_STATUSES[status],
                       value: dashboard.applications?.[status] ?? 0,
-                      ...tile,
+                      ...APPLICATION_TILES[status],
                     }))}
                   />
                   <section aria-labelledby="trust-title">

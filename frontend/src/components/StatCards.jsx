@@ -4,8 +4,8 @@ import IconTile from './IconTile.jsx';
 
 /**
  * Dashboard numbers as a labelled list of tiles (Figma "Stat tile"; readable in order, not just a
- * visual grid). An item with `to` gets a "View" link that covers the whole tile, named
- * "View Submitted (2)". `icon` (Lucide) and `tone` add the coloured icon tile.
+ * visual grid). An item with `to` gets a "View" link (or `linkLabel`) that covers the whole tile,
+ * named "View Submitted (2)". `icon` (Lucide) and `tone` add the coloured icon tile.
  */
 export default function StatCards({ title, items, headingLevel = 2, className = '' }) {
   const Heading = `h${headingLevel}`;
@@ -22,7 +22,7 @@ export default function StatCards({ title, items, headingLevel = 2, className = 
             <span className="stats__label">{item.label}</span>
             {item.to && (
               <Link to={item.to} className="stats__link stats__view">
-                View <span className="visually-hidden">{item.label} ({item.value})</span>
+                {item.linkLabel ?? 'View'} <span className="visually-hidden">{item.label} ({item.value})</span>
               </Link>
             )}
           </li>

@@ -1,4 +1,3 @@
-import { Check, FileText, Minus, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import { getCandidateProfile } from '../../api/profile.js';
@@ -9,15 +8,7 @@ import StatCards from '../../components/StatCards.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, plural } from '../../lib/format.js';
 import { APPLICATION_STATUSES } from '../../lib/labels.js';
-
-// Figma "4.1 Dashboard": an icon tile per status.
-const STATUS_TILES = {
-  pending: { icon: FileText, tone: 'pink' },
-  reviewed: { icon: Search, tone: 'lilac' },
-  hired: { icon: Check, tone: 'sky' },
-  rejected: { icon: X, tone: 'orange' },
-  withdrawn: { icon: Minus, tone: 'pink' },
-};
+import { APPLICATION_TILES } from '../../lib/statusTiles.js';
 
 /** GET /candidate/dashboard – shape documented in docs/openapi.yaml (CandidateDashboard). */
 export default function CandidateDashboardPage() {
@@ -35,7 +26,7 @@ export default function CandidateDashboardPage() {
                 label,
                 value: dashboard.applications?.[status] ?? 0,
                 to: `/candidate/applications?status=${status}`,
-                ...STATUS_TILES[status],
+                ...APPLICATION_TILES[status],
               }))}
             />
 

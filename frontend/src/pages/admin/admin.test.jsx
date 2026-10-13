@@ -328,3 +328,35 @@ describe('AdminMasterDataPage', () => {
     expect(calls.find((call) => call.key === 'POST /admin/accommodations').data).toEqual({ name: 'Quiet room', group: 'physical_access', description: null });
   });
 });
+
+describe('AdminDashboardPage', () => {
+  test('work queues link to their lists; every group shows its counts', async () => {
+    renderApp('/admin/dashboard', {
+      as: 'admin',
+      routes: {
+        'GET /admin/dashboard': () => [
+          200,
+          {
+            verification_queue: 1,
+            open_reports: 2,
+            users: { candidate: 14, employer: 5, admin: 1, suspended: 0 },
+            postings: { draft: 1, pending_approval: 1, open: 3, closed: 1 },
+            applications: { pending: 1, reviewed: 1, hired: 6, rejected: 0, withdrawn: 0 },
+            feedback: { responses: 9, hidden: 0 },
+            published_trust_scores: 2,
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByRole('link', { name: 'Open queue Employers to verify (1)' })).toHaveAttribute('href', '/admin/employers');
+    expect(screen.getByRole('link', { name: 'Open queue Postings to approve (1)' })).toHaveAttribute('href', '/admin/job-postings');
+    expect(screen.getByRole('link', { name: 'Open queue Open reports (2)' })).toHaveAttribute('href', '/admin/reports');
+    const verification = screen.getByRole('region', { name: 'Verification after hire' });
+    expect(within(verification).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '9Feedback responsesView Feedback responses (9)',
+      '0Hidden responses',
+      '2Published trust scores',
+    ]);
+  });
+});

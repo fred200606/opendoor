@@ -297,7 +297,7 @@ main:focus {
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.5rem 0.875rem;
+  padding: 0.5rem 0.75rem;
   border: 2px solid transparent;
   border-radius: var(--pill);
   color: var(--text);
@@ -3097,4 +3097,18 @@ input[type='file']::file-selector-button {
 .employer-layout .dashboard-side .alert {
   max-width: none;
   margin: 0;
+}
+
+/* ---------- Figma "6.1 Administration": every group of tiles fills its row */
+
+.stats--fit .stats__list {
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+}
+
+.admin-dashboard .stats h2 {
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard .stats__list {
+  margin-bottom: 1.75rem;
 }

@@ -1,11 +1,11 @@
 import { ArrowUpRight, LogOut, Menu, User } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { NAVIGATION, NOTIFICATIONS_ICON } from '../auth/navigation.js';
 import { homeFor } from '../auth/roles.js';
 import { useDisplayPrefs } from '../hooks/useDisplayPrefs.js';
-import { useMediaQuery } from '../hooks/useMediaQuery.js';
+import { useViewportWidth } from '../hooks/useViewportWidth.js';
 import Logo from './Logo.jsx';
 import NotificationsLink from './NotificationsLink.jsx';
 
@@ -48,23 +48,62 @@ function AccountLink({ user }) {
   );
 }
 
+/** Width (px) of a row of items: their own widths plus the flex gaps between them. */
+function rowWidth(list) {
+  const items = Array.from(list.children);
+  const gap = parseFloat(getComputedStyle(list).columnGap) || 0;
+  return items.reduce((sum, item) => sum + item.getBoundingClientRect().width, 0) + gap * Math.max(items.length - 1, 0);
+}
+
 /**
  * Figma "Header": links on both sides of the centred logo; one header per role. The compact
- * variant (utility bar "Compact menu", and always on narrow screens) shows the logo and a Menu
- * button that opens every link; Escape closes it and returns focus to the button.
+ * variant (utility bar "Compact menu", and whenever the full menu does not fit) shows the logo and
+ * a Menu button that opens every link; Escape closes it and returns focus to the button.
  */
 export default function SiteHeader() {
   const { user, logout } = useAuth();
   const prefs = useDisplayPrefs();
-  // The full menu needs about 1,200 px at standard text size, proportionally more when larger
-  // (media queries measure rem at the browser default, not at our root font size).
-  const narrow = useMediaQuery(`(max-width: ${(75 * Number(prefs.textSize)) / 100}rem)`);
   const role = user?.role ?? 'guest';
   const links = NAVIGATION[role];
   const showNotifications = user && role !== 'admin';
   const home = user ? homeFor(role) : '/';
 
-  if (prefs.menu === 'compact' || narrow) {
+  // How wide the full menu has to be depends on the role's links, the text size, the fonts and
+  // badges such as the unread count, so it is measured (before the first paint, and again whenever
+  // a menu item changes size) instead of guessed: the widest side twice (the logo stays centred),
+  // plus the logo, the gaps and the padding.
+  const viewport = useViewportWidth();
+  const measureKey = `${role}|${prefs.textSize}`;
+  const [measured, setMeasured] = useState({ key: null, needed: 0, max: Infinity });
+  const needed = measured.key === measureKey ? measured.needed : null;
+  const measure = useCallback(
+    (nav) => {
+      if (!nav) return undefined;
+      const update = () => {
+        const [left, right] = nav.querySelectorAll('.site-nav__side');
+        const style = getComputedStyle(nav);
+        const width = Math.ceil(
+          2 * Math.max(rowWidth(left), rowWidth(right)) +
+            nav.querySelector('.site-nav__logo').getBoundingClientRect().width +
+            2 * (parseFloat(style.columnGap) || 0) +
+            parseFloat(style.paddingLeft) +
+            parseFloat(style.paddingRight),
+        );
+        // The bar is never wider than its max-width (90rem), however wide the window.
+        const max = parseFloat(style.maxWidth) || Infinity;
+        setMeasured((current) => (current.key === measureKey && current.needed === width && current.max === max ? current : { key: measureKey, needed: width, max }));
+      };
+      update();
+      if (typeof ResizeObserver === 'undefined') return undefined;
+      const observer = new ResizeObserver(update);
+      nav.querySelectorAll('.site-nav__side > li, .site-nav__logo').forEach((item) => observer.observe(item));
+      return () => observer.disconnect();
+    },
+    [measureKey],
+  );
+  const tooNarrow = needed !== null && viewport > 0 && Math.min(viewport, measured.max) < needed;
+
+  if (prefs.menu === 'compact' || tooNarrow) {
     return (
       <header className="site-header">
         <CompactNav user={user} links={[...links.left, ...links.right]} home={home} showNotifications={showNotifications} onLogout={logout} />
@@ -74,7 +113,7 @@ export default function SiteHeader() {
 
   return (
     <header className="site-header">
-      <nav className="site-nav site-nav--full" aria-label="Main">
+      <nav ref={measure} className="site-nav site-nav--full" aria-label="Main">
         <ul className="site-nav__side">
           {links.left.map((link) => (
             <NavItem key={link.to} link={link} />
