@@ -273,7 +273,10 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
 
     expect(await screen.findByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View Submitted (2)' })).toHaveAttribute('href', '/candidate/applications?status=pending');
-    expect(screen.getByRole('link', { name: 'rate the accommodations now' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
+    expect(screen.getByRole('link', { name: 'Rate the accommodations now for Data Encoder' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
+    // A rating that is due now comes before Jobs for you.
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+    expect(headings.indexOf('Ratings to give')).toBeLessThan(headings.indexOf('Jobs for you'));
     expect(screen.getByRole('region', { name: 'Jobs for you' })).toHaveTextContent('4 open jobs offer all the accommodations you need.');
   });
 

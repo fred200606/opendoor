@@ -39,45 +39,80 @@ export default function CandidateDashboardPage() {
               }))}
             />
 
+            {/* A rating that can be given now comes first (Figma 15:5668). */}
             <div className="dashboard-side">
-              <section aria-labelledby="matches-title">
-                <h2 id="matches-title">Jobs for you</h2>
-                <div className="card card--tint">
-                  <p>{matchingJobsText(dashboard.matching_jobs ?? 0)} all the accommodations you need.</p>
-                  <Link className="button button--block" to="/candidate/jobs">
-                    See matching jobs
-                  </Link>
-                </div>
-              </section>
-
-              <YourNeeds count={dashboard.needs_count ?? 0} />
-
-              <section aria-labelledby="feedback-due-title">
-                <h2 id="feedback-due-title">Ratings to give</h2>
-                <div className="card">
-                  {dashboard.feedback_due?.length > 0 ? (
-                    <ul className="plain-list">
-                      {dashboard.feedback_due.map((item) => (
-                        <li key={item.application_id}>
-                          {item.job_title} at {item.company_name} –{' '}
-                          {item.is_open ? (
-                            <Link to={`/candidate/applications/${item.application_id}/feedback`}>rate the accommodations now</Link>
-                          ) : (
-                            `you can rate from ${formatDate(item.opens_on)}`
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="muted">Nothing to rate yet. You can rate 30 days after being hired.</p>
-                  )}
-                </div>
-              </section>
+              {dashboard.feedback_due?.some((item) => item.is_open) ? (
+                <>
+                  <RatingsToGive due={dashboard.feedback_due} />
+                  <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                  <YourNeeds count={dashboard.needs_count ?? 0} />
+                </>
+              ) : (
+                <>
+                  <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                  <YourNeeds count={dashboard.needs_count ?? 0} />
+                  <RatingsToGive due={dashboard.feedback_due ?? []} />
+                </>
+              )}
             </div>
           </div>
         )}
       </AsyncContent>
     </Page>
+  );
+}
+
+function JobsForYou({ count }) {
+  return (
+    <section aria-labelledby="matches-title">
+      <h2 id="matches-title">Jobs for you</h2>
+      <div className={count > 0 ? 'card card--tint' : 'card'}>
+        <p>{matchingJobsText(count)} all the accommodations you need.</p>
+        {count > 0 ? (
+          <Link className="button button--block" to="/candidate/jobs">
+            See matching jobs
+          </Link>
+        ) : (
+          <p className="dashboard-side__link">
+            <Link to="/candidate/jobs">See matching jobs</Link>
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** One card per hire that can be rated (now, or from its date). */
+function RatingsToGive({ due }) {
+  return (
+    <section aria-labelledby="feedback-due-title">
+      <h2 id="feedback-due-title">Ratings to give</h2>
+      <div className="dashboard-side__cards">
+        {due.length === 0 ? (
+          <div className="card">
+            <p className="muted">Nothing to rate yet. You can rate 30 days after being hired.</p>
+          </div>
+        ) : (
+          due.map((item) => (
+            <div key={item.application_id} className={item.is_open ? 'card card--tint' : 'card'}>
+              <h3 className="dashboard-side__title">
+                {item.job_title} at {item.company_name}
+              </h3>
+              {item.is_open ? (
+                <>
+                  <p className="muted">Tell other job seekers whether the promised accommodations were provided. Your answers are anonymous.</p>
+                  <Link className="button" to={`/candidate/applications/${item.application_id}/feedback`}>
+                    Rate the accommodations now <span className="visually-hidden">for {item.job_title}</span>
+                  </Link>
+                </>
+              ) : (
+                <p className="muted">You can rate the accommodations from {formatDate(item.opens_on)}.</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 
