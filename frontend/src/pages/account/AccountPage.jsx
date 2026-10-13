@@ -120,7 +120,7 @@ function DisplaySettings() {
 function EmailSettings() {
   const { user, updateUser } = useAuth();
   const [enabled, setEnabled] = useState(user.email_notifications !== false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(null); // { type, text }
   // Same as the display settings: saves run in order and only the last one reports.
   const saving = useRef(Promise.resolve());
   const latest = useRef(0);
@@ -134,12 +134,12 @@ function EmailSettings() {
         await updateEmailNotifications(next);
         updateUser({ email_notifications: next });
         if (id === latest.current) {
-          setMessage(next ? 'Email notifications are on.' : 'Email notifications are off. You still see every notice under Notifications.');
+          setMessage({ type: 'success', text: next ? 'Email notifications are on.' : 'Email notifications are off. You still see every notice under Notifications.' });
         }
       } catch {
         if (id === latest.current) {
           setEnabled(!next);
-          setMessage('Your choice was not saved. Please try again.');
+          setMessage({ type: 'error', text: 'Your choice was not saved. Please try again.' });
         }
       }
     });
@@ -153,13 +153,26 @@ function EmailSettings() {
       <CheckboxField
         name="email_notifications"
         label="Send me an email for each notification"
-        hint="The email repeats the notice and links to OpenDoor. It never includes disability or accommodation details."
+        hint="On by default. The email repeats the notice and links to OpenDoor. It never includes disability or accommodation details."
         checked={enabled}
         onChange={change}
       />
-      <p role="status" className="save-status">
-        {message}
-      </p>
+      <div role="status" className="account-result">
+        {message && <Alert type={message.type} title={message.text} />}
+      </div>
+
+      {/* Figma 8:4487: what such an email looks like (a picture of one, not a working link). */}
+      <figure className="email-example">
+        <figcaption>Example email</figcaption>
+        <div className="email-example__body">
+          <p className="email-example__subject">Subject: Your application for Data Encoder is being reviewed</p>
+          <p>Hello {user.name.split(' ')[0]}, Bayanihan Tech Solutions is reviewing your application.</p>
+          <p>
+            <span className="email-example__button">Open in OpenDoor</span>
+          </p>
+          <p className="email-example__footer">You can turn these emails off in Account settings. No disability or accommodation details are ever included.</p>
+        </div>
+      </figure>
     </section>
   );
 }
@@ -185,14 +198,7 @@ function PasswordSection() {
 
   return (
     <section className="card card--form" aria-labelledby="password-title">
-      <h2 id="password-title" className="visually-hidden">
-        Change password
-      </h2>
-      {done && (
-        <Alert type="success" live="polite">
-          <p>Your password is changed. You were signed out on your other devices.</p>
-        </Alert>
-      )}
+      <h2 id="password-title">Change password</h2>
       <ErrorSummary errors={form.fieldErrors} fields={PASSWORD_FIELDS} />
       <ApiErrorAlert error={form.formError} title="Your password was not changed" />
       <form onSubmit={handleSubmit} noValidate>
@@ -203,6 +209,13 @@ function PasswordSection() {
           {form.submitting ? 'Changing…' : 'Change password'}
         </Button>
       </form>
+      <div role="status" className="account-result">
+        {done && (
+          <Alert type="success" title="Your password is changed.">
+            <p>You were signed out on your other devices.</p>
+          </Alert>
+        )}
+      </div>
     </section>
   );
 }

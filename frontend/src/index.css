@@ -3284,3 +3284,45 @@ input[type='file']::file-selector-button {
 .display-grid .fieldset {
   margin-bottom: 1rem;
 }
+
+.account-result .alert {
+  margin: 1rem 0 0;
+}
+
+.email-example {
+  margin: 1.5rem 0 0;
+}
+
+.email-example figcaption {
+  margin-bottom: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.email-example__body {
+  padding: 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.email-example__subject {
+  font-weight: 700;
+}
+
+.email-example__button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: var(--pill);
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.email-example__footer {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
