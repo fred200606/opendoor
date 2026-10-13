@@ -84,12 +84,46 @@ describe('LoginPage', () => {
 describe('RegisterPage', () => {
   async function fillIn(user, { role = 'I am looking for a job', consent = true } = {}) {
     await user.click(screen.getByLabelText(role));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(screen.getByLabelText(/Full name/), 'Juan Dela Cruz');
     await user.type(screen.getByLabelText(/Email address/), 'juan@example.com');
     await user.type(screen.getByLabelText(/^Password/), 'long-password-1');
     await user.type(screen.getByLabelText(/Confirm password/), 'long-password-1');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     if (consent) await user.click(screen.getByLabelText(/I agree/));
   }
+
+  test('three steps: each is checked before the next, Back keeps what was typed', async () => {
+    const { user, calls } = renderApp('/register');
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 1 of 3 · Your role' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    const summary = await screen.findByRole('alert');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('Choose what brings you to OpenDoor.');
+
+    await user.click(screen.getByLabelText('I am hiring'));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 2 of 3 · Your details' })).toHaveFocus();
+    expect(document.title).toBe('Create account (step 2 of 3) – OpenDoor');
+
+    await user.type(screen.getByLabelText(/Full name/), 'Ana Reyes');
+    await user.type(screen.getByLabelText(/Email address/), 'ana@example.com');
+    await user.type(screen.getByLabelText(/^Password/), 'long-password-1');
+    await user.type(screen.getByLabelText(/Confirm password/), 'another-password');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The two passwords do not match.');
+    expect(screen.getByLabelText(/Confirm password/)).toHaveAccessibleDescription(/do not match/);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show password' }));
+    expect(screen.getByLabelText(/^Password/)).toHaveAttribute('type', 'text');
+
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByLabelText('I am hiring')).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByLabelText(/Full name/)).toHaveValue('Ana Reyes');
+    expect(calls.some((call) => call.key === 'POST /register')).toBe(false);
+  });
 
   test('sends the contract fields and opens the candidate profile', async () => {
     const { user, calls, location } = renderApp('/register', {
@@ -136,10 +170,17 @@ describe('RegisterPage', () => {
     await fillIn(user, { consent: false });
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
+    // The form goes back to the step with the first error; the consent message waits for step 3.
     const summary = await screen.findByRole('alert');
     expect(summary).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 2 of 3 · Your details' })).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'The email has already been taken.' }));
     expect(screen.getByLabelText(/Email address/)).toHaveFocus();
+
+    await user.clear(screen.getByLabelText(/Email address/));
+    await user.type(screen.getByLabelText(/Email address/), 'juan2@example.com');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('You must agree to the data privacy notice');
     expect(screen.getByLabelText(/I agree/)).toHaveAccessibleDescription(/must agree/);
   });
 });
