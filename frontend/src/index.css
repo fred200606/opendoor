@@ -2940,3 +2940,26 @@ input[type='file']::file-selector-button {
   flex: 1 1 20rem;
   max-width: none;
 }
+
+/* ---------- Figma "5.2 Company profile": two-column form, optional details folded away */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.form-grid .field__input,
+.form-details .field__input {
+  max-width: none;
+}
+
+.form-details {
+  margin-bottom: 1.5rem;
+}

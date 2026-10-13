@@ -26,7 +26,7 @@ export default function CompanyProfilePage() {
   const state = useAsync(() => getCompany().catch((error) => (error.status === 404 ? null : Promise.reject(error))), []);
 
   return (
-    <Page title="Company profile">
+    <Page title="Company profile" subtitle={<p className="page__subtitle">Checked against the DTI and SEC registry before your jobs go live.</p>}>
       {location.state?.welcome && (
         <Alert type="success" title="Welcome to OpenDoor">
           <p>Tell us about your company. An OpenDoor administrator checks your business registration before your jobs go live.</p>
@@ -44,7 +44,7 @@ function VerificationStatus({ company }) {
   if (company.verified_at) {
     return (
       <Alert type="success" title="Verified employer">
-        <p>Your business registration was checked on {formatDate(company.verified_at)}. Your jobs show the Verified badge.</p>
+        <p>Checked on {formatDate(company.verified_at)}. Your jobs show the Verified badge.</p>
       </Alert>
     );
   }
@@ -84,6 +84,8 @@ function CompanyForm({ company, onSaved }) {
   const form = useApiForm(formValues(company));
 
   const regNoChanged = company?.verified_at && form.values.business_reg_no !== company.business_reg_no;
+  // The optional details are folded away (Figma 6:2351) but open when one of them needs fixing.
+  const detailsNeedAttention = Boolean(form.fieldErrors.description || form.fieldErrors.logo || logoError);
 
   function chooseLogo(event) {
     const file = event.target.files?.[0] ?? null;
@@ -112,36 +114,42 @@ function CompanyForm({ company, onSaved }) {
       <ApiErrorAlert error={form.formError} title="Your company profile was not saved" />
 
       <form onSubmit={handleSubmit} noValidate>
-        <TextField label="Company name" required autoComplete="organization" hint="As registered with the DTI or SEC." error={form.fieldErrors.company_name} {...form.bind('company_name')} />
-        <RadioGroup
-          legend="Registered with"
-          name="registry_type"
-          required
-          options={toOptions(REGISTRY_TYPES)}
-          value={form.values.registry_type}
-          onChange={(value) => form.setValue('registry_type', value)}
-          error={form.fieldErrors.registry_type}
-        />
-        <TextField
-          label="Business registration number"
-          required
-          hint={regNoChanged ? 'Changing this number removes your Verified badge until it is checked again.' : undefined}
-          error={form.fieldErrors.business_reg_no}
-          {...form.bind('business_reg_no')}
-        />
-        <TextField label="Industry" required error={form.fieldErrors.industry} {...form.bind('industry')} />
-        <TextField label="Office address" required autoComplete="street-address" error={form.fieldErrors.address} {...form.bind('address')} />
-        <LocationPicker
-          legend="City or municipality"
-          value={form.values.location_psgc}
-          currentLabel={company?.location?.label}
-          onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
-          error={form.fieldErrors.location_psgc}
-        />
-        <TextArea label="About the company" voice hint="Optional. Include how you support employees with disabilities." error={form.fieldErrors.description} {...form.bind('description')} />
+        {/* Two columns on wide screens, read row by row (same order as the tab order). */}
+        <div className="form-grid">
+          <TextField label="Company name" required autoComplete="organization" hint="As registered with the DTI or SEC." error={form.fieldErrors.company_name} {...form.bind('company_name')} />
+          <TextField
+            label="Business registration number"
+            required
+            hint={regNoChanged ? 'Changing this number removes your Verified badge until it is checked again.' : 'For example: CS201912345.'}
+            error={form.fieldErrors.business_reg_no}
+            {...form.bind('business_reg_no')}
+          />
+          <RadioGroup
+            legend="Registered with"
+            name="registry_type"
+            required
+            options={toOptions(REGISTRY_TYPES)}
+            value={form.values.registry_type}
+            onChange={(value) => form.setValue('registry_type', value)}
+            error={form.fieldErrors.registry_type}
+          />
+          <TextField label="Industry" required error={form.fieldErrors.industry} {...form.bind('industry')} />
+          <TextField label="Office address" required autoComplete="street-address" error={form.fieldErrors.address} {...form.bind('address')} />
+          <LocationPicker
+            legend="City or municipality"
+            value={form.values.location_psgc}
+            currentLabel={company?.location?.label}
+            onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
+            error={form.fieldErrors.location_psgc}
+          />
+        </div>
 
-        {company?.logo_url && <img src={company.logo_url} alt="Current company logo" className="employer-logo" />}
-        <TextField label="Logo" name="logo" type="file" accept={LOGO_TYPES.join(',')} hint={`Optional. PNG, JPG or WebP, up to ${LOGO_MAX_MB} MB.`} error={logoError ?? form.fieldErrors.logo} onChange={chooseLogo} />
+        <details className="filter-details form-details" open={detailsNeedAttention || undefined}>
+          <summary>More details: about the company and logo</summary>
+          <TextArea label="About the company" voice hint="Optional. Include how you support employees with disabilities." error={form.fieldErrors.description} {...form.bind('description')} />
+          {company?.logo_url && <img src={company.logo_url} alt="Current company logo" className="employer-logo" />}
+          <TextField label="Logo" name="logo" type="file" accept={LOGO_TYPES.join(',')} hint={`Optional. PNG, JPG or WebP, up to ${LOGO_MAX_MB} MB.`} error={logoError ?? form.fieldErrors.logo} onChange={chooseLogo} />
+        </details>
 
         <Button type="submit" className="button" disabled={form.submitting}>
           {form.submitting ? 'Saving…' : 'Save company profile'}

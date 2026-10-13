@@ -62,6 +62,23 @@ describe('CompanyProfilePage', () => {
     expect(regNo).toHaveAccessibleDescription(/removes your Verified badge/);
   });
 
+  test('the optional details are folded away and open when one of them has an error', async () => {
+    const { user } = renderApp('/employer/company', {
+      as: 'employer',
+      routes: {
+        'GET /employer/company': () => [200, company],
+        'PUT /employer/company': () => validationError({ description: ['The description may not be greater than 5000 characters.'] }),
+      },
+    });
+
+    const details = (await screen.findByText('More details: about the company and logo')).closest('details');
+    expect(details).not.toHaveAttribute('open');
+    await user.click(screen.getByRole('button', { name: 'Save company profile' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('may not be greater than 5000 characters');
+    expect(details).toHaveAttribute('open');
+  });
+
   test('a logo upload is sent as multipart with _method=PUT', async () => {
     const { user, calls } = renderApp('/employer/company', {
       as: 'employer',
