@@ -281,11 +281,17 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
     renderApp('/candidate/dashboard', {
       as: 'candidate',
       routes: {
-        'GET /candidate/dashboard': () => [200, { applications: {}, needs_count: 3, matching_jobs: 1, feedback_due: [] }],
+        'GET /candidate/dashboard': () => [200, { applications: {}, needs_count: 1, matching_jobs: 1, feedback_due: [] }],
+        'GET /candidate/profile': () => [200, profile],
       },
     });
 
     expect(await screen.findByRole('region', { name: 'Jobs for you' })).toHaveTextContent('1 open job offers all the accommodations you need.');
+    // Your needs lists the saved needs from the profile; nothing is due for rating yet.
+    const needs = screen.getByRole('region', { name: 'Your needs' });
+    expect(await within(needs).findByText('Accessible restroom')).toBeInTheDocument();
+    expect(within(needs).getByRole('link', { name: 'Change your needs' })).toHaveAttribute('href', '/candidate/profile');
+    expect(screen.getByRole('region', { name: 'Ratings to give' })).toHaveTextContent('Nothing to rate yet.');
   });
 
   test('saved job can be removed', async () => {

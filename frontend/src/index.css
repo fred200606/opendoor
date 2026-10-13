@@ -1702,6 +1702,10 @@ input[type='file'].field__input {
   outline: none;
 }
 
+.stats__link.stats__view {
+  color: var(--primary);
+}
+
 .stats__item:has(.stats__link:focus-visible) {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -2450,4 +2454,71 @@ input[type='file'].field__input {
 
 .radio-cards .radio__hint {
   margin: 0.25rem 0 0;
+}
+
+/* ---------- Figma "4.1 Dashboard" (job seeker): tiles on the left, three cards on the right */
+
+.muted {
+  color: var(--text-muted);
+}
+
+.plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plain-list li + li {
+  margin-top: 0.5rem;
+}
+
+.card--tint {
+  background: var(--surface);
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 2rem;
+}
+
+@media (min-width: 64rem) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 660fr) minmax(0, 572fr);
+    align-items: start;
+  }
+}
+
+.dashboard-layout .stats h2,
+.dashboard-side h2 {
+  margin-bottom: 1rem;
+}
+
+.dashboard-layout .stats__list {
+  margin: 0;
+}
+
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-side .card {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.dashboard-side .card > :last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-side .tag-list {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dashboard-side__link {
+  font-size: 1rem;
+  font-weight: 700;
 }
