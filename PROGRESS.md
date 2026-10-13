@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** Push `main` to GitHub (user said yes 2026-10-14) and check the CI run (`gh run list --branch main -L 3`); then the voice-input fix for Brave (user chose: push, then fix voice input).
-- **Next step:** After the push + green CI: voice-input fix for Brave (Known issues, user: "fix mic later"); deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
+- **In progress:** Pushed 2026-10-14 (CI run 38475418837 – check it: `gh run view 38475418837`). Voice-input fix committed (Known issues); now a live check in Playwright's Chromium (it has the API but no speech service, like Opera): Vite only (`node node_modules/vite/bin/vite.js` in `frontend/`), Find jobs → Speak → message replaces the button with focus; then push the fix.
+- **Next step:** Deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -196,7 +196,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - Frontend assumes: company logo PNG/JPG/WebP up to 2 MB, sent multipart as POST + `_method=PUT`; owner view of a posting may include `rejection_reason`.
 - SIA documentation (update with the `opendoor-sia-docs` skill, last): API changes from the Figma work – search results include `saved` for candidates; Application has `reviewed_at`; Create account is 3 steps in the UI (same POST /register).
 - Frontend bundle is 509 kB (153 kB gzip), just over Vite's 500 kB warning after the redesign (fonts + icons): split routes with `React.lazy` if it grows.
-- Voice input (2026-10-14, fix later – user's choice): the user's "mic not working" was in **Brave**, which exposes `webkitSpeechRecognition` but has no speech service (fails with `network`), so the Speak button shows but never works. Planned fix: hide Speak in Brave (`navigator.brave`), and when `network` fails before any result, say "Voice input does not work in this browser – use Chrome or Edge, or type instead" and hide the button for that browser (other Chromium forks like Opera/Vivaldi behave the same). Also considered: live words while talking (`interimResults`), a message when Chrome stops by itself. Still to confirm it works in Chrome/Edge.
+- Voice input in Brave – **fixed 2026-10-14**: Speak hidden in Brave (`navigator.brave`); elsewhere a `network` failure before any result, online and not Chrome/Edge (`userAgentData` brands) → "Voice input does not work in this browser. Use Chrome or Edge, or type instead." replaces the button (focus moves to it), all Speak buttons go, browser remembered (`opendoor.voiceNoService`). Still open: confirm with a real microphone that it works in Chrome/Edge (user); optional ideas not built: live words while talking (`interimResults`), a message when Chrome stops by itself. UI reference PDF: VoiceInput note changed in `content.mjs` – picked up at the next PDF rebuild.
 - Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 
 ## Session log (newest first)

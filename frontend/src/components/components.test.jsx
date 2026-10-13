@@ -208,7 +208,14 @@ describe('Voice input', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     localStorage.removeItem('opendoor.voiceNotice');
+    localStorage.removeItem('opendoor.voiceNoService');
+    delete navigator.brave;
+    delete navigator.userAgentData;
   });
+
+  function browser(props) {
+    for (const [key, value] of Object.entries(props)) Object.defineProperty(navigator, key, { value, configurable: true });
+  }
 
   function recognitionMock() {
     const instances = [];
@@ -290,6 +297,68 @@ describe('Voice input', () => {
   test('is not shown when the browser has no speech recognition', () => {
     render(<CoverNote />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  test('is not shown in Brave, which has the API but no speech service', () => {
+    recognitionMock();
+    browser({ brave: {} });
+    render(<CoverNote />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  test('a browser without a speech service: the message takes the button’s place and the browser is remembered', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    localStorage.setItem('opendoor.voiceNotice', 'accepted');
+    const { unmount } = render(
+      <>
+        <CoverNote />
+        <TextArea label="Experience" name="experience" voice value="" onChange={() => {}} />
+      </>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    act(() => {
+      instances[0].onerror({ error: 'network' });
+      instances[0].onend();
+    });
+    expect(screen.queryByRole('button')).not.toBeInTheDocument(); // the other field's button too
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Voice input does not work in this browser. Use Chrome or Edge, or type instead.');
+    expect(status).toHaveFocus();
+    expect(localStorage.getItem('opendoor.voiceNoService')).toBe('yes');
+
+    unmount();
+    render(<CoverNote />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  test('a network failure in Chrome or Edge, or after speech was heard, is a network problem', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    localStorage.setItem('opendoor.voiceNotice', 'accepted');
+    render(<CoverNote />);
+    const speak = () => screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' });
+
+    browser({ userAgentData: { brands: [{ brand: 'Chromium' }, { brand: 'Google Chrome' }] } });
+    await user.click(speak());
+    act(() => {
+      instances[0].onerror({ error: 'network' });
+      instances[0].onend();
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('The speech service could not be reached');
+
+    delete navigator.userAgentData;
+    await user.click(speak());
+    act(() => {
+      instances[1].onresult(said('next month'));
+      instances[1].onerror({ error: 'network' });
+      instances[1].onend();
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('The speech service could not be reached');
+    expect(speak()).toBeInTheDocument();
+    expect(localStorage.getItem('opendoor.voiceNoService')).toBeNull();
   });
 });
 

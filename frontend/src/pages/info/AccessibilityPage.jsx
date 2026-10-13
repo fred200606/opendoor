@@ -47,8 +47,8 @@ export default function AccessibilityPage() {
         <li>A full test with the NVDA screen reader is still to be done.</li>
         <li>The places near a job come from OpenStreetMap, where wheelchair information may be missing or out of date.</li>
         <li>
-          Voice input is not available in every browser (for example Firefox). In Brave the Speak button appears but does not
-          work yet; use Chrome or Edge, or type instead.
+          Voice input needs a browser with a speech service, such as Chrome or Edge. Others (for example Firefox and Brave) do
+          not show the Speak button; some show it until the first try, then explain and hide it.
         </li>
       </ul>
     </Page>
