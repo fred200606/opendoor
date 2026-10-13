@@ -22,11 +22,11 @@ if (!PASSWORD) {
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'results', 'ui-reference');
 const SHOTS = join(OUT, 'shots');
-const DESKTOP = { width: 1200, height: 640 }; // short pages stay short (the footer sits at the window bottom)
+const DESKTOP = { width: 1440, height: 640 }; // the Figma frame width (full menus); short pages stay short
 const PHONE = { width: 390, height: 844 };
-const SCALE = 1.5; // sharper text when the PDF is zoomed
+const SCALE = 1.25; // 1,800 px images: sharp when the PDF is zoomed
 const QUALITY = 74;
-const SLICE = 1500; // max CSS px per image so a slice fits on an A4 page
+const SLICE = 1800; // max CSS px per image so a slice fits on an A4 page
 
 // ---------------------------------------------------------------- API helpers
 
@@ -229,9 +229,16 @@ const ids = await stage(t);
 browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' });
 try {
   console.log('Public screens');
-  await shot('guest-home', null, '/');
+  await shot('guest-home', null, '/', { crops: [['utility-bar', '.utility-bar'], ['footer', '.site-footer']] });
   await shot('guest-jobs', null, '/jobs', { crops: [['job-card', '.job-card']] });
-  await shot('guest-job', null, `/jobs/${ids.dataEncoder.id}`, { crops: [['snapshot', '.snapshot']] });
+  await shot('guest-job', null, `/jobs/${ids.dataEncoder.id}`, {
+    // The snapshot is a closed card; open it so the page shows what it holds.
+    before: async (page) => {
+      await page.getByRole('button', { name: 'Show Workplace Accessibility Snapshot' }).click();
+      await settle(page);
+      await crop(page, 'snapshot', '.snapshot');
+    },
+  });
   await shot('guest-employer', null, `/employers/${ids.employerId}`, { crops: [['trust-card', '.trust-card']] });
   await shot('guest-login', null, '/login');
   await shot('guest-login-errors', null, '/login', {
@@ -263,24 +270,47 @@ try {
       await page.getByText('This link cannot be used').waitFor();
     },
   });
-  await shot('guest-register', null, '/register');
+  await shot('guest-register', null, '/register', { crops: [['wizard-progress', '.wizard__progress']] });
   await shot('guest-register-errors', null, '/register', {
+    mode: 'viewport',
     before: async (page) => {
-      await page.getByRole('button', { name: 'Create account' }).click();
+      await page.getByRole('button', { name: 'Next' }).click();
       await page.locator('.error-summary').waitFor();
     },
   });
+  const registerStep2 = async (page) => {
+    await page.getByLabel('I am looking for a job').check();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('heading', { name: /Step 2 of 3/ }).waitFor();
+  };
+  await shot('guest-register-2', null, '/register', { before: registerStep2 });
+  await shot('guest-register-3', null, '/register', {
+    before: async (page) => {
+      await registerStep2(page);
+      await page.getByLabel(/^Full name/).fill('Liza Example');
+      await page.getByLabel(/^Email address/).fill('liza@example.test');
+      await page.getByLabel(/^Password/).fill('a-long-password');
+      await page.getByLabel(/^Confirm password/).fill('a-long-password');
+      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('heading', { name: /Step 3 of 3/ }).waitFor();
+    },
+  });
   await shot('guest-404', null, '/no-such-page');
+  await shot('guest-privacy', null, '/privacy');
+  await shot('guest-accessibility', null, '/accessibility');
+  await shot('guest-trust-scores', null, '/trust-scores');
 
   console.log('Job seeker screens');
   await shot('cand-dashboard', t.candidate, '/candidate/dashboard', { crops: [['stat-cards', '.stats'], ['header', '.site-header']] });
-  await shot('cand-profile', t.candidate, '/candidate/profile', { crops: [['accommodation-group', '.accommodation-picker__group']] });
+  await shot('cand-profile', t.candidate, '/candidate/profile', { crops: [['accommodation-group', '.accommodation-picker__group'], ['tabs', '.tabs__list']] });
+  await shot('cand-profile-about', t.candidate, '/candidate/profile?tab=about');
+  await shot('cand-profile-resume', t.candidate, '/candidate/profile?tab=resume', { mode: 'viewport' });
   await shot('cand-jobs', t.candidate, '/candidate/jobs');
   await shot('cand-job', t.candidate, `/candidate/jobs/${ids.dataEncoder.id}`);
   await shot('cand-job-partial', t.candidate, `/candidate/jobs/${ids.webDev.id}`, { mode: 'viewport', crops: [['match-badge', '.match']] });
   await shot('cand-job-report', t.candidate, `/candidate/jobs/${ids.dataEncoder.id}`, { mode: 'viewport', before: openDialog('Report this job') });
   await shot('cand-applications', t.candidate, '/candidate/applications', { crops: [['status-table', '.table-wrap']] });
-  await shot('cand-application', t.candidate, `/candidate/applications/${ids.webDevApplication.id}`);
+  await shot('cand-application', t.candidate, `/candidate/applications/${ids.webDevApplication.id}`, { crops: [['timeline', '.timeline-card']] });
   await shot('cand-application-withdraw', t.candidate, `/candidate/applications/${ids.webDevApplication.id}`, {
     mode: 'viewport',
     before: openDialog('Withdraw application'),
@@ -288,6 +318,8 @@ try {
   await shot('cand-saved', t.candidate, '/candidate/saved-jobs');
   await shot('cand-notifications', t.candidate, '/notifications');
   await shot('cand-account', t.candidate, '/account');
+  await shot('cand-account-password', t.candidate, '/account?tab=password', { mode: 'viewport' });
+  await shot('cand-account-email', t.candidate, '/account?tab=email');
   await shot('cand2-dashboard', t.candidate2, '/candidate/dashboard');
   await shot('cand2-application', t.candidate2, `/candidate/applications/${ids.unratedHire.id}`);
   await shot('cand2-feedback', t.candidate2, `/candidate/applications/${ids.unratedHire.id}/feedback`);
@@ -305,14 +337,31 @@ try {
       await crop(page, 'confirm-dialog', 'dialog[open]');
     },
   });
-  await shot('emp-posting-new', t.employer, '/employer/jobs/new', { crops: [['location-picker', '#location_psgc']] });
+  await shot('emp-posting-new', t.employer, '/employer/jobs/new');
+  // Steps 2–4 through the draft, which has every field filled (Next checks each step).
+  const draftSteps = (count) => async (page) => {
+    for (let step = 2; step <= count; step++) {
+      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('heading', { name: new RegExp(`Step ${step} of 4`) }).waitFor();
+    }
+    if (count === 2) {
+      // Show the Region → Province → City selects instead of the saved place.
+      await page.getByRole('button', { name: 'Change location' }).click();
+      await page.locator('#location_psgc').waitFor();
+    }
+    await settle(page);
+    if (count === 2) await crop(page, 'location-picker', '#location_psgc');
+  };
+  await shot('emp-posting-step2', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(2) });
+  await shot('emp-posting-step3', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(3) });
+  await shot('emp-posting-review', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(4) });
   await shot('emp-posting-edit', t.employer, `/employer/jobs/${ids.dataEncoder.id}/edit`);
   await shot('emp-applicants', t.employer, `/employer/jobs/${ids.webDev.id}/applicants`);
   await shot('emp-application', t.employer, `/employer/applications/${ids.webDevApplication.id}`);
   await shot('emp-trust', t.employer, '/employer/trust-score');
   await shot('emp-notifications', t.employer, '/notifications');
   await shot('emp2-dashboard', t.employer2, '/employer/dashboard');
-  await shot('emp2-company', t.employer2, '/employer/company', { mode: 'viewport', crops: [['alert-info', '.alert--info']] });
+  await shot('emp2-company', t.employer2, '/employer/company', { mode: 'viewport', crops: [['alert-warning', '.alert--warning']] });
 
   console.log('Administrator screens');
   await shot('admin-dashboard', t.admin, '/admin/dashboard');
@@ -330,7 +379,18 @@ try {
   await shot('state-phone-jobs', null, '/jobs', { mode: 'viewport', viewport: PHONE, scale: 2 });
   await shot('state-phone-job', null, `/jobs/${ids.dataEncoder.id}`, { mode: 'viewport', viewport: PHONE, scale: 2 });
   await shot('state-phone-menu', t.candidate, '/candidate/dashboard', { mode: 'viewport', viewport: PHONE, scale: 2 });
+  await shot('state-phone-menu-open', t.candidate, '/candidate/dashboard', {
+    mode: 'viewport',
+    viewport: PHONE,
+    scale: 2,
+    before: async (page) => {
+      await page.getByRole('button', { name: /^Menu/ }).click();
+      await page.locator('.menu-panel').waitFor();
+    },
+  });
   await shot('state-high-contrast', null, '/jobs', { mode: 'viewport', display: { textSize: '150', contrast: 'high', motion: 'reduce' } });
+  await shot('state-quiet', null, '/', { mode: 'viewport', display: { quiet: 'on' } });
+  await shot('state-compact', t.employer, '/employer/dashboard', { mode: 'viewport', display: { menu: 'compact' } });
 } finally {
   await browser.close();
 }
