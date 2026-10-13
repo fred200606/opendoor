@@ -30,7 +30,7 @@ function AccountLink({ user }) {
       <span className="avatar" aria-hidden="true">
         {initials(user.name)}
       </span>
-      Account
+      <span className="nav-item__text">Account</span>
     </NavLink>
   );
 }

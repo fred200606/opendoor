@@ -287,6 +287,8 @@ main:focus {
 
 .site-nav--compact {
   position: relative;
+  flex-wrap: wrap; /* at large text sizes the buttons go under the logo instead of off-screen */
+  row-gap: 0.5rem;
 }
 
 /* Figma "Nav item": pill; the current page is filled and outlined (aria-current="page"). */
@@ -437,6 +439,31 @@ main:focus {
   .site-nav__compact-actions .nav-item {
     padding-left: 0.25rem;
     padding-right: 0.25rem;
+  }
+}
+
+/* Phones: the avatar alone stands for Account (its name is still "Account"). */
+@media (max-width: 30rem) {
+  .site-nav--compact .logo__text {
+    font-size: 1.375rem;
+  }
+
+  .site-nav--compact .logo__mark {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .site-nav__compact-actions {
+    gap: 0.5rem;
+  }
+
+  .site-nav__compact-actions .nav-item__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 }
 
@@ -2679,4 +2706,127 @@ input[type='file']::file-selector-button {
 .filter-bar > .field {
   flex: 0 1 auto;
   width: auto;
+}
+
+/* ---------- Figma "4.5 Application" (job seeker): timeline, details card, actions */
+
+.button--danger-outline {
+  border-color: var(--danger);
+  background: var(--bg);
+  color: var(--danger);
+}
+
+.button--danger-outline:hover {
+  border-color: var(--danger-hover);
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+}
+
+.application-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 36rem;
+  margin-bottom: 1.25rem;
+}
+
+.application-page__body > .card {
+  margin: 0;
+}
+
+.application-page__actions {
+  margin-bottom: 1rem;
+}
+
+.timeline-card h2 {
+  margin-bottom: 1rem;
+}
+
+/* Three steps in a row joined by short lines; stacked on narrow screens. */
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.timeline__step + .timeline__step::before {
+  content: '';
+  position: absolute;
+  top: 0.6875rem;
+  left: -2rem; /* centred in the 1rem gap between this step and the one before */
+  width: 3rem;
+  height: 3px;
+  border-radius: var(--pill);
+  background: var(--primary);
+}
+
+.timeline__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+}
+
+.timeline__mark svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  stroke-width: 3;
+}
+
+.timeline__step--current .timeline__mark,
+.timeline__step--upcoming .timeline__mark,
+.timeline__step--skipped .timeline__mark {
+  border: 2px dashed var(--border);
+  background: var(--bg);
+}
+
+.timeline__step--stopped .timeline__mark {
+  background: var(--text-muted);
+}
+
+.timeline__label {
+  font-weight: 700;
+}
+
+.timeline__detail {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 30rem) {
+  .timeline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .timeline__step {
+    flex-direction: row;
+    flex-wrap: wrap;
+    text-align: left;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .timeline__mark {
+    margin: 0;
+  }
+
+  .timeline__step + .timeline__step::before {
+    display: none;
+  }
 }

@@ -7,24 +7,25 @@ import { ConfirmDialog } from '../../components/Dialog.jsx';
 import Page from '../../components/Page.jsx';
 import ReadAloud from '../../components/ReadAloud.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
+import StatusTimeline from '../../components/StatusTimeline.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, todayInManila } from '../../lib/format.js';
 
-// Candidate actions allowed by the status workflow (business-rules.md).
+// Candidate actions allowed by the status workflow (business-rules.md), in the order shown.
 const ACTIONS = {
-  withdrawn: {
-    from: ['pending', 'reviewed'],
-    label: 'Withdraw application',
-    title: 'Withdraw this application?',
-    text: 'The employer will no longer consider you for this job. You cannot undo this.',
-    danger: true,
-  },
   hired: {
     from: ['reviewed'],
     label: 'I was hired',
     title: 'Confirm that you were hired?',
     text: '30 days after today you will be asked to rate whether the promised accommodations were provided.',
     danger: false,
+  },
+  withdrawn: {
+    from: ['pending', 'reviewed'],
+    label: 'Withdraw application',
+    title: 'Withdraw this application?',
+    text: 'The employer will no longer consider you for this job. You cannot undo this.',
+    danger: true,
   },
 };
 
@@ -67,27 +68,37 @@ function ApplicationDetails({ application, onChange }) {
   const action = pending && ACTIONS[pending];
 
   return (
-    <Page title={job.title ?? 'Application'}>
-      <ReadAloud
-        targetRef={readRef}
-        title={[job.title, job.employer?.company_name].filter(Boolean).join(', ')}
-        label="Read this application aloud"
-      />
-      <p>
-        <Link to={`/candidate/jobs/${job.id}`}>View the job</Link> · {job.employer?.company_name}
-      </p>
-      <div ref={readRef}>
-        <p>
-          Status: <StatusBadge kind="application" status={application.status} />
+    <Page
+      title={job.title ?? 'Application'}
+      className="application-page"
+      back={{ to: '/candidate/applications', label: 'Back to my applications' }}
+      subtitle={
+        <p className="job-employer">
+          <Link to={`/candidate/jobs/${job.id}`}>
+            View the job{job.employer?.company_name && ` · ${job.employer.company_name}`}
+          </Link>{' '}
+          <StatusBadge kind="application" status={application.status} />
         </p>
-        {message && (
-          <Alert type="success" live="polite">
-            <p>{message}</p>
-          </Alert>
-        )}
-        <ApiErrorAlert error={error} title="The status was not changed" />
+      }
+      actions={
+        <ReadAloud
+          targetRef={readRef}
+          title={[job.title, job.employer?.company_name].filter(Boolean).join(', ')}
+          label="Read this application aloud"
+        />
+      }
+    >
+      {message && (
+        <Alert type="success" live="polite">
+          <p>{message}</p>
+        </Alert>
+      )}
+      <ApiErrorAlert error={error} title="The status was not changed" />
 
-        <dl className="details-list">
+      <div ref={readRef} className="application-page__body">
+        <StatusTimeline application={application} />
+
+        <dl className="card details-list">
           <dt>Applied</dt>
           <dd>{formatDate(application.created_at)}</dd>
           {application.hired_at && (
@@ -106,13 +117,16 @@ function ApplicationDetails({ application, onChange }) {
       </div>
 
       {available.length > 0 && (
-        <div className="actions">
+        <div className="actions application-page__actions">
           {available.map(([status, item]) => (
-            <button key={status} type="button" className={`button ${item.danger ? 'button--secondary' : ''}`} onClick={() => setPending(status)}>
+            <button key={status} type="button" className={`button ${item.danger ? 'button--danger-outline' : ''}`} onClick={() => setPending(status)}>
               {item.label}
             </button>
           ))}
         </div>
+      )}
+      {application.status === 'reviewed' && (
+        <p className="field__hint">After you confirm a hire, you can rate the accommodations 30 days later.</p>
       )}
 
       {action && (

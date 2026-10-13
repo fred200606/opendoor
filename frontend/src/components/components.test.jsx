@@ -12,6 +12,7 @@ import Pagination from './Pagination.jsx';
 import ReadAloud from './ReadAloud.jsx';
 import ResultCount from './ResultCount.jsx';
 import StatusBadge from './StatusBadge.jsx';
+import StatusTimeline from './StatusTimeline.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
 import { TextArea } from './form/fields.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
@@ -592,5 +593,29 @@ describe('Pagination and ConfirmDialog', () => {
     render(<ConfirmDialog title="Reactivate Ana Reyes?" confirmLabel="Reactivate" onConfirm={() => {}} onClose={() => {}} />);
     expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveFocus();
     expect(screen.getByRole('button', { name: 'Cancel' })).not.toHaveAttribute('data-autofocus');
+  });
+});
+
+describe('StatusTimeline', () => {
+  const base = { created_at: '2026-10-09T09:00:00+08:00', reviewed_at: null, hired_at: null, updated_at: '2026-10-12T10:00:00+08:00' };
+  const steps = () => screen.getAllByRole('listitem').map((item) => item.textContent);
+
+  test('pending waits for the review, reviewed waits for the decision', () => {
+    const { rerender } = render(<StatusTimeline application={{ ...base, status: 'pending' }} />);
+    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedWaiting for employer', 'DecisionAfter the review']);
+    expect(screen.getAllByRole('listitem')[1]).toHaveAttribute('aria-current', 'step');
+
+    rerender(<StatusTimeline application={{ ...base, status: 'reviewed', reviewed_at: '2026-10-12T10:00:00+08:00' }} />);
+    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedOctober 12, 2026', 'DecisionWaiting for employer']);
+    expect(screen.getAllByRole('listitem')[2]).toHaveAttribute('aria-current', 'step');
+  });
+
+  test('final statuses name the decision and its date; a withdrawal before review says so', () => {
+    const { rerender } = render(<StatusTimeline application={{ ...base, status: 'hired', hired_at: '2026-10-20T10:00:00+08:00' }} />);
+    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedDone', 'HiredOctober 20, 2026']);
+
+    rerender(<StatusTimeline application={{ ...base, status: 'withdrawn' }} />);
+    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedNot reviewed', 'WithdrawnOctober 12, 2026']);
+    expect(screen.queryByRole('listitem', { current: 'step' })).not.toBeInTheDocument();
   });
 });
