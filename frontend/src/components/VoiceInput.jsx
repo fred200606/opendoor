@@ -172,7 +172,7 @@ export default function VoiceInput({ fieldLabel, name, value, onChange, maxLengt
           <span className="visually-hidden">{listening ? `(${fieldLabel})` : `instead of typing (${fieldLabel})`}</span>
         </button>
       )}
-      <p ref={status} className="field__hint focus-target" role="status" tabIndex={noService ? -1 : undefined}>
+      <p ref={status} className="field__hint" role="status" tabIndex={noService ? -1 : undefined}>
         {message}
       </p>
 
