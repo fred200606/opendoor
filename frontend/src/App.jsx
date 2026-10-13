@@ -33,6 +33,9 @@ import PostingsPage from './pages/employer/PostingsPage.jsx';
 import EmployerPublicPage from './pages/jobs/EmployerPublicPage.jsx';
 import JobDetailsPage from './pages/jobs/JobDetailsPage.jsx';
 import JobSearchPage from './pages/jobs/JobSearchPage.jsx';
+import AccessibilityPage from './pages/info/AccessibilityPage.jsx';
+import PrivacyPage from './pages/info/PrivacyPage.jsx';
+import TrustScoresPage from './pages/info/TrustScoresPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 export default function App() {
@@ -43,6 +46,9 @@ export default function App() {
         <Route path="jobs" element={<JobSearchPage />} />
         <Route path="jobs/:id" element={<JobDetailsPage />} />
         <Route path="employers/:id" element={<EmployerPublicPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="accessibility" element={<AccessibilityPage />} />
+        <Route path="trust-scores" element={<TrustScoresPage />} />
         <Route element={<GuestRoute />}>
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />

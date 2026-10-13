@@ -618,6 +618,19 @@ main:focus {
   max-width: 36rem;
 }
 
+/* Text pages (Privacy, Accessibility statement, How trust scores work): about 70 characters wide. */
+.page--reading {
+  max-width: 48rem;
+}
+
+.page--reading h2 {
+  margin-top: 2rem;
+}
+
+.page--reading li {
+  margin-bottom: 0.5rem;
+}
+
 .form-footer {
   margin-top: 1.5rem;
 }
