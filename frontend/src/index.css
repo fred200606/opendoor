@@ -1064,9 +1064,16 @@ input[type='file'].field__input {
   background: var(--bg);
 }
 
-/* Figma "Job card": icon tile, title link (Lexend 22), company + Verified, meta, tags, footer. */
+/* Figma "Job card": icon tile, title link (Lexend 22), company + Verified, meta, tags, footer.
+   The card is a size container so it stacks by its own width – also at large text sizes, which
+   viewport media queries do not see (container-query rem follows the root font size). */
 .job-card {
+  container-type: inline-size;
+}
+
+.job-card__inner {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   align-items: flex-start;
 }
@@ -1122,9 +1129,15 @@ input[type='file'].field__input {
   flex: none;
 }
 
-@media (max-width: 30rem) {
-  .job-card {
-    flex-wrap: wrap;
+/* Long badges ("Meets all 3 of your needs") wrap inside the card instead of sticking out (1.4.10). */
+.job-card__content .badge {
+  white-space: normal;
+}
+
+/* Narrow card (phones, 200 % text): the text gets the full width, icon tile above, action below. */
+@container (max-width: 30rem) {
+  .job-card__content {
+    flex-basis: 100%;
   }
 }
 
@@ -1433,7 +1446,8 @@ input[type='file'].field__input {
 
 @media (min-width: 56rem) {
   .search-layout {
-    grid-template-columns: 20rem 1fr;
+    /* minmax: at 200 % text the cards wrap instead of widening the page (1.4.4) */
+    grid-template-columns: 20rem minmax(0, 1fr);
     align-items: start;
   }
 }

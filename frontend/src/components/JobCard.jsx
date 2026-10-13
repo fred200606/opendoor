@@ -26,36 +26,38 @@ export default function JobCard({ job, to, state, headingLevel = 2, children }) 
 
   return (
     <article className="job-card">
-      <IconTile icon={Briefcase} tone={TONES[Math.abs(job.id - 1) % TONES.length]} />
-      <div className="job-card__content">
-        <Heading className="job-card__title">
-          <Link to={to} state={state}>
-            {job.title}
-          </Link>
-        </Heading>
-        <p className="job-card__employer">
-          {job.employer?.company_name} <VerifiedBadge verified={job.employer?.verified} />
-        </p>
-        <p className="job-card__meta">
-          {[EMPLOYMENT_TYPES[job.employment_type], WORK_SETUPS[job.work_setup], job.location?.label ?? job.address].filter(Boolean).join(' · ')}
-        </p>
-        <MatchBadge match={job.match} />
-        {accommodations.length > 0 && (
-          <>
-            <p className="visually-hidden">Accommodations offered:</p>
-            <ul className="tag-list">
-              {accommodations.slice(0, MAX_TAGS).map((item) => (
-                <li key={item.id} className="tag">
-                  {item.name}
-                </li>
-              ))}
-              {accommodations.length > MAX_TAGS && <li className="tag tag--more">+{accommodations.length - MAX_TAGS} more</li>}
-            </ul>
-          </>
-        )}
-        <p className="job-card__footer">{footer.join(' · ')}</p>
+      <div className="job-card__inner">
+        <IconTile icon={Briefcase} tone={TONES[Math.abs(job.id - 1) % TONES.length]} />
+        <div className="job-card__content">
+          <Heading className="job-card__title">
+            <Link to={to} state={state}>
+              {job.title}
+            </Link>
+          </Heading>
+          <p className="job-card__employer">
+            {job.employer?.company_name} <VerifiedBadge verified={job.employer?.verified} />
+          </p>
+          <p className="job-card__meta">
+            {[EMPLOYMENT_TYPES[job.employment_type], WORK_SETUPS[job.work_setup], job.location?.label ?? job.address].filter(Boolean).join(' · ')}
+          </p>
+          <MatchBadge match={job.match} />
+          {accommodations.length > 0 && (
+            <>
+              <p className="visually-hidden">Accommodations offered:</p>
+              <ul className="tag-list">
+                {accommodations.slice(0, MAX_TAGS).map((item) => (
+                  <li key={item.id} className="tag">
+                    {item.name}
+                  </li>
+                ))}
+                {accommodations.length > MAX_TAGS && <li className="tag tag--more">+{accommodations.length - MAX_TAGS} more</li>}
+              </ul>
+            </>
+          )}
+          <p className="job-card__footer">{footer.join(' · ')}</p>
+        </div>
+        {children && <div className="job-card__action">{children}</div>}
       </div>
-      {children && <div className="job-card__action">{children}</div>}
     </article>
   );
 }
