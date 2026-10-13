@@ -39,7 +39,7 @@ export default function JobDetailsPage() {
 
 function JobDetails({ job }) {
   const { user } = useAuth();
-  const { state } = useLocation();
+  const { state, pathname } = useLocation();
   const isCandidate = user?.role === 'candidate';
   const readRef = useRef(null);
   const back = isBackLink(state?.back) ? state.back : { to: isCandidate ? '/candidate/jobs' : '/jobs', label: 'Back to job results' };
@@ -82,7 +82,9 @@ function JobDetails({ job }) {
       back={back}
       subtitle={
         <p className="job-employer">
-          <Link to={`/employers/${job.employer?.id}`}>{job.employer?.company_name}</Link> <VerifiedBadge verified={job.employer?.verified} />
+          <Link to={`/employers/${job.employer?.id}`} state={{ back: { to: pathname, label: `Back to ${job.title}` } }}>
+            {job.employer?.company_name}
+          </Link> <VerifiedBadge verified={job.employer?.verified} />
           {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
         </p>
       }

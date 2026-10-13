@@ -36,9 +36,9 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
     <section className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label="Trust score">
       {!compact && <Heading className="trust-card__title">Trust score</Heading>}
       <p className="trust-card__score">
-        <span className="trust-card__value">{trustScore.score}%</span> of promised accommodations were delivered
+        <span className="trust-card__value">{trustScore.score}%</span> of promised accommodations were delivered. Based on{' '}
+        {plural(basedOn, 'response')}.
       </p>
-      <p className="trust-card__basis">Based on {plural(basedOn, 'response')} from employees hired through OpenDoor.</p>
       {explainLink}
 
       {breakdown?.length > 0 && (
@@ -46,7 +46,9 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
         // data tables), which takes keyboard focus because the table has nothing focusable.
         <div className="table-wrap" role="region" aria-labelledby={captionId} tabIndex={0}>
           <table className="table trust-card__table">
-            <caption id={captionId}>Each accommodation, as rated by hired employees</caption>
+            <caption id={captionId} className="visually-hidden">
+              Each accommodation, as rated by hired employees
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Accommodation</th>
@@ -60,7 +62,8 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
                 <tr key={row.accommodation_id}>
                   <th scope="row">
                     {row.name}
-                    <span className="field__hint">
+                    {/* For Read aloud, which skips the number cells. */}
+                    <span className="visually-hidden">
                       {' '}
                       ({row.delivered} of {row.of} delivered)
                     </span>

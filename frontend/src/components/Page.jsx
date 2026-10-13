@@ -8,10 +8,11 @@ import BackLink from './BackLink.jsx';
  * `documentTitle` replaces the heading in the document title where the heading alone would
  * match another page the same user can open (WCAG 2.4.2). `heading` (optional) is a styled
  * version of the same words for the <h1>; `title` stays the plain text.
- * `back` ({ to, label }) adds a back link above the heading; `subtitle` goes under the heading and
+ * `back` ({ to, label }) adds a back link above the heading; `badge` sits on the heading's line
+ * (outside the <h1>, so it is not part of its name); `subtitle` goes under the heading and
  * `actions` (e.g. Read aloud) sit to its right on wide screens.
  */
-export default function Page({ title, heading, documentTitle, back, subtitle, actions, children, className = '' }) {
+export default function Page({ title, heading, documentTitle, back, badge, subtitle, actions, children, className = '' }) {
   const headingRef = useRef(null);
   // The router's first entry has key 'default': leave the browser's normal start position on a
   // fresh page load (also safe under StrictMode's double effects).
@@ -22,11 +23,21 @@ export default function Page({ title, heading, documentTitle, back, subtitle, ac
     if (key !== 'default') headingRef.current?.focus();
   }, [title, documentTitle, key]);
 
+  const h1 = (
+    <h1 ref={headingRef} tabIndex={-1}>
+      {heading ?? title}
+    </h1>
+  );
   const headingBlock = (
     <>
-      <h1 ref={headingRef} tabIndex={-1}>
-        {heading ?? title}
-      </h1>
+      {badge ? (
+        <div className="page__title-row">
+          {h1}
+          {badge}
+        </div>
+      ) : (
+        h1
+      )}
       {subtitle}
     </>
   );

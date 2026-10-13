@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { getEmployer, getTrustScore } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { jobPath } from '../../auth/navigation.js';
@@ -10,10 +10,15 @@ import { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 
-/** Public employer page: company, verified badge, trust score with breakdown, open postings. */
+/** Public employer page (Figma 3:908): company, verified badge, trust score with breakdown, open jobs. */
 export default function EmployerPublicPage() {
   const { id } = useParams();
+  const { state: locationState } = useLocation();
   const { user } = useAuth();
+  const back =
+    typeof locationState?.back?.to === 'string' && locationState.back.to.startsWith('/')
+      ? locationState.back
+      : { to: user?.role === 'candidate' ? '/candidate/jobs' : '/jobs', label: 'Back to job results' };
   const state = useAsync(
     () => Promise.all([getEmployer(id), getTrustScore(id).catch(() => null)]),
     [id],
@@ -22,25 +27,26 @@ export default function EmployerPublicPage() {
   return (
     <AsyncContent state={state} label="Loading the employer" errorTitle="This employer could not be loaded">
       {([employer, trustScore]) => (
-        <Page title={employer.company_name}>
-          <div className="employer-header">
-            {employer.logo_url && <img src={employer.logo_url} alt={`${employer.company_name} logo`} className="employer-logo" />}
-            <div>
-              <p>
-                <VerifiedBadge verified={employer.verified} />
-              </p>
-              <p>
-                {[employer.industry, employer.location?.label ?? employer.address].filter(Boolean).join(' · ')}
-              </p>
+        <Page
+          title={employer.company_name}
+          className="employer-page"
+          back={back}
+          badge={<VerifiedBadge verified={employer.verified} />}
+          subtitle={
+            <div className="employer-intro">
+              {employer.logo_url && <img src={employer.logo_url} alt={`${employer.company_name} logo`} className="employer-logo" />}
+              <p className="employer-intro__meta">{[employer.industry, employer.location?.label ?? employer.address].filter(Boolean).join(' · ')}</p>
+              {employer.description && <div className="prose">{employer.description}</div>}
             </div>
-          </div>
-          {employer.description && <div className="prose">{employer.description}</div>}
+          }
+        >
+          <div className="employer-layout">
+            <TrustScoreCard trustScore={trustScore ?? employer.trust_score} breakdown={trustScore?.breakdown} />
 
-          <TrustScoreCard trustScore={trustScore ?? employer.trust_score} breakdown={trustScore?.breakdown} />
-
-          <h2>Open jobs</h2>
-          {employer.open_postings?.length ? (
-            <ul className="result-list">
+            <section aria-labelledby="open-jobs-title">
+              <h2 id="open-jobs-title">Open jobs</h2>
+              {employer.open_postings?.length ? (
+                <ul className="result-list">
               {employer.open_postings.map((job) => (
                 <li key={job.id}>
                   <JobCard
@@ -51,10 +57,12 @@ export default function EmployerPublicPage() {
                   />
                 </li>
               ))}
-            </ul>
-          ) : (
-            <EmptyState title="No open jobs right now" />
-          )}
+                </ul>
+              ) : (
+                <EmptyState title="No open jobs right now" />
+              )}
+            </section>
+          </div>
         </Page>
       )}
     </AsyncContent>

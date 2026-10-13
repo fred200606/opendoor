@@ -1576,13 +1576,6 @@ input[type='file'].field__input {
   margin: 0;
 }
 
-.employer-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
-}
 
 .employer-logo {
   width: 5rem;
@@ -2124,6 +2117,7 @@ input[type='file'].field__input {
 
 .job-layout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* wide tables scroll in their own box instead of widening the page */
   gap: 1.5rem;
 }
 
@@ -2214,4 +2208,95 @@ input[type='file'].field__input {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   border-radius: 14px;
+}
+
+/* ---------- Figma "3.4 Employer page" */
+
+.page__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.page__title-row h1 {
+  margin: 0;
+}
+
+.employer-intro {
+  margin-bottom: 1.5rem;
+}
+
+.employer-intro .employer-logo {
+  margin-bottom: 0.75rem;
+}
+
+.employer-intro__meta {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.employer-intro .prose {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.employer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* wide tables scroll in their own box instead of widening the page */
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .employer-layout {
+    grid-template-columns: minmax(0, 15fr) minmax(0, 16fr);
+    align-items: start;
+  }
+}
+
+.employer-layout .trust-card {
+  margin: 0;
+}
+
+.employer-layout h2 {
+  margin-bottom: 1rem;
+}
+
+/* Breakdown table inside the trust card: white box, tinted header row. */
+.trust-card .table-wrap {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border-width: 1.5px;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.trust-card .table thead th {
+  border-bottom: 0;
+  background: var(--od-surface-tint);
+  font-size: 1.0625rem;
+}
+
+.trust-card .table th,
+.trust-card .table td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.trust-card .table tbody th {
+  font-weight: 400;
+}
+
+@media (max-width: 30rem) {
+  .trust-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .trust-card .table th,
+  .trust-card .table td {
+    padding: 0.75rem 0.5rem;
+  }
 }
