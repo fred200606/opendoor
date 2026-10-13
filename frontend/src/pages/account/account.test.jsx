@@ -9,7 +9,8 @@ describe('AccountPage', () => {
   test('changes the password with the contract field names', async () => {
     const { user, calls } = renderApp('/account', { as: 'candidate', routes: { 'PUT /me/password': () => [204, ''] } });
 
-    await user.type(await screen.findByLabelText(/Current password/), 'old-password');
+    await user.click(await screen.findByRole('tab', { name: 'Password' }));
+    await user.type(screen.getByLabelText(/Current password/), 'old-password');
     await user.type(screen.getByLabelText(/^New password/), 'new-password-1');
     await user.type(screen.getByLabelText(/Confirm new password/), 'new-password-1');
     await user.click(screen.getByRole('button', { name: 'Change password' }));
@@ -29,7 +30,8 @@ describe('AccountPage', () => {
       routes: { 'PUT /me/password': () => validationError({ current_password: ['The password is incorrect.'] }) },
     });
 
-    await user.type(await screen.findByLabelText(/Current password/), 'wrong');
+    await user.click(await screen.findByRole('tab', { name: 'Password' }));
+    await user.type(screen.getByLabelText(/Current password/), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Change password' }));
 
     await user.click(await screen.findByRole('link', { name: 'The password is incorrect.' }));
@@ -81,7 +83,8 @@ describe('AccountPage', () => {
       routes: { 'PUT /me/email-notifications': (config) => [200, JSON.parse(config.data)] },
     });
 
-    const toggle = await screen.findByRole('checkbox', { name: 'Send me an email for each notification' });
+    await user.click(await screen.findByRole('tab', { name: 'Email notifications' }));
+    const toggle = screen.getByRole('checkbox', { name: 'Send me an email for each notification' });
     expect(toggle).toBeChecked();
     expect(toggle).toHaveAccessibleDescription(/never includes disability or accommodation details/);
 
@@ -91,20 +94,21 @@ describe('AccountPage', () => {
 
     await user.click(screen.getByRole('link', { name: /^Notifications/ }));
     await user.click(await screen.findByRole('link', { name: 'Account' }));
-    expect(await screen.findByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();
+    await user.click(await screen.findByRole('tab', { name: 'Email notifications' }));
+    expect(screen.getByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();
 
     await user.click(screen.getByRole('checkbox', { name: 'Send me an email for each notification' }));
     expect(await screen.findByText('Email notifications are on.')).toBeInTheDocument();
   });
 
   test('email notifications show the choice saved with the account', async () => {
-    renderApp('/account', { as: 'employer', routes: { 'GET /me': () => [200, { ...users.employer, email_notifications: false }] } });
+    renderApp('/account?tab=email', { as: 'employer', routes: { 'GET /me': () => [200, { ...users.employer, email_notifications: false }] } });
 
     expect(await screen.findByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();
   });
 
   test('a choice that cannot be saved is put back', async () => {
-    const { user } = renderApp('/account', {
+    const { user } = renderApp('/account?tab=email', {
       as: 'employer',
       routes: { 'PUT /me/email-notifications': () => [503, { error: { code: 'SERVICE_UNAVAILABLE', message: 'Down', request_id: 'x' } }] },
     });
@@ -148,7 +152,7 @@ describe('NotificationsPage', () => {
     expect(await screen.findByText('2 unread notifications')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Your application for Data Encoder was reviewed.' })).toHaveAttribute('href', '/candidate/applications/11');
 
-    await user.click(screen.getByRole('button', { name: 'Mark as read' }));
+    await user.click(screen.getByRole('button', { name: 'Mark as read: Welcome to OpenDoor.' }));
     expect(await screen.findByText('1 unread notification')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Mark all as read' }));

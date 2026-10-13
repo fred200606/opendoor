@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { updateEmailNotifications } from '../../api/account.js';
 import { changePassword } from '../../api/auth.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -8,21 +9,37 @@ import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
+import Tabs from '../../components/Tabs.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useDisplayPrefs } from '../../hooks/useDisplayPrefs.js';
 import { changeDisplayPrefs } from '../../lib/displayPrefs.js';
 
+/** Figma 8:4194: one tab per kind of setting; ?tab= keeps the open tab on reload. */
 export default function AccountPage() {
   const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const tabs = [
+    { id: 'display', label: 'Display', content: <DisplaySettings /> },
+    { id: 'password', label: 'Password', content: <PasswordSection /> },
+    // Administrators receive no notices, so there is nothing to email.
+    ...(user.role !== 'admin' ? [{ id: 'email', label: 'Email notifications', content: <EmailSettings /> }] : []),
+  ];
 
   return (
-    <Page title="Account settings">
-      <p>
-        {user.name} · {user.email} · {ROLE_LABELS[user.role]}
-      </p>
-      <DisplaySettings />
-      {user.role !== 'admin' && <EmailSettings />}
-      <PasswordSection />
+    <Page
+      title="Account"
+      subtitle={
+        <p className="page__subtitle">
+          {user.name} · {user.email} · {ROLE_LABELS[user.role]}
+        </p>
+      }
+    >
+      <Tabs
+        label="Account settings"
+        tabs={tabs}
+        selected={params.get('tab') ?? 'display'}
+        onSelect={(tab) => setParams(tab === 'display' ? {} : { tab }, { replace: true })}
+      />
     </Page>
   );
 }
@@ -45,18 +62,18 @@ const MOTION = [
 
 // Browser-only settings from the utility bar (decision 2026-10-13).
 const QUIET = [
-  { value: 'off', label: 'Standard look' },
-  { value: 'on', label: 'Quiet mode', hint: 'Calmer colours, no decorations or animations. On this device only.' },
+  { value: 'off', label: 'Show sparkles and colours' },
+  { value: 'on', label: 'Quiet: plain and calm' },
 ];
 
 const MENU = [
   { value: 'full', label: 'Show all links' },
-  { value: 'compact', label: 'Compact menu', hint: 'Only the logo and a Menu button. On this device only.' },
+  { value: 'compact', label: 'Compact: one Menu button' },
 ];
 
 function DisplaySettings() {
   const prefs = useDisplayPrefs(); // also follows the utility bar
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(null); // { type, text }
   // Saves run one after another, so the account ends with the last choice even on a slow network;
   // only the last one reports.
   const saving = useRef(Promise.resolve());
@@ -70,27 +87,31 @@ function DisplaySettings() {
       const ok = await saved;
       if (id !== latest.current) return;
       if (key === 'quiet' || key === 'menu') {
-        setMessage('Applied on this device.');
+        setMessage({ type: 'success', text: 'Applied on this device.' });
       } else if (ok) {
-        setMessage('Display settings applied and saved to your account.');
+        setMessage({ type: 'success', text: 'Display settings applied and saved to your account.' });
       } else {
-        setMessage('Display settings applied on this device, but not saved to your account. Change a setting to try again.');
+        setMessage({ type: 'warning', text: 'Display settings applied on this device, but not saved to your account. Change a setting to try again.' });
       }
     });
   }
 
   return (
     <section className="card" aria-labelledby="display-title">
-      <h2 id="display-title">Display</h2>
-      <p className="field__hint">Changes apply immediately and are saved to your account, so they also apply when you log in on another device.</p>
-      <RadioGroup legend="Text size" name="textSize" options={TEXT_SIZES} value={prefs.textSize} onChange={(value) => change('textSize', value)} />
-      <RadioGroup legend="Colours" name="contrast" options={CONTRAST} value={prefs.contrast} onChange={(value) => change('contrast', value)} />
-      <RadioGroup legend="Motion" name="motion" options={MOTION} value={prefs.motion} onChange={(value) => change('motion', value)} />
-      <RadioGroup legend="Quiet mode" name="quiet" options={QUIET} value={prefs.quiet} onChange={(value) => change('quiet', value)} />
-      <RadioGroup legend="Top menu" name="menu" options={MENU} value={prefs.menu} onChange={(value) => change('menu', value)} />
-      <p role="status" className="save-status">
-        {message}
+      <h2 id="display-title" className="visually-hidden">
+        Display
+      </h2>
+      <p className="muted">
+        Changes apply right away and are saved to your account. Decoration and the top menu are kept on this device only.
       </p>
+      <div className="display-grid">
+        <RadioGroup legend="Text size" name="textSize" options={TEXT_SIZES} value={prefs.textSize} onChange={(value) => change('textSize', value)} />
+        <RadioGroup legend="Colours" name="contrast" options={CONTRAST} value={prefs.contrast} onChange={(value) => change('contrast', value)} />
+        <RadioGroup legend="Motion" name="motion" options={MOTION} value={prefs.motion} onChange={(value) => change('motion', value)} />
+        <RadioGroup legend="Decoration" name="quiet" options={QUIET} value={prefs.quiet} onChange={(value) => change('quiet', value)} />
+        <RadioGroup legend="Top menu" name="menu" options={MENU} value={prefs.menu} onChange={(value) => change('menu', value)} />
+      </div>
+      <div role="status">{message && <Alert type={message.type} title={message.text} />}</div>
     </section>
   );
 }
@@ -125,8 +146,10 @@ function EmailSettings() {
   }
 
   return (
-    <section className="card" aria-labelledby="email-title">
-      <h2 id="email-title">Email notifications</h2>
+    <section className="card card--form" aria-labelledby="email-title">
+      <h2 id="email-title" className="visually-hidden">
+        Email notifications
+      </h2>
       <CheckboxField
         name="email_notifications"
         label="Send me an email for each notification"
@@ -161,8 +184,10 @@ function PasswordSection() {
   }
 
   return (
-    <section className="card" aria-labelledby="password-title">
-      <h2 id="password-title">Change password</h2>
+    <section className="card card--form" aria-labelledby="password-title">
+      <h2 id="password-title" className="visually-hidden">
+        Change password
+      </h2>
       {done && (
         <Alert type="success" live="polite">
           <p>Your password is changed. You were signed out on your other devices.</p>

@@ -6,6 +6,7 @@ import Button from '../../components/Button.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import { notificationsChanged } from '../../lib/notifications.js';
 import Page from '../../components/Page.jsx';
+import { BadgeIcon } from '../../components/StatusBadge.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useAsync } from '../../hooks/useAsync.js';
@@ -36,7 +37,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <Page title="Notifications">
+    <Page title="Notifications" subtitle={<p className="page__subtitle">Updates about your applications and postings.</p>}>
       <ActionFeedback action={action} errorTitle="The notification was not updated" />
       <AsyncContent state={state} label="Loading notifications">
         {({ data, meta }) =>
@@ -47,7 +48,7 @@ export default function NotificationsPage() {
           ) : (
             <>
               <div className="notifications-header">
-                <p aria-live="polite">{meta.unread_count ? `${plural(meta.unread_count, 'unread notification')}` : 'Everything is read.'}</p>
+                <p className="notifications-header__count" aria-live="polite">{meta.unread_count ? `${plural(meta.unread_count, 'unread notification')}` : 'Everything is read.'}</p>
                 {meta.unread_count > 0 && (
                   <Button type="button" className="button button--secondary button--small" disabled={action.busy} onClick={markAll}>
                     Mark all as read
@@ -56,21 +57,28 @@ export default function NotificationsPage() {
               </div>
               <ul className="notification-list">
                 {data.map((notification) => (
-                  <li key={notification.id} className={notification.read_at ? '' : 'notification--unread'}>
-                    {!notification.read_at && <span className="badge badge--info">New</span>}
-                    <p className="notification__text">
-                      {notification.data?.url ? (
-                        <Link to={notification.data.url} onClick={() => markRead(notification)}>
-                          {notification.data?.message}
-                        </Link>
-                      ) : (
-                        notification.data?.message
-                      )}
-                    </p>
-                    <p className="field__hint">{formatDateTime(notification.created_at)}</p>
-                    {!notification.read_at && !notification.data?.url && (
-                      <button type="button" className="button button--link" onClick={() => markRead(notification)}>
-                        Mark as read
+                  <li key={notification.id} className={notification.read_at ? 'notification' : 'notification notification--unread'}>
+                    <div className="notification__main">
+                      <p className="notification__text">
+                        {!notification.read_at && (
+                          <span className="badge badge--info">
+                            <BadgeIcon tone="info" />
+                            New
+                          </span>
+                        )}{' '}
+                        {notification.data?.url ? (
+                          <Link to={notification.data.url} onClick={() => markRead(notification)}>
+                            {notification.data?.message}
+                          </Link>
+                        ) : (
+                          notification.data?.message
+                        )}
+                      </p>
+                      <p className="notification__date">{formatDateTime(notification.created_at)}</p>
+                    </div>
+                    {!notification.read_at && (
+                      <button type="button" className="button button--link notification__action" onClick={() => markRead(notification)}>
+                        Mark as read<span className="visually-hidden">: {notification.data?.message}</span>
                       </button>
                     )}
                   </li>
