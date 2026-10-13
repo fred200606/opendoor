@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | Standard | WCAG 2.1, levels A and AA |
-| Date | 2026-10-11 |
+| Date | 2026-10-11, rechecked 2026-10-14 after the Figma redesign (section 8) |
 | Build | `main` at `5be71dd` (audit and fixes), rechecked at `463ce7c` after Read aloud and Voice input – production build (`vite build`) served by `vite preview`, local stack with the demo seed |
 | Pages | 33 pages for guests, candidates, employers and admins (list below) |
-| Status | Automated, scripted and code review done – **no open failures**. Screen-reader test with NVDA still to do (script in section 7). |
+| Status | Automated, scripted and code review done – **no open failures** (recheck 2026-10-14: 34 pages, 2 reflow problems found and fixed). Screen-reader test with NVDA still to do (script in section 7). |
 
 ## 1. Pages
 
@@ -142,3 +142,29 @@ Record each step as **Pass**, **Problem** (what was heard) or **Blocked**.
 | 19 | On Find jobs, press "Speak" under Keyword (Chrome or Edge). | The button is read as "Speak instead of typing (Keyword)". A dialog explains that the browser sends audio to its speech service; Cancel closes it without listening. After "Use voice input", "Listening…" is announced; what you say appears in the field and "Added: …" is announced. |
 
 Report problems to the team with the page, the step number and what NVDA said; fix and rerun the scripted checks (section 2).
+
+## 8. Recheck after the Figma redesign (2026-10-14)
+
+Every screen was restyled to the team's Figma design on 2026-10-13 (new colours and fonts, display bar, header that switches to a Menu button, wizards, tabs, timeline). Rechecked on the production build of `2f0b38d` served by `vite preview`, against a freshly seeded local stack (Core on `opendoor_core_test`), with the same scripts as section 3.
+
+| Check | Result |
+|---|---|
+| axe (WCAG 2.0/2.1 A + AA), all 34 pages – the candidate's own application page included this time | **0 violations** |
+| axe in high-contrast mode at 150 % text, all 34 pages | **0 violations** |
+| Scripted checks (`wcag-checks.mjs`), all 34 pages | **All pass** after the two fixes below; 32 distinct titles for 34 pages, none shared within one role |
+| 2.5.8 Target size (WCAG 2.2, advisory) | 1 element: "Clear filters" on Find jobs (90 × 22 px link-style button) – not a WCAG 2.1 requirement |
+| Lighthouse | Not rerun |
+
+Fixes made during the recheck (`2f0b38d`):
+
+| Criterion | Problem | Fix |
+|---|---|---|
+| 1.4.4 Resize text | Find jobs: at 200 % text the results column kept its widest content, so the page scrolled sideways | Results column `minmax(0, 1fr)`; the job card is a CSS size container and stacks icon, text and button when it is narrower than 30 rem (container queries follow the root font size, viewport media queries do not) |
+| 1.4.10 Reflow | Find jobs at 320 px: the "Meets all 3 of your needs" badge stuck out of the job card | Badges inside job cards may wrap; the card text gets the full width on narrow cards |
+
+Notes:
+
+- **Focus visible (2.4.7):** the dashboard tiles are one big link each; the ring is drawn on the tile (`.stats__item:has(.stats__link:focus-visible)`, 3 px). The checker now also accepts an outline on the focused element's nearest three parents, so these tiles no longer show up as "without focus outline" (checked by hand first).
+- **Contrast with the new palette (1.4.3 / 1.4.11):** body text 16.2:1, muted text 8.8:1, links 10.9:1, primary buttons 6.7:1, input borders 5.6:1, focus ring 16.2:1 (all on white); status colours unchanged (6.6:1 – 7.4:1 on their backgrounds).
+- **Voice input in Brave:** Brave exposes the speech-recognition API but has no speech service, so the "Speak" button appears but fails ("The speech service could not be reached…"). Section 6 says the button is not shown in other browsers – true for Firefox and Safari, not for Brave. A fix is planned (see `PROGRESS.md`, Known issues); the accessibility statement lists it as a known limit.
+- The NVDA run (section 7) is still to do; its steps still match the redesigned screens except that "Notifications" and "Account" now sit right of the logo, and on narrow screens or with the compact menu they are inside the "Menu" panel.

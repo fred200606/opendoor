@@ -139,10 +139,17 @@ async function keyboardChecks(page, path) {
     const stop = await page.evaluate(() => {
       const el = document.activeElement;
       if (!el || el === document.body) return null;
+      const outlined = (node) => {
+        const cs = getComputedStyle(node);
+        return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0;
+      };
       const cs = getComputedStyle(el);
-      const outline = cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0;
       const shadow = cs.boxShadow && cs.boxShadow !== 'none';
-      return { key: el.dataset.a11yKey ?? window.__describe(el), name: window.__describe(el), indicated: outline || shadow };
+      // A link stretched over a tile may draw the ring on the tile (:has(:focus-visible)); only an
+      // outline counts there, since cards may have a shadow all the time.
+      const ancestors = [el.parentElement, el.parentElement?.parentElement, el.parentElement?.parentElement?.parentElement];
+      const indicated = outlined(el) || shadow || ancestors.some((node) => node && node !== document.body && outlined(node));
+      return { key: el.dataset.a11yKey ?? window.__describe(el), name: window.__describe(el), indicated };
     });
     // Tab moves through the segments of a date input (month, day, year) on the same element.
     if (stop && stop.key === visited.at(-1)) continue;

@@ -33,17 +33,23 @@ export default function AccessibilityPage() {
 
       <h2>How we check</h2>
       <ul>
-        <li>Automated checks (axe) of 33 pages for job seekers, employers, administrators and guests run on every change.</li>
+        <li>Automated checks (axe) of 34 pages for job seekers, employers, administrators and guests run on every change.</li>
         <li>Scripted checks for keyboard focus, page titles, announcements, text spacing and zoom.</li>
         <li>A review of the code for forms, dialogs, tables and status messages.</li>
       </ul>
-      <p>Our last full audit (October 11, 2026) found no open failures.</p>
+      <p>
+        Our last full check (October 14, 2026, after the new design) found two layout problems on the job search page (at 200 %
+        text and on very narrow screens); both are fixed.
+      </p>
 
       <h2>Known limits</h2>
       <ul>
         <li>A full test with the NVDA screen reader is still to be done.</li>
         <li>The places near a job come from OpenStreetMap, where wheelchair information may be missing or out of date.</li>
-        <li>Voice input is not available in every browser (for example Firefox).</li>
+        <li>
+          Voice input is not available in every browser (for example Firefox). In Brave the Speak button appears but does not
+          work yet; use Chrome or Edge, or type instead.
+        </li>
       </ul>
     </Page>
   );
