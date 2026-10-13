@@ -128,6 +128,9 @@ class ApplicationController extends Controller
             }
 
             $locked->status = $to;
+            if ($to === ApplicationStatus::Reviewed) {
+                $locked->reviewed_at = now(); // the "Reviewed" date in the candidate's timeline
+            }
             if ($to === ApplicationStatus::Hired) {
                 $locked->hired_at = now();
                 $locked->hire_confirmed_by = $actorRole === UserRole::Candidate ? HireConfirmedBy::Candidate : HireConfirmedBy::Employer;

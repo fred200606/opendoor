@@ -1879,7 +1879,7 @@ components:
         applicants_count: { type: integer, description: 'Only in GET /employer/job-postings (owner)' }
         saved:
           type: boolean
-          description: Only for logged-in candidates – in GET /job-postings/{id}, the saved-jobs list and the save response (M12)
+          description: Only for logged-in candidates – in search results (GET /job-postings), GET /job-postings/{id}, the saved-jobs list and the save response (M12)
         my_application:
           description: Only in GET /job-postings/{id} for a logged-in candidate – their application to this posting, or null
           oneOf:
@@ -1914,6 +1914,7 @@ components:
         status: { $ref: '#/components/schemas/ApplicationStatus' }
         cover_note: { type: [string, 'null'] }
         interview_request: { type: [string, 'null'] }
+        reviewed_at: { type: [string, 'null'], format: date-time, description: 'When the employer first reviewed it (set by pending → reviewed); null before, and for applications reviewed before 2026-10-13 that have moved on' }
         hired_at: { type: [string, 'null'], format: date-time }
         hire_confirmed_by:
           oneOf:

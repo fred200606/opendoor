@@ -32,6 +32,7 @@ class ApplicationResource extends JsonResource
             'status' => $this->status,
             'cover_note' => $this->cover_note,
             'interview_request' => $this->interview_request,
+            'reviewed_at' => $this->reviewed_at?->toIso8601String(),
             'hired_at' => $this->hired_at?->toIso8601String(),
             'hire_confirmed_by' => $this->hire_confirmed_by,
             'feedback_opens_on' => $this->feedbackOpensOn()?->toDateString(),

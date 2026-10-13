@@ -41,6 +41,27 @@ class SavedJobTest extends TestCase
         $this->assertSame([$this->posting->id], CandidateProfile::for($this->candidate)->savedJobs()->pluck('job_postings.id')->all());
     }
 
+    public function test_search_results_say_which_postings_the_candidate_saved(): void
+    {
+        $other = JobPosting::factory()->open()->create(['title' => 'Chat Support']);
+        CandidateProfile::for($this->candidate)->savedJobs()->attach($this->posting->id);
+        CandidateProfile::for(User::factory()->candidate()->create())->savedJobs()->attach($other->id);
+
+        Sanctum::actingAs($this->candidate);
+        $saved = collect($this->getJson('/api/job-postings')->assertOk()->json('data'))->pluck('saved', 'id')->all();
+
+        $this->assertSame(true, $saved[$this->posting->id]);
+        $this->assertSame(false, $saved[$other->id]);
+    }
+
+    public function test_guests_and_employers_get_no_saved_flag_in_search(): void
+    {
+        $this->getJson('/api/job-postings')->assertOk()->assertJsonMissingPath('data.0.saved');
+
+        Sanctum::actingAs(User::factory()->employer()->create());
+        $this->getJson('/api/job-postings')->assertOk()->assertJsonMissingPath('data.0.saved');
+    }
+
     public function test_the_list_shows_own_visible_saved_postings_newest_saved_first(): void
     {
         $older = JobPosting::factory()->open()->create(['title' => 'Chat Support']);
@@ -140,13 +161,11 @@ class SavedJobTest extends TestCase
         CandidateProfile::for($this->candidate)->savedJobs()->attach($this->posting->id);
         $this->getJson($url)->assertJsonPath('saved', true);
 
-        // Guests, employers and admins get no `saved` field; search results neither.
+        // Guests, employers and admins get no `saved` field (search results: see below).
         $this->app['auth']->forgetGuards();
         $this->getJson($url)->assertOk()->assertJsonMissingPath('saved');
         Sanctum::actingAs(User::factory()->admin()->create());
         $this->getJson($url)->assertJsonMissingPath('saved');
-        Sanctum::actingAs($this->candidate);
-        $this->getJson('/api/job-postings')->assertJsonMissingPath('data.0.saved');
     }
 
     public function test_only_candidates_have_saved_jobs(): void

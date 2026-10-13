@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Resources\JobPostingResource;
 use App\Models\JobPosting;
 use App\Services\NeedsMatcher;
@@ -13,6 +14,7 @@ use Illuminate\Validation\Rule;
 /**
  * M5: search open postings. Candidates with saved needs get `match` on every posting; with
  * match=1 the list is ranked by needs met (full matches first), then by the requested sort.
+ * Candidates also get `saved` (M12), so a result card can offer Save or show Saved.
  */
 class JobSearchController extends Controller
 {
@@ -48,6 +50,15 @@ class JobSearchController extends Controller
         $postings = $query->paginate(self::PER_PAGE)->withQueryString();
         if ($matcher) {
             $postings->getCollection()->each($matcher->annotate(...));
+        }
+
+        $viewer = $request->user('sanctum');
+        if ($viewer?->role === UserRole::Candidate) {
+            $savedIds = $viewer->candidateProfile?->savedJobs()
+                ->whereKey($postings->getCollection()->modelKeys())
+                ->pluck('job_postings.id')
+                ->all() ?? [];
+            $postings->getCollection()->each(fn (JobPosting $posting) => $posting->setAttribute('saved', in_array($posting->id, $savedIds, true)));
         }
 
         return JobPostingResource::collection($postings)->additional(['meta' => ['match_mode' => $matchMode]]);

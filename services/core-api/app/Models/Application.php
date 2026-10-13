@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * M6: a candidate's application to a posting. status, hired_at and hire_confirmed_by are not
- * fillable: they change only through the status workflow (ApplicationStatus::canTransitionTo).
+ * M6: a candidate's application to a posting. status, reviewed_at, hired_at and hire_confirmed_by
+ * are not fillable: they change only through the status workflow (ApplicationStatus::canTransitionTo).
  */
 #[Fillable(['cover_note', 'interview_request'])]
 class Application extends Model
@@ -39,6 +39,7 @@ class Application extends Model
         return [
             'status' => ApplicationStatus::class,
             'hire_confirmed_by' => HireConfirmedBy::class,
+            'reviewed_at' => 'datetime',
             'hired_at' => 'datetime',
             'feedback_reminded_at' => 'datetime',
         ];

@@ -146,9 +146,15 @@ class ApplicationWorkflowTest extends TestCase
         Sanctum::actingAs($this->candidateUser);
         $this->getJson("/api/applications/{$application->id}")->assertOk()->assertJsonPath('status', 'pending');
 
+        $this->assertNull($application->fresh()->reviewed_at);
+
         Sanctum::actingAs($this->employerUser);
-        $this->getJson("/api/applications/{$application->id}")->assertOk()->assertJsonPath('status', 'reviewed');
-        $this->getJson("/api/applications/{$application->id}")->assertOk()->assertJsonPath('status', 'reviewed');
+        $this->freezeSecond();
+        $reviewedAt = now()->toIso8601String();
+        $this->getJson("/api/applications/{$application->id}")->assertOk()->assertJsonPath('status', 'reviewed')->assertJsonPath('reviewed_at', $reviewedAt);
+        // Opening it again keeps the first review time.
+        $this->travel(2)->hours();
+        $this->getJson("/api/applications/{$application->id}")->assertOk()->assertJsonPath('status', 'reviewed')->assertJsonPath('reviewed_at', $reviewedAt);
 
         $this->assertSame(1, $this->candidateUser->notifications()->count());
         $this->assertSame('Bright Path BPO is reviewing your application for Data Encoder.', $this->candidateUser->notifications()->sole()->data['message']);
