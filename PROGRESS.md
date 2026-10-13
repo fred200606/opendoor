@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
-- **Next step:** Push to GitHub when the user says so (local `main` is 40+ commits ahead of `origin/main`; CI runs on push). Then: voice-input fix for Brave (Known issues, user: "fix mic later"); deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
+- **In progress:** Push `main` to GitHub (user said yes 2026-10-14) and check the CI run (`gh run list --branch main -L 3`); then the voice-input fix for Brave (user chose: push, then fix voice input).
+- **Next step:** After the push + green CI: voice-input fix for Brave (Known issues, user: "fix mic later"); deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
