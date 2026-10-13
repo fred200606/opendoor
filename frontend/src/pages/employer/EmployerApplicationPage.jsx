@@ -5,7 +5,7 @@ import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import { ConfirmDialog } from '../../components/Dialog.jsx';
 import Page from '../../components/Page.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
+import StatusBadge, { BadgeIcon } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
 
@@ -61,85 +61,93 @@ function ApplicationReview({ application, onChange }) {
   const decision = pending && DECISIONS[pending];
 
   return (
-    <Page title={candidate.name ?? 'Applicant'}>
-      <p>
-        Applied for <Link to={`/employer/jobs/${job.id}/applicants`}>{job.title}</Link> on {formatDate(application.created_at)}
-      </p>
-      <p>
-        Status: <StatusBadge kind="application" status={application.status} />
-      </p>
-      {message && (
-        <Alert type="success" live="polite">
-          <p>{message}</p>
-        </Alert>
-      )}
-      <ApiErrorAlert error={error} title="The status was not changed" />
+    <Page
+      title={candidate.name ?? 'Applicant'}
+      back={{ to: `/employer/jobs/${job.id}/applicants`, label: 'Back to applicants' }}
+      subtitle={
+        <p className="applicant-line">
+          <StatusBadge kind="application" status={application.status} />
+          <span>
+            Applied for <Link to={`/employer/jobs/${job.id}/applicants`}>{job.title}</Link> on {formatDate(application.created_at)}
+            {candidate.headline && ` · ${candidate.headline}`}
+          </span>
+        </p>
+      }
+    >
+      <div className="application-page__body">
+        {message && <Alert type="success" live="polite" title={message} />}
+        <ApiErrorAlert error={error} title="The status was not changed" />
 
-      {candidate.headline && <p className="lead">{candidate.headline}</p>}
-
-      {application.interview_request && (
-        <Alert type="warning" title="Interview accommodation requested">
-          <p className="prose">{application.interview_request}</p>
-        </Alert>
-      )}
-
-      <h2>Accommodations this applicant needs</h2>
-      {(candidate.accommodations ?? []).length === 0 ? (
-        <p>The applicant has not listed any accommodation needs.</p>
-      ) : (
-        <ul className="needs-list">
-          {candidate.accommodations.map((item) => (
-            <li key={item.id}>
-              {item.name} –{' '}
-              {offered.has(item.id) ? (
-                <span className="needs-list__ok">
-                  <span aria-hidden="true">✓ </span>offered in your posting
-                </span>
-              ) : (
-                <span className="needs-list__missing">
-                  <span aria-hidden="true">! </span>not listed in your posting
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h2>Cover note</h2>
-      <p className="prose">{application.cover_note || 'The applicant did not write a cover note.'}</p>
-
-      <h2>About the applicant</h2>
-      <dl className="details-list">
-        <dt>Skills</dt>
-        <dd>{(candidate.skills ?? []).length > 0 ? candidate.skills.join(', ') : 'Not listed'}</dd>
-        <dt>Work experience</dt>
-        <dd className="prose">{candidate.experience || 'Not listed'}</dd>
-        {candidate.disability_type && (
-          <>
-            <dt>Disability (shared by the applicant)</dt>
-            <dd>{candidate.disability_type}</dd>
-          </>
+        {application.interview_request && (
+          <Alert type="warning" title="Interview accommodation requested">
+            <p className="prose">{application.interview_request}</p>
+          </Alert>
         )}
-        <dt>Résumé</dt>
-        <dd>
-          {candidate.resume_url ? (
-            <a href={candidate.resume_url} target="_blank" rel="noreferrer">
-              Open the résumé (PDF, opens in a new tab)
-            </a>
+
+        <section className="card" aria-labelledby="needs-title">
+          <h2 id="needs-title">Accommodations this applicant needs</h2>
+          {(candidate.accommodations ?? []).length === 0 ? (
+            <p>The applicant has not listed any accommodation needs.</p>
           ) : (
-            'No résumé uploaded'
+            <ul className="needs-badges">
+              {candidate.accommodations.map((item) => {
+                const ok = offered.has(item.id);
+                return (
+                  <li key={item.id}>
+                    <span className={`badge badge--${ok ? 'success' : 'warning'}`}>
+                      <BadgeIcon tone={ok ? 'success' : 'warning'} />
+                      {item.name} · {ok ? 'offered in your posting' : 'not listed in your posting'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </dd>
-      </dl>
+        </section>
+
+        <section className="card" aria-labelledby="cover-title">
+          <h2 id="cover-title">Cover note</h2>
+          <p className="prose">{application.cover_note || 'The applicant did not write a cover note.'}</p>
+        </section>
+
+        <section className="card" aria-labelledby="about-title">
+          <h2 id="about-title">About the applicant</h2>
+          <dl className="details-list">
+            <dt>Skills</dt>
+            <dd>{(candidate.skills ?? []).length > 0 ? candidate.skills.join(', ') : 'Not listed'}</dd>
+            <dt>Work experience</dt>
+            <dd className="prose">{candidate.experience || 'Not listed'}</dd>
+            {candidate.disability_type && (
+              <>
+                <dt>Disability (shared by the applicant)</dt>
+                <dd>{candidate.disability_type}</dd>
+              </>
+            )}
+            <dt>Résumé</dt>
+            <dd>
+              {candidate.resume_url ? (
+                <a href={candidate.resume_url} target="_blank" rel="noreferrer">
+                  Open the résumé (PDF, opens in a new tab)
+                </a>
+              ) : (
+                'No résumé uploaded'
+              )}
+            </dd>
+          </dl>
+        </section>
+      </div>
 
       {application.status === 'reviewed' && (
-        <div className="actions">
-          {Object.entries(DECISIONS).map(([status, item]) => (
-            <button key={status} type="button" className={`button ${item.danger ? 'button--secondary' : ''}`} onClick={() => setPending(status)}>
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="actions application-page__actions">
+            {Object.entries(DECISIONS).map(([status, item]) => (
+              <button key={status} type="button" className={`button ${item.danger ? 'button--danger-outline' : ''}`} onClick={() => setPending(status)}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <p className="field__hint">“Mark as hired” and “Not selected” are final and ask you to confirm. The applicant is notified.</p>
+        </>
       )}
 
       {decision && (

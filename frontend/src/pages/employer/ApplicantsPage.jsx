@@ -22,20 +22,23 @@ export default function ApplicantsPage() {
   const state = useAsync(() => getApplications({ jobPostingId: id, status, page }), [id, status, page]);
 
   return (
-    <Page title={job.data ? `Applicants for “${job.data.title}”` : 'Applicants'}>
-      <p>
-        <Link to="/employer/jobs">Back to job postings</Link>
-      </p>
-      <SelectField
-        label="Show"
-        name="status"
-        className="filter-inline"
-        placeholder="All applicants"
-        options={toOptions(APPLICATION_STATUSES)}
-        value={status}
-        onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
-      />
-      <ResultCount state={state} one="applicant" />
+    <Page
+      title={job.data ? `Applicants for “${job.data.title}”` : 'Applicants'}
+      back={{ to: '/employer/jobs', label: 'Back to job postings' }}
+      subtitle={<p className="page__subtitle">Everyone who applied to this job.</p>}
+    >
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="status"
+          className="field--inline"
+          placeholder="All applicants"
+          options={toOptions(APPLICATION_STATUSES)}
+          value={status}
+          onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
+        />
+        <ResultCount state={state} one="applicant" />
+      </div>
       <AsyncContent state={state} label="Loading applicants">
         {({ data, meta }) =>
           data.length === 0 ? (

@@ -312,7 +312,8 @@ main:focus {
   text-decoration: underline;
 }
 
-.nav-item[aria-current='page'] {
+.nav-item[aria-current='page'],
+.nav-item[aria-current='true'] {
   border-color: var(--primary-dark);
   background: var(--od-surface-current);
   color: var(--od-text-accent);
@@ -2748,8 +2749,12 @@ input[type='file']::file-selector-button {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  max-width: 36rem;
+  max-width: 47.5rem;
   margin-bottom: 1.25rem;
+}
+
+.application-page__body > .alert {
+  margin: 0;
 }
 
 .application-page__body > .card {
@@ -3054,4 +3059,42 @@ input[type='file']::file-selector-button {
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   font-weight: 700;
+}
+
+/* ---------- Figma "5.6 Applicant" (employer): needs as badges, cards */
+
+.applicant-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+}
+
+.application-page__body .card > h2 {
+  margin-bottom: 0.875rem;
+}
+
+.application-page__body .card > :last-child {
+  margin-bottom: 0;
+}
+
+.needs-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.needs-badges .badge {
+  white-space: normal;
+}
+
+.employer-layout .dashboard-side .alert {
+  max-width: none;
+  margin: 0;
 }

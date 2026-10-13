@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
 import { getCompany, getTrustScore } from '../../api/profile.js';
+import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import Page from '../../components/Page.jsx';
-import TrustScoreCard from '../../components/TrustScoreCard.jsx';
+import TrustScoreCard, { TrustBreakdownTable } from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 
-/** The employer's own score: totals and per-accommodation counts only, never individual responses. */
+/**
+ * The employer's own score (Figma 6:4194): totals and per-accommodation counts only, never
+ * individual responses.
+ */
 export default function EmployerTrustScorePage() {
   const state = useAsync(async () => {
     const company = await getCompany();
@@ -13,23 +17,33 @@ export default function EmployerTrustScorePage() {
   }, []);
 
   return (
-    <Page title="Your trust score">
-      <p>
-        Thirty days after a hire, the employee rates each accommodation your posting promised: delivered, partly delivered
-        or not delivered. The score is the share delivered (partly delivered counts as half). Ratings are anonymous and
-        the score is published from 3 responses.
-      </p>
-      <AsyncContent
-        state={state}
-        label="Loading your trust score"
-        errorTitle="Your trust score could not be loaded"
-      >
-        {(trustScore) => <TrustScoreCard trustScore={trustScore} breakdown={trustScore.breakdown} />}
+    <Page title="Trust score" subtitle={<p className="page__subtitle">Whether you keep your accommodation promises.</p>}>
+      <AsyncContent state={state} label="Loading your trust score" errorTitle="Your trust score could not be loaded">
+        {(trustScore) => (
+          <div className="employer-layout">
+            <div className="dashboard-side">
+              <TrustScoreCard trustScore={trustScore} title="Your trust score" />
+              <Alert type="info" title="How it works">
+                <p>
+                  Hired employees rate each promised accommodation 30 days after their hire. Partly delivered counts as half. Answers are
+                  anonymous. A score is shown from 3 responses.
+                </p>
+              </Alert>
+            </div>
+            <section aria-labelledby="each-title">
+              <h2 id="each-title">Each accommodation</h2>
+              {trustScore.breakdown?.length > 0 ? (
+                <TrustBreakdownTable breakdown={trustScore.breakdown} />
+              ) : (
+                <p>No ratings yet.</p>
+              )}
+              <p>
+                Tip: keep your <Link to="/employer/jobs">job postings</Link> accurate to keep your score high.
+              </p>
+            </section>
+          </div>
+        )}
       </AsyncContent>
-      <p>
-        Improve your score by delivering every accommodation you list, and by adding details in your{' '}
-        <Link to="/employer/jobs">job postings</Link>.
-      </p>
     </Page>
   );
 }

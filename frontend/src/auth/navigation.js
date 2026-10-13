@@ -37,7 +37,7 @@ export const NAVIGATION = {
   employer: {
     left: [
       { to: '/employer/dashboard', label: 'Dashboard', icon: House },
-      { to: '/employer/jobs', label: 'Job postings', icon: Briefcase },
+      { to: '/employer/jobs', label: 'Job postings', icon: Briefcase, also: ['/employer/applications/'] },
       { to: '/employer/company', label: 'Company', icon: Building2 },
       { to: '/employer/trust-score', label: 'Trust score', icon: ShieldCheck },
     ],

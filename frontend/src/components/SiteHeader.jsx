@@ -14,12 +14,25 @@ function initials(name = '') {
   return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts.at(-1)[0] : '')).toUpperCase();
 }
 
+/**
+ * A top menu link. `also` lists other path prefixes that belong to its section (an employer's
+ * application page is part of Job postings): there it is marked aria-current="true", not "page".
+ */
 function NavItem({ link }) {
+  const { pathname } = useLocation();
+  const inSection = link.also?.some((prefix) => pathname.startsWith(prefix));
+
   return (
     <li>
-      <NavLink to={link.to} end={link.end} className="nav-item">
-        {link.label}
-      </NavLink>
+      {inSection ? (
+        <Link to={link.to} className="nav-item" aria-current="true">
+          {link.label}
+        </Link>
+      ) : (
+        <NavLink to={link.to} end={link.end} className="nav-item">
+          {link.label}
+        </NavLink>
+      )}
     </li>
   );
 }
