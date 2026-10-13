@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../../components/Dialog.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
+import { BadgeIcon } from '../../components/StatusBadge.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import ResultCount from '../../components/ResultCount.jsx';
 import { useAction } from '../../hooks/useAction.js';
@@ -43,9 +44,9 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <Page title="Users">
+    <Page title="Users" subtitle={<p className="page__subtitle">Find accounts. Suspend or reactivate them.</p>}>
       <form
-        className="filter-bar"
+        className="filter-bar filter-bar--fields"
         role="search"
         aria-label="Filter users"
         onSubmit={(event) => {
@@ -55,13 +56,15 @@ export default function AdminUsersPage() {
       >
         <SelectField label="Role" name="role" placeholder="All roles" options={toOptions(ROLE_LABELS)} value={role} onChange={(event) => update({ role: event.target.value, page: '' })} />
         <TextField label="Name or email" name="q" type="search" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <button type="submit" className="button button--secondary">
+        <button type="submit" className="button">
           Search
         </button>
       </form>
       <ActionFeedback action={action} errorTitle="The account was not changed" />
 
-      <ResultCount state={state} one="user" />
+      <div className="result-count">
+        <ResultCount state={state} one="user" />
+      </div>
       <AsyncContent state={state} label="Loading users">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -87,13 +90,21 @@ export default function AdminUsersPage() {
                         <td>{user.email}</td>
                         <td>{ROLE_LABELS[user.role]}</td>
                         <td>
-                          <span className={`badge ${user.is_active ? 'badge--success' : 'badge--danger'}`}>{user.is_active ? 'Active' : 'Suspended'}</span>
+                          <span className={`badge ${user.is_active ? 'badge--success' : 'badge--danger'}`}>
+                            <BadgeIcon tone={user.is_active ? 'success' : 'danger'} />
+                            {user.is_active ? 'Active' : 'Suspended'}
+                          </span>
                         </td>
                         <td>
                           {user.id === me.id ? (
-                            <span className="field__hint">This is you</span>
+                            <span className="muted">This is you</span>
                           ) : (
-                            <button type="button" className="button button--secondary button--small" aria-label={`${user.is_active ? 'Suspend' : 'Reactivate'} ${user.name}`} onClick={() => setConfirm(user)}>
+                            <button
+                              type="button"
+                              className={`button button--small ${user.is_active ? 'button--danger-outline' : 'button--secondary'}`}
+                              aria-label={`${user.is_active ? 'Suspend' : 'Reactivate'} ${user.name}`}
+                              onClick={() => setConfirm(user)}
+                            >
                               {user.is_active ? 'Suspend' : 'Reactivate'}
                             </button>
                           )}

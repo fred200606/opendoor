@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
   adminCreateAccommodation,
@@ -15,6 +16,7 @@ import Button from '../../components/Button.jsx';
 import Dialog, { ConfirmDialog } from '../../components/Dialog.jsx';
 import { SelectField, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
+import { BadgeIcon } from '../../components/StatusBadge.jsx';
 import { useAction } from '../../hooks/useAction.js';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
@@ -23,7 +25,7 @@ import { ACCOMMODATION_GROUPS, toOptions } from '../../lib/labels.js';
 /** M11 master data: categories and accommodation types (retire instead of delete when in use). */
 export default function AdminMasterDataPage() {
   return (
-    <Page title="Master data">
+    <Page title="Master data" subtitle={<p className="page__subtitle">Categories and accommodation types used in every form.</p>}>
       <CategoriesSection />
       <AccommodationsSection />
     </Page>
@@ -55,33 +57,46 @@ function CategoriesSection() {
   }
 
   return (
-    <section className="card" aria-labelledby="categories-title">
+    <section className="card card--form master-card" aria-labelledby="categories-title">
       <h2 id="categories-title">Job categories</h2>
       <ActionFeedback action={action} errorTitle="The category was not changed" />
 
       <AsyncContent state={state} label="Loading categories">
         {(categories) => (
-          <ul className="admin-list">
-            {categories.map((category) => (
-              <li key={category.id}>
-                <span>{category.name}</span>
-                <span className="table-actions">
-                  <button type="button" className="button button--link" aria-label={`Rename ${category.name}`} onClick={() => setEditing(category)}>
-                    Rename
-                  </button>
-                  <button type="button" className="button button--link" aria-label={`Delete ${category.name}`} onClick={() => setDeleting(category)}>
-                    Delete
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="table-wrap">
+            <table className="table">
+              <caption className="visually-hidden">Job categories</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((category) => (
+                  <tr key={category.id}>
+                    <th scope="row">{category.name}</th>
+                    <td className="table-actions">
+                      <button type="button" className="button button--secondary button--small" aria-label={`Rename ${category.name}`} onClick={() => setEditing(category)}>
+                        Rename
+                      </button>
+                      <button type="button" className="button button--danger-outline button--small" aria-label={`Delete ${category.name}`} onClick={() => setDeleting(category)}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </AsyncContent>
 
-      <form onSubmit={create} noValidate className="inline-form">
+      <form onSubmit={create} noValidate>
         <TextField label="New category" id="new-category" maxLength={100} autoComplete="off" error={add.fieldErrors.name} {...add.bind('name')} />
-        <Button type="submit" className="button" disabled={add.submitting}>
+        <Button type="submit" className="button button--secondary button--block" disabled={add.submitting}>
           Add category
         </Button>
       </form>
@@ -161,7 +176,7 @@ function AccommodationsSection() {
   }
 
   return (
-    <section className="card" aria-labelledby="accommodations-title">
+    <section className="card master-card" aria-labelledby="accommodations-title">
       <h2 id="accommodations-title">Accommodation types</h2>
       <ActionFeedback action={action} errorTitle="The accommodation type was not changed" />
 
@@ -187,18 +202,21 @@ function AccommodationsSection() {
                     </th>
                     <td>{ACCOMMODATION_GROUPS[accommodation.group]}</td>
                     <td>
-                      <span className={`badge ${accommodation.is_retired ? 'badge--muted' : 'badge--success'}`}>{accommodation.is_retired ? 'Retired' : 'In use'}</span>
+                      <span className={`badge ${accommodation.is_retired ? 'badge--neutral' : 'badge--success'}`}>
+                        <BadgeIcon tone={accommodation.is_retired ? 'neutral' : 'success'} />
+                        {accommodation.is_retired ? 'Retired' : 'In use'}
+                      </span>
                     </td>
                     <td className="table-actions">
-                      <button type="button" className="button button--link" aria-label={`Edit ${accommodation.name}`} onClick={() => setEditing(accommodation)}>
+                      <button type="button" className="button button--secondary button--small" aria-label={`Edit ${accommodation.name}`} onClick={() => setEditing(accommodation)}>
                         Edit
                       </button>
                       {accommodation.is_retired ? (
-                        <button type="button" className="button button--link" aria-label={`Restore ${accommodation.name}`} onClick={() => restore(accommodation)}>
+                        <button type="button" className="button button--secondary button--small" aria-label={`Restore ${accommodation.name}`} onClick={() => restore(accommodation)}>
                           Restore
                         </button>
                       ) : (
-                        <button type="button" className="button button--link" aria-label={`Delete ${accommodation.name}`} onClick={() => setDeleting(accommodation)}>
+                        <button type="button" className="button button--danger-outline button--small" aria-label={`Delete ${accommodation.name}`} onClick={() => setDeleting(accommodation)}>
                           Delete
                         </button>
                       )}
@@ -212,6 +230,7 @@ function AccommodationsSection() {
       </AsyncContent>
 
       <button type="button" className="button" onClick={() => setEditing({})}>
+        <Plus aria-hidden="true" focusable="false" />
         Add accommodation type
       </button>
 

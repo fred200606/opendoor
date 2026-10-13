@@ -3191,3 +3191,40 @@ input[type='file']::file-selector-button {
 .filter-bar--fields > .button {
   margin-bottom: 0;
 }
+
+/* ---------- Figma "6.5 Users" / "6.6 Reports" */
+
+.report-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+}
+
+.quote {
+  border-left-width: 3px;
+  background: none;
+}
+
+.feedback-card__title {
+  margin-bottom: 0.375rem;
+  font-size: 1.125rem;
+}
+
+.review-posting .tag-list {
+  margin: 0.5rem 0;
+}
+
+/* ---------- Figma "6.8 Master data" */
+
+.master-card {
+  margin-bottom: 1.5rem;
+}
+
+.master-card > h2 {
+  margin-bottom: 1rem;
+}
+
+.master-card .table-wrap {
+  margin-bottom: 1.25rem;
+}

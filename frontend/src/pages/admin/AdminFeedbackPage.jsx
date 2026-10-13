@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminListFeedback, adminSetFeedbackHidden } from '../../api/admin.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
+import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import { ConfirmDialog } from '../../components/Dialog.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
@@ -40,12 +41,23 @@ export default function AdminFeedbackPage() {
   }
 
   return (
-    <Page title="Feedback responses">
-      <p>Responses are anonymous. Hide a response only if it is abusive, off-topic or clearly false; the trust score is recalculated.</p>
-      <SelectField label="Show" name="hidden" className="filter-inline" options={VISIBILITY} value={hidden} onChange={(event) => setParams(event.target.value ? { hidden: event.target.value } : {}, { replace: true })} />
+    <Page title="Feedback" subtitle={<p className="page__subtitle">Moderate the anonymous ratings behind trust scores.</p>}>
+      <Alert type="info" className="dashboard-notice" title="Hide only abusive, off-topic or clearly false responses.">
+        <p>The trust score is recalculated.</p>
+      </Alert>
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="hidden"
+          className="field--inline"
+          options={VISIBILITY}
+          value={hidden}
+          onChange={(event) => setParams(event.target.value ? { hidden: event.target.value } : {}, { replace: true })}
+        />
+        <ResultCount state={state} one="response" />
+      </div>
       <ActionFeedback action={action} errorTitle="The response was not changed" />
 
-      <ResultCount state={state} one="response" />
       <AsyncContent state={state} label="Loading feedback">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -55,11 +67,11 @@ export default function AdminFeedbackPage() {
               <ul className="result-list">
                 {data.map((feedback) => (
                   <li key={feedback.id}>
-                    <article className="card">
-                      <h2 className="job-card__title">
+                    <article className="card review-posting">
+                      <h2 className="feedback-card__title">
                         {feedback.employer?.company_name} – {feedback.job_title}
                       </h2>
-                      <p>
+                      <p className="muted">
                         Submitted {formatDate(feedback.created_at)}
                         {feedback.is_hidden && (
                           <>
@@ -68,17 +80,17 @@ export default function AdminFeedbackPage() {
                           </>
                         )}
                       </p>
-                      <ul>
+                      <ul className="tag-list">
                         {(feedback.items ?? []).map((item) => (
-                          <li key={item.accommodation_id}>
-                            {item.name}: <strong>{FEEDBACK_RATINGS[item.rating]}</strong>
+                          <li key={item.accommodation_id} className="tag">
+                            {item.name}: {FEEDBACK_RATINGS[item.rating]}
                           </li>
                         ))}
                       </ul>
                       {feedback.comments && <blockquote className="quote">{feedback.comments}</blockquote>}
                       <button
                         type="button"
-                        className="button button--secondary button--small"
+                        className={`button button--small ${feedback.is_hidden ? 'button--secondary' : 'button--danger-outline'}`}
                         aria-label={`${feedback.is_hidden ? 'Show again' : 'Hide response'}: ${feedback.job_title} at ${feedback.employer?.company_name}, ${formatDate(feedback.created_at)}`}
                         onClick={() => setConfirm(feedback)}
                       >

@@ -36,18 +36,20 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <Page title="Reports">
-      <SelectField
-        label="Show"
-        name="status"
-        className="filter-inline"
-        options={toOptions(REPORT_STATUSES)}
-        value={status}
-        onChange={(event) => setParams({ status: event.target.value }, { replace: true })}
-      />
+    <Page title="Reports" subtitle={<p className="page__subtitle">Postings that job seekers reported.</p>}>
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="status"
+          className="field--inline"
+          options={toOptions(REPORT_STATUSES)}
+          value={status}
+          onChange={(event) => setParams({ status: event.target.value }, { replace: true })}
+        />
+        <ResultCount state={state} one="report" />
+      </div>
       <ActionFeedback action={action} errorTitle="The report was not updated" />
 
-      <ResultCount state={state} one="report" />
       <AsyncContent state={state} label="Loading reports">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -57,13 +59,14 @@ export default function AdminReportsPage() {
               <ul className="result-list">
                 {data.map((report) => (
                   <li key={report.id}>
-                    <article className="card">
+                    <article className="card review-posting">
                       <h2 className="job-card__title">
                         <Link to={`/jobs/${report.job_posting_id}`}>{report.job_posting?.title ?? `Posting #${report.job_posting_id}`}</Link>
                       </h2>
-                      <p>
-                        {report.job_posting?.employer?.company_name && `${report.job_posting.employer.company_name} · `}
-                        Reported {formatDate(report.created_at)} <StatusBadge kind="report" status={report.status} />
+                      <p className="report-line">
+                        {report.job_posting?.employer?.company_name && <strong>{report.job_posting.employer.company_name}</strong>}
+                        <span className="muted">Reported {formatDate(report.created_at)}</span>
+                        <StatusBadge kind="report" status={report.status} />
                       </p>
                       <blockquote className="quote">{report.reason}</blockquote>
                       {report.status !== 'open' && report.resolved_at && (

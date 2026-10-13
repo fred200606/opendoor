@@ -250,7 +250,7 @@ describe('AdminReportsPage and AdminFeedbackPage', () => {
       },
     });
 
-    expect(await screen.findByText('Not delivered')).toBeInTheDocument();
+    expect(await screen.findByText('Sign language interpreter: Not delivered')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Hide response: Data Encoder at Bayanihan Tech, October 4, 2026' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Hide response' }));
 
