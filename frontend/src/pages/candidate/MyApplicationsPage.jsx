@@ -18,18 +18,19 @@ export default function MyApplicationsPage() {
   const state = useAsync(() => getApplications({ status, page }), [status, page]);
 
   return (
-    <Page title="My applications">
-      <SelectField
-        label="Show"
-        name="status"
-        className="filter-inline"
-        placeholder="All applications"
-        options={toOptions(APPLICATION_STATUSES)}
-        value={status}
-        onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
-      />
-
-      <ResultCount state={state} one="application" />
+    <Page title="My applications" subtitle={<p className="page__subtitle">Every job you applied to and where it stands.</p>}>
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="status"
+          className="field--inline"
+          placeholder="All applications"
+          options={toOptions(APPLICATION_STATUSES)}
+          value={status}
+          onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
+        />
+        <ResultCount state={state} one="application" />
+      </div>
       <AsyncContent state={state} label="Loading your applications">
         {({ data, meta }) => (
           <>

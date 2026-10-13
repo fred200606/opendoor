@@ -1126,23 +1126,29 @@ input[type='file'].field__input {
   vertical-align: top;
 }
 
+/* Figma "Table": tinted header row, 1 px row lines, in a 16 px-corner box. */
 .table thead th {
-  border-bottom: 2px solid var(--border);
+  background: var(--od-surface-tint);
   font-family: var(--font-body);
+  font-size: 1.0625rem;
   font-weight: 700;
 }
 
 .table th,
 .table td {
-  padding: 0.875rem 0.75rem;
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.table tbody th {
+  font-weight: 400;
 }
 
 .table-wrap {
   overflow-x: auto;
   margin: 0 0 1.5rem;
-  padding: 0.5rem 1rem;
-  border: 2px solid var(--divider);
-  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--divider);
+  border-radius: var(--radius);
 }
 
 .table-wrap .table {
@@ -2631,4 +2637,46 @@ input[type='file']::file-selector-button {
 
 .job-card .match {
   margin: 0.125rem 0;
+}
+
+/* ---------- Figma "4.4 My applications": "Show" filter with the count beside it */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-bar > p {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.field--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin: 0;
+}
+
+.field--inline .field__label {
+  margin: 0;
+}
+
+.field--inline .field__input {
+  width: auto;
+  min-width: 13rem;
+}
+
+.table tbody th a {
+  font-weight: 700;
+}
+
+.filter-bar > .field {
+  flex: 0 1 auto;
+  width: auto;
 }
