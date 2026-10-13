@@ -2628,3 +2628,7 @@ input[type='file']::file-selector-button {
 .fieldset--box > legend {
   color: var(--text);
 }
+
+.job-card .match {
+  margin: 0.125rem 0;
+}

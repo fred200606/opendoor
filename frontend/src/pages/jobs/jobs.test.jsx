@@ -17,6 +17,7 @@ describe('JobSearchPage', () => {
     expect(await screen.findByText('1 job found')).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/jobs/42');
     expect(screen.queryByLabelText('Matches my needs')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument();
     const search = calls.find((call) => call.key === 'GET /job-postings');
     expect(search.config.params.get('match')).toBeNull();
   });
@@ -44,6 +45,26 @@ describe('JobSearchPage', () => {
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
     // Filters change only the query string: focus stays where the user is typing.
     expect(screen.getByLabelText('Keyword')).toHaveFocus();
+  });
+
+  test('candidates can save or unsave a job from its result card; guests see no Save', async () => {
+    const { user, calls } = renderApp('/candidate/jobs', {
+      as: 'candidate',
+      routes: {
+        ...masterData,
+        'GET /job-postings': () => [200, paged([{ ...job, saved: true }], { match_mode: true })],
+        'DELETE /candidate/saved-jobs/42': () => [204, ''],
+        'POST /candidate/saved-jobs/42': () => [201, { ...job, saved: true }],
+      },
+    });
+
+    const saved = await screen.findByRole('button', { name: 'Saved Data Encoder' });
+    expect(saved).toHaveAttribute('aria-pressed', 'true');
+    await user.click(saved);
+    expect(await screen.findByRole('button', { name: 'Save Data Encoder' })).toHaveAttribute('aria-pressed', 'false');
+    expect(calls.some((call) => call.key === 'DELETE /candidate/saved-jobs/42')).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Save Data Encoder' }));
+    expect(await screen.findByRole('button', { name: 'Saved Data Encoder' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('candidate without needs is told to add them', async () => {

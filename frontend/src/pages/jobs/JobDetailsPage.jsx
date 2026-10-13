@@ -1,8 +1,8 @@
-import { Bookmark, Check, Flag } from 'lucide-react';
+import { Flag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
-import { getJob, reportPosting, saveJob, unsaveJob } from '../../api/jobs.js';
+import { getJob, reportPosting } from '../../api/jobs.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import AccessibilitySnapshot from '../../components/AccessibilitySnapshot.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
@@ -14,6 +14,7 @@ import { TextArea } from '../../components/form/fields.jsx';
 import MatchBadge from '../../components/MatchBadge.jsx';
 import Page from '../../components/Page.jsx';
 import ReadAloud from '../../components/ReadAloud.jsx';
+import SaveJobButton from '../../components/SaveJobButton.jsx';
 import StatusBadge, { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
@@ -205,7 +206,7 @@ function JobActions({ job }) {
         )}
       </section>
       <div className="actions job-actions__more">
-        <SaveButton jobId={job.id} initiallySaved={Boolean(job.saved)} />
+        <SaveJobButton jobId={job.id} initiallySaved={Boolean(job.saved)} />
         <ReportButton jobId={job.id} />
       </div>
     </div>
@@ -258,38 +259,6 @@ function ApplyForm({ job, onApplied }) {
           {form.submitting ? 'Sending…' : 'Send application'}
         </Button>
       </form>
-    </>
-  );
-}
-
-function SaveButton({ jobId, initiallySaved }) {
-  const [saved, setSaved] = useState(initiallySaved);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
-
-  async function toggle() {
-    setBusy(true);
-    try {
-      if (saved) await unsaveJob(jobId);
-      else await saveJob(jobId);
-      setSaved(!saved);
-      setMessage(saved ? 'Removed from saved jobs.' : 'Saved. Find it under Saved jobs.');
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <>
-      <Button type="button" className={`button button--small ${saved ? '' : 'button--secondary'}`.trim()} aria-pressed={saved} disabled={busy} onClick={toggle}>
-        {saved ? <Check aria-hidden="true" focusable="false" /> : <Bookmark aria-hidden="true" focusable="false" />}
-        {saved ? 'Saved' : 'Save job'}
-      </Button>
-      <p className="visually-hidden" role="status">
-        {message}
-      </p>
     </>
   );
 }

@@ -12,6 +12,7 @@ import JobCard from '../../components/JobCard.jsx';
 import Loading from '../../components/Loading.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
+import SaveJobButton from '../../components/SaveJobButton.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue.js';
 import { plural } from '../../lib/format.js';
@@ -70,22 +71,12 @@ export default function JobSearchPage() {
 
   return (
     <Page title="Find jobs">
-      <p className="page__subtitle">Search open jobs and filter by the support you need.</p>
+      <p className="page__subtitle">{isCandidate ? 'Jobs that offer what you need come first.' : 'Search open jobs and filter by the support you need.'}</p>
       <div className="search-layout">
         <form className="search-filters" role="search" aria-labelledby="filters-title" onSubmit={(event) => event.preventDefault()}>
           <h2 id="filters-title" className="search-filters__title">
             Filter jobs
           </h2>
-          <TextField
-            label="Keyword"
-            voice
-            name="q"
-            type="search"
-            hint="Job title, description or company name."
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
-
           {isCandidate && (
             <CheckboxField
               name="match"
@@ -95,6 +86,16 @@ export default function JobSearchPage() {
               onChange={(event) => update({ match: event.target.checked ? '' : '0' })}
             />
           )}
+
+          <TextField
+            label="Keyword"
+            voice
+            name="q"
+            type="search"
+            hint="Job title, description or company name."
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
 
           <SelectField
             label="Category"
@@ -170,7 +171,9 @@ export default function JobSearchPage() {
           <ul className="result-list" aria-busy={results.loading}>
             {jobs.map((job) => (
               <li key={job.id}>
-                <JobCard job={job} to={jobPath(user?.role, job.id)} state={backHere} headingLevel={3} />
+                <JobCard job={job} to={jobPath(user?.role, job.id)} state={backHere} headingLevel={3}>
+                  {isCandidate && <SaveJobButton jobId={job.id} initiallySaved={Boolean(job.saved)} jobTitle={job.title} />}
+                </JobCard>
               </li>
             ))}
           </ul>
