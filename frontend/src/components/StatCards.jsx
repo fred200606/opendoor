@@ -22,7 +22,7 @@ export default function StatCards({ title, items, headingLevel = 2 }) {
             <span className="stats__label">{item.label}</span>
             {item.to && (
               <Link to={item.to} className="stats__link stats__view">
-                View<span className="visually-hidden"> {item.label} ({item.value})</span>
+                View <span className="visually-hidden">{item.label} ({item.value})</span>
               </Link>
             )}
           </li>

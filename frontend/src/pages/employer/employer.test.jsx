@@ -279,6 +279,6 @@ describe('Employer trust score and dashboard', () => {
     });
 
     expect(await screen.findByRole('link', { name: 'Set up company' })).toHaveAttribute('href', '/employer/company');
-    expect(screen.getByRole('link', { name: 'Open' }).closest('li')).toHaveTextContent('2');
+    expect(screen.getByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
   });
 });
