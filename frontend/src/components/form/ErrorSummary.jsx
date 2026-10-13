@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { errorText } from '../../lib/errors.js';
 
@@ -26,6 +27,7 @@ export default function ErrorSummary({ errors, fields = {}, title = 'There is a 
   return (
     <div className="error-summary" role="alert" aria-labelledby="error-summary-title" tabIndex={-1} ref={ref}>
       <h2 id="error-summary-title" className="error-summary__title">
+        <TriangleAlert aria-hidden="true" focusable="false" />
         {title}
       </h2>
       <ul>

@@ -19,6 +19,17 @@ describe('LoginPage', () => {
     expect(calls.find((call) => call.key === 'POST /login').data).toEqual({ email: 'employer@opendoor.test', password: 'secret-password' });
   });
 
+  test('Show password reveals the password and hides it again', async () => {
+    const { user } = renderApp('/login');
+
+    const password = screen.getByLabelText(/Password/);
+    expect(password).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('checkbox', { name: 'Show password' }));
+    expect(password).toHaveAttribute('type', 'text');
+    await user.click(screen.getByRole('checkbox', { name: 'Show password' }));
+    expect(password).toHaveAttribute('type', 'password');
+  });
+
   test('returns to the page the guest originally asked for', async () => {
     const { user, location } = renderApp('/candidate/dashboard', {
       routes: { 'POST /login': () => [200, { token: '5|new', user: users.candidate }] },

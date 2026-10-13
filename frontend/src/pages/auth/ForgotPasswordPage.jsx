@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
         </>
       ) : (
         <>
-          <p>Enter the email address of your OpenDoor account. We will send you a link to choose a new password.</p>
+          <p className="page__subtitle">Enter the email address of your OpenDoor account. We will send you a link to choose a new password.</p>
           <ErrorSummary errors={form.fieldErrors} fields={{ email: { id: 'email' } }} />
           {limited ? (
             <Alert type="error" live="assertive" title="Too many requests">
@@ -51,15 +51,15 @@ export default function ForgotPasswordPage() {
           ) : (
             <ApiErrorAlert error={form.formError} title="The link was not sent" />
           )}
-          <form onSubmit={handleSubmit} noValidate>
+          <form className="card form-card" onSubmit={handleSubmit} noValidate>
             <TextField label="Email address" type="email" autoComplete="email" required error={form.fieldErrors.email} {...form.bind('email')} />
-            <Button type="submit" className="button" disabled={form.submitting}>
+            <Button type="submit" className="button button--block" disabled={form.submitting}>
               {form.submitting ? 'Sending…' : 'Send reset link'}
             </Button>
+            <p className="form-card__footer">
+              Remembered it? <Link to="/login">Back to log in</Link>
+            </p>
           </form>
-          <p className="form-footer">
-            Remembered it? <Link to="/login">Back to log in</Link>
-          </p>
         </>
       )}
     </Page>
