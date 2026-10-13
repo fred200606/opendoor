@@ -103,18 +103,44 @@ describe('PostingFormPage', () => {
     'GET /insights/locations/regions': () => [200, []],
   };
 
+  // Walks through the four steps to the review.
   async function fillRequired(user) {
     await user.type(await screen.findByLabelText(/Job title/), 'Data Encoder');
-    await user.type(screen.getByLabelText(/Job description/), 'Encode records.');
     await user.selectOptions(screen.getByLabelText(/Category/), 'Administrative');
-    await user.selectOptions(screen.getByLabelText(/Employment type/), 'Part-time');
+    await user.click(screen.getByLabelText('Part-time'));
     await user.click(screen.getByLabelText('Hybrid'));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByLabelText(/Job description/), 'Encode records.');
     await user.click(screen.getByLabelText('Online interview'));
     await user.type(screen.getByLabelText(/Workplace address/), '123 Quezon Ave.');
     await user.type(screen.getByLabelText(/Applications close on/), '2099-11-30');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByLabelText('Wheelchair-accessible entrance'));
     await user.type(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/), 'Ramp at gate 2');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
   }
+
+  test('each step is checked before the next; the review shows everything', async () => {
+    const { user, calls } = renderApp('/employer/jobs/new', { as: 'employer', routes });
+
+    await screen.findByRole('heading', { level: 2, name: 'Step 1 of 4 · Job basics' });
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    const summary = await screen.findByRole('alert');
+    expect(summary).toHaveFocus();
+    expect(summary).toHaveTextContent('Enter a job title.');
+    expect(summary).toHaveTextContent('Choose a work setup.');
+
+    await fillRequired(user);
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and submit' })).toHaveFocus();
+    const basics = screen.getByRole('region', { name: 'Job basics' });
+    expect(basics).toHaveTextContent('Data Encoder');
+    expect(basics).toHaveTextContent('Part-time');
+    expect(screen.getByRole('region', { name: 'Accommodations offered' })).toHaveTextContent('Wheelchair-accessible entrance: Ramp at gate 2');
+
+    await user.click(screen.getByRole('button', { name: 'Change description and place' }));
+    expect(screen.getByLabelText(/Workplace address/)).toHaveValue('123 Quezon Ave.');
+    expect(calls.some((call) => call.key === 'POST /job-postings')).toBe(false);
+  });
 
   test('submits a new posting for approval with accommodations and notes', async () => {
     const { user, calls, location } = renderApp('/employer/jobs/new', {
@@ -156,7 +182,9 @@ describe('PostingFormPage', () => {
     await fillRequired(user);
     await user.click(screen.getByRole('button', { name: 'Save as draft' }));
 
+    // The error sends the employer back to the Accommodations step.
     await user.click(await screen.findByRole('link', { name: /may not be greater than 255/ }));
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 3 of 4 · Accommodations' })).toBeInTheDocument();
     expect(document.getElementById('accommodations')).toHaveFocus();
     expect(calls.find((call) => call.key === 'POST /job-postings').data.submit).toBe(false);
   });
@@ -175,13 +203,16 @@ describe('PostingFormPage', () => {
   });
 
   test('editing loads the posting and shows a rejection reason', async () => {
-    renderApp('/employer/jobs/42/edit', {
+    const { user } = renderApp('/employer/jobs/42/edit', {
       as: 'employer',
       routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'draft', rejection_reason: 'Please describe the hours.' }] },
     });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Edit “Data Encoder”' })).toBeInTheDocument();
     expect(screen.getByText(/Please describe the hours/)).toBeInTheDocument();
+    // Editing opens on the review; Change leads to each step with the saved values.
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and submit' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Change accommodations' }));
     expect(screen.getByLabelText('Wheelchair-accessible entrance')).toBeChecked();
     expect(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/)).toHaveValue('Ramp at main entrance');
   });

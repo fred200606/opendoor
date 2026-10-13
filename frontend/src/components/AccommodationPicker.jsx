@@ -4,6 +4,7 @@ import { useId } from 'react';
  * Accommodation checkboxes grouped per RA 7277 group (from GET /accommodations).
  * - `selected`: array of ids
  * - `withNotes`: show a note input under each checked item (job postings), `notes` = { [id]: text }
+ * - `columns`: groups in two columns on wide screens (Figma "Post a new job", step 3)
  */
 export default function AccommodationPicker({
   groups,
@@ -16,6 +17,7 @@ export default function AccommodationPicker({
   notes = {},
   onNoteChange,
   id = 'accommodations',
+  columns = false,
 }) {
   const baseId = useId();
   const selectedSet = new Set(selected);
@@ -25,7 +27,11 @@ export default function AccommodationPicker({
   }
 
   return (
-    <fieldset id={id} className={`field fieldset accommodation-picker ${error ? 'field--invalid' : ''}`} tabIndex={-1}>
+    <fieldset
+      id={id}
+      className={`field fieldset accommodation-picker ${columns ? 'accommodation-picker--columns' : ''} ${error ? 'field--invalid' : ''}`}
+      tabIndex={-1}
+    >
       <legend className="field__label">{legend}</legend>
       {hint && <p className="field__hint">{hint}</p>}
       {error && (
@@ -38,6 +44,7 @@ export default function AccommodationPicker({
         {selected.length === 0 ? 'None selected.' : `${selected.length} selected.`}
       </p>
 
+      <div className="accommodation-picker__groups">
       {groups.map((group) => (
         <fieldset key={group.group} className="accommodation-picker__group">
           <legend>{group.label}</legend>
@@ -81,6 +88,7 @@ export default function AccommodationPicker({
           })}
         </fieldset>
       ))}
+      </div>
     </fieldset>
   );
 }

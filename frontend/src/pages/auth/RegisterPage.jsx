@@ -5,6 +5,7 @@ import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
+import WizardProgress from '../../components/WizardProgress.jsx';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 
@@ -113,14 +114,7 @@ export default function RegisterPage() {
       className="page--narrow register"
       subtitle={<p className="page__subtitle">{STEPS[step].intro}</p>}
     >
-      <h2 ref={stepRef} tabIndex={-1} className="wizard__step">
-        Step {step + 1} of {STEPS.length} · {STEPS[step].title}
-      </h2>
-      <div className="wizard__progress" aria-hidden="true">
-        {STEPS.map((item, index) => (
-          <span key={item.title} className={index <= step ? 'wizard__bar wizard__bar--done' : 'wizard__bar'} />
-        ))}
-      </div>
+      <WizardProgress steps={STEPS} current={step} headingRef={stepRef} />
 
       <ErrorSummary errors={stepErrors} fields={FIELDS} />
       <ApiErrorAlert error={form.formError} title="We could not create your account" />

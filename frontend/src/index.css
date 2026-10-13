@@ -2469,7 +2469,8 @@ td.table-actions > * {
 
 .wizard__progress {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 0.5rem;
   margin-bottom: 2rem;
 }
@@ -2988,4 +2989,61 @@ input[type='file']::file-selector-button {
 
 .table-actions__link:hover {
   text-decoration: underline;
+}
+
+/* ---------- Figma "5.4 Post a new job" (4 steps) */
+
+.posting-wizard {
+  max-width: 36rem;
+}
+
+.posting-wizard--wide {
+  max-width: none;
+}
+
+.posting-wizard .field__input {
+  max-width: none;
+}
+
+@media (min-width: 56rem) {
+  .accommodation-picker--columns .accommodation-picker__groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.25rem;
+    align-items: start;
+  }
+}
+
+.review-card {
+  margin: 0 0 1.25rem;
+}
+
+.review-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.review-card__header h3 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.review-card .details-list {
+  margin: 0;
+}
+
+.review-card .prose {
+  margin: 0;
+}
+
+.review-card dd.prose {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.posting-wizard--wide .wizard__progress {
+  max-width: 36rem;
 }
