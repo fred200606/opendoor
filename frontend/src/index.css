@@ -1809,6 +1809,17 @@ input[type='file'].field__input {
   gap: 0.5rem 0.75rem;
 }
 
+/* On a table cell, flex would take the cell out of the row (its line would not line up): keep it a
+   cell and space the actions with margins instead. */
+td.table-actions {
+  display: table-cell;
+}
+
+td.table-actions > * {
+  margin: 0.25rem 0.75rem 0.25rem 0;
+  vertical-align: middle;
+}
+
 .needs-list__ok {
   color: var(--success);
   font-weight: 600;
@@ -2962,4 +2973,19 @@ input[type='file']::file-selector-button {
 
 .form-details {
   margin-bottom: 1.5rem;
+}
+
+/* ---------- Figma "5.3 Job postings": Post a new job at the end of the filter bar, row actions */
+
+.filter-bar__end {
+  margin-left: auto;
+}
+
+.table-actions__link {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.table-actions__link:hover {
+  text-decoration: underline;
 }

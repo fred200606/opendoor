@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { deletePosting, getMyPostings, setPostingStatus } from '../../api/jobs.js';
@@ -54,12 +55,7 @@ export default function PostingsPage() {
   }
 
   return (
-    <Page title="Job postings">
-      <p>
-        <Link to="/employer/jobs/new" className="button">
-          Post a new job
-        </Link>
-      </p>
+    <Page title="Job postings" subtitle={<p className="page__subtitle">All your postings and their state.</p>}>
       {message && (
         <Alert type="success" live="polite">
           <p>{message}</p>
@@ -67,17 +63,22 @@ export default function PostingsPage() {
       )}
       <ApiErrorAlert error={error} title="The posting was not changed" />
 
-      <SelectField
-        label="Show"
-        name="status"
-        className="filter-inline"
-        placeholder="All postings"
-        options={toOptions(POSTING_STATUSES)}
-        value={status}
-        onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
-      />
-
-      <ResultCount state={state} one="posting" />
+      <div className="filter-bar">
+        <SelectField
+          label="Show"
+          name="status"
+          className="field--inline"
+          placeholder="All postings"
+          options={toOptions(POSTING_STATUSES)}
+          value={status}
+          onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
+        />
+        <ResultCount state={state} one="posting" />
+        <Link to="/employer/jobs/new" className="button filter-bar__end">
+          <Plus aria-hidden="true" focusable="false" />
+          Post a new job
+        </Link>
+      </div>
       <AsyncContent state={state} label="Loading your postings">
         {({ data, meta }) =>
           data.length === 0 ? (
@@ -106,12 +107,19 @@ export default function PostingsPage() {
                           <StatusBadge kind="posting" status={posting.status} />
                         </td>
                         <td>
-                          <Link to={`/employer/jobs/${posting.id}/applicants`} aria-label={`${plural(posting.applicants_count ?? 0, 'applicant')} for ${posting.title}`}>
-                            {posting.applicants_count ?? 0}
-                          </Link>
+                          {posting.applicants_count > 0 ? (
+                            <Link to={`/employer/jobs/${posting.id}/applicants`} aria-label={`${plural(posting.applicants_count, 'applicant')} for ${posting.title}`}>
+                              {posting.applicants_count}
+                            </Link>
+                          ) : (
+                            0
+                          )}
                         </td>
                         <td>{formatDate(posting.closes_at)}</td>
                         <td className="table-actions">
+                          <Link to={`/employer/jobs/${posting.id}/edit`} className="table-actions__link" aria-label={`Edit ${posting.title}`}>
+                            Edit
+                          </Link>
                           {posting.status === 'open' && (
                             <button type="button" className="button button--secondary button--small" aria-label={`Close ${posting.title}`} onClick={() => changeStatus(posting, 'closed')}>
                               Close
@@ -122,7 +130,7 @@ export default function PostingsPage() {
                               Reopen
                             </button>
                           )}
-                          <button type="button" className="button button--link" aria-label={`Delete ${posting.title}`} onClick={() => setConfirmDelete(posting)}>
+                          <button type="button" className="button button--danger-outline button--small" aria-label={`Delete ${posting.title}`} onClick={() => setConfirmDelete(posting)}>
                             Delete
                           </button>
                         </td>
@@ -131,6 +139,10 @@ export default function PostingsPage() {
                   </tbody>
                 </table>
               </div>
+              <p className="field__hint">
+                Delete asks you to confirm: the job disappears from search, and applications already received stay available to you and the
+                applicants.
+              </p>
               <Pagination meta={meta} onPageChange={(next) => setParams({ ...(status ? { status } : {}), page: String(next) }, { replace: true })} />
             </>
           )

@@ -57,8 +57,8 @@ function VerificationStatus({ company }) {
     );
   }
   return (
-    <Alert type="info" title="Waiting for verification">
-      <p>An OpenDoor administrator will check your business registration with the DTI/SEC registry.</p>
+    <Alert type="warning" title="Waiting for verification">
+      <p>An OpenDoor administrator checks your business registration with the DTI/SEC registry before your jobs go live.</p>
     </Alert>
   );
 }
