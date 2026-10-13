@@ -16,12 +16,19 @@ export default function Page({ title, heading, documentTitle, back, badge, subti
   const headingRef = useRef(null);
   // The router's first entry has key 'default': leave the browser's normal start position on a
   // fresh page load (also safe under StrictMode's double effects).
-  const { key } = useLocation();
+  const { key, pathname } = useLocation();
 
   useEffect(() => {
     document.title = `${documentTitle ?? title} – OpenDoor`;
+  }, [title, documentTitle]);
+
+  // Only a new page (path) moves focus. Filters, tabs and paging change just the query string and
+  // must leave focus where the user is, e.g. in the search field they are typing in.
+  useEffect(() => {
     if (key !== 'default') headingRef.current?.focus();
-  }, [title, documentTitle, key]);
+    // `key` is read but must not re-run this: it changes with every query-string update too.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const h1 = (
     <h1 ref={headingRef} tabIndex={-1}>

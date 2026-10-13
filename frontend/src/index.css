@@ -1284,11 +1284,26 @@ input[type='file'].field__input {
   border-radius: var(--radius-lg);
 }
 
-.accommodation-picker__group > legend {
+/* Figma: the group title sits inside its box (a floated legend leaves the border). */
+.accommodation-picker__group > legend,
+.fieldset--box > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  color: var(--od-text-accent);
   font-family: var(--font-heading);
   font-size: 1.125rem;
   font-weight: 600;
-  padding: 0 0.375rem;
+}
+
+.accommodation-picker__group > legend + *,
+.fieldset--box > legend + * {
+  clear: both;
+}
+
+.card--needs .accommodation-picker__group {
+  max-width: 36rem;
 }
 
 .accommodation-picker__desc,
@@ -2534,4 +2549,82 @@ input[type='file'].field__input {
   font-family: var(--font-body);
   font-size: 1.125rem;
   font-weight: 700;
+}
+
+/* ---------- Figma "Tabs" (Profile and needs): pill tabs above one card */
+
+.tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.625rem;
+  margin-bottom: 1.25rem;
+}
+
+.tabs__tab {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.125rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--bg);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabs__tab:hover {
+  background: var(--surface);
+}
+
+.tabs__tab[aria-selected='true'] {
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+}
+
+.tabs__panel > .card {
+  margin: 0;
+}
+
+.card--form {
+  max-width: 47.5rem;
+}
+
+.card--form .field__input {
+  max-width: none;
+}
+
+.profile-intro {
+  color: var(--text-muted);
+}
+
+.fieldset--box {
+  padding: 1rem 1rem 0.25rem;
+  min-width: 0;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+
+/* File input: a bordered box with a pill "Choose file" button. */
+input[type='file'].field__input {
+  padding: 0.375rem;
+}
+
+input[type='file']::file-selector-button {
+  min-height: 2.5rem;
+  margin-right: 0.75rem;
+  padding: 0.375rem 1rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--bg);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fieldset--box > legend {
+  color: var(--text);
 }

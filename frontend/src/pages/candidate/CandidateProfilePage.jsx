@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { getAccommodationGroups } from '../../api/masterData.js';
 import { getCandidateProfile, updateCandidateProfile, updateNeeds, uploadResume } from '../../api/profile.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
@@ -10,6 +10,7 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, TextArea, TextField } from '../../components/form/fields.jsx';
 import LocationPicker from '../../components/LocationPicker.jsx';
 import Page from '../../components/Page.jsx';
+import Tabs from '../../components/Tabs.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 
@@ -27,8 +28,16 @@ const EMPTY_PROFILE = {
   accommodations: [],
 };
 
+// Figma 5:1343 / 15:5190 / 15:5450: one tab per part; ?tab= keeps the open tab on reload.
+const TABS = [
+  { id: 'needs', label: 'Accommodations you need' },
+  { id: 'about', label: 'About you' },
+  { id: 'resume', label: 'Résumé' },
+];
+
 export default function CandidateProfilePage() {
   const location = useLocation();
+  const [params, setParams] = useSearchParams();
   const state = useAsync(
     () =>
       Promise.all([
@@ -40,7 +49,7 @@ export default function CandidateProfilePage() {
   );
 
   return (
-    <Page title="Profile and needs">
+    <Page title="Profile and needs" subtitle={<p className="page__subtitle">Used only for matching. Employers see your needs only when you apply.</p>}>
       {location.state?.welcome && (
         <Alert type="success" title="Welcome to OpenDoor">
           <p>Start by choosing the accommodations you need. We use them to show you the jobs that fit best.</p>
@@ -48,11 +57,22 @@ export default function CandidateProfilePage() {
       )}
       <AsyncContent state={state} label="Loading your profile">
         {([profile, groups]) => (
-          <>
-            <NeedsSection profile={profile} groups={groups} />
-            <ProfileSection profile={profile} />
-            <ResumeSection profile={profile} />
-          </>
+          <Tabs
+            label="Parts of your profile"
+            selected={params.get('tab') ?? 'needs'}
+            onSelect={(tab) => setParams(tab === 'needs' ? {} : { tab }, { replace: true })}
+            tabs={TABS.map((tab) => ({
+              ...tab,
+              content:
+                tab.id === 'needs' ? (
+                  <NeedsSection profile={profile} groups={groups} />
+                ) : tab.id === 'about' ? (
+                  <ProfileSection profile={profile} />
+                ) : (
+                  <ResumeSection profile={profile} />
+                ),
+            }))}
+          />
         )}
       </AsyncContent>
     </Page>
@@ -72,9 +92,11 @@ function NeedsSection({ profile, groups }) {
   }
 
   return (
-    <section className="card" aria-labelledby="needs-title">
-      <h2 id="needs-title">Accommodations you need</h2>
-      <p>
+    <section className="card card--needs" aria-labelledby="needs-title">
+      <h2 id="needs-title" className="visually-hidden">
+        Accommodations you need
+      </h2>
+      <p className="profile-intro">
         We match jobs on these needs only. Employers see them only when you apply to one of their jobs. You can change
         them at any time.
       </p>
@@ -143,8 +165,10 @@ function ProfileSection({ profile }) {
   }
 
   return (
-    <section className="card" aria-labelledby="profile-title">
-      <h2 id="profile-title">About you</h2>
+    <section className="card card--form" aria-labelledby="profile-title">
+      <h2 id="profile-title" className="visually-hidden">
+        About you
+      </h2>
       <ErrorSummary errors={form.fieldErrors} fields={PROFILE_FIELDS} />
       <ApiErrorAlert error={form.formError} title="Your profile was not saved" />
       <form onSubmit={handleSubmit} noValidate>
@@ -159,7 +183,7 @@ function ProfileSection({ profile }) {
           error={form.fieldErrors.location_psgc}
         />
 
-        <fieldset className="fieldset field">
+        <fieldset className="fieldset field fieldset--box">
           <legend className="field__label">Disability (optional)</legend>
           <p className="field__hint">
             You do not have to tell us. It is never used for matching and stays hidden unless you choose to show it to
@@ -215,8 +239,10 @@ function ResumeSection({ profile }) {
   const error = clientError ?? form.fieldErrors.resume;
 
   return (
-    <section className="card" aria-labelledby="resume-title">
-      <h2 id="resume-title">Résumé</h2>
+    <section className="card card--form" aria-labelledby="resume-title">
+      <h2 id="resume-title" className="visually-hidden">
+        Résumé
+      </h2>
       {resumeUrl ? (
         <p>
           <a href={resumeUrl} target="_blank" rel="noreferrer">

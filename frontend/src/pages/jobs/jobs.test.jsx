@@ -42,6 +42,8 @@ describe('JobSearchPage', () => {
       expect(Object.fromEntries(last)).toEqual({ q: 'encoder', category: '3', 'accommodations[]': '5', match: '1', sort: 'best' });
     });
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
+    // Filters change only the query string: focus stays where the user is typing.
+    expect(screen.getByLabelText('Keyword')).toHaveFocus();
   });
 
   test('candidate without needs is told to add them', async () => {

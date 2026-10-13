@@ -42,7 +42,8 @@ describe('CandidateProfilePage', () => {
       routes: { ...routes, 'PUT /candidate/profile': () => [200, profile] },
     });
 
-    const skills = await screen.findByLabelText('Skills');
+    await user.click(await screen.findByRole('tab', { name: 'About you' }));
+    const skills = screen.getByLabelText('Skills');
     await user.clear(skills);
     await user.type(skills, 'Excel, Filing , ');
     expect(screen.queryByLabelText(/Show my disability type/)).not.toBeInTheDocument();
@@ -69,13 +70,35 @@ describe('CandidateProfilePage', () => {
     });
 
     expect(await screen.findByText('None selected.')).toBeInTheDocument();
-    expect(screen.getByText('You have not uploaded a résumé yet.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Accommodations you need' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('You have not uploaded a résumé yet.')).not.toBeVisible();
+  });
+
+  test('tabs: arrow keys move between parts, the open tab is kept in the address', async () => {
+    const { user, location } = renderApp('/candidate/profile?tab=resume', { as: 'candidate', routes });
+
+    const resume = await screen.findByRole('tab', { name: 'Résumé' });
+    expect(resume).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Résumé' })).toBeVisible();
+
+    resume.focus();
+    await user.keyboard('{Home}');
+    const needs = screen.getByRole('tab', { name: 'Accommodations you need' });
+    expect(needs).toHaveFocus();
+    expect(needs).toHaveAttribute('aria-selected', 'true');
+    expect(location()).toBe('/candidate/profile');
+
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'About you' })).toHaveFocus();
+    expect(location()).toBe('/candidate/profile?tab=about');
+    expect(screen.getByLabelText('Skills')).toBeVisible();
   });
 
   test('résumé upload refuses non-PDF files before sending', async () => {
     const { user, calls } = renderApp('/candidate/profile', { as: 'candidate', routes });
 
-    const input = await screen.findByLabelText('Upload résumé');
+    await user.click(await screen.findByRole('tab', { name: 'Résumé' }));
+    const input = screen.getByLabelText('Upload résumé');
     // user.upload would drop the file because of accept="application/pdf"; a browser's "All files" option would not.
     fireEvent.change(input, {
       target: { files: [new File(['hello'], 'cv.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })] },
