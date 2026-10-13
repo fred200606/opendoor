@@ -2,16 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useNavigate } from 'react-router-dom';
 import * as authApi from '../api/auth.js';
 import { setUnauthorizedHandler, tokenStore } from '../api/client.js';
-import { fromApi, saveDisplayPrefs } from '../lib/displayPrefs.js';
+import { fromApi, loadDisplayPrefs, saveDisplayPrefs } from '../lib/displayPrefs.js';
 
 const AuthContext = createContext(null);
 
 /**
  * M13: settings saved with the account win over this browser's copy (null = never saved). Applied
  * before the user is set, so pages that read the browser copy on their first render see them.
+ * Quiet mode and the compact menu are browser-only and stay as they are.
  */
 function applyAccountDisplayPrefs(user) {
-  if (user?.display_prefs) saveDisplayPrefs(fromApi(user.display_prefs));
+  if (user?.display_prefs) saveDisplayPrefs({ ...loadDisplayPrefs(), ...fromApi(user.display_prefs) });
 }
 
 /**

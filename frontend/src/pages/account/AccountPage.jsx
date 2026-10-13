@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { updateDisplayPrefs, updateEmailNotifications } from '../../api/account.js';
+import { updateEmailNotifications } from '../../api/account.js';
 import { changePassword } from '../../api/auth.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { ROLE_LABELS } from '../../auth/roles.js';
@@ -9,7 +9,8 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
-import { loadDisplayPrefs, saveDisplayPrefs, toApi } from '../../lib/displayPrefs.js';
+import { useDisplayPrefs } from '../../hooks/useDisplayPrefs.js';
+import { changeDisplayPrefs } from '../../lib/displayPrefs.js';
 
 export default function AccountPage() {
   const { user } = useAuth();
@@ -42,8 +43,19 @@ const MOTION = [
   { value: 'reduce', label: 'Reduce motion' },
 ];
 
+// Browser-only settings from the utility bar (decision 2026-10-13).
+const QUIET = [
+  { value: 'off', label: 'Standard look' },
+  { value: 'on', label: 'Quiet mode', hint: 'Calmer colours, no decorations or animations. On this device only.' },
+];
+
+const MENU = [
+  { value: 'full', label: 'Show all links' },
+  { value: 'compact', label: 'Compact menu', hint: 'Only the logo and a Menu button. On this device only.' },
+];
+
 function DisplaySettings() {
-  const [prefs, setPrefs] = useState(loadDisplayPrefs);
+  const prefs = useDisplayPrefs(); // also follows the utility bar
   const [message, setMessage] = useState('');
   // Saves run one after another, so the account ends with the last choice even on a slow network;
   // only the last one reports.
@@ -51,23 +63,19 @@ function DisplaySettings() {
   const latest = useRef(0);
 
   function change(key, value) {
-    const next = { ...prefs, [key]: value };
-    setPrefs(next);
-    saveDisplayPrefs(next); // applies at once, also if the account cannot be reached
     const id = ++latest.current;
+    // Applies at once, also if the account cannot be reached.
+    const saved = changeDisplayPrefs({ [key]: value }, { signedIn: true });
     saving.current = saving.current.then(async () => {
-      let saved = true;
-      try {
-        await updateDisplayPrefs(toApi(next));
-      } catch {
-        saved = false;
-      }
+      const ok = await saved;
       if (id !== latest.current) return;
-      setMessage(
-        saved
-          ? 'Display settings applied and saved to your account.'
-          : 'Display settings applied on this device, but not saved to your account. Change a setting to try again.',
-      );
+      if (key === 'quiet' || key === 'menu') {
+        setMessage('Applied on this device.');
+      } else if (ok) {
+        setMessage('Display settings applied and saved to your account.');
+      } else {
+        setMessage('Display settings applied on this device, but not saved to your account. Change a setting to try again.');
+      }
     });
   }
 
@@ -78,6 +86,8 @@ function DisplaySettings() {
       <RadioGroup legend="Text size" name="textSize" options={TEXT_SIZES} value={prefs.textSize} onChange={(value) => change('textSize', value)} />
       <RadioGroup legend="Colours" name="contrast" options={CONTRAST} value={prefs.contrast} onChange={(value) => change('contrast', value)} />
       <RadioGroup legend="Motion" name="motion" options={MOTION} value={prefs.motion} onChange={(value) => change('motion', value)} />
+      <RadioGroup legend="Quiet mode" name="quiet" options={QUIET} value={prefs.quiet} onChange={(value) => change('quiet', value)} />
+      <RadioGroup legend="Top menu" name="menu" options={MENU} value={prefs.menu} onChange={(value) => change('menu', value)} />
       <p role="status" className="save-status">
         {message}
       </p>

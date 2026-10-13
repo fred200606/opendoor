@@ -79,7 +79,7 @@ describe('role routing', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Find work that fits how you work' })).toBeInTheDocument();
     expect(tokenStore.get()).toBeNull();
-    expect(within(screen.getByRole('navigation', { name: 'Account' })).getByRole('link', { name: 'Log in' })).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Log in' })).toBeInTheDocument();
     expect(calls.map((call) => call.key)).toContain('POST /logout');
   });
 
