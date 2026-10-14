@@ -6,8 +6,8 @@
 ## Now
 
 - **Current phase:** Phase 9 – Release
-- **In progress:** –
-- **Next step:** Ask the user what to do next (all development items are done; the rest waits for the user). The user can try Speak with a real microphone in Chrome/Edge and check that Brave no longer shows it. Deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
+- **In progress:** Final SIA doc pass (Decision 2026-10-14), in sub-steps, each committed: (a) text sync with the code – 1.4 scope, 3.x stack, 4.1/Appendix A endpoints (display prefs, email notifications, forgot/reset password, `saved` in search, `reviewed_at`), 4.5 Overpass, 5.2 notices, data model, 8.4 CI, Appendix D JMeter wording, 9.2 numbers vs seed, references; (b) 7.1 Actual/Status + 7.2 Newman totals from the latest green CI run's report artifact; (c) 9.1 screenshots from `tests/a11y/results/ui-reference/shots/` (2026-10-14 capture, no stack needed) + ERD image; (d) ask the user for team-only items. Production URLs and JMeter (7.3) stay open until deployment. Next action: read `docs/diagrams/build.js` and start (a).
+- **Next step:** Finish the SIA doc pass sub-steps above. The user can try Speak with a real microphone in Chrome/Edge and check that Brave no longer shows it. Deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -16,6 +16,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-14 – User chose the final SIA doc pass now (development considered finished). Production URLs and JMeter numbers (7.3) stay as placeholders until deployment.
 - 2026-10-14 – Figma "Mobile, Dialogs & States" page: skipped (user: disregard it). Dialogs, states and phone layouts stay as built; don't ask for its link again.
 - 2026-10-13 – Figma UI (user's team design "OpenDoor — SIA UI", file `qWZDnximz7Tc47qu0WXSG5`): restyle the existing React app to it (not a rebuild); keep routes, API calls, texts' meaning, tests and WCAG behaviour; where the design conflicts with WCAG, adjust and report. User choices: server changes **yes** for Save on search result cards (`saved` in search results for candidates) and dates in the application timeline (`reviewed_at`); **no** employer-wide applications list (dashboard application tiles get no View link) and Quiet mode / Compact menu stay browser-only (not in `display_prefs`). New pages **yes**: Privacy, Accessibility statement, How trust scores work (texts from the privacy notice, WCAG audit and trust-score rules); Contact us **not built** (no contact details given – footer leaves the link out until the user gives an email). Packages **yes**: `lucide-react`, `@fontsource/lexend`, `@fontsource/atkinson-hyperlegible` (fonts self-hosted, no Google calls).
 - 2026-10-13 – Forgot password timing (user chose option a): every `POST /forgot-password` only queues a `SendPasswordResetLink` job (the same small work for every email, so response time reveals no account – an OpenDoor account hints at a disability, RA 10173); the job checks the account, creates the token and sends the email. Production uses `QUEUE_CONNECTION=database`; the scheduler the deployment needs anyway works the queue every minute, so the email arrives within about a minute. Replaces the `defer()` approach (`php artisan serve` waited for it: 509 ms vs 78 ms).
