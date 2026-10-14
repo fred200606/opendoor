@@ -205,6 +205,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-14 – Final SIA doc pass (user's choice): text synced with the code, diagrams redrawn + ERD, 7.1/7.2 results from manual CI run 38493807232 (all green), 9.1 screens, 7.4 defects, 10.4 draft, gitleaks clean, team details; dev references synced. Pushed (CI 38499040551 green). Next: student numbers + roles from the user; then deployment when the user says so.
 - 2026-10-14 – /opendoor-continue: the voice-input fix was already pushed (origin/main `59e1c36`, CI run 38476924985 green); "Now" was stale and is updated. Next: ask the user.
 - 2026-10-14 – Pushed 43 commits (user said yes; CI run 38475418837 green incl. integration). Voice-input fix for Brave and similar browsers (hidden in Brave; message + hide after a first `network` failure elsewhere), 148 Vitest, live-checked in Chrome. Next: push the fix when the user says so.
 - 2026-10-14 – Progress report; user skipped the Figma mobile/dialogs page and deferred the mic fix (cause: Brave has no speech service). Step 6 done on a freshly seeded stack: axe 0 on 34 pages, 2 reflow fixes (Find jobs at 200 % text / 320 px), audit §8 + statement date, UI reference PDF rebuilt for the new design (114 pages, 1,440 px shots). Next: push when the user says so.
