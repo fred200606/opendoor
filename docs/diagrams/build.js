@@ -157,9 +157,9 @@ C.push(...bullets([
 C.push(H2("1.4 Scope and Limitations"));
 C.push(P("**Included in scope:**"));
 C.push(...bullets([
-  "Public area, Candidate, Employer and Admin portals in one React application (13 functional modules, M1–M13, as defined in the OpenDoor Modules and Features Specification).",
+  "Public area, Candidate, Employer and Admin portals in one React application (13 functional modules, M1–M13, as defined in the OpenDoor Modules and Features Specification), with display settings (text size, high contrast, reduced motion), Read aloud and Voice input.",
   "API Gateway with routing, CORS, rate limiting, request IDs, timeouts and a uniform error envelope.",
-  "Core Service (Laravel 13 + MySQL 8): authentication and roles, candidate and company profiles, job postings with structured accommodations, search/filter/matching, application workflow, feedback and trust score, dashboards, in-app notifications, moderation, master data.",
+  "Core Service (Laravel 13 + MySQL 8): authentication and roles with password reset by email, candidate and company profiles, job postings with structured accommodations, search/filter/matching, saved jobs, application workflow, feedback and trust score, dashboards, in-app and email notifications, account display settings, moderation, master data.",
   "Accessibility Insights Service: Workplace Accessibility Snapshot (mashup) and PSGC location lookup with caching.",
   "Business Registry Service: SOAP 1.1 operation `VerifyBusinessRegistration` with a published WSDL, used in employer verification.",
   "Postman collection, JMeter test plan, GitHub Actions workflow, and cloud deployment.",
@@ -169,7 +169,8 @@ C.push(...bullets([
   "The Business Registry Service is a **simulated** legacy system seeded with sample registrations; it does not connect to the real DTI BNRS or SEC databases, which offer no public SOAP or REST API. An administrator always makes the final verification decision.",
   "Accessibility Snapshot data depends on OpenStreetMap volunteers tagging places with `wheelchair=yes`; coverage in some Philippine areas is incomplete, so the snapshot is informational only and never used for ranking.",
   "Public Nominatim and Overpass instances have usage limits (Nominatim: at most one request per second, identifying User-Agent required), so results are cached and requests are throttled.",
-  "Email notifications and display settings (M13) are \"Could have\" features and may be delivered only if time allows (saved jobs, M12, was delivered). No mobile app, payments, or video interviews are included.",
+  "All 13 modules were delivered, including the \"Could have\" saved jobs (M12) and display settings and email notifications (M13). Emails are sent through a mail provider chosen at deployment; during development they are written to the Core Service log. No mobile app, payments, or video interviews are included.",
+  "Read aloud and Voice input use the browser's own speech features (Web Speech API). Voice input works only in browsers that offer a speech service (Chrome, Edge) and is hidden elsewhere; Chrome and Edge send the recorded audio to their vendor's speech service, so a one-time notice is shown before first use and it is never switched on by default.",
   "Free-tier/hobby cloud plans may sleep when idle and are not sized for production traffic.",
 ]));
 
@@ -233,16 +234,17 @@ C.push(...table(["Decision", "Choice", "Rationale"], [
 ], [1900, 2900, 5280]));
 C.push(H2("3.4 Component / Service Inventory"));
 C.push(...table(["Component / Service", "Responsibility", "Technology", "Port / URL", "Depends On"], [
-  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI; calls the gateway only", "React 19, Vite, React Router 7, Axios, AuthContext", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
+  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI with display settings, Read aloud and Voice input; calls the gateway only", "React 19, Vite, React Router 7, Axios, AuthContext, Lucide icons, self-hosted Lexend and Atkinson Hyperlegible fonts, Web Speech API", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
   ["API Gateway", "Single entry point; routing; CORS; rate limiting; X-Request-ID; timeouts; uniform error envelope; health check", "Node.js 22, Express, http-proxy-middleware, express-rate-limit", "Public: [[https://opendoor-gateway.up.railway.app]] (dev :8080)", "Core Service, Insights Service"],
-  ["Core Service", "Auth and roles, profiles, postings, matching, applications and status workflow, feedback and trust score, dashboards, notifications, moderation, master data", "PHP 8.3, Laravel 13, Sanctum, Eloquent", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service"],
+  ["Core Service", "Auth and roles, password reset, profiles, postings, matching, saved jobs, applications and status workflow, feedback and trust score, dashboards, in-app and email notifications, moderation, master data; scheduled jobs (close expired postings, rating reminders, queued reset emails)", "PHP 8.4, Laravel 13, Sanctum, Eloquent; FrankenPHP in the container", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service, email provider"],
   ["Accessibility Insights Service", "Workplace Accessibility Snapshot mashup; PSGC location lookup; caching and throttling", "Node.js 22, Express, Axios, mysql2", "insights.railway.internal:8002 (dev :8002)", "Core Service (internal API), Nominatim, Overpass, PSGC, MySQL insights_cache"],
-  ["Business Registry Service (legacy)", "SOAP 1.1 `VerifyBusinessRegistration`; WSDL; simulated DTI/SEC records", "PHP 8.3 SoapServer, SQLite", "registry.railway.internal:8003/soap, WSDL at /soap?wsdl (dev :8003)", "registry.db"],
+  ["Business Registry Service (legacy)", "SOAP 1.1 `VerifyBusinessRegistration`; WSDL; simulated DTI/SEC records", "PHP 8.4 SoapServer (plain PHP, FrankenPHP in the container), SQLite","registry.railway.internal:8003/soap, WSDL at /soap?wsdl (dev :8003)", "registry.db"],
   ["MySQL – opendoor_core", "Users, profiles, employers, postings, accommodations, applications, feedback, notifications, reports", "MySQL 8 (Railway managed)", "mysql.railway.internal:3306", "–"],
   ["MySQL – insights_cache", "Geocoding results, Overpass results, PSGC lists, with expiry", "MySQL 8 (same server, separate schema and user)", "mysql.railway.internal:3306", "–"],
   ["Nominatim (external)", "Geocoding of job addresses", "REST/JSON", "https://nominatim.openstreetmap.org", "–"],
-  ["Overpass API (external)", "Query OSM elements tagged `wheelchair=yes` near a point", "REST (Overpass QL) / JSON", "https://overpass-api.de/api/interpreter", "–"],
+  ["Overpass API (external)", "Query OSM elements tagged `wheelchair=yes` near a point", "REST (Overpass QL) / JSON", "https://overpass-api.de/api/interpreter; second server https://overpass.private.coffee/api/interpreter", "–"],
   ["PSGC API (external)", "Philippine regions, provinces, cities/municipalities", "REST/JSON", "https://psgc.gitlab.io/api", "–"],
+  ["Email provider (external)", "Delivers notification emails and password-reset links", "SMTP (provider chosen at deployment; `log` mailer in development)", "`MAIL_*` settings of the Core Service", "–"],
 ], [1700, 2600, 1900, 2180, 1700], { size: 16 }));
 
 // ---------- 4 API ----------
@@ -254,16 +256,18 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "POST", "/api/register", "Create candidate or employer account with consent", "{name,email,password,role,consent:true} → 201 {user, token}"],
   ["Core", "POST", "/api/login", "Log in; returns token and role", "{email,password} → 200 {token, user:{id,name,role}}"],
   ["Core", "POST", "/api/logout", "Revoke current token", "→ 204"],
+  ["Core", "POST", "/api/forgot-password, /api/reset-password", "Email a password-reset link; set a new password with it", "{email} → 200 (same message for every email); {token,email,password,password_confirmation} → 200, every session signed out; bad or expired link → 422"],
+  ["Core", "PUT", "/api/me/display-prefs, /api/me/email-notifications", "Account settings (M13): display settings; notification emails on or off", "{text_size:100|125|150, contrast:'normal'|'high', motion:'normal'|'reduce'} → 200; {enabled:true|false} → 200"],
   ["Core", "GET, PUT", "/api/candidate/profile", "View or update own profile", "{headline,skills[],experience,location_psgc,...} → profile"],
   ["Core", "PUT", "/api/candidate/accommodations", "Replace list of accommodation needs", "{accommodation_ids:[1,4,9]} → 200 needs[]"],
   ["Core", "POST, GET", "/api/candidate/resume, /api/resumes/{id}", "Upload PDF résumé (max 5 MB); open it from a 30-minute signed link", "multipart `resume` → 200 {resume_url}; signed link → PDF"],
-  ["Core", "GET", "/api/job-postings", "Search, filter and match postings", "?q=&category=&accommodations[]=&match=1&sort=&page= → {data:[posting+match], meta}"],
+  ["Core", "GET", "/api/job-postings", "Search, filter and match postings", "?q=&category=&accommodations[]=&match=1&sort=&page= → {data:[posting+match+saved], meta}"],
   ["Core", "GET", "/api/job-postings/{id}", "Posting details with match result and trust score", "→ posting (Section 4.2)"],
   ["Core", "POST", "/api/job-postings", "Create posting (draft or submit)", "{title,description,category_id,...,accommodations:[{id,note}]} → 201"],
   ["Core", "PUT, DELETE", "/api/job-postings/{id}", "Update or soft-delete own posting", "→ 200 / 204"],
   ["Core", "POST", "/api/job-postings/{id}/applications", "Apply", "{cover_note, interview_request} → 201 application"],
   ["Core", "GET", "/api/applications", "Own applications (candidate) or applicants (employer)", "?status= → {data:[application]}"],
-  ["Core", "PATCH", "/api/applications/{id}/status", "Change status (server-enforced transitions)", "{status:'reviewed'|'hired'|'rejected'|'withdrawn'} → 200"],
+  ["Core", "PATCH", "/api/applications/{id}/status", "Change status (server-enforced transitions)", "{status:'reviewed'|'hired'|'rejected'|'withdrawn'} → 200 (dates `reviewed_at`, `hired_at` for the timeline)"],
   ["Core", "GET", "/api/applications/{id}/feedback-form", "Accommodations to rate (those advertised at the time of hire)", "→ {opens_on, is_open, submitted, items:[{accommodation_id,name}]}"],
   ["Core", "POST", "/api/applications/{id}/feedback", "Submit per-accommodation feedback", "{items:[{accommodation_id,rating}],comments} → 201"],
   ["Core", "GET", "/api/employers/{id}/trust-score", "Score, count and breakdown (breakdown empty until published)", "→ {published, score, based_on, breakdown[]}"],
@@ -303,12 +307,13 @@ C.push(...code(`
         { "id": 9, "name": "Flexible hours", "group": "work_arrangement", "note": null }
       ],
       "match": { "met": 4, "total": 5, "missing": [ { "id": 6, "name": "Sign language interpreter" } ] },
+      "saved": false,
       "trust_score": { "published": true, "score": 86, "based_on": 5 }
     }
   ],
   "meta": { "current_page": 1, "per_page": 12, "total": 12, "match_mode": true }
 }`));
-C.push(P("Important fields: `match.met`/`match.total` drive the \"Meets 4 of 5 of your needs\" badge and `missing` names the unmet accommodation; `trust_score.published` is false (and `score` null) until three feedback responses exist; `location.psgc_code` is the official 10-digit PSGC code chosen in the location picker (the label is stored with it) and is used by the Insights Service."));
+C.push(P("Important fields: `match.met`/`match.total` drive the \"Meets 4 of 5 of your needs\" badge and `missing` names the unmet accommodation; `saved` (logged-in candidates only) drives the Save button on each result; `trust_score.published` is false (and `score` null) until three feedback responses exist; `location.psgc_code` is the official 10-digit PSGC code chosen in the location picker (the label is stored with it) and is used by the Insights Service."));
 C.push(P("**Apply** – `POST /api/job-postings/42/applications`"));
 C.push(...code(`
 Request:  { "cover_note": "I have 3 years of encoding experience.",
@@ -787,6 +792,7 @@ C.push(P("Base URL: `{GATEWAY}/api`. Access: P = public, C = candidate, E = empl
 C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M1 Auth", "POST", "/register, /login, /logout", "P / any", "Account, token, logout"],
   ["M1 Auth", "GET, PUT", "/me, /me/password", "any", "Current user; change password"],
+  ["M1 Auth", "POST", "/forgot-password, /reset-password", "P", "Email a reset link (same answer for every email, 5/min); new password with the link (valid 60 min; signs out everywhere)"],
   ["M2 Profile", "GET, PUT", "/candidate/profile", "C", "Own profile"],
   ["M2 Profile", "PUT", "/candidate/accommodations", "C", "Replace needs"],
   ["M2 Profile", "POST", "/candidate/resume", "C", "Upload PDF résumé (max 5 MB)"],
@@ -803,8 +809,8 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M4 Postings", "GET", "/admin/job-postings", "A", "Approval queue"],
   ["M4 Postings", "PATCH", "/admin/job-postings/{id}/approve", "A", "Approve / reject (with reason)"],
   ["M4 Postings", "DELETE", "/admin/job-postings/{id}", "A", "Remove any posting with a reason (soft delete; employer notified)"],
-  ["M5 Search", "GET", "/job-postings?q=&category=&accommodations[]=&match=1&sort=&page=", "P (match: C)", "Search, filter, match"],
-  ["M5 Search", "GET", "/job-postings/{id}", "P", "Details (+ match for C)"],
+  ["M5 Search", "GET", "/job-postings?q=&category=&accommodations[]=&match=1&sort=&page=", "P (match, saved: C)", "Search, filter, match"],
+  ["M5 Search", "GET", "/job-postings/{id}", "P", "Details (+ match, saved and own application for C)"],
   ["M5/M11", "GET", "/categories, /accommodations", "P", "Filter options"],
   ["M6 Applications", "POST", "/job-postings/{id}/applications", "C", "Apply"],
   ["M6 Applications", "GET", "/applications, /applications/{id}", "C (own) / E (own postings)", "List / details"],
@@ -821,7 +827,9 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M10 Moderation", "PATCH", "/admin/feedback/{id}/hide", "A", "Hide feedback"],
   ["M11 Master data", "GET", "/admin/accommodations", "A", "All types incl. retired"],
   ["M11 Master data", "POST, PUT, DELETE", "/admin/categories/{id}, /admin/accommodations/{id}", "A", "Manage lists (in use: category 422, accommodation retired)"],
-  ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks of visible postings; POST and DELETE idempotent; `saved` flag on posting details"],
+  ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks of visible postings; POST and DELETE idempotent; `saved` flag on search results and posting details"],
+  ["M13 Settings", "PUT", "/me/display-prefs", "any", "Text size, contrast, motion saved with the account (returned by login and /me)"],
+  ["M13 Settings", "PUT", "/me/email-notifications", "C / E", "Notification emails on (default) or off"],
   ["Insights", "GET", "/insights/job-postings/{id}", "P", "Accessibility Snapshot"],
   ["Insights", "GET", "/insights/locations/{regions|provinces|cities}?parent=", "P", "PSGC lists"],
   ["Internal", "GET", "/internal/job-postings/{id}/summary (Core, not public)", "S", "Data for mashup"],
@@ -829,7 +837,7 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
 ], [1600, 1300, 3800, 1600, 1780], { size: 15 }));
 C.push(P("**Role permission summary** (C = create, R = read, U = update, D = delete; enforced by Laravel Policies):"));
 C.push(...table(["Data", "Guest", "Candidate", "Employer", "Admin"], [
-  ["User account", "C (register)", "R, U own", "R, U own", "C admins, R all, U (suspend)"],
+  ["User account", "C (register), U (reset password by email link)", "R, U own (password, settings)", "R, U own (password, settings)", "C admins, R all, U (suspend)"],
   ["Candidate profile and needs", "–", "C, R, U own", "R (own applicants only)", "R"],
   ["Company profile", "R (public)", "R (public)", "C, R, U own", "R, U (verify)"],
   ["Job posting", "R (open)", "R (open)", "C, R, U, D own", "R all, U (approve), D"],
@@ -925,7 +933,8 @@ C.push(...bullets([
 C.push(H2("Appendix F - Additional screenshots or diagrams"));
 C.push(P("**Core Service data model** (MySQL `opendoor_core`). Accommodations are stored once in a lookup table and linked to postings, candidate needs and feedback through pivot tables, so the same vocabulary drives filtering, matching and per-accommodation ratings."));
 C.push(...table(["Table", "Key Fields", "Notes"], [
-  ["users", "id, name, email, password, role, is_active, consented_at, display_prefs, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent"],
+  ["users", "id, name, email, password, role, is_active, consented_at, display_prefs (JSON), email_notifications, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent; M13 settings (emails on by default)"],
+  ["password_reset_tokens", "email (PK), token (hashed), created_at", "One reset link per account; valid 60 minutes, removed once used"],
   ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, location_label, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
   ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, location_label, description, logo_path, verified_at, verification_rejected_reason, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
   ["registry_checks", "id, employer_id, business_reg_no, registry_type, status, registered_name, name_match_score, raw_response (XML answer), checked_by, checked_at", "Every SOAP verification call; `ERROR` when the registry could not answer"],
@@ -933,16 +942,19 @@ C.push(...table(["Table", "Key Fields", "Notes"], [
   ["job_postings", "id, employer_id, category_id, title, description, address, location_psgc, location_label, employment_type, work_setup, interview_format, status, closes_at, is_approved, rejection_reason, deleted_at", "Soft deletes; indexes (status, category_id) and (employer_id, status); MySQL full-text index on title and description (keyword search currently uses a case-insensitive LIKE)"],
   ["job_posting_accommodation", "job_posting_id, accommodation_id, note", "Pivot: accommodations provided"],
   ["candidate_accommodation", "candidate_profile_id, accommodation_id", "Pivot: accommodations needed"],
-  ["applications", "id, job_posting_id, candidate_profile_id, status, cover_note, interview_request, hired_at, hire_confirmed_by", "Unique (job_posting_id, candidate_profile_id)"],
+  ["applications", "id, job_posting_id, candidate_profile_id, status, reviewed_at, cover_note, interview_request, hired_at, feedback_reminded_at, hire_confirmed_by, timestamps", "Unique (job_posting_id, candidate_profile_id); `reviewed_at`/`hired_at` date the status timeline; `feedback_reminded_at` makes the rating reminder a one-time notice"],
   ["application_accommodation", "application_id, accommodation_id", "Pivot: the posting's accommodations recorded when the application becomes hired (the items the candidate rates)"],
   ["feedback / feedback_items", "id, application_id, comments, is_hidden / id, feedback_id, accommodation_id, rating", "One feedback per application; one rating per accommodation recorded at hire; hidden feedback leaves the score"],
-  ["notifications", "Laravel notifications table: id (UUID), type, notifiable, data (message, url, ids), read_at", "In-app notices for candidates and employers"],
+  ["notifications", "Laravel notifications table: id (time-ordered UUIDv7), type, notifiable, data (message, url, ids), read_at", "In-app notices for candidates and employers; the same notice is emailed when the user's emails are on"],
   ["reports", "id, reporter_id, job_posting_id, reason, status, note, resolved_by, resolved_at, timestamps", "One open report per candidate and posting; `note` and resolver set only when an administrator resolves it"],
   ["saved_jobs", "candidate_profile_id, job_posting_id, timestamps", "Composite primary key; bookmarks kept when a posting closes and listed again if it reopens"],
+  ["jobs / failed_jobs", "Laravel database queue tables", "Queued password-reset emails, worked by the scheduler every minute"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("**Enumerated values** (stored as MySQL `ENUM` columns or PHP backed enums; the same values appear in the API and in `docs/openapi.yaml`):"));
 C.push(...table(["Field", "Allowed values"], [
   ["users.role", "`candidate`, `employer`, `admin`"],
+  ["users.display_prefs", "`text_size`: 100, 125, 150 · `contrast`: `normal`, `high` · `motion`: `normal`, `reduce`"],
+  ["notifications.type", "`application_received`, `application_status_changed`, `employer_verification`, `posting_review`, `feedback_reminder`"],
   ["employers.registry_type", "`DTI`, `SEC`"],
   ["registry_checks.status", "`ACTIVE`, `EXPIRED`, `CANCELLED`, `NOT_FOUND`, `ERROR`"],
   ["accommodations.group", "`physical_access`, `communication`, `work_arrangement`, `assistive_technology`, `support`"],
