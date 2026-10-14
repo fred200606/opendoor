@@ -7,7 +7,7 @@
 
 - **Current phase:** Phase 9 – Release
 - **In progress:** –
-- **Next step:** Push the voice-input fix (2 local commits) when the user says so. The user can try Speak with a real microphone in Chrome/Edge and check that Brave no longer shows it. Deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
+- **Next step:** Ask the user what to do next (all development items are done; the rest waits for the user). The user can try Speak with a real microphone in Chrome/Edge and check that Brave no longer shows it. Deployment only when the user says so (mail provider, scheduler, Railway volume – see Known issues); NVDA run by a teammate; SIA doc last. Local stack stopped after the 2026-10-14 checks – start it only when the user asks.
 - **Blockers:** –
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
@@ -201,6 +201,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-14 – /opendoor-continue: the voice-input fix was already pushed (origin/main `59e1c36`, CI run 38476924985 green); "Now" was stale and is updated. Next: ask the user.
 - 2026-10-14 – Pushed 43 commits (user said yes; CI run 38475418837 green incl. integration). Voice-input fix for Brave and similar browsers (hidden in Brave; message + hide after a first `network` failure elsewhere), 148 Vitest, live-checked in Chrome. Next: push the fix when the user says so.
 - 2026-10-14 – Progress report; user skipped the Figma mobile/dialogs page and deferred the mic fix (cause: Brave has no speech service). Step 6 done on a freshly seeded stack: axe 0 on 34 pages, 2 reflow fixes (Find jobs at 200 % text / 320 px), audit §8 + statement date, UI reference PDF rebuilt for the new design (114 pages, 1,440 px shots). Next: push when the user says so.
 - 2026-10-13 – Figma UI step 3 finished: every Guest, Job seeker, Employer, Admin and Shared screen restyled (Create account and Post a job as wizards, profile/account tabs, timeline, Undo, Save on cards), Core `saved` in search + `reviewed_at`, header now measures whether the full menu fits, Page focus fix for query-string changes; 0 axe violations on 54 mocked page states. Next: real-stack axe check, statement date, UI reference PDF, push when asked.
