@@ -44,6 +44,7 @@ class SessionTest extends TestCase
                 'is_active' => true,
                 'display_prefs' => null,
                 'email_notifications' => true,
+                'onboarding' => ['tour_done' => false, 'checklist_hidden' => false],
             ]);
     }
 

@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::put('me/password', [MeController::class, 'updatePassword']);
     Route::put('me/display-prefs', [MeController::class, 'updateDisplayPrefs']); // M13
     Route::put('me/email-notifications', [MeController::class, 'updateEmailNotifications'])->middleware('role:candidate,employer'); // M13
+    Route::patch('me/onboarding', [MeController::class, 'updateOnboarding'])->middleware('role:candidate,employer');
 
     // M9 Notifications – own in-app notices (admins receive none)
     Route::middleware('role:candidate,employer')->prefix('notifications')->group(function () {

@@ -90,6 +90,8 @@ class SeederTest extends TestCase
         $this->assertTrue(User::where('role', UserRole::Candidate)->exists());
         $this->assertTrue(User::where('role', UserRole::Employer)->exists());
         $this->assertSame(0, User::whereNull('consented_at')->count());
+        // Not first-time users: no welcome tour, no "Get started" list.
+        $this->assertSame(0, User::where('onboarding_tour_done', false)->orWhere('onboarding_checklist_hidden', false)->count());
     }
 
     public function test_demo_seeder_refuses_to_run_without_password(): void

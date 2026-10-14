@@ -39,6 +39,9 @@ class DemoUserSeeder extends Seeder
                 'is_active' => true,
                 'consented_at' => $user->consented_at ?? now(),
                 'email_verified_at' => $user->email_verified_at ?? now(),
+                // The demo accounts are not first-time users: no welcome tour, no "Get started" list.
+                'onboarding_tour_done' => true,
+                'onboarding_checklist_hidden' => true,
             ])->save();
         }
     }

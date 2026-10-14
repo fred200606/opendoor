@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UpdateDisplayPrefsRequest;
 use App\Http\Requests\Auth\UpdateEmailNotificationsRequest;
+use App\Http\Requests\Auth\UpdateOnboardingRequest;
 use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Resources\AccountResource;
 use Illuminate\Http\JsonResponse;
@@ -45,5 +46,17 @@ class MeController extends Controller
         $request->user()->update(['email_notifications' => $enabled]);
 
         return response()->json(['enabled' => $enabled]);
+    }
+
+    /** Onboarding: welcome tour finished or skipped, "Get started" list hidden or shown again. Admins have none (route: 403). */
+    public function updateOnboarding(UpdateOnboardingRequest $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->update($request->changes());
+
+        return response()->json([
+            'tour_done' => $user->onboarding_tour_done,
+            'checklist_hidden' => $user->onboarding_checklist_hidden,
+        ]);
     }
 }
