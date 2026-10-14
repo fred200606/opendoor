@@ -1028,7 +1028,8 @@ C.push(...table(["Table", "Key Fields", "Expiry / Notes"], [
   ["psgc_cache", "key (PK: `regions`, `provinces:{code}`, `cities:{code}`), payload (JSON), fetched_at", "7 days; bundled JSON of all regions, provinces and their cities/municipalities (`psgc-fallback.json`) as fallback"],
   ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by `seed.php`: the two demo employers and three other businesses (ACTIVE), two EXPIRED and two CANCELLED samples"],
 ], [2300, 4900, 2880], { size: 16 }));
-C.push(P("[[Insert the ERD image and any additional screenshots here.]]"));
+C.push(P("**Entity-relationship diagram** of the Core Service database, drawn from the Laravel migrations in `services/core-api/database/migrations` (Laravel's own token, queue, cache and session tables are left out). Further screens of every role are in the separate UI reference (`docs/ui-reference/OpenDoor-UI-Reference.pdf`)."));
+C.push(...fig("fig6_erd.png", 1700, 1840, "Entity-relationship diagram of the Core Service database (MySQL opendoor_core)"));
 
 // =====================================================================
 const doc = new Document({

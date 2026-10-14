@@ -48,9 +48,14 @@ def canvas(w, h):
     return fig, ax
 
 
-def save(fig, name):
+def save(fig, name, tight=False):
     fig.savefig(OUT + name, dpi=200, facecolor="white")
     plt.close(fig)
+    if tight:  # cut the empty margin below the content (keeps the full width)
+        from PIL import Image, ImageOps
+        im = Image.open(OUT + name).convert("RGB")
+        bottom = ImageOps.invert(im.convert("L")).getbbox()[3]
+        im.crop((0, 0, im.width, min(im.height, bottom + 40))).save(OUT + name)
 
 
 # ---------------- AS-IS ----------------
@@ -233,4 +238,111 @@ arrow(ax, (0.78, 0.46), (0.87, 0.49))
 arrow(ax, (0.78, 0.45), (0.87, 0.39))
 arrow(ax, (0.61, 0.40), (0.87, 0.27))
 save(fig, "fig5_deployment.png")
+
+# ---------------- ERD: Core Service (opendoor_core) ----------------
+# Tables and keys as in services/core-api/database/migrations. Pivot tables have a lighter title bar.
+fig, ax = canvas(8.5, 10)
+ax.text(0.5, 0.985, "Core Service data model (MySQL opendoor_core)", ha="center", va="top",
+        fontsize=12, fontweight="bold", color=GOLD)
+COLS, BW, LINE, HEAD = [0.02, 0.27, 0.52, 0.77], 0.21, 0.0128, 0.021
+T = {}
+
+
+def table(name, col, top, fields, pivot=False):
+    x = COLS[col]
+    h = HEAD + LINE * len(fields) + 0.008
+    ax.add_patch(FancyBboxPatch((x, top - h), BW, h, boxstyle="round,pad=0,rounding_size=0.004",
+                                fc="#F7F7F7", ec=DARK, lw=1.0))
+    ax.add_patch(FancyBboxPatch((x, top - HEAD), BW, HEAD, boxstyle="round,pad=0,rounding_size=0.004",
+                                fc="#8C8C8C" if pivot else DARK, ec=DARK, lw=1.0))
+    ax.text(x + 0.008, top - HEAD / 2, name, va="center", fontsize=8, fontweight="bold", color="white")
+    for i, f in enumerate(fields):
+        ax.text(x + 0.008, top - HEAD - 0.004 - LINE * (i + 0.5), f, va="center", fontsize=7, color="#222222")
+    T[name] = (x, top - h, BW, h)  # left, bottom, width, height
+
+
+def side(name, where, t=0.5):
+    """Point on a table's edge: where = top/bottom/left/right, t = position along that edge (0..1)."""
+    x, y, w, h = T[name]
+    return {"top": (x + w * t, y + h), "bottom": (x + w * t, y), "left": (x, y + h * (1 - t)),
+            "right": (x + w, y + h * (1 - t))}[where]
+
+
+def rel(points, a, b):
+    """Relationship line through `points`; cardinality `a` at the first end, `b` at the last."""
+    xs, ys = zip(*points)
+    ax.plot(xs, ys, color="#333333", lw=0.9, zorder=0)
+    for (px, py), (qx, qy), label in ((points[0], points[1], a), (points[-1], points[-2], b)):
+        dx, dy = qx - px, qy - py
+        n = max((dx * dx + dy * dy) ** 0.5, 1e-9)
+        ax.text(px + dx / n * 0.011 - dy / n * 0.01, py + dy / n * 0.011 + dx / n * 0.01, label,
+                ha="center", va="center", fontsize=7.5, fontweight="bold", color="#333333")
+
+
+table("notifications", 0, 0.93, ["id PK (UUIDv7)", "type", "notifiable_id FK (+ type)", "data (message, url, ids)", "read_at, created_at"])
+table("users", 1, 0.93, ["id PK", "name", "email (unique)", "password (bcrypt)", "role", "is_active", "consented_at",
+                         "display_prefs (JSON)", "email_notifications"])
+table("employers", 2, 0.93, ["id PK", "user_id FK (unique)", "company_name", "business_reg_no, registry_type",
+                             "industry, address", "location_psgc, location_label", "description, logo_path",
+                             "verified_at", "verification_rejected_reason", "trust_score, feedback_count"])
+table("registry_checks", 3, 0.93, ["id PK", "employer_id FK", "checked_by FK → users", "business_reg_no, registry_type",
+                                   "status", "registered_name", "name_match_score", "raw_response (XML)", "checked_at"])
+table("candidate_profiles", 0, 0.72, ["id PK", "user_id FK (unique)", "headline, skills (JSON)", "experience",
+                                      "location_psgc, location_label", "disability_type (optional)", "show_disability",
+                                      "resume_path"])
+table("saved_jobs", 1, 0.72, ["candidate_profile_id PK FK", "job_posting_id PK FK"], pivot=True)
+table("job_postings", 2, 0.72, ["id PK", "employer_id FK", "category_id FK", "title, description", "address",
+                                "location_psgc, location_label", "employment_type, work_setup", "interview_format",
+                                "status, is_approved", "closes_at", "rejection_reason", "deleted_at (soft delete)"])
+table("categories", 3, 0.72, ["id PK", "name"])
+table("candidate_accommodation", 0, 0.47, ["candidate_profile_id PK FK", "accommodation_id PK FK"], pivot=True)
+table("applications", 1, 0.47, ["id PK", "job_posting_id FK", "candidate_profile_id FK", "UNIQUE (posting, candidate)",
+                                "status", "cover_note, interview_request", "reviewed_at, hired_at", "hire_confirmed_by",
+                                "feedback_reminded_at"])
+table("reports", 2, 0.47, ["id PK", "reporter_id FK → users", "job_posting_id FK", "reason", "status, note",
+                           "resolved_by FK → users", "resolved_at"])
+table("job_posting_accommodation", 3, 0.47, ["job_posting_id PK FK", "accommodation_id PK FK", "note"], pivot=True)
+table("accommodations", 0, 0.28, ["id PK", "name", "group", "description", "is_retired"])
+table("application_accommodation", 1, 0.28, ["application_id PK FK", "accommodation_id PK FK"], pivot=True)
+table("feedback", 2, 0.28, ["id PK", "application_id FK (unique)", "comments", "is_hidden"])
+table("feedback_items", 3, 0.28, ["id PK", "feedback_id FK", "accommodation_id FK", "rating"])
+
+# users
+rel([side("users", "left", 0.25), side("notifications", "right", 0.25)], "1", "N")
+rel([side("users", "right", 0.2), (COLS[2], side("users", "right", 0.2)[1])], "1", "1")
+rel([side("users", "bottom", 0.15), side("candidate_profiles", "top", 0.8)], "1", "1")
+rel([side("users", "top", 0.6), (side("users", "top", 0.6)[0], 0.952), (side("registry_checks", "top", 0.5)[0], 0.952),
+     side("registry_checks", "top", 0.5)], "1", "N")
+users_bottom = side("users", "bottom", 0.9)
+rel([users_bottom, (users_bottom[0], 0.745), (0.50, 0.745), (0.50, side("reports", "left", 0.3)[1]),
+     side("reports", "left", 0.3)], "1", "N")
+# employers, postings
+rel([side("employers", "right", 0.3), side("registry_checks", "left", 0.3)], "1", "N")
+rel([side("employers", "bottom", 0.5), side("job_postings", "top", 0.5)], "1", "N")
+rel([side("categories", "left", 0.5), (COLS[2] + BW, side("categories", "left", 0.5)[1])], "1", "N")
+rel([side("job_postings", "bottom", 0.5), side("reports", "top", 0.5)], "1", "N")
+rel([side("job_postings", "bottom", 0.9), side("job_posting_accommodation", "top", 0.3)], "1", "N")
+rel([side("job_postings", "left", 0.15), (COLS[1] + BW, side("job_postings", "left", 0.15)[1])], "1", "N")
+rel([side("job_postings", "bottom", 0.08), side("applications", "top", 0.9)], "1", "N")
+# candidates
+rel([side("candidate_profiles", "right", 0.15), (COLS[1], side("candidate_profiles", "right", 0.15)[1])], "1", "N")
+rel([side("candidate_profiles", "bottom", 0.5), side("candidate_accommodation", "top", 0.5)], "1", "N")
+rel([side("candidate_profiles", "bottom", 0.92), side("applications", "top", 0.1)], "1", "N")
+# applications, feedback
+rel([side("applications", "bottom", 0.5), side("application_accommodation", "top", 0.5)], "1", "N")
+rel([side("applications", "bottom", 0.92), side("feedback", "top", 0.1)], "1", "1")
+rel([side("feedback", "right", 0.4), side("feedback_items", "left", 0.4)], "1", "N")
+# accommodations
+rel([side("accommodations", "top", 0.5), side("candidate_accommodation", "bottom", 0.5)], "1", "N")
+rel([side("accommodations", "right", 0.3), (COLS[1], side("accommodations", "right", 0.3)[1])], "1", "N")
+acc_bottom = side("accommodations", "bottom", 0.35)
+jpa_left = side("job_posting_accommodation", "left", 0.6)
+rel([acc_bottom, (acc_bottom[0], 0.15), (0.75, 0.15), (0.75, jpa_left[1]), jpa_left], "1", "N")
+acc_bottom2 = side("accommodations", "bottom", 0.7)
+rel([acc_bottom2, (acc_bottom2[0], 0.165), (side("feedback_items", "bottom", 0.5)[0], 0.165),
+     side("feedback_items", "bottom", 0.5)], "1", "N")
+ax.text(0.5, 0.11, "PK primary key · FK foreign key · 1 / N cardinality at each end · grey title = pivot table\n"
+        "Not shown: Laravel tables personal_access_tokens, password_reset_tokens, jobs / failed_jobs, cache, sessions",
+        ha="center", va="center", fontsize=7.5, color="#555555")
+save(fig, "fig6_erd.png", tight=True)
 print("done")
