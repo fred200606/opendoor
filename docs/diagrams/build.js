@@ -70,8 +70,25 @@ function fig(file, wPx, hPx, caption) {
     new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [new TextRun({ text: `Figure ${figNo}. ${caption}`, italics: true, size: 18 })] }),
   ];
 }
-const screenshotSlot = (caption, fn) => [
-  ...table(null, [[`[[Insert screenshot: ${caption}]]\n\n\n`]], [W]),
+// Screenshots live in diagrams/screens/ (JPG or PNG). Each is scaled to the content width, but never
+// taller than maxH px, and drawn in a thin frame (a one-cell table as wide as the image).
+const PX = 15; // DXA per pixel at 96 dpi
+function screenshot(file, wPx, hPx, maxH) {
+  let width = 660, height = Math.round((hPx / wPx) * 660);
+  if (height > maxH) width = Math.round((width * maxH) / height), height = maxH;
+  const image = new ImageRun({ type: file.endsWith(".png") ? "png" : "jpg", data: fs.readFileSync(OUTDIR + "diagrams/screens/" + file), transformation: { width, height } });
+  const frame = (width + 8) * PX;
+  return [new Table({
+    alignment: AlignmentType.CENTER, width: { size: frame, type: WidthType.DXA }, columnWidths: [frame],
+    rows: [new TableRow({ children: [new TableCell({ width: { size: frame, type: WidthType.DXA }, borders, margins: { top: 40, bottom: 40, left: 40, right: 40 },
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, keepNext: true, children: [image] })] })] })],
+  }), new Paragraph({ spacing: { after: 60 }, keepNext: true, children: [] })]; // the caption stays with its image
+}
+// images: [file, widthPx, heightPx, maxHeightPx][]; a slot with two images starts a new page so the
+// pair and its caption stay together.
+const screenSlot = (caption, fn, images) => [
+  ...(images.length > 1 ? [new Paragraph({ pageBreakBefore: true, spacing: { after: 0 }, children: [] })] : []),
+  ...images.flatMap(([file, w, h, maxH]) => screenshot(file, w, h, maxH)),
   new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: `Screen: ${caption}`, italics: true, size: 18 })] }),
   P(fn),
 ];
@@ -107,7 +124,7 @@ C.push(note("Note: the role split above is a suggested division of the five inte
 C.push(H2("Document Control"));
 C.push(...table(["Field", "Information"], [
   ["Application Platform", "Web (responsive single-page application usable on desktop and on 360 px phone screens)"],
-  ["Repository", "[[Insert repository link, e.g., https://github.com/<org>/opendoor]]"],
+  ["Repository", "https://github.com/fred200606/opendoor (private)"],
   ["Deployment / Access URL", "Frontend: [[https://opendoor.vercel.app]]  ·  API Gateway: [[https://opendoor-gateway.up.railway.app/api]]"],
   ["Version", "1.0"],
   ["Date", "[[Insert date]]"],
@@ -118,8 +135,8 @@ C.push(H1("Executive Summary"));
 C.push(P("Persons with disabilities (PWDs) remain largely excluded from the Philippine workforce: of about 1.9 million working-age Filipinos with a disability, only around 353,000 were in the labor force in January 2022 (Rappler, 2023). Republic Act No. 7277 already requires reasonable accommodation, yet the information a PWD job seeker needs to act on that right is scattered across systems that do not exchange data. Accommodation details are buried in free-text postings on separate job boards, employer legitimacy is checked by hand against DTI and SEC registry websites, the accessibility of a workplace's surroundings is looked up separately on maps, and no system records whether advertised accommodations were actually delivered after hire."));
 C.push(P("**OpenDoor** integrates these sources into one web application aligned with **SDG 8, Target 8.5** (full and productive employment and decent work for all, including persons with disabilities). Candidates record their accommodation needs once and see job postings ranked by how many needs each one meets (\"Meets 4 of 5 of your needs\"). Employers post jobs with structured accommodation fields and move applicants through a server-enforced status workflow. After hire, candidates rate each advertised accommodation, producing an anonymous **accommodation trust score** that is published only after three responses."));
 C.push(P("The final architecture uses an **API Gateway** (Node.js/Express) as the single entry point for a **React** single-page application. Behind the gateway, the **Core Service** (Laravel 13, Sanctum, MySQL 8) owns users, profiles, postings, matching, applications, feedback and moderation. An **Accessibility Insights Service** (Node.js) is a mashup that combines the posting's address and accommodations from the Core Service with three external REST APIs – OpenStreetMap **Nominatim** (geocoding), the **Overpass API** (wheelchair-tagged places nearby) and the **PSGC API** (official Philippine location codes) – into a normalized \"Workplace Accessibility Snapshot\". A **Business Registry Service** exposes a WSDL-described **SOAP 1.1** interface that simulates a legacy DTI/SEC registry; the Core Service calls it with XML and WS-Security credentials during employer verification and maps the XML result to JSON."));
-C.push(P("All services are deployed to the cloud: the React app on Vercel and the gateway, services and MySQL on Railway, with only the gateway exposed publicly and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
-C.push(note("[[Update the final paragraph with the measured results (test pass rate, JMeter P95 and error rate, SUS score) once testing is complete.]]"));
+C.push(P("All services are deployed to the cloud: the React app on Vercel and the gateway, services and MySQL on Railway, with only the gateway exposed publicly and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. In the final CI run all 16 planned integration tests passed (933 Newman assertions, 0 failures), together with 672 unit and feature tests, 39 registry checks and an axe check with no WCAG 2.1 A/AA violations on 33 pages. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
+C.push(note("[[Add the JMeter P95 and error rate at 50 users (production run) and the mean SUS score to the final paragraph once measured.]]"));
 
 // ---------- 1 Project Overview ----------
 C.push(H1("1. Project Overview"));
@@ -560,23 +577,24 @@ C.push(...bullets([
 C.push(H1("7. Testing and Quality Assurance"));
 C.push(H2("7.1 Functional and Integration Test Plan"));
 C.push(...table(["Test ID", "Scenario", "Type", "Expected Result", "Actual Result", "Status"], [
-  ["T01", "Register candidate with consent, then log in", "Functional", "201 then 200 with token and `role=candidate`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T02", "Employer creates a posting with 3 accommodations and notes", "Functional", "201; posting `status=pending_approval`, 3 accommodations stored", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T03", "Candidate with 5 needs searches with `match=1`", "Functional", "200; postings ordered by `match.met` desc; `missing` lists unmet needs", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T04", "Candidate applies to an open posting", "Functional", "201 `status=pending`; employer receives notification", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T05", "Candidate applies to the same posting twice", "Negative", "409 `ALREADY_APPLIED`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T06", "Employer changes `pending` directly to `hired`", "Negative", "422 `INVALID_STATUS_TRANSITION`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T07", "GET `/api/job-postings/999999` (invalid ID)", "Negative", "404 `NOT_FOUND` with `request_id`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T08", "Employer A updates Employer B's posting", "Negative (security)", "403 `FORBIDDEN`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T09", "Request without token to `/api/applications`", "Negative (security)", "401 `UNAUTHENTICATED`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T10", "Hired candidate submits feedback after 30 days; 3rd response for employer", "Functional", "201; trust score published with `based_on=3` and correct value", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T11", "Feedback before 30 days after hire", "Negative", "422 `FEEDBACK_NOT_OPEN`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T12", "Get Accessibility Snapshot (Gateway → Insights → Core → Nominatim/Overpass/PSGC)", "Integration", "200 within 15 s; `location` has the PSGC code, label and coordinates in the Philippines (`precision` street or city); `sources.core=ok`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T13", "Snapshot with Overpass unreachable (invalid `OVERPASS_URL` in test env)", "Integration (degradation)", "200; `sources.overpass=unavailable` and `nearby_accessible=null` (`cached`/`stale` if a cached result exists); location and employer claims present", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T14", "Admin registry check for a seeded ACTIVE SEC number", "Integration (SOAP)", "200; `registry.status=ACTIVE`; `name_match ≥ 0.80`; check stored", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T15", "Registry check with an unknown number / wrong SOAP password", "Integration (negative)", "200 `status=NOT_FOUND` / 502 `REGISTRY_AUTH_FAILED`", "[[Actual]]", "[[PASS/FAIL]]"],
-  ["T16", "Call Core `/internal/job-postings/{id}/summary` without `X-Service-Key`", "Integration (security)", "401 `UNAUTHENTICATED`; the gateway does not route `/internal/*`", "[[Actual]]", "[[PASS/FAIL]]"],
-], [700, 2800, 1300, 2700, 1500, 1080], { size: 16 }));
+  ["T01", "Register candidate with consent, then log in", "Functional", "201 then 200 with token and `role=candidate`", "201 with token and `role=candidate`; log-in 200 with the same role", "PASS"],
+  ["T02", "Employer creates a posting with 3 accommodations and notes", "Functional", "201; posting `status=pending_approval`, 3 accommodations stored", "201; `status=pending_approval`; 3 accommodations stored with their notes; JobPosting schema matched", "PASS"],
+  ["T03", "Candidate with saved needs (demo candidate: 3) searches with `match=1`", "Functional", "200; postings ordered by `match.met` desc; `missing` lists unmet needs", "200; `match_mode=true`, 12 per page; ranked 3/3 → 1/3 → 0/3; `missing` = total − met, named on the details page", "PASS"],
+  ["T04", "Candidate applies to an open posting", "Functional", "201 `status=pending`; employer receives notification", "201 `status=pending`; the employer's newest notice is `application_received` for this application and is counted as unread", "PASS"],
+  ["T05", "Candidate applies to the same posting twice", "Negative", "409 `ALREADY_APPLIED`", "409 `ALREADY_APPLIED`; `request_id` equals the `X-Request-ID` header", "PASS"],
+  ["T06", "Employer changes `pending` directly to `hired`", "Negative", "422 `INVALID_STATUS_TRANSITION`", "422 `INVALID_STATUS_TRANSITION` (\"An application that is pending cannot be changed to hired.\")", "PASS"],
+  ["T07", "GET `/api/job-postings/999999` (invalid ID)", "Negative", "404 `NOT_FOUND` with `request_id`", "404 `NOT_FOUND`; `request_id` equals the `X-Request-ID` header", "PASS"],
+  ["T08", "Employer A updates Employer B's posting", "Negative (security)", "403 `FORBIDDEN`", "403 `FORBIDDEN`", "PASS"],
+  ["T09", "Request without token to `/api/applications`", "Negative (security)", "401 `UNAUTHENTICATED`", "401 `UNAUTHENTICATED`", "PASS"],
+  ["T10", "Hired candidate submits feedback after 30 days; 3rd response for employer", "Functional", "201; trust score published with `based_on=3` and correct value", "201 (3 items rated); trust score `published=true`, `based_on=3`, `score=78`; breakdown with 3 ratings per accommodation", "PASS"],
+  ["T11", "Feedback before 30 days after hire", "Negative", "422 `FEEDBACK_NOT_OPEN`", "422 `FEEDBACK_NOT_OPEN` (\"Feedback opens on … 30 days after the hire date.\")", "PASS"],
+  ["T12", "Get Accessibility Snapshot (Gateway → Insights → Core → Nominatim/Overpass/PSGC)", "Integration", "200 within 15 s; `location` has the PSGC code, label and coordinates in the Philippines (`precision` street or city); `sources.core=ok`", "200 in 95 ms; code `1381300000` with its label, lat 14.651 / lon 121.0493, `precision=street`; every source `ok` (CI uses the mock external APIs; live APIs on 7 Oct 2026: 3.7 s, then 0.1 s from the cache)", "PASS"],
+  ["T13", "Snapshot with Overpass unreachable (invalid `OVERPASS_URL` in test env)", "Integration (degradation)", "200; `sources.overpass=unavailable` and `nearby_accessible=null` (`cached`/`stale` if a cached result exists); location and employer claims present", "200 in 39 ms; location, employer claims and trust score present; Overpass `cached` because a cached result existed. Without a cache: `unavailable` and `nearby_accessible=null` (local run 7 Oct 2026; Jest tests)", "PASS"],
+  ["T14", "Admin registry check for a seeded ACTIVE SEC number", "Integration (SOAP)", "200; `registry.status=ACTIVE`; `name_match ≥ 0.80`; check stored", "200; `ACTIVE`, registered name \"KALINGA FOODS, INC.\", `name_match=1`; check stored and shown on the employer; employer not approved by the check", "PASS"],
+  ["T15", "Registry check with an unknown number / wrong SOAP password", "Integration (negative)", "200 `status=NOT_FOUND` / 502 `REGISTRY_AUTH_FAILED`", "Unknown DTI number: 200 `NOT_FOUND`, no name or score. Wrong SOAP password: 502 `REGISTRY_AUTH_FAILED` (Core feature test; CI cannot change the registry password)", "PASS"],
+  ["T16", "Call Core `/internal/job-postings/{id}/summary` without `X-Service-Key`", "Integration (security)", "401 `UNAUTHENTICATED`; the gateway does not route `/internal/*`", "401 `UNAUTHENTICATED` (\"A valid service key is required.\"); the gateway answers 404 for `/internal/*`", "PASS"],
+], [560, 2000, 1050, 2350, 3420, 700], { size: 16 }));
+C.push(P("**Results** come from the CI run of 14 October 2026 (GitHub Actions run 38493807232 on commit `59e1c36`): Newman through the gateway against the containerised stack, with PSGC, Nominatim and Overpass replaced by the mock server. All 16 tests passed."));
 C.push(P("Each test ID is the prefix of at least one request name in the Postman collection (e.g. `T05 Applying again → 409 ALREADY_APPLIED`), so a Newman report shows the result per test. Folder 09 adds further security cases beyond the plan: a forged token, other roles and other employers denied (403), a candidate or employer reading someone else's application (403), an administrator suspending their own account (422), SQL-like search text treated as plain text, malformed JSON answered without a stack trace, no CORS headers for an unknown origin, no `X-Powered-By` header, and the suspension rule end to end (token revoked, login refused, postings hidden, restored on reactivation)."));
 C.push(H2("7.2 Postman / API Test Evidence"));
 C.push(P("The repository contains `tests/postman/OpenDoor.postman_collection.json` and environments `local.postman_environment.json` and `production.postman_environment.json` (variables: `baseUrl`, `candidateEmail`, `employerEmail`, `adminEmail`, passwords from secrets). The collection is organized in folders that run in order: **01 Auth**, **02 Master Data**, **03 Employer & Postings**, **04 Candidate & Matching**, **05 Applications & Status**, **06 Feedback & Trust Score**, **07 Insights Mashup**, **08 Admin & SOAP Registry**, **09 Negative & Security Cases**. Login requests save tokens to collection variables; create requests save IDs (`jobPostingId`, `applicationId`) for later requests."));
@@ -588,7 +606,13 @@ C.push(...bullets([
   "**Application errors** – `error.code` equals the expected code (`ALREADY_APPLIED`, `INVALID_STATUS_TRANSITION`, …) and `error.request_id` exists.",
   "**Schema and timing** – key responses validated against JSON schemas written to follow `docs/openapi.yaml` (`pm.expect(body).to.be.jsonSchema(...)`, e.g. \"matches the JobPosting shape\"); response time under 1,000 ms for non-mashup endpoints and under the gateway timeout (15 s) for the snapshot.",
 ]));
-C.push(P("The collection runs headless in CI with `newman run tests/postman/OpenDoor.postman_collection.json -e <env> --reporters cli,htmlextra`. [[Insert the Newman summary: total requests, assertions, failures, and a screenshot of the HTML report.]]"));
+C.push(P("The collection (194 requests) runs headless in CI with `newman run tests/postman/OpenDoor.postman_collection.json -e <env> --reporters cli,htmlextra`, once in full and once more for folder 07 with Overpass unreachable (T13 runs only in that second pass). Results of the CI run of 14 October 2026 (run 38493807232, commit `59e1c36`):"));
+C.push(...table(["Newman run", "Requests", "Assertions", "Failed", "Duration", "Average response"], [
+  ["Full collection (folders 01–09)", "193", "933", "0", "13.1 s", "41 ms"],
+  ["Folder 07 with Overpass unreachable (T12, T13, T16)", "15", "87", "0", "1.0 s", "20 ms"],
+], [3600, 1100, 1200, 900, 1200, 2080]));
+C.push(...fig("screens/newman-summary.png", 1350, 675, "Newman HTML report (htmlextra) of the full collection, CI run 38493807232"));
+C.push(P("The same run's unit and feature tests all passed: Core Service 365 PHPUnit tests (1,730 assertions) on MySQL 8, React 148 Vitest tests, gateway 24 and Insights Service 135 Jest tests, Business Registry 39 checks; the axe check found no WCAG 2.1 A/AA violations on 33 pages."));
 C.push(H2("7.3 Load / Stress Testing"));
 C.push(...table(["Item", "Details"], [
   ["Target component", "API Gateway → Core Service: `GET /api/job-postings?match=1&page=1` (candidate token; matching query with `withCount`), plus `GET /api/job-postings/{id}` as a secondary sampler"],
@@ -689,18 +713,27 @@ npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/l
 // ---------- 9 Screens ----------
 C.push(H1("9. Application Screens and Demonstration"));
 C.push(H2("9.1 Key Application Screens"));
-C.push(note("[[Insert the screenshots from the existing UI into the boxes below. Keep or remove screens to match the final build; each caption already states the related business function.]]"));
+C.push(note("Screens of the final build with the seeded demo data, captured on 14 October 2026 in a desktop browser 1,440 px wide (`npm run ui-reference` in `tests/a11y`). The nearby places in the snapshot are live OpenStreetMap data from that day."));
 [
-  ["Public – Browse jobs (/jobs)", "Guests search by keyword and filter by category and accommodation; job cards show accommodation icons and the employer's Verified badge (M5)."],
-  ["Candidate – Profile and accommodation needs (/candidate/profile)", "The candidate records accommodation needs once from the shared, grouped list; disability type is optional and private (M2)."],
-  ["Candidate – Find jobs in \"Matches my needs\" mode (/candidate/jobs)", "Postings ranked by needs met, with \"Meets 4 of 5 of your needs\" and the missing accommodation named – the output of the matching integration (M5)."],
-  ["Candidate – Job details with Accessibility Snapshot (/candidate/jobs/:id)", "One page combines the posting, trust score and nearby accessible places from the Insights mashup (Core + Nominatim + Overpass + PSGC); Apply with interview accommodation request (M4, M6, M7)."],
-  ["Candidate – My applications and feedback form", "Status tracking, withdraw or confirm hire, and per-accommodation post-hire rating (M6, M7)."],
-  ["Employer – Create/edit posting (/employer/jobs/new)", "Structured accommodations with notes, interview format, PSGC location picker (M4)."],
-  ["Employer – Applicants and trust score", "Review applicants, mark Hired/Rejected; see the aggregated trust score and per-accommodation breakdown (M6, M7)."],
-  ["Admin – Employer verification with registry check (/admin/employers)", "Result of the SOAP Business Registry check shown beside the employer's submitted details before approval (M3, M10)."],
-  ["Admin – Dashboard and analytics (/admin/dashboard)", "Work queues (employers to verify, postings to approve, open reports) and platform counts: users by role, postings and applications by status, feedback responses and published trust scores (M8)."],
-].forEach(([cap, fn]) => C.push(...screenshotSlot(cap, fn)));
+  ["Public – Browse jobs (/jobs)", "Guests search by keyword and filter by category and accommodation; job cards show the offered accommodations, the employer's Verified badge and trust score (M5).",
+    [["guest-jobs.jpg", 1350, 1143, 560]]],
+  ["Candidate – Profile and accommodation needs (/candidate/profile)", "The candidate records accommodation needs once from the shared, grouped list; disability type is optional and private (M2).",
+    [["cand-profile-1.jpg", 1350, 1106, 560]]],
+  ["Candidate – Find jobs in \"Matches my needs\" mode (/candidate/jobs)", "Postings ranked by needs met (\"Meets all 3 of your needs\", \"Meets 1 of your 3 needs\") – the output of the matching integration; Save keeps a job for later (M5, M12).",
+    [["cand-jobs.jpg", 1350, 1287, 580]]],
+  ["Candidate – Job details with Accessibility Snapshot (/candidate/jobs/:id)", "One page combines the posting, match, trust score and – when opened – the Workplace Accessibility Snapshot from the Insights mashup (Core + PSGC + Nominatim + Overpass); Apply with an interview accommodation request; Read aloud and Voice input (M4, M6, M7).",
+    [["cand-job.jpg", 1350, 1448, 420], ["crop-snapshot.jpg", 1075, 1036, 300]]],
+  ["Candidate – My applications and feedback form", "Status tracking of every application, and the per-accommodation rating a hired candidate gives from day 30 after hire (M6, M7).",
+    [["cand-applications.jpg", 1350, 690, 300], ["cand2-feedback.jpg", 1350, 1118, 420]]],
+  ["Employer – Post a job, step 3 Accommodations (/employer/jobs/:id/edit)", "Four-step wizard: structured accommodations with optional notes; step 2 holds the interview format and the PSGC location picker (M4).",
+    [["emp-posting-step3-1.jpg", 1350, 961, 560]]],
+  ["Employer – Applicants and trust score", "Review applicants and record decisions; see the aggregated trust score with its per-accommodation breakdown (M6, M7).",
+    [["emp-applicants.jpg", 1350, 683, 300], ["emp-trust.jpg", 1350, 934, 420]]],
+  ["Admin – Employer verification with registry check (/admin/employers/:id)", "Result of the SOAP Business Registry check (status, registered name, name match) shown beside the employer's submitted details; the administrator decides (M3, M10).",
+    [["admin-employer.jpg", 1350, 964, 560]]],
+  ["Admin – Dashboard (/admin/dashboard)", "Work queues (employers to verify, postings to approve, open reports) and platform counts: users by role, postings and applications by status, feedback responses and published trust scores (M8).",
+    [["admin-dashboard-1.jpg", 1350, 862, 340]]],
+].forEach(([cap, fn, images]) => C.push(...screenSlot(cap, fn, images)));
 C.push(H2("9.2 End-to-End Demonstration Scenario"));
 C.push(...numbered([
   "**User action in client application:** the demo candidate (`candidate@opendoor.test`; needs: wheelchair-accessible entrance, accessible restroom, written or captioned meetings) logs in, opens Find jobs with \"Matches my needs\" on and sees three results ranked by needs met: \"Data Encoder\" (Meets all 3 of your needs), \"Customer Support Associate (Chat)\" (1 of 3) and \"Junior Web Developer\" (0 of 3). The candidate opens \"Data Encoder\" by Bayanihan Tech Solutions and then the Workplace Accessibility Snapshot section.",
@@ -715,12 +748,12 @@ C.push(...numbered([
 C.push(H1("10. Evaluation of the Final Solution"));
 C.push(H2("10.1 Achievement of Objectives"));
 C.push(...table(["Objective", "Success Measure", "Result / Evidence"], [
-  ["1 – Integrated application", "All Must-have modules work end to end through the gateway; T01–T11 pass", "[[Achieved / Partly achieved – evidence]]"],
-  ["2 – Service, external and legacy integration", "Snapshot built from 4 sources; SOAP registry check stored; degradation works (T12–T16)", "[[Evidence]]"],
-  ["3 – Security", "Security tests T08, T09, T16 pass; no secrets in repository (secret scan)", "[[Evidence]]"],
-  ["4 – Quality assurance", "Newman run with 0 failed assertions; JMeter P95 < 1,500 ms and error rate < 1% at 50 users", "[[Evidence]]"],
-  ["5 – Cloud deployment and DevOps", "Public URLs working; CI green on main; automatic deploy and smoke test", "[[Evidence]]"],
-  ["6 – Accessibility and usability", "No critical axe/Lighthouse issues; NVDA walkthrough; mean SUS ≥ 68 (n ≥ 5 PWD, 3 employers)", "[[Evidence]]"],
+  ["1 – Integrated application", "All Must-have modules work end to end through the gateway; T01–T11 pass", "Achieved – T01–T11 pass (CI run 38493807232, Section 7.1); all 13 modules M1–M13 are built, including the \"Could have\" M12 and M13, and were checked in the browser with the demo accounts of every role (screens in 9.1)."],
+  ["2 – Service, external and legacy integration", "Snapshot built from 4 sources; SOAP registry check stored; degradation works (T12–T16)", "Achieved – T12–T16 pass; the snapshot combines Core, PSGC, Nominatim and Overpass (live APIs on 7 Oct 2026, live map data in 9.1); registry checks are stored in `registry_checks`; each source failing is covered by Jest/nock and Core tests and degrades as designed."],
+  ["3 – Security", "Security tests T08, T09, T16 pass; no secrets in repository (secret scan)", "T08, T09, T16 and the further security cases of folder 09 pass; only `.env.example` files with placeholders are tracked and CI generates throwaway secrets. [[Secret scan result]]"],
+  ["4 – Quality assurance", "Newman run with 0 failed assertions; JMeter P95 < 1,500 ms and error rate < 1% at 50 users", "Newman: 933 assertions, 0 failed (Section 7.2). [[JMeter production run: P95 and error rate at 50 users]]"],
+  ["5 – Cloud deployment and DevOps", "Public URLs working; CI green on main; automatic deploy and smoke test", "CI green on `main` with all seven jobs (run 38493807232). [[Public URLs, automatic deploy and smoke test after deployment]]"],
+  ["6 – Accessibility and usability", "No critical axe/Lighthouse issues; NVDA walkthrough; mean SUS ≥ 68 (n ≥ 5 PWD, 3 employers)", "axe: no violations on 34 pages of the seeded stack (also high contrast at 150% text, 14 Oct 2026) and on 33 pages in CI; Lighthouse accessibility 100 on the 6 guest pages (11 Oct 2026, before the redesign); scripted keyboard, focus and reflow checks pass (`docs/accessibility/wcag-audit.md`). [[NVDA walkthrough]] [[Mean SUS score (n PWD, n employers)]]"],
 ], [2600, 4000, 3480]));
 C.push(H2("10.2 Technical Limitations"));
 C.push(...bullets([
@@ -923,7 +956,7 @@ C.push(...table(["Item", "Reference"], [
   ["Environments", "`local`, `ci`, `production` – variables `baseUrl`, role emails; passwords supplied from secrets / Newman `--env-var`"],
   ["Chained variables", "`candidateToken`, `employerToken`, `adminToken`, `jobPostingId`, `applicationId`, `employerId`"],
   ["CI command", "`newman run ... -e tests/postman/ci.postman_environment.json --reporters cli,htmlextra --reporter-htmlextra-export newman-report.html`"],
-  ["Evidence", "[[Insert screenshot of the Postman runner / Newman HTML report and the assertion totals.]]"],
+  ["Evidence", "Newman HTML reports `full.html` and `t13-overpass-down.html`, artifact `newman-reports` of CI run 38493807232: 193 requests / 933 assertions / 0 failed and 15 / 87 / 0 (Section 7.2)"],
 ], [2400, 7680], { kv: true }));
 
 C.push(H2("Appendix D - JMeter/load-test configuration and results"));
