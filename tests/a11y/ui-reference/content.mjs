@@ -84,6 +84,7 @@ export const whatsNew = [
   ['Oct 13', '"Where it stands"', 'Application details show Submitted → Reviewed → Decision with their dates.'],
   ['Oct 13', 'Information pages', 'Privacy, Accessibility statement and How trust scores work.'],
   ['Oct 14', 'Reflow fixes', 'Job cards stack at 200 % text and on 320 px screens instead of making the page scroll sideways.'],
+  ['Oct 14', 'Onboarding for first-time users', 'A 3-step welcome tour after the first sign-in and a "Get started" list on the dashboard that ticks its steps from the user’s own data; both are remembered with the account, and Account → Getting started brings them back.'],
 ];
 
 export const tokens = [
@@ -139,6 +140,8 @@ export const components = [
   { name: 'NotificationsLink', purpose: 'Header link "Notifications" with a red count badge; its name says "Notifications 2 unread". Refreshes on every page change and after marking as read.', notes: '' },
   { name: 'AsyncContent, Loading, EmptyState, ResultCount, Pagination, ActionFeedback', purpose: 'Shared states: "Loading …" status line; error with "Try again"; empty state as a card with an icon tile, a title and the next step; announced result count ("4 postings"); pagination with chevrons ("Previous page", "Page 1 of 3", "Next page", 12 items per page); success/error message after an action.', notes: 'Unavailable pagination buttons stay focusable instead of disappearing.' },
   { name: 'ReadAloud <span class="tag tag--new">New</span>', purpose: '"Read this job aloud" button: reads the title and main content with the browser\'s own voice. While reading: "Pause reading" / "Resume reading" and "Stop reading".', notes: 'Hidden when the browser cannot speak. Nothing leaves the device.' },
+  { name: 'WelcomeTour <span class="tag tag--new">New</span>', purpose: 'Onboarding dialog "Welcome to OpenDoor" in 3 steps for job seekers (Jobs that fit what you need · Your needs and your profile · Apply, then rate) or employers (Reach job seekers with disabilities · Set up your company and get verified · Post jobs and earn trust). Each step: icon tile, heading "Step 1 of 3 · …" that takes focus, progress bars, two short paragraphs; step 1 adds a tip about the display bar, Read aloud and Speak. Buttons "Next" / "Get started", "Back", "Skip the tour".', notes: 'Opens on the first page after the first sign-in (usually right after Create account). Skip, Escape and Get started all save it as done with the account. Can be opened again from the Get started list or Account → Getting started.' },
+  { name: 'GetStarted <span class="tag tag--new">New</span>', purpose: '"Get started" card on the dashboards: "n of 4 done", a ✓ or an empty circle per step (with hidden "Done:" / "To do:"), a short hint and a button for each open step, "Show the welcome tour" and "Hide this list".', notes: 'Steps come from the user’s own data, so they tick themselves. Gone when all are done or hidden; Account → Getting started shows it again. Accounts that existed before October 14, 2026 and the demo accounts start with both done.' },
   { name: 'VoiceInput <span class="tag tag--new">New</span>', purpose: '"Speak" button under a text field; adds what the user says to the field until "Stop listening". First use shows a notice that Chrome/Edge send the audio to their speech service.', notes: 'Hidden where the browser has no speech recognition (e.g. Firefox) or no speech service (Brave). Browsers like Opera fail on the first try: "Voice input does not work in this browser. Use Chrome or Edge, or type instead." takes the button’s place (focus moves to it) and the browser is remembered.' },
 ];
 
@@ -274,9 +277,10 @@ export const sections = [
           'Left: tiles "Your applications" – Submitted, Reviewed, Hired, Not selected, Withdrawn, each with an icon and "View" (opens My applications filtered by that status)',
           'Right: "Jobs for you" (tinted card: "1 open job offers all the accommodations you need." + "See matching jobs"), "Your needs" (tags + "Change your needs"; without needs a prompt with "Add my needs"), "Ratings to give" ("Nothing to rate yet. You can rate 30 days after being hired.")',
           'When a rating is due, "Ratings to give" moves to the top as a tinted card per hire: "{job} at {company}" and "Rate the accommodations now"',
+          'First-time users <span class="tag tag--new">New</span>: "Get started" card at the top with "n of 4 done", progress bars and the steps Create your account · Add the accommodations you need ("Add your needs") · Add your skills and résumé ("Complete your profile") · Apply to a job that fits ("Find jobs"); done steps have a ✓ and lose their button; "Show the welcome tour" and "Hide this list"',
         ],
-        actions: ['Jump to filtered applications, matching jobs, profile or the feedback form'],
-        states: ['"Loading your summary…"'], api: ['GET /candidate/dashboard', 'GET /candidate/profile (needs)'],
+        actions: ['Jump to filtered applications, matching jobs, profile or the feedback form', 'Hide this list → "The “Get started” list is hidden. You can show it again in Account settings." (takes focus)'],
+        states: ['"Loading your summary…"', 'The "Get started" list goes away by itself when every step is done'], api: ['GET /candidate/dashboard', 'GET /candidate/profile (needs, Get started)', 'PATCH /me/onboarding {checklist_hidden}'],
       },
       {
         id: 'candidate-profile', title: 'Profile and needs', shots: [['cand-profile', 'Tab "Accommodations you need"'], ['cand-profile-about', 'Tab "About you"'], ['cand-profile-resume', 'Tab "Résumé"']],
@@ -366,8 +370,9 @@ export const sections = [
           'Tiles "Your job postings": Draft, Waiting for approval, Open, Closed (with icons and "View")',
           'Tiles "Applications received": Submitted, Reviewed, Hired (numbers only – there is no list of all applications)',
           '"Trust score" card with "See each accommodation"',
+          'First-time users <span class="tag tag--new">New</span>: "Get started" card at the top (it replaces the "Set up company" callout): Create your account · Set up your company profile ("Set up company") · Get your business verified (says whether an administrator is checking it; "Update company" after a rejection) · Post your first job ("Post a job", once the company exists); "Show the welcome tour" and "Hide this list"',
         ],
-        actions: ['Open filtered postings, company profile, trust score'], states: [], api: ['GET /employer/dashboard'],
+        actions: ['Open filtered postings, company profile, trust score'], states: ['The "Get started" list goes away by itself when every step is done'], api: ['GET /employer/dashboard', 'PATCH /me/onboarding {checklist_hidden}'],
       },
       {
         id: 'company', title: 'Company profile', shots: [['emp-company'], ['emp2-company', 'Waiting for verification (warning)']],
@@ -520,16 +525,17 @@ export const sections = [
       },
       {
         id: 'account', title: 'Account', isNew: true, shots: [['cand-account', 'Tab "Display"'], ['cand-account-password', 'Tab "Password"'], ['cand-account-email', 'Tab "Email notifications" with the example email']],
-        route: '/account (?tab=password, ?tab=email)', who: 'All signed-in users', purpose: 'Display settings, password and email notifications.',
+        route: '/account (?tab=password, ?tab=email, ?tab=onboarding)', who: 'All signed-in users', purpose: 'Display settings, password, email notifications and onboarding.',
         parts: [
-          'h1 "Account", subtitle "{name} · {email} · {role}"; tabs "Display", "Password", "Email notifications" (not for administrators)',
+          'h1 "Account", subtitle "{name} · {email} · {role}"; tabs "Display", "Password", "Email notifications" and "Getting started" (the last two not for administrators)',
           'Display: "Changes apply right away and are saved to your account. Decoration and the top menu are kept on this device only."; choices Text size (Standard, Large (125%), Extra large (150%)), Colours (Standard colours, High contrast), Motion (Allow animations, Reduce motion), Decoration (Show sparkles and colours, Quiet: plain and calm), Top menu (Show all links, Compact: one Menu button); the result as an alert',
           'Password: "Change password" – Current password, New password ("At least 8 characters, different from the current one."), Confirm new password, "Change password"',
+          'Getting started <span class="tag tag--new">New</span>: checkbox "Show the “Get started” list on my dashboard" ("It lists your first steps and goes away by itself when they are all done."), the result as an alert, and "Show the welcome tour"',
           'Email notifications <span class="tag tag--new">New</span>: checkbox "Send me an email for each notification" ("On by default. The email repeats the notice and links to OpenDoor. It never includes disability or accommodation details."), the result as an alert, and an "Example email" preview with the user\'s first name',
         ],
-        actions: ['A display change applies at once (the display bar follows) and is saved to the account (other devices get it at the next login)', 'The email checkbox saves at once: "Email notifications are on." / "Email notifications are off. You still see every notice under Notifications."', 'Change password → "Your password is changed." (other devices are signed out)'],
+        actions: ['A display change applies at once (the display bar follows) and is saved to the account (other devices get it at the next login)', 'The email checkbox saves at once: "Email notifications are on." / "Email notifications are off. You still see every notice under Notifications."', 'The "Get started" checkbox saves at once: "The “Get started” list is on your dashboard until every step is done." / "The “Get started” list is hidden."', '"Show the welcome tour" opens the tour again (nothing is saved)', 'Change password → "Your password is changed." (other devices are signed out)'],
         states: ['Saving failed: "Display settings applied on this device, but not saved to your account. Change a setting to try again."', 'Email choice not saved: the checkbox goes back and "Your choice was not saved. Please try again."'],
-        api: ['PUT /me/display-prefs {text_size, contrast, motion}', 'PUT /me/email-notifications {enabled}', 'PUT /me/password'],
+        api: ['PUT /me/display-prefs {text_size, contrast, motion}', 'PUT /me/email-notifications {enabled}', 'PATCH /me/onboarding {checklist_hidden}', 'PUT /me/password'],
       },
     ],
   },
