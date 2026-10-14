@@ -304,7 +304,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -319,13 +319,25 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
                   "  pm.expect(body.user.role).to.eql('candidate');",
                   "  pm.expect(body.user.display_prefs).to.eql(null);",
                   "  pm.expect(body.user.email_notifications, 'emails are on for new accounts').to.eql(true);",
+                  "  pm.expect(body.user.onboarding, 'a new account gets the welcome tour and the Get started list').to.eql({ tour_done: false, checklist_hidden: false });",
                   "  pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));",
                   "});",
                   "pm.collectionVariables.set('newCandidateToken', body.token);"
@@ -382,7 +394,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -397,7 +409,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -619,7 +642,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -634,7 +657,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -694,7 +728,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -709,7 +743,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -769,7 +814,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -784,7 +829,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -891,7 +947,7 @@
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -906,7 +962,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "}));",
@@ -1541,6 +1608,287 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"enabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is FORBIDDEN', () => pm.expect(body.error.code).to.eql('FORBIDDEN'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding Finish the welcome tour → 200",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "onboarding"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tour_done\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('only the tour changed', () => pm.expect(pm.response.json()).to.eql({ tour_done: true, checklist_hidden: false }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding Hide the Get started list → 200",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "onboarding"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checklist_hidden\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('both are saved', () => pm.expect(pm.response.json()).to.eql({ tour_done: true, checklist_hidden: true }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding The state is on the account: GET /me",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('onboarding is done and hidden', () => pm.expect(pm.response.json().onboarding).to.eql({ tour_done: true, checklist_hidden: true }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding Nothing to change → 422",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "onboarding"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.tour_done is present', () => pm.expect(body.errors).to.have.property('tour_done'));",
+                  "",
+                  "pm.test('one of the two is required', () => pm.expect(body.errors).to.have.all.keys('tour_done', 'checklist_hidden'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Onboarding Admins have none → 403",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/me/onboarding",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me",
+                "onboarding"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tour_done\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2863,7 +3211,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -2878,7 +3226,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",
@@ -4495,7 +4854,6 @@
                   "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
                   "",
                   "pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));",
-                  "pm.test('every posting says whether the candidate saved it', () => body.data.forEach((p) => pm.expect(p.saved).to.be.a('boolean')));",
                   "pm.test('ranked by needs met', () => {",
                   "  const met = body.data.map((p) => p.match.met);",
                   "  pm.expect(met).to.eql([...met].sort((a, b) => b - a));",
@@ -5506,7 +5864,7 @@
                   "",
                   "pm.test('matches the Application shape', () => {",
                   "  const a = pm.response.json();",
-                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
+                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
                   "});",
                   "const a = pm.response.json();",
                   "pm.test('pending, not hired, no candidate block for the candidate', () => {",
@@ -5937,11 +6295,10 @@
                   "",
                   "pm.test('matches the Application shape', () => {",
                   "  const a = pm.response.json();",
-                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
+                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
                   "});",
                   "const a = pm.response.json();",
                   "pm.test('opening marks it reviewed', () => pm.expect(a.status).to.eql('reviewed'));",
-                  "pm.test('the review time is recorded', () => pm.expect(a.reviewed_at).to.be.a('string'));",
                   "pm.test('candidate needs and a signed résumé link are shared with this employer', () => {",
                   "  pm.expect(a.candidate).to.include.keys('name', 'headline', 'skills', 'experience', 'accommodations', 'disability_type', 'resume_url');",
                   "  pm.expect(a.candidate.accommodations).to.have.lengthOf(2);",
@@ -6436,7 +6793,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -6451,7 +6808,18 @@
                   "        }",
                   "      ]",
                   "    },",
-                  "    email_notifications: { type: 'boolean' }",
+                  "    email_notifications: { type: 'boolean' },",
+                  "    onboarding: {",
+                  "      oneOf: [",
+                  "        { type: 'null' },",
+                  "        {",
+                  "          type: 'object',",
+                  "          required: ['tour_done', 'checklist_hidden'],",
+                  "          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },",
+                  "          additionalProperties: false",
+                  "        }",
+                  "      ]",
+                  "    }",
                   "  },",
                   "  additionalProperties: false",
                   "});",

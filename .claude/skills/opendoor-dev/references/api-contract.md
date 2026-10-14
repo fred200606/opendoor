@@ -13,7 +13,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M1 Auth | POST | /register | P | `{name,email,password,password_confirmation,role:'candidate'|'employer',consent:true}` → 201 `{user, token}` |
 | M1 Auth | POST | /login | P | `{email,password}` → 200 `{token, user:{id,name,email,role}}` (rate-limited 5/min) |
 | M1 Auth | POST | /logout | any | revoke token → 204 |
-| M1 Auth | GET | /me | any | current user + role + `display_prefs` (M13; null until saved) + `email_notifications` (M13; bool, default true) – also in the login/register `user`, not in admin user lists |
+| M1 Auth | GET | /me | any | current user + role + `display_prefs` (M13; null until saved) + `email_notifications` (M13; bool, default true) + `onboarding {tour_done, checklist_hidden}` (null for admins) – also in the login/register `user`, not in admin user lists |
 | M1 Auth | PUT | /me/password | any | `{current_password,password,password_confirmation}` |
 | M1 Auth | POST | /forgot-password | P | `{email}` → always 200 `{message}` (same for every email; added 2026-10-13, beyond the SIA M1 list). Every request only queues `SendPasswordResetLink` (`PASSWORD_RESET_QUEUE`, default `database`, worked by the scheduler every minute) – equal timing for every email; the job emails an active account (security email, ignores the M13 switch) with `{PUBLIC_APP_URL}/reset-password?token=&email=`, valid 60 min, once; 60 s between links per account; limit 5/min per email+IP |
 | M1 Auth | POST | /reset-password | P | `{token,email,password,password_confirmation}` → 200 `{message}`, revokes all tokens; wrong/used/expired token or unknown email → 422 `errors.token` (one message); limit 5/min per email+IP |
@@ -56,6 +56,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M12 Saved jobs | GET / POST, DELETE | /candidate/saved-jobs, /candidate/saved-jobs/{jobId} | C | bookmarks of visible postings, newest saved first, with `match` and `saved:true`; POST 201 (200 if already saved; hidden → 404); DELETE by id, idempotent → 204 |
 | M13 Display settings | PUT | /me/display-prefs | any | `{text_size:'100'|'125'|'150', contrast:'normal'|'high', motion:'normal'|'reduce'}` (all required) → 200 the saved settings; follow the user to other devices |
 | M13 Email notifications | PUT | /me/email-notifications | C, E | `{enabled:bool}` → 200 `{enabled}` (admins 403). Emails = notice text + link to `PUBLIC_APP_URL` + path, never needs/disability; sent after the response (`deferred` queue), not to suspended users; mail failures are logged, never fail the action |
+| Onboarding | PATCH | /me/onboarding | C, E | `{tour_done?:bool, checklist_hidden?:bool}` (at least one) → 200 `{tour_done, checklist_hidden}` (admins 403). New accounts start false/false: welcome tour after the first sign-in + "Get started" list on the dashboard (steps from the user's own data); existing and demo accounts start as done (decision 2026-10-14) |
 | Insights | GET | /insights/job-postings/{id} | P | Accessibility Snapshot |
 | Insights | GET | /insights/locations/{regions|provinces|cities}?parent= | P | `[{code,name,level}]` |
 | Internal (Core) | GET | /internal/job-postings/{id}/summary | S | not routed by gateway |

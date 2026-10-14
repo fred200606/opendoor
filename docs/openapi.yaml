@@ -274,6 +274,35 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+  /me/onboarding:
+    patch:
+      tags: [M1 Auth]
+      summary: Remember the welcome tour and the "Get started" list
+      description: |
+        Candidates and employers (administrators have no onboarding → 403). A new account starts with
+        `tour_done` and `checklist_hidden` false: the client shows the welcome tour after the first sign-in
+        and a "Get started" list on the dashboard (its steps come from the user's own data). Partial update:
+        send one or both fields; `checklist_hidden: false` shows the list again. Accounts that existed before
+        onboarding was added, and the demo accounts, start as done.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                tour_done: { type: boolean }
+                checklist_hidden: { type: boolean }
+      responses:
+        '200':
+          description: The saved onboarding state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Onboarding' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
 
   # ---------------------------------------------------------------- M2 Candidate profile
   /candidate/profile:
@@ -1693,6 +1722,17 @@ components:
             email_notifications:
               type: boolean
               description: Notifications are also emailed (default true; PUT /me/email-notifications). Not used for administrators.
+            onboarding:
+              description: Welcome tour and "Get started" list (PATCH /me/onboarding); null for administrators.
+              oneOf:
+                - $ref: '#/components/schemas/Onboarding'
+                - type: 'null'
+    Onboarding:
+      type: object
+      required: [tour_done, checklist_hidden]
+      properties:
+        tour_done: { type: boolean, description: The welcome tour was finished or skipped }
+        checklist_hidden: { type: boolean, description: The user hid the dashboard's "Get started" list }
     DisplayPrefs:
       type: object
       required: [text_size, contrast, motion]

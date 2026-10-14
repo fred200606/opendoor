@@ -41,10 +41,10 @@ const userSchema = `{
   additionalProperties: false
 }`;
 
-/** The signed-in user's own account (register, login, /me): User + M13 display settings and email switch. */
+/** The signed-in user's own account (register, login, /me): User + M13 display settings, email switch and onboarding. */
 const accountSchema = `{
   type: 'object',
-  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications'],
+  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],
   properties: {
     id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },
     role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },
@@ -59,7 +59,18 @@ const accountSchema = `{
         }
       ]
     },
-    email_notifications: { type: 'boolean' }
+    email_notifications: { type: 'boolean' },
+    onboarding: {
+      oneOf: [
+        { type: 'null' },
+        {
+          type: 'object',
+          required: ['tour_done', 'checklist_hidden'],
+          properties: { tour_done: { type: 'boolean' }, checklist_hidden: { type: 'boolean' } },
+          additionalProperties: false
+        }
+      ]
+    }
   },
   additionalProperties: false
 }`;
@@ -150,6 +161,7 @@ pm.test('returns a token and a candidate user', () => {
   pm.expect(body.user.role).to.eql('candidate');
   pm.expect(body.user.display_prefs).to.eql(null);
   pm.expect(body.user.email_notifications, 'emails are on for new accounts').to.eql(true);
+  pm.expect(body.user.onboarding, 'a new account gets the welcome tour and the Get started list').to.eql({ tour_done: false, checklist_hidden: false });
   pm.expect(body.user.email).to.eql(pm.collectionVariables.get('newCandidateEmail'));
 });
 pm.collectionVariables.set('newCandidateToken', body.token);`,
@@ -302,6 +314,48 @@ pm.test('email_notifications is false', () => pm.expect(pm.response.json().email
     path: '/me/email-notifications',
     auth: bearer('adminToken'),
     body: { enabled: false },
+    tests: `${status(403)}
+${envelope('FORBIDDEN')}`,
+  }),
+  request('Onboarding Finish the welcome tour → 200', {
+    method: 'PATCH',
+    path: '/me/onboarding',
+    auth: bearer('newCandidateToken'),
+    body: { tour_done: true },
+    tests: `
+${status(200)}
+pm.test('only the tour changed', () => pm.expect(pm.response.json()).to.eql({ tour_done: true, checklist_hidden: false }));`,
+  }),
+  request('Onboarding Hide the Get started list → 200', {
+    method: 'PATCH',
+    path: '/me/onboarding',
+    auth: bearer('newCandidateToken'),
+    body: { checklist_hidden: true },
+    tests: `
+${status(200)}
+pm.test('both are saved', () => pm.expect(pm.response.json()).to.eql({ tour_done: true, checklist_hidden: true }));`,
+  }),
+  request('Onboarding The state is on the account: GET /me', {
+    path: '/me',
+    auth: bearer('newCandidateToken'),
+    tests: `
+${status(200)}
+pm.test('onboarding is done and hidden', () => pm.expect(pm.response.json().onboarding).to.eql({ tour_done: true, checklist_hidden: true }));`,
+  }),
+  request('Onboarding Nothing to change → 422', {
+    method: 'PATCH',
+    path: '/me/onboarding',
+    auth: bearer('newCandidateToken'),
+    body: {},
+    tests: `
+${fieldError('tour_done')}
+pm.test('one of the two is required', () => pm.expect(body.errors).to.have.all.keys('tour_done', 'checklist_hidden'));`,
+  }),
+  request('Onboarding Admins have none → 403', {
+    method: 'PATCH',
+    path: '/me/onboarding',
+    auth: bearer('adminToken'),
+    body: { tour_done: true },
     tests: `${status(403)}
 ${envelope('FORBIDDEN')}`,
   }),
