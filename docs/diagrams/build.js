@@ -107,27 +107,27 @@ C.push(...table(["Field", "Details"], [
   ["Project Title", "OpenDoor: An Integrated Job Matching Platform with Accommodation-Based Filtering and Post-Hire Accommodation Verification for Persons with Disabilities"],
   ["Selected UN SDG", "SDG 8 – Decent Work and Economic Growth (Target 8.5)"],
   ["Course", "Systems Integration and Architecture 1"],
-  ["Section", "[[Enter section]]"],
-  ["Instructor", "[[Enter instructor name]]"],
-  ["Group Name / Number", "[[Enter group name or number]]"],
-  ["Submission Date", "[[Month Day, Year]]"],
+  ["Section", "IT31S1"],
+  ["Instructor", "Ms. Justine Neypes"],
+  ["Group Name / Number", "Group 3 – ICARUS"],
+  ["Submission Date", "October 19, 2026"],
 ], [2600, 7480], { kv: true }));
 C.push(H2("Group Members"));
 C.push(...table(["Name", "Student Number", "Primary Role / Responsibility"], [
-  ["[[Name]]", "[[Student No.]]", "Project lead and integration architect – API gateway, service contracts, CI/CD"],
-  ["[[Name]]", "[[Student No.]]", "Core Service developer – Laravel API, MySQL schema, matching and trust score"],
-  ["[[Name]]", "[[Student No.]]", "Integration developer – Accessibility Insights mashup and SOAP Business Registry"],
-  ["[[Name]]", "[[Student No.]]", "Frontend developer – React SPA, accessibility (WCAG 2.1 AA)"],
-  ["[[Name]]", "[[Student No.]]", "QA and DevOps – Postman/Newman, JMeter, cloud deployment, documentation"],
+  ["Beronilla, Jianina", "[[Student No.]]", "[[Role]]"],
+  ["Crisologo, Angellana", "[[Student No.]]", "[[Role]]"],
+  ["Ruzgal, Francis Aaron", "[[Student No.]]", "[[Role]]"],
+  ["Siochi, Onekhyle", "[[Student No.]]", "[[Role]]"],
+  ["Su, Alfred G.", "[[Student No.]]", "[[Role]]"],
 ], [3000, 2200, 4880]));
-C.push(note("Note: the role split above is a suggested division of the five integration workstreams. Adjust it to match the actual group."));
+C.push(note("Suggested division of the five integration workstreams, one per member: project lead and integration architect – API gateway, service contracts, CI/CD; Core Service developer – Laravel API, MySQL schema, matching and trust score; integration developer – Accessibility Insights mashup and SOAP Business Registry; frontend developer – React SPA, accessibility (WCAG 2.1 AA); QA and DevOps – Postman/Newman, JMeter, cloud deployment, documentation."));
 C.push(H2("Document Control"));
 C.push(...table(["Field", "Information"], [
   ["Application Platform", "Web (responsive single-page application usable on desktop and on 360 px phone screens)"],
   ["Repository", "https://github.com/fred200606/opendoor (private)"],
   ["Deployment / Access URL", "Frontend: [[https://opendoor.vercel.app]]  ·  API Gateway: [[https://opendoor-gateway.up.railway.app/api]]"],
   ["Version", "1.0"],
-  ["Date", "[[Insert date]]"],
+  ["Date", "October 19, 2026"],
 ], [2600, 7480], { kv: true }));
 
 // ---------- Executive summary ----------
