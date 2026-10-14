@@ -9,7 +9,7 @@ opendoor/
 ├─ services/
 │  ├─ core-api/                 Laravel 13 Core Service
 │  ├─ insights-service/         Node.js 22 + Express mashup service
-│  └─ business-registry-soap/   PHP 8.3 SoapServer + WSDL + SQLite seed
+│  └─ business-registry-soap/   PHP 8.4 SoapServer + WSDL + SQLite seed
 ├─ tests/
 │  ├─ postman/                  OpenDoor.postman_collection.json + environments
 │  └─ jmeter/                   opendoor-matching.jmx + tokens.csv
@@ -25,7 +25,7 @@ opendoor/
 |---|---|---|---|---|
 | React SPA | Public area + Candidate/Employer/Admin portals | React 19, Vite, React Router 7, Axios, AuthContext | 5173 | Vercel (public) |
 | API Gateway | Single entry; routing; CORS; rate limit (120 req/min/IP); X-Request-ID; timeouts; error envelope; `/api/health` | Express, http-proxy-middleware, express-rate-limit | 8080 | Railway public domain (only public backend) |
-| Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.3, Laravel 13, Sanctum, Eloquent | 8001 | `core-api.railway.internal:8001` (private) |
+| Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.4, Laravel 13, Sanctum, Eloquent (FrankenPHP image) | 8001 | `core-api.railway.internal:8001` (private) |
 | Insights Service | Workplace Accessibility Snapshot mashup; PSGC location lists; caching/throttling | Express, Axios, mysql2 | 8002 | `insights.railway.internal:8002` (private) |
 | Business Registry | SOAP 1.1 `VerifyBusinessRegistration`, WSDL at `/soap?wsdl`; simulated DTI/SEC records | PHP SoapServer, SQLite | 8003 | `registry.railway.internal:8003` (private) |
 | MySQL 8 | Schemas `opendoor_core` (Core user) and `insights_cache` (Insights user) | Railway managed | 3306 | `mysql.railway.internal:3306` |
@@ -56,13 +56,13 @@ Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/a
 
 - **frontend:** `VITE_API_URL`
 - **gateway:** `PORT`, `CORE_URL`, `INSIGHTS_URL`, `CORS_ALLOWED_ORIGIN` (comma-separated list allowed), `RATE_LIMIT_PER_MIN`, `TRUST_PROXY` (0 locally, 1 on Railway)
-- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `PUBLIC_API_URL` (gateway URL for file links such as `logo_url`), `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders)
-- **insights-service:** `PORT`, `CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_URL`, `OVERPASS_URL`, `PSGC_URL`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_HOST`, `CACHE_DB_NAME=insights_cache`, `CACHE_DB_USER`, `CACHE_DB_PASSWORD`
+- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `PUBLIC_API_URL` (gateway URL for file links such as `logo_url`), `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders), `PUBLIC_APP_URL` (links in emails), `MAIL_*` (mail provider; `log` locally), `PASSWORD_RESET_QUEUE=database`
+- **insights-service:** `PORT`, `CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_URL`, `OVERPASS_URL`, `OVERPASS_FALLBACK_URL`, `PSGC_URL`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_HOST`, `CACHE_DB_NAME=insights_cache`, `CACHE_DB_USER`, `CACHE_DB_PASSWORD`
 - **business-registry-soap:** `PORT`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`
 
 ## Deployment
 
 - Vercel: root `frontend/`, build `npm run build`, output `dist/`, SPA rewrite to `index.html`.
-- Railway: one project, services `gateway`, `core-api` (Dockerfile php-fpm+nginx, release `php artisan migrate --force`), `insights-service`, `business-registry-soap` (Dockerfile), plus MySQL. Only `gateway` gets a public domain; others use `${{service.RAILWAY_PRIVATE_DOMAIN}}`.
+- Railway: one project, services `gateway`, `core-api` (Dockerfile, FrankenPHP; pre-deploy `php artisan migrate --force`; volume for logos/résumés), `core-scheduler` (same image, `php artisan schedule:work`), `insights-service`, `business-registry-soap` (Dockerfile, FrankenPHP), plus MySQL; mail provider chosen at deployment. Only `gateway` gets a public domain; others use `${{service.RAILWAY_PRIVATE_DOMAIN}}`.
 - Production: `APP_DEBUG=false`, fresh `APP_KEY`, CORS restricted to the Vercel domain.
 - Free/hobby tiers sleep: wake the app (`/api/health`) a few minutes before demos.

@@ -14,7 +14,7 @@ The approved design is in `docs/OpenDoor_SIA1_Final_Project_Documentation.docx` 
 
 ## Non-negotiable rules
 
-1. **Keep the stack.** React (Vite) · Node.js 22 + Express gateway · Laravel 13 + Sanctum + MySQL 8 Core Service · Node.js + Express Insights Service · PHP 8.3 SoapServer registry. Do not introduce other frameworks, languages or databases without asking.
+1. **Keep the stack.** React (Vite) · Node.js 22 + Express gateway · Laravel 13 + Sanctum + MySQL 8 Core Service · Node.js + Express Insights Service · PHP 8.4 SoapServer registry. Do not introduce other frameworks, languages or databases without asking.
 2. **The client only talks to the gateway** (`VITE_API_URL`). Never call Core, Insights, the registry or external APIs from React.
 3. **Each service owns its data.** No service reads another service's database. Insights gets posting data only through Core's `/internal/*` endpoints.
 4. **Authorization is enforced on the server** (auth:sanctum → role middleware → Laravel Policy). React `ProtectedRoute` is only navigation.
@@ -71,6 +71,6 @@ The team already has UI screens. When connecting a screen:
 
 - Business Registry is a **simulated** DTI/SEC registry with seeded data (no real DTI/SEC API exists).
 - The gateway is Node.js/Express.
-- Core Service uses the latest Laravel (13.x), PHP 8.3+ (local: 8.4).
+- Core Service uses the latest Laravel (13.x), PHP 8.4 (local, CI and Docker images).
 - Local development runs natively without Docker; Docker only for CI and Railway images.
 - Repo lives in `C:\dev\opendoor` (outside OneDrive).

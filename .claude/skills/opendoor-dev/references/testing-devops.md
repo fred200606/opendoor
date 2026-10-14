@@ -22,22 +22,22 @@ Folders run in order: 01 Auth · 02 Master Data · 03 Employer & Postings · 04 
 
 ## JMeter (`tests/jmeter/opendoor-matching.jmx`)
 
-Load: 50 threads, 60 s ramp-up, 10 loops on `GET /api/job-postings?match=1&page=${__Random(1,10)}` and `GET /api/job-postings/${postingId}` with `Authorization: Bearer ${token}` from `tokens.csv` (tokens from a seeded test environment only). Stress: 100 and 200 threads. Assertions: 200, `$.meta.match_mode == true`, duration ≤ 3000 ms. Run `jmeter -n -t opendoor-matching.jmx -l results.jtl -e -o report/`. Targets: P95 < 1500 ms, error rate < 1% at 50 users. Seed 500 postings first.
+Load: 50 threads, 60 s ramp-up, 10 loops on `GET /api/job-postings?match=1&page=${__Random(1,10)}` and `GET /api/job-postings/${postingId}` with `Authorization: Bearer ${token}` from `tokens.csv` (written by `php artisan load-test:data`: 500 open postings, 50 load-test candidates with one token each; `--remove` deletes them). Stress: 100 and 200 threads, 5 loops (`-Jthreads/-Jrampup/-Jloops`). Assertions: 200, `$.meta.match_mode == true`, `$.meta.per_page == ${pageSize}`, duration ≤ 3000 ms. Run `jmeter -n -t opendoor-matching.jmx -Jhost=... -l results.jtl -e -o report/` (details in `tests/jmeter/README.md`). Targets: P95 < 1500 ms, error rate < 1% at 50 users.
 
 ## Git workflow
 
 - Branches: `main` (protected, deployed), `develop`, `feature/<module>-<desc>` (e.g. `feature/M5-matching`), `fix/<desc>`.
 - Conventional Commits with scope = component: `feat(core): ...`, `fix(gateway): ...`, `test(postman): ...`, `docs: ...`.
-- PR into `develop` with 1 reviewer + green CI; release by merging `develop` → `main` and tagging `v1.x`.
+- As practised: small tested commits straight to `main` (CI runs on every push to `main`/`develop` and on PRs); progress, decisions and known issues live in `PROGRESS.md`.
 
 ## GitHub Actions (`.github/workflows/ci.yml`)
 
-1. **Validate & test** (PR to develop/main, push to develop): path-filtered parallel jobs – frontend (npm ci, lint, build, axe), gateway + insights (npm ci, lint, jest), core-api (composer install, pint --test, php artisan test with a `mysql:8` service), registry (php -l, xmllint WSDL, SOAP smoke).
-2. **Integration**: `docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d` (external APIs replaced by `mock-external`), migrate + seed, Newman with `ci` env, upload HTML report artifact.
+1. **Validate & test** (push to main/develop, PR to either, manual run = all jobs): path-filtered parallel jobs – frontend (npm ci, oxlint, Vitest, build), gateway + insights (npm ci, lint, jest), core-api (composer install, pint --test, php artisan test with a `mysql:8` service), registry (php -l, xmllint WSDL, SOAP smoke).
+2. **Integration**: `docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d` (external APIs replaced by `mock-external`), throwaway secrets per run, migrate + seed, Newman full collection + folder 07 again with Overpass unreachable (T13), axe WCAG 2.1 A/AA on the built frontend (Playwright Chromium), upload the Newman HTML reports artifact.
 3. **Deploy**: merge to `main` → Vercel and Railway GitHub integrations deploy.
-4. **Post-deploy smoke**: Newman smoke folder against the production gateway.
+4. **Post-deploy smoke**: Newman smoke folder against the production gateway (planned – not in `ci.yml` yet; add it at deployment).
 
-Secrets only in GitHub Actions secrets / Railway / Vercel variables.
+Secrets only in Railway / Vercel variables; CI generates throwaway secrets per run (nothing stored in GitHub).
 
 ## Local startup (native – Docker is not used locally; it is only for CI and Railway images)
 
