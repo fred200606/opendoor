@@ -4,10 +4,12 @@ import { getDashboard } from '../../api/account.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import GetStarted from '../../components/GetStarted.jsx';
 import Page from '../../components/Page.jsx';
 import StatCards from '../../components/StatCards.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
+import { showsGetStarted, useOnboarding } from '../../hooks/useOnboarding.js';
 import { APPLICATION_STATUSES, POSTING_STATUSES } from '../../lib/labels.js';
 import { APPLICATION_TILES, POSTING_TILES } from '../../lib/statusTiles.js';
 
@@ -18,15 +20,19 @@ const RECEIVED = ['pending', 'reviewed', 'hired'];
 export default function EmployerDashboardPage() {
   const { user } = useAuth();
   const state = useAsync(() => getDashboard('employer'), []);
+  const { onboarding } = useOnboarding();
 
   return (
     <Page title={`Welcome, ${user.name}`} subtitle={<p className="page__subtitle">Your postings, applications and trust score at a glance.</p>}>
       <AsyncContent state={state} label="Loading your summary">
         {(dashboard) => {
           const waiting = dashboard.postings?.pending_approval ?? 0;
+          const steps = employerSteps(dashboard);
           return (
             <>
-              {!dashboard.company?.exists && (
+              <GetStarted steps={steps} />
+              {/* The "Get started" list has the same first step. */}
+              {!dashboard.company?.exists && !showsGetStarted(onboarding, steps) && (
                 <div className="callout">
                   <Info className="callout__icon" aria-hidden="true" focusable="false" />
                   <p>
@@ -93,4 +99,38 @@ export default function EmployerDashboardPage() {
       </AsyncContent>
     </Page>
   );
+}
+
+/** Onboarding "Get started" steps, from the dashboard data. */
+function employerSteps(dashboard) {
+  const company = dashboard.company ?? {};
+  const submitted = ['pending_approval', 'open', 'closed'].some((status) => (dashboard.postings?.[status] ?? 0) > 0);
+  let verificationHint = 'An administrator is checking your registration. We will notify you.';
+  if (!company.exists) verificationHint = 'An administrator checks your registration after you set up your company profile.';
+  else if (company.verification_rejected_reason) verificationHint = 'Not approved yet. Update your company profile and it is checked again.';
+
+  return [
+    { id: 'account', title: 'Create your account', done: true },
+    {
+      id: 'company',
+      title: 'Set up your company profile',
+      done: Boolean(company.exists),
+      hint: 'With your DTI or SEC registration number.',
+      link: { to: '/employer/company', label: 'Set up company' },
+    },
+    {
+      id: 'verified',
+      title: 'Get your business verified',
+      done: Boolean(company.verified),
+      hint: verificationHint,
+      link: company.exists && company.verification_rejected_reason ? { to: '/employer/company', label: 'Update company' } : undefined,
+    },
+    {
+      id: 'post',
+      title: 'Post your first job',
+      done: submitted,
+      hint: 'List the accommodations it offers. An administrator approves each job before it goes live.',
+      link: company.exists ? { to: '/employer/jobs/new', label: 'Post a job' } : undefined,
+    },
+  ];
 }

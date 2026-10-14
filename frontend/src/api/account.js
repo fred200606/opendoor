@@ -37,3 +37,11 @@ export async function updateEmailNotifications(enabled) {
   const { data } = await api.put('/me/email-notifications', { enabled });
   return data;
 }
+
+// Onboarding (job seekers and employers)
+
+/** changes: { tour_done?, checklist_hidden? } (at least one) → { tour_done, checklist_hidden } */
+export async function updateOnboarding(changes) {
+  const { data } = await api.patch('/me/onboarding', changes);
+  return data;
+}

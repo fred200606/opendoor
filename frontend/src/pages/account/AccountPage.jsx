@@ -10,8 +10,10 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Tabs from '../../components/Tabs.jsx';
+import WelcomeTour from '../../components/WelcomeTour.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useDisplayPrefs } from '../../hooks/useDisplayPrefs.js';
+import { useOnboarding } from '../../hooks/useOnboarding.js';
 import { changeDisplayPrefs } from '../../lib/displayPrefs.js';
 
 /** Figma 8:4194: one tab per kind of setting; ?tab= keeps the open tab on reload. */
@@ -23,6 +25,8 @@ export default function AccountPage() {
     { id: 'password', label: 'Password', content: <PasswordSection /> },
     // Administrators receive no notices, so there is nothing to email.
     ...(user.role !== 'admin' ? [{ id: 'email', label: 'Email notifications', content: <EmailSettings /> }] : []),
+    // Onboarding is for job seekers and employers (null for administrators).
+    ...(user.onboarding ? [{ id: 'onboarding', label: 'Getting started', content: <OnboardingSettings /> }] : []),
   ];
 
   return (
@@ -173,6 +177,61 @@ function EmailSettings() {
           <p className="email-example__footer">You can turn these emails off in Account settings. No disability or accommodation details are ever included.</p>
         </div>
       </figure>
+    </section>
+  );
+}
+
+/** Onboarding: the welcome tour again, and the dashboard's "Get started" list on or off. */
+function OnboardingSettings() {
+  const { user } = useAuth();
+  const { onboarding, save } = useOnboarding();
+  const [shown, setShown] = useState(!onboarding.checklist_hidden);
+  const [message, setMessage] = useState(null); // { type, text }
+  const [tour, setTour] = useState(false);
+  // Same as the email switch: saves run in order and only the last one reports.
+  const saving = useRef(Promise.resolve());
+  const latest = useRef(0);
+
+  function change(event) {
+    const next = event.target.checked;
+    setShown(next);
+    const id = ++latest.current;
+    saving.current = saving.current.then(async () => {
+      try {
+        await save({ checklist_hidden: !next });
+        if (id === latest.current) {
+          setMessage({ type: 'success', text: next ? 'The “Get started” list is on your dashboard until every step is done.' : 'The “Get started” list is hidden.' });
+        }
+      } catch {
+        if (id === latest.current) {
+          setShown(!next);
+          setMessage({ type: 'error', text: 'Your choice was not saved. Please try again.' });
+        }
+      }
+    });
+  }
+
+  return (
+    <section className="card card--form" aria-labelledby="onboarding-title">
+      <h2 id="onboarding-title" className="visually-hidden">
+        Getting started
+      </h2>
+      <CheckboxField
+        name="get_started"
+        label="Show the “Get started” list on my dashboard"
+        hint="It lists your first steps and goes away by itself when they are all done."
+        checked={shown}
+        onChange={change}
+      />
+      <div role="status" className="account-result">
+        {message && <Alert type={message.type} title={message.text} />}
+      </div>
+
+      <p className="muted">The welcome tour explains in three short steps how OpenDoor works.</p>
+      <Button className="button button--secondary" onClick={() => setTour(true)}>
+        Show the welcome tour
+      </Button>
+      {tour && <WelcomeTour role={user.role} onClose={() => setTour(false)} />}
     </section>
   );
 }

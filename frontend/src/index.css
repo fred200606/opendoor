@@ -3346,3 +3346,149 @@ input[type='file']::file-selector-button {
   color: var(--text-muted);
   font-size: 0.9375rem;
 }
+
+/* ---------- Onboarding (decision 2026-10-14): welcome tour dialog and the dashboard's "Get started" list */
+
+.tour .icon-tile {
+  margin-bottom: 1rem;
+}
+
+.tour__title {
+  font-size: 1.25rem;
+}
+
+.tour__title:focus {
+  outline: none; /* focused programmatically when the step changes */
+}
+
+.tour__count {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--od-text-accent);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tour__progress {
+  margin-bottom: 1.25rem;
+}
+
+.tour__tip {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.tour__skip {
+  align-self: center;
+}
+
+.get-started {
+  container-type: inline-size;
+  margin-bottom: 1.5rem;
+}
+
+.get-started__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 1rem;
+}
+
+.get-started__header h2 {
+  margin-bottom: 0.5rem;
+}
+
+.get-started__count {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.get-started__progress {
+  margin-bottom: 1rem;
+}
+
+.get-started__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Mark · text · link in one row; the link moves under the text when the card is narrow. */
+.get-started__step {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem 1rem;
+  padding: 0.875rem 0;
+  border-top: 2px solid var(--divider);
+}
+
+.get-started__step:first-child {
+  border-top: 0;
+}
+
+.get-started__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--od-text-on-primary);
+}
+
+.get-started__step--done .get-started__mark {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.get-started__mark svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 3;
+}
+
+.get-started__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.get-started__step--done .get-started__title {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.get-started__hint {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+}
+
+@container (max-width: 34rem) {
+  .get-started__link {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}
+
+.get-started__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--divider);
+}
+
+.get-started__hidden {
+  max-width: none;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+}

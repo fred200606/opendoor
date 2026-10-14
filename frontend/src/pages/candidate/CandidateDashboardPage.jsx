@@ -3,9 +3,11 @@ import { getDashboard } from '../../api/account.js';
 import { getCandidateProfile } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
+import GetStarted from '../../components/GetStarted.jsx';
 import Page from '../../components/Page.jsx';
 import StatCards from '../../components/StatCards.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
+import { useOnboarding } from '../../hooks/useOnboarding.js';
 import { formatDate, plural } from '../../lib/format.js';
 import { APPLICATION_STATUSES } from '../../lib/labels.js';
 import { APPLICATION_TILES } from '../../lib/statusTiles.js';
@@ -19,37 +21,82 @@ export default function CandidateDashboardPage() {
     <Page title={`Welcome, ${user.name}`} subtitle={<p className="page__subtitle">Where your applications stand and what to do next.</p>}>
       <AsyncContent state={state} label="Loading your summary">
         {(dashboard) => (
-          <div className="dashboard-layout">
-            <StatCards
-              title="Your applications"
-              items={Object.entries(APPLICATION_STATUSES).map(([status, label]) => ({
-                label,
-                value: dashboard.applications?.[status] ?? 0,
-                to: `/candidate/applications?status=${status}`,
-                ...APPLICATION_TILES[status],
-              }))}
-            />
+          <>
+            <CandidateGetStarted dashboard={dashboard} />
+            <div className="dashboard-layout">
+              <StatCards
+                title="Your applications"
+                items={Object.entries(APPLICATION_STATUSES).map(([status, label]) => ({
+                  label,
+                  value: dashboard.applications?.[status] ?? 0,
+                  to: `/candidate/applications?status=${status}`,
+                  ...APPLICATION_TILES[status],
+                }))}
+              />
 
-            {/* A rating that can be given now comes first (Figma 15:5668). */}
-            <div className="dashboard-side">
-              {dashboard.feedback_due?.some((item) => item.is_open) ? (
-                <>
-                  <RatingsToGive due={dashboard.feedback_due} />
-                  <JobsForYou count={dashboard.matching_jobs ?? 0} />
-                  <YourNeeds count={dashboard.needs_count ?? 0} />
-                </>
-              ) : (
-                <>
-                  <JobsForYou count={dashboard.matching_jobs ?? 0} />
-                  <YourNeeds count={dashboard.needs_count ?? 0} />
-                  <RatingsToGive due={dashboard.feedback_due ?? []} />
-                </>
-              )}
+              {/* A rating that can be given now comes first (Figma 15:5668). */}
+              <div className="dashboard-side">
+                {dashboard.feedback_due?.some((item) => item.is_open) ? (
+                  <>
+                    <RatingsToGive due={dashboard.feedback_due} />
+                    <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                    <YourNeeds count={dashboard.needs_count ?? 0} />
+                  </>
+                ) : (
+                  <>
+                    <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                    <YourNeeds count={dashboard.needs_count ?? 0} />
+                    <RatingsToGive due={dashboard.feedback_due ?? []} />
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </AsyncContent>
     </Page>
+  );
+}
+
+/** Onboarding list. The profile step needs the profile (none yet = 404), loaded only while the list can show. */
+function CandidateGetStarted({ dashboard }) {
+  const { onboarding } = useOnboarding();
+  const wanted = onboarding?.checklist_hidden === false;
+  const profile = useAsync(
+    () => (wanted ? getCandidateProfile().catch((error) => (error.status === 404 ? null : Promise.reject(error))) : Promise.resolve(null)),
+    [wanted],
+  );
+  if (wanted && profile.loading) return null;
+
+  const skills = (profile.data?.skills ?? []).length > 0;
+  const applied = Object.values(dashboard.applications ?? {}).some((count) => count > 0);
+  return (
+    <GetStarted
+      steps={[
+        { id: 'account', title: 'Create your account', done: true },
+        {
+          id: 'needs',
+          title: 'Add the accommodations you need',
+          done: (dashboard.needs_count ?? 0) > 0,
+          hint: 'We use them to show the jobs that offer them first.',
+          link: { to: '/candidate/profile', label: 'Add your needs' },
+        },
+        {
+          id: 'profile',
+          title: 'Add your skills and résumé',
+          done: skills && Boolean(profile.data?.resume_url),
+          hint: 'Employers see them when you apply.',
+          link: { to: `/candidate/profile?tab=${skills ? 'resume' : 'about'}`, label: 'Complete your profile' },
+        },
+        {
+          id: 'apply',
+          title: 'Apply to a job that fits',
+          done: applied,
+          hint: '“Matches my needs” in Find jobs shows the best fits first.',
+          link: { to: '/candidate/jobs', label: 'Find jobs' },
+        },
+      ]}
+    />
   );
 }
 
