@@ -1388,8 +1388,11 @@ input[type='file'].field__input {
 /* ---------- dialog */
 
 .dialog {
-  width: min(36rem, calc(100vw - 2rem));
-  padding: 2rem;
+  /* Phones and large text: px/vw limits, so 200 % text does not eat the width (the browser's own
+     max-width is 2em short of the screen). */
+  width: min(36rem, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  padding: min(2rem, 6vw);
   border: 2px solid var(--primary-dark);
   border-radius: var(--radius-lg);
   color: var(--text);
@@ -3455,6 +3458,10 @@ input[type='file']::file-selector-button {
   stroke-width: 3;
 }
 
+.get-started__text {
+  overflow-wrap: break-word; /* long words at 200 % text on phones */
+}
+
 .get-started__title {
   margin: 0;
   font-weight: 700;
@@ -3470,9 +3477,15 @@ input[type='file']::file-selector-button {
   color: var(--text-muted);
 }
 
+/* Narrow card (phones, large text): the link gets its own row across the whole card. */
 @container (max-width: 34rem) {
+  .get-started__step {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+  }
+
   .get-started__link {
-    grid-column: 2 / -1;
+    grid-column: 1 / -1;
     justify-self: start;
   }
 }
