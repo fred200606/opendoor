@@ -26,8 +26,8 @@ opendoor/
 | React SPA | Public area + Candidate/Employer/Admin portals | React 19, Vite, React Router 7, Axios, AuthContext | 5173 | Vercel (public) |
 | API Gateway | Single entry; routing; CORS; rate limit (120 req/min/IP); X-Request-ID; timeouts; error envelope; `/api/health` | Express, http-proxy-middleware, express-rate-limit | 8080 | Railway public domain (only public backend) |
 | Core Service | Auth/roles, profiles, postings, matching, applications, feedback + trust score, dashboards, notifications, moderation, master data | PHP 8.4, Laravel 13, Sanctum, Eloquent (FrankenPHP image) | 8001 | `core-api.railway.internal:8001` (private) |
-| Insights Service | Workplace Accessibility Snapshot mashup; PSGC location lists; caching/throttling | Express, Axios, mysql2 | 8002 | `insights.railway.internal:8002` (private) |
-| Business Registry | SOAP 1.1 `VerifyBusinessRegistration`, WSDL at `/soap?wsdl`; simulated DTI/SEC records | PHP SoapServer, SQLite | 8003 | `registry.railway.internal:8003` (private) |
+| Insights Service | Workplace Accessibility Snapshot mashup; PSGC location lists; caching/throttling | Express, Axios, mysql2 | 8002 | `insights-service.railway.internal:8002` (private) |
+| Business Registry | SOAP 1.1 `VerifyBusinessRegistration`, WSDL at `/soap?wsdl`; simulated DTI/SEC records | PHP SoapServer, SQLite | 8003 | `business-registry-soap.railway.internal:8003` (private) |
 | MySQL 8 | Schemas `opendoor_core` (Core user) and `insights_cache` (Insights user) | Railway managed | 3306 | `mysql.railway.internal:3306` |
 
 External REST APIs (called only by Insights): Nominatim `https://nominatim.openstreetmap.org`, Overpass `https://overpass-api.de/api/interpreter`, PSGC `https://psgc.gitlab.io/api`.

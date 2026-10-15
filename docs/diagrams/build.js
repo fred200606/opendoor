@@ -125,7 +125,7 @@ C.push(H2("Document Control"));
 C.push(...table(["Field", "Information"], [
   ["Application Platform", "Web (responsive single-page application usable on desktop and on 360 px phone screens)"],
   ["Repository", "https://github.com/fred200606/opendoor (private)"],
-  ["Deployment / Access URL", "Frontend: [[https://opendoor.vercel.app]]  ·  API Gateway: [[https://opendoor-gateway.up.railway.app/api]]"],
+  ["Deployment / Access URL", "Frontend: https://opendoor-rust.vercel.app  ·  API Gateway: https://gateway-production-4e58.up.railway.app/api"],
   ["Version", "1.0"],
   ["Date", "October 19, 2026"],
 ], [2600, 7480], { kv: true }));
@@ -135,8 +135,8 @@ C.push(H1("Executive Summary"));
 C.push(P("Persons with disabilities (PWDs) remain largely excluded from the Philippine workforce: of about 1.9 million working-age Filipinos with a disability, only around 353,000 were in the labor force in January 2022 (Rappler, 2023). Republic Act No. 7277 already requires reasonable accommodation, yet the information a PWD job seeker needs to act on that right is scattered across systems that do not exchange data. Accommodation details are buried in free-text postings on separate job boards, employer legitimacy is checked by hand against DTI and SEC registry websites, the accessibility of a workplace's surroundings is looked up separately on maps, and no system records whether advertised accommodations were actually delivered after hire."));
 C.push(P("**OpenDoor** integrates these sources into one web application aligned with **SDG 8, Target 8.5** (full and productive employment and decent work for all, including persons with disabilities). Candidates record their accommodation needs once and see job postings ranked by how many needs each one meets (\"Meets 4 of 5 of your needs\"). Employers post jobs with structured accommodation fields and move applicants through a server-enforced status workflow. After hire, candidates rate each advertised accommodation, producing an anonymous **accommodation trust score** that is published only after three responses."));
 C.push(P("The final architecture uses an **API Gateway** (Node.js/Express) as the single entry point for a **React** single-page application. Behind the gateway, the **Core Service** (Laravel 13, Sanctum, MySQL 8) owns users, profiles, postings, matching, applications, feedback and moderation. An **Accessibility Insights Service** (Node.js) is a mashup that combines the posting's address and accommodations from the Core Service with three external REST APIs – OpenStreetMap **Nominatim** (geocoding), the **Overpass API** (wheelchair-tagged places nearby) and the **PSGC API** (official Philippine location codes) – into a normalized \"Workplace Accessibility Snapshot\". A **Business Registry Service** exposes a WSDL-described **SOAP 1.1** interface that simulates a legacy DTI/SEC registry; the Core Service calls it with XML and WS-Security credentials during employer verification and maps the XML result to JSON."));
-C.push(P("All services are deployed to the cloud: the React app on Vercel and the gateway, services and MySQL on Railway, with only the gateway exposed publicly and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. In the final CI run all 16 planned integration tests passed (933 Newman assertions, 0 failures), together with 672 unit and feature tests, 39 registry checks and an axe check with no WCAG 2.1 A/AA violations on 33 pages. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
-C.push(note("[[Add the JMeter P95 and error rate at 50 users (production run) and the mean SUS score to the final paragraph once measured.]]"));
+C.push(P("All services are deployed to the cloud: the React app on Vercel (https://opendoor-rust.vercel.app) and the gateway, services and MySQL on Railway in the Singapore region, with only the gateway exposed publicly (https://gateway-production-4e58.up.railway.app) and the other services on a private network. GitHub Actions runs linting, unit and feature tests, React builds and a Newman (Postman) API test run on every push and pull request, and the Vercel and Railway GitHub integrations deploy the main branch. Quality is verified through a Postman collection with assertions on status codes, identifiers, business values and application error codes, and through an Apache JMeter load test of the matching endpoint. In the final CI run all 16 planned integration tests passed (933 Newman assertions, 0 failures), together with 672 unit and feature tests, 39 registry checks and an axe check with no WCAG 2.1 A/AA violations on 33 pages. On the deployed system a read-only Newman smoke run passed (389 assertions, 0 failures), and JMeter measured a P95 of 748 ms with 50 users active at the same time and no errors – within the 1,500 ms target. The outcome is a deployed, accessible platform in which integration – not a single database – lets PWDs find jobs that fit their needs and lets the community hold employers to their accommodation promises."));
+C.push(note("[[Add the mean SUS score to the final paragraph once measured.]]"));
 
 // ---------- 1 Project Overview ----------
 C.push(H1("1. Project Overview"));
@@ -174,9 +174,9 @@ C.push(...bullets([
 C.push(H2("1.4 Scope and Limitations"));
 C.push(P("**Included in scope:**"));
 C.push(...bullets([
-  "Public area, Candidate, Employer and Admin portals in one React application (13 functional modules, M1–M13, as defined in the OpenDoor Modules and Features Specification), with display settings (text size, high contrast, reduced motion), Read aloud and Voice input.",
+  "Public area, Candidate, Employer and Admin portals in one React application (13 functional modules, M1–M13, as defined in the OpenDoor Modules and Features Specification), with display settings (text size, high contrast, reduced motion), Read aloud and Voice input, and onboarding for first-time job seekers and employers (a three-step welcome tour and a \"Get started\" checklist on the dashboard).",
   "API Gateway with routing, CORS, rate limiting, request IDs, timeouts and a uniform error envelope.",
-  "Core Service (Laravel 13 + MySQL 8): authentication and roles with password reset by email, candidate and company profiles, job postings with structured accommodations, search/filter/matching, saved jobs, application workflow, feedback and trust score, dashboards, in-app and email notifications, account display settings, moderation, master data.",
+  "Core Service (Laravel 13 + MySQL 8): authentication and roles with password reset by email, candidate and company profiles, job postings with structured accommodations, search/filter/matching, saved jobs, application workflow, feedback and trust score, dashboards, in-app and email notifications, account display settings and onboarding state, moderation, master data.",
   "Accessibility Insights Service: Workplace Accessibility Snapshot (mashup) and PSGC location lookup with caching.",
   "Business Registry Service: SOAP 1.1 operation `VerifyBusinessRegistration` with a published WSDL, used in employer verification.",
   "Postman collection, JMeter test plan, GitHub Actions workflow, and cloud deployment.",
@@ -186,9 +186,9 @@ C.push(...bullets([
   "The Business Registry Service is a **simulated** legacy system seeded with sample registrations; it does not connect to the real DTI BNRS or SEC databases, which offer no public SOAP or REST API. An administrator always makes the final verification decision.",
   "Accessibility Snapshot data depends on OpenStreetMap volunteers tagging places with `wheelchair=yes`; coverage in some Philippine areas is incomplete, so the snapshot is informational only and never used for ranking.",
   "Public Nominatim and Overpass instances have usage limits (Nominatim: at most one request per second, identifying User-Agent required), so results are cached and requests are throttled.",
-  "All 13 modules were delivered, including the \"Could have\" saved jobs (M12) and display settings and email notifications (M13). Emails are sent through a mail provider chosen at deployment; during development they are written to the Core Service log. No mobile app, payments, or video interviews are included.",
+  "All 13 modules were delivered, including the \"Could have\" saved jobs (M12) and display settings and email notifications (M13). In production, emails are sent through Brevo's HTTPS API (Railway blocks outbound SMTP on its trial and hobby plans); during development they are written to the Core Service log. Onboarding (welcome tour and \"Get started\" checklist) was added after the original module list. No mobile app, payments, or video interviews are included.",
   "Read aloud and Voice input use the browser's own speech features (Web Speech API). Voice input works only in browsers that offer a speech service (Chrome, Edge) and is hidden elsewhere; Chrome and Edge send the recorded audio to their vendor's speech service, so a one-time notice is shown before first use and it is never switched on by default.",
-  "Free-tier/hobby cloud plans may sleep when idle and are not sized for production traffic.",
+  "The deployment runs on Railway's Free Trial (a one-time US$5 credit for 30 days, at most five services per project, 1 GB RAM and shared vCPU per service) and Vercel's Hobby plan, which are not sized for production traffic (Section 7.3).",
 ]));
 
 C.push(H2("1.5 Intended Users / Stakeholders"));
@@ -247,21 +247,21 @@ C.push(...table(["Decision", "Choice", "Rationale"], [
   ["Legacy protocol", "SOAP 1.1 with WSDL and WS-Security UsernameToken", "Represents how government and enterprise registries commonly expose services; demonstrates XML contracts, schema-typed messages and SOAP faults. Implemented with PHP's built-in SoapServer/SoapClient."],
   ["External data", "Nominatim, Overpass API, PSGC API", "Free, open, no paid keys; directly relevant to PWDs (wheelchair tagging) and to Philippine location data. Responses are cached to respect usage policies."],
   ["Resilience", "Per-call timeouts, caching, partial (degraded) responses", "The snapshot is optional information; hiring must keep working if an external API or the registry is down."],
-  ["Deployment", "Vercel (client) + Railway (gateway, services, MySQL) with private networking", "Railway runs Docker services and managed MySQL in one project and supports internal hostnames (`*.railway.internal`); Vercel is optimized for static SPAs."],
+  ["Deployment", "Vercel (client) + Railway (gateway, services, MySQL) with private networking, in Railway's Singapore region on the Free Trial", "Railway runs Docker services and managed MySQL in one project and supports internal hostnames (`*.railway.internal`); Vercel is optimized for static SPAs. Singapore is the region closest to the Philippines. The trial allows five services, so the Laravel scheduler runs inside the Core container instead of as a separate service, and email goes through an HTTPS API because the trial blocks SMTP."],
 ], [1900, 2900, 5280]));
 C.push(H2("3.4 Component / Service Inventory"));
 C.push(...table(["Component / Service", "Responsibility", "Technology", "Port / URL", "Depends On"], [
-  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI with display settings, Read aloud and Voice input; calls the gateway only", "React 19, Vite, React Router 7, Axios, AuthContext, Lucide icons, self-hosted Lexend and Atkinson Hyperlegible fonts, Web Speech API", "Vercel: [[https://opendoor.vercel.app]] (dev :5173)", "API Gateway"],
-  ["API Gateway", "Single entry point; routing; CORS; rate limiting; X-Request-ID; timeouts; uniform error envelope; health check", "Node.js 22, Express, http-proxy-middleware, express-rate-limit", "Public: [[https://opendoor-gateway.up.railway.app]] (dev :8080)", "Core Service, Insights Service"],
-  ["Core Service", "Auth and roles, password reset, profiles, postings, matching, saved jobs, applications and status workflow, feedback and trust score, dashboards, in-app and email notifications, moderation, master data; scheduled jobs (close expired postings, rating reminders, queued reset emails)", "PHP 8.4, Laravel 13, Sanctum, Eloquent; FrankenPHP in the container", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service, email provider"],
-  ["Accessibility Insights Service", "Workplace Accessibility Snapshot mashup; PSGC location lookup; caching and throttling", "Node.js 22, Express, Axios, mysql2", "insights.railway.internal:8002 (dev :8002)", "Core Service (internal API), Nominatim, Overpass, PSGC, MySQL insights_cache"],
-  ["Business Registry Service (legacy)", "SOAP 1.1 `VerifyBusinessRegistration`; WSDL; simulated DTI/SEC records", "PHP 8.4 SoapServer (plain PHP, FrankenPHP in the container), SQLite","registry.railway.internal:8003/soap, WSDL at /soap?wsdl (dev :8003)", "registry.db"],
+  ["React SPA (Client)", "Public area and Candidate, Employer and Admin portals; accessible UI with display settings, Read aloud, Voice input and onboarding for first-time users; calls the gateway only", "React 19, Vite, React Router 7, Axios, AuthContext, Lucide icons, self-hosted Lexend and Atkinson Hyperlegible fonts, Web Speech API", "Vercel: https://opendoor-rust.vercel.app (dev :5173)", "API Gateway"],
+  ["API Gateway", "Single entry point; routing; CORS; rate limiting; X-Request-ID; timeouts; uniform error envelope; health check", "Node.js 22, Express, http-proxy-middleware, express-rate-limit", "Public: https://gateway-production-4e58.up.railway.app (dev :8080)", "Core Service, Insights Service"],
+  ["Core Service", "Auth and roles, password reset, profiles, postings, matching, saved jobs, applications and status workflow, feedback and trust score, dashboards, in-app and email notifications, moderation, master data, onboarding state; scheduled jobs (close expired postings, rating reminders, queued reset emails) run by the scheduler in the same container", "PHP 8.4, Laravel 13, Sanctum, Eloquent; FrankenPHP in the container", "core-api.railway.internal:8001 (dev :8001)", "MySQL opendoor_core, Business Registry Service, Brevo (email)"],
+  ["Accessibility Insights Service", "Workplace Accessibility Snapshot mashup; PSGC location lookup; caching and throttling", "Node.js 22, Express, Axios, mysql2", "insights-service.railway.internal:8002 (dev :8002)", "Core Service (internal API), Nominatim, Overpass, PSGC, MySQL insights_cache"],
+  ["Business Registry Service (legacy)", "SOAP 1.1 `VerifyBusinessRegistration`; WSDL; simulated DTI/SEC records", "PHP 8.4 SoapServer (plain PHP, FrankenPHP in the container), SQLite","business-registry-soap.railway.internal:8003/soap, WSDL at /soap?wsdl (dev :8003)", "registry.db"],
   ["MySQL – opendoor_core", "Users, profiles, employers, postings, accommodations, applications, feedback, notifications, reports", "MySQL 8 (Railway managed)", "mysql.railway.internal:3306", "–"],
   ["MySQL – insights_cache", "Geocoding results, Overpass results, PSGC lists, with expiry", "MySQL 8 (same server, separate schema and user)", "mysql.railway.internal:3306", "–"],
   ["Nominatim (external)", "Geocoding of job addresses", "REST/JSON", "https://nominatim.openstreetmap.org", "–"],
   ["Overpass API (external)", "Query OSM elements tagged `wheelchair=yes` near a point", "REST (Overpass QL) / JSON", "https://overpass-api.de/api/interpreter; second server https://overpass.private.coffee/api/interpreter", "–"],
   ["PSGC API (external)", "Philippine regions, provinces, cities/municipalities", "REST/JSON", "https://psgc.gitlab.io/api", "–"],
-  ["Email provider (external)", "Delivers notification emails and password-reset links", "SMTP (provider chosen at deployment; `log` mailer in development)", "`MAIL_*` settings of the Core Service", "–"],
+  ["Brevo (external email)", "Delivers notification emails and password-reset links", "Transactional email HTTPS API through Symfony's Brevo mailer (`MAIL_MAILER=brevo`); `log` mailer in development", "https://api.brevo.com/v3/smtp/email (`BREVO_API_KEY`, verified sender in `MAIL_FROM_ADDRESS`)", "–"],
 ], [1700, 2600, 1900, 2180, 1700], { size: 16 }));
 
 // ---------- 4 API ----------
@@ -275,6 +275,7 @@ C.push(...table(["Service", "Method", "Endpoint", "Purpose", "Request / Response
   ["Core", "POST", "/api/logout", "Revoke current token", "→ 204"],
   ["Core", "POST", "/api/forgot-password, /api/reset-password", "Email a password-reset link; set a new password with it", "{email} → 200 (same message for every email); {token,email,password,password_confirmation} → 200, every session signed out; bad or expired link → 422"],
   ["Core", "PUT", "/api/me/display-prefs, /api/me/email-notifications", "Account settings (M13): display settings; notification emails on or off", "{text_size:100|125|150, contrast:'normal'|'high', motion:'normal'|'reduce'} → 200; {enabled:true|false} → 200"],
+  ["Core", "PATCH", "/api/me/onboarding", "Onboarding of job seekers and employers: welcome tour finished or skipped; \"Get started\" list hidden or shown again", "{tour_done?, checklist_hidden?} (at least one) → 200 {tour_done, checklist_hidden}; administrators 403"],
   ["Core", "GET, PUT", "/api/candidate/profile", "View or update own profile", "{headline,skills[],experience,location_psgc,...} → profile"],
   ["Core", "PUT", "/api/candidate/accommodations", "Replace list of accommodation needs", "{accommodation_ids:[1,4,9]} → 200 needs[]"],
   ["Core", "POST, GET", "/api/candidate/resume, /api/resumes/{id}", "Upload PDF résumé (max 5 MB); open it from a 30-minute signed link", "multipart `resume` → 200 {resume_url}; signed link → PDF"],
@@ -395,7 +396,7 @@ C.push(...code(`
 C.push(P("**Representative request** (sent by the Core Service with PHP `SoapClient`):"));
 C.push(...code(`
 POST /soap HTTP/1.1
-Host: registry.railway.internal:8003
+Host: business-registry-soap.railway.internal:8003
 Content-Type: text/xml; charset=utf-8
 SOAPAction: "urn:opendoor:registry:v1#VerifyBusinessRegistration"
 
@@ -508,15 +509,15 @@ C.push(H2("5.2 Service-to-Service Integrations"));
 C.push(...table(["Source", "Destination", "Trigger / Endpoint", "Data Exchanged", "Expected Result"], [
   ["React SPA", "API Gateway", "Any `/api/*` call (HTTPS)", "JSON body, Bearer token", "Request routed with `X-Request-ID`; uniform error format on failure"],
   ["API Gateway", "Core Service", "`/api/*` (except insights) via `http://core-api.railway.internal:8001`", "Original request + `X-Request-ID`, `X-Forwarded-For`", "Core response passed back unchanged; 504 `UPSTREAM_TIMEOUT` after 10 s"],
-  ["API Gateway", "Insights Service", "`/api/insights/*` via `http://insights.railway.internal:8002`", "Original request + `X-Request-ID`", "Snapshot or location list; 504 after 15 s"],
+  ["API Gateway", "Insights Service", "`/api/insights/*` via `http://insights-service.railway.internal:8002`", "Original request + `X-Request-ID`", "Snapshot or location list; 504 after 15 s"],
   ["Insights Service", "Core Service", "`GET /internal/job-postings/{id}/summary` with `X-Service-Key`", "Address, PSGC code and label, accommodations, trust score with breakdown", "200 summary (never cached); 404 if posting is not open/approved → snapshot 404; any other failure → snapshot 503"],
   ["Core Service", "Business Registry (legacy)", "SOAP `VerifyBusinessRegistration` on `PATCH /api/admin/employers/{id}/verify` (`action=check`)", "Registration number, registry type, business name; WS-Security UsernameToken", "Registry status and name-match score stored in `registry_checks`"],
   ["Insights Service", "Nominatim (external)", "`GET /search?q=&countrycodes=ph&format=jsonv2&limit=1` (city searches `limit=5`); `User-Agent` with contact email", "Street address and PSGC place names → lat/lon", "Coordinates cached 30 days (key: SHA-256 of the normalized query)"],
   ["Insights Service", "Overpass (external)", "`POST /api/interpreter` (Overpass QL, `around:500`) on the main server; the second server after 5 s or a failure", "Coordinates → OSM elements with `wheelchair` tag", "Nearby accessible places cached 24 h; a failed place is retried in the background"],
   ["Insights Service", "PSGC API (external)", "`GET /regions`, `/regions/{code}/provinces`, `/regions/{code}/cities-municipalities` (NCR), `/provinces/{code}/cities-municipalities`", "PSGC codes and names", "Normalized location lists (10-digit codes, sorted by name) cached 7 days"],
   ["Core Service", "Core Service (event)", "Application status change; admin decision on an employer's verification or a posting's review; feedback saved/hidden (observer)", "Application, decision and reason, feedback items", "In-app notification created (`application_received`, `application_status_changed`, `employer_verification`, `posting_review`); employer trust score and feedback count recalculated"],
-  ["Core scheduler", "Core Service (commands)", "Daily 00:05 `postings:close-expired`; daily 08:00 `feedback:remind`; every minute the database queue worker", "Postings past their closing date; hired applications whose rating opens today; queued reset-link jobs", "Postings closed; `feedback_reminder` notice to the hired candidate (once); password-reset emails sent within about a minute"],
-  ["Core Service", "Email provider (external)", "Every in-app notice of a user whose emails are on (sent after the HTTP response); `POST /api/forgot-password` (queued job)", "Subject, the notice text and a link to the page in OpenDoor – never disability or accommodation-need details; the reset link", "Email delivered; a mail failure is logged and never fails the user's action; suspended accounts get no email"],
+  ["Core scheduler (in the Core container)", "Core Service (commands)", "Daily 00:05 `postings:close-expired`; daily 08:00 `feedback:remind`; every minute the database queue worker", "Postings past their closing date; hired applications whose rating opens today; queued reset-link jobs", "Postings closed; `feedback_reminder` notice to the hired candidate (once); password-reset emails sent within about a minute"],
+  ["Core Service", "Brevo email API (external, HTTPS)", "Every in-app notice of a user whose emails are on (sent after the HTTP response); `POST /api/forgot-password` (queued job)", "Subject, the notice text and a link to the page in OpenDoor – never disability or accommodation-need details; the reset link", "Email delivered; a mail failure is logged and never fails the user's action; suspended accounts get no email"],
 ], [1500, 1600, 2600, 2180, 2200], { size: 16 }));
 C.push(H2("5.3 Error Handling and Status Propagation"));
 C.push(P("Every service returns the error envelope shown in Section 4.2. The gateway creates an `X-Request-ID` (UUID) if the client did not send one, forwards it to every downstream call, and logs it, so one request can be traced through all services. Downstream status codes are propagated unchanged to the client; the gateway only generates its own errors when a dependency cannot be reached."));
@@ -555,9 +556,9 @@ C.push(P("Authorization is enforced on the server in three layers: (1) `auth:san
 C.push(P("**OAuth 2.0** is not used in this version: all users authenticate directly with OpenDoor, and the external APIs used require no delegated access. A delegated-authorization scenario (e.g., \"Sign in with Google\" or letting a candidate import a résumé from a third-party service) is listed as a future improvement."));
 C.push(H2("6.3 Secret and Credential Management"));
 C.push(...bullets([
-  "All secrets are environment variables: `APP_KEY`, `DB_*`, `SERVICE_KEY_INSIGHTS`, `REGISTRY_SOAP_USER/PASSWORD`, `MAIL_*` (mail provider credentials), `NOMINATIM_CONTACT_EMAIL`, `DEMO_PASSWORD`; settings such as `CORS_ALLOWED_ORIGIN` and `VITE_API_URL` use the same mechanism.",
+  "All secrets are environment variables: `APP_KEY`, `DB_*`, `SERVICE_KEY_INSIGHTS`, `REGISTRY_SOAP_USER/PASSWORD`, `BREVO_API_KEY` and `MAIL_FROM_ADDRESS` (email), `NOMINATIM_CONTACT_EMAIL`, `DEMO_PASSWORD`; settings such as `CORS_ALLOWED_ORIGIN` and `VITE_API_URL` use the same mechanism.",
   "Each component has a committed `.env.example` with placeholder values only; real `.env` files are listed in `.gitignore` and are never committed.",
-  "Production values are stored in **Railway service variables** and **Vercel environment variables**. The CI integration job generates throwaway secrets (database passwords, service key, SOAP password, demo password) at the start of every run, so no secret is stored in GitHub. The production `APP_KEY` is generated fresh and differs from development.",
+  "Production values are stored in **Railway service variables** and **Vercel environment variables**. The CI integration job generates throwaway secrets (database passwords, service key, SOAP password, demo password) at the start of every run, so no secret is stored in GitHub. The production values (`APP_KEY`, database passwords, service key, SOAP password) were generated fresh for the deployment, differ from development and were entered through the Railway API without being printed or committed; the database users were created over Railway's SSH access to the MySQL container, so the database has no public port.",
   "Demo and test accounts (one per role) are created by seeders with passwords read from environment variables; they are shared with the evaluators through the submission notes, not written in the repository or this document.",
   "Secrets are never logged: the gateway redacts `Authorization` and `X-Service-Key` headers in logs, and `APP_DEBUG=false` in production.",
 ]));
@@ -613,15 +614,28 @@ C.push(...table(["Newman run", "Requests", "Assertions", "Failed", "Duration", "
 ], [3600, 1100, 1200, 900, 1200, 2080]));
 C.push(...fig("screens/newman-summary.png", 1350, 675, "Newman HTML report (htmlextra) of the full collection, CI run 38493807232"));
 C.push(P("The same run's unit and feature tests all passed: Core Service 365 PHPUnit tests (1,730 assertions) on MySQL 8, React 148 Vitest tests, gateway 24 and Insights Service 135 Jest tests, Business Registry 39 checks; the axe check found no WCAG 2.1 A/AA violations on 33 pages."));
+C.push(P("**Production smoke test.** The full collection creates and deletes data (a throwaway candidate, postings, an application, a rating), so it is not run against the deployed system. `node tests/postman/build-smoke.mjs` derives a read-only subset from the generated collection: GET requests, the demo logins and requests the API must refuse (401/403/404/422), without any request that needs data created by a write. It ran against the production gateway on 16 October 2026:"));
+C.push(...table(["Newman run", "Requests", "Assertions", "Failed", "Duration", "Average response"], [
+  ["Production smoke, read-only subset (Railway, from a laptop in the Philippines)", "73", "389", "0", "18.4 s", "170 ms"],
+], [3600, 1100, 1200, 900, 1200, 2080]));
 C.push(H2("7.3 Load / Stress Testing"));
 C.push(...table(["Item", "Details"], [
   ["Target component", "API Gateway → Core Service: `GET /api/job-postings?match=1&page=1` (candidate token; matching query with `withCount`), plus `GET /api/job-postings/{id}` as a secondary sampler"],
   ["Tool", "Apache JMeter 5.6.3 (one test plan `tests/jmeter/opendoor-matching.jmx`, host and load set with `-J` properties), run in CLI mode: `jmeter -n -t opendoor-matching.jmx -Jhost=<gateway> -Jthreads=50 -Jloops=10 -l results.jtl -e -o report/`"],
-  ["Workload", "Thread Group: 50 users, ramp-up 60 s, 10 loops each (500 search requests + 500 detail requests); CSV Data Set with 50 candidate tokens. Test data comes from `php artisan load-test:data` (not a seeder): 500 open postings from 10 verified load-test companies and 50 load-test candidates with accommodation needs (from the 18 seeded accommodation types), one token each; `--remove` deletes it all afterwards. A stress step repeats with 100 and 200 users (5 loops). The gateway limit of 120 requests/min per IP is raised for the test window only."],
+  ["Workload", "Thread Group: 50 users, ramp-up 60 s, 10 loops each (500 search requests + 500 detail requests); CSV Data Set with 50 candidate tokens. Test data comes from `php artisan load-test:data` (not a seeder): 500 open postings from 10 verified load-test companies and 50 load-test candidates with accommodation needs (from the 18 seeded accommodation types), one token each; `--remove` deletes it all afterwards. A stress step repeats with 100 and 200 users (5 loops). The gateway limit of 120 requests/min per IP is raised for the test window only. Because the 60 s ramp-up let each user finish before most others had started, every profile was repeated with a 5 s ramp-up (\"burst\") so that all users ran at the same time."],
   ["Metrics", "Average and median response time, 95th percentile (P95), throughput (requests/s), error rate (%); targets: P95 < 1,500 ms and error rate < 1% at 50 users"],
-  ["Observed result", "[[Record average, P95, throughput and error rate for 50 / 100 / 200 users from the JMeter HTML dashboard.]]"],
-  ["Interpretation", "[[Explain whether targets were met, where the limit is (e.g., the user count at which P95 or errors rise), and limitations: hobby-tier instances, shared MySQL, test run from one client machine, results not representative of production scale.]]"],
+  ["Observed result", "Production run on 16 October 2026 (Railway Free Trial, Singapore; JMeter on a laptop in the Philippines): every one of the 8,000 requests returned 200 and passed all assertions – 0% errors in all six runs. 50 users at the same time: median 500 ms, P95 748 ms, 72 requests/s; 100 users: P95 1,333 ms, 78 requests/s; 200 users: P95 2,838 ms (longest request 2,997 ms), 81 requests/s. With the documented 60 s ramp-up at most 8 users were active at once, and P95 stayed between 204 and 222 ms (table below)."],
+  ["Interpretation", "The target is met: P95 is 748 ms with 50 concurrent users (and 204 ms in the documented profile) with no errors, and it still holds at 100 concurrent users. The limit is throughput: it levels off at about 80 requests/s, so above that, response times grow with the number of users – at 200 concurrent users P95 is 2.8 s, nearly twice the target, although no request failed or timed out. The bottleneck is a single Core Service instance on the trial's shared vCPU (each search ranks every open posting by needs met); more Core instances or a larger plan would raise it. Limitations: one client machine on a home connection, trial-tier instances, one MySQL server shared by both schemas, and a 500-posting catalogue, so the numbers show behaviour under load rather than production capacity."],
 ], [2400, 7680], { kv: true }));
+C.push(...table(["Run (16 Oct 2026)", "Users at once", "Requests", "Errors", "Median", "P95", "Throughput"], [
+  ["Load – 50 users, 60 s ramp-up, 10 loops", "≤ 3", "1,000", "0%", "98 ms", "204 ms", "16.4/s"],
+  ["Stress – 100 users, 60 s ramp-up, 5 loops", "≤ 4", "1,000", "0%", "98 ms", "222 ms", "16.6/s"],
+  ["Stress – 200 users, 60 s ramp-up, 5 loops", "≤ 8", "2,000", "0%", "98 ms", "220 ms", "33.1/s"],
+  ["Burst – 50 users, 5 s ramp-up, 10 loops", "50", "1,000", "0%", "500 ms", "748 ms", "72.4/s"],
+  ["Burst – 100 users, 5 s ramp-up, 5 loops", "100", "1,000", "0%", "909 ms", "1,333 ms", "77.5/s"],
+  ["Burst – 200 users, 5 s ramp-up, 5 loops", "200", "2,000", "0%", "2,010 ms", "2,838 ms", "81.3/s"],
+], [3100, 1100, 1100, 900, 1100, 1100, 1680], { size: 16 }));
+C.push(...fig("screens/jmeter-burst-50.png", 1110, 769, "JMeter dashboard, Response Times Over Time (1 s granularity): 50 users at the same time – search and details stay below 800 ms on average"));
 C.push(H2("7.4 Defects and Corrections"));
 C.push(P("Integration defects that actually occurred during development, found in live checks through the gateway, in the MySQL test runs or in CI, and how each was corrected (dates are in the repository's commit history and `PROGRESS.md`):"));
 C.push(...table(["ID", "Defect", "Cause", "Correction", "Verified by"], [
@@ -644,16 +658,16 @@ C.push(H2("8.1 Deployment Architecture"));
 C.push(...fig("fig5_deployment.png", 2200, 1280, "Deployment architecture: Vercel and Railway, public and private network boundaries, CI/CD path"));
 C.push(H2("8.2 Cloud Deployment"));
 C.push(...table(["Component", "Provider / Platform", "URL / Host", "Configuration"], [
-  ["React SPA", "Vercel (Hobby)", "[[https://opendoor.vercel.app]]", "Root `frontend/`; build `npm run build`; output `dist/`; `VITE_API_URL` = gateway URL; SPA rewrite to `index.html`"],
-  ["API Gateway", "Railway service (Dockerfile: `node:22-alpine`)", "[[https://opendoor-gateway.up.railway.app]] (public domain)", "`CORE_URL`, `INSIGHTS_URL` (internal hostnames), `CORS_ALLOWED_ORIGIN`, `TRUST_PROXY=1`, rate-limit settings; health check `/api/health`"],
-  ["Core Service", "Railway service (Dockerfile: FrankenPHP, PHP 8.4)", "core-api.railway.internal:8001 (no public domain)", "`APP_ENV=production`, `APP_DEBUG=false`, `DB_*`, `PUBLIC_API_URL`, `PUBLIC_APP_URL`, `REGISTRY_WSDL_URL`, `SERVICE_KEY_INSIGHTS`, `MAIL_*`; pre-deploy command `php artisan migrate --force`; a Railway volume for logos and résumés (the container disk is not kept between deploys)"],
-  ["Core scheduler", "Railway service from the same Core image", "no domain", "Runs `php artisan schedule:work`: closes expired postings (00:05), sends rating reminders (08:00) and works the email queue every minute (password-reset links); same variables as the Core Service"],
-  ["Insights Service", "Railway service (Dockerfile: `node:22-alpine`)", "insights.railway.internal:8002 (no public domain)", "`CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_*`; optional `PSGC_URL`, `NOMINATIM_URL`, `OVERPASS_URL`, `OVERPASS_FALLBACK_URL` (second Overpass server; empty = off)"],
-  ["Business Registry (SOAP)", "Railway service (Dockerfile: FrankenPHP, PHP 8.4 + soap)", "registry.railway.internal:8003 (no public domain)", "`REGISTRY_SOAP_USER/PASSWORD`; the SQLite registry is seeded at every start (demo data only)"],
-  ["MySQL 8", "Railway managed database", "mysql.railway.internal:3306", "Schemas `opendoor_core` and `insights_cache` with separate users; daily backups (Railway)"],
-  ["Email (SMTP)", "[[Mail provider – chosen at deployment]]", "Provider's SMTP host", "`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` on the Core Service and scheduler"],
+  ["React SPA", "Vercel (Hobby), project `opendoor` linked to the GitHub repository", "https://opendoor-rust.vercel.app", "Root `frontend/`; build `npm run build`; output `dist/`; `VITE_API_URL` = gateway URL; `frontend/vercel.json` rewrites every route to `index.html` (deep links work on reload)"],
+  ["API Gateway", "Railway service (Dockerfile: `node:22-alpine`)", "https://gateway-production-4e58.up.railway.app (the only public domain)", "`CORE_URL`, `INSIGHTS_URL` (internal hostnames), `CORS_ALLOWED_ORIGIN` = the Vercel URL, `TRUST_PROXY=1`, `RATE_LIMIT_PER_MIN=120`; health check `/api/health`"],
+  ["Core Service", "Railway service (Dockerfile: FrankenPHP, PHP 8.4)", "core-api.railway.internal:8001 (no public domain)", "`APP_ENV=production`, `APP_DEBUG=false`, `DB_*`, `PUBLIC_API_URL`, `PUBLIC_APP_URL`, `REGISTRY_WSDL_URL`, `SERVICE_KEY_INSIGHTS`, `MAIL_MAILER=brevo`; pre-deploy command `php artisan migrate --force`; health check `/up`; a Railway volume at `storage/app` for logos and résumés (the container disk is not kept between deploys). `RUN_SCHEDULER=1` starts `php artisan schedule:work` next to the web server: it closes expired postings (00:05), sends rating reminders (08:00) and works the email queue every minute (password-reset links)"],
+  ["Insights Service", "Railway service (Dockerfile: `node:22-alpine`)", "insights-service.railway.internal:8002 (no public domain)", "`CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_*`, `PSGC_URL`, `NOMINATIM_URL`, `OVERPASS_URL`, `OVERPASS_FALLBACK_URL` (second Overpass server)"],
+  ["Business Registry (SOAP)", "Railway service (Dockerfile: FrankenPHP, PHP 8.4 + soap)", "business-registry-soap.railway.internal:8003 (no public domain)", "`REGISTRY_SOAP_USER/PASSWORD`; the SQLite registry is seeded at every start (demo data only)"],
+  ["MySQL 8", "Railway MySQL template (MySQL 8.4) with a volume", "mysql.railway.internal:3306 (no public port)", "Schemas `opendoor_core` and `insights_cache` with separate users (each limited to its schema); InnoDB buffer pool lowered to 256 MB because a trial service has 1 GB RAM"],
+  ["Email", "Brevo (free plan, 300 emails per day)", "https://api.brevo.com (HTTPS API)", "`MAIL_MAILER=brevo`, `BREVO_API_KEY`, `MAIL_FROM_ADDRESS` (a sender address verified in Brevo). Railway blocks outbound SMTP on its Trial, Free and Hobby plans, so mail goes through Brevo's HTTPS API with Symfony's Brevo mailer"],
 ], [1700, 2200, 2700, 3480], { size: 16 }));
-C.push(P("**Limitations.** The Railway Hobby plan (about US$5/month after the trial credit) and Vercel Hobby are not sized for production load; services may cold-start, so the team opens the application a few minutes before the demonstration. Demo accounts for every role and enough feedback to show a published trust score are seeded; a second demo employer has two responses and a demo candidate's hire with the feedback window open, so the third response (test T10) can be shown live. Both URLs are documented in the README and submitted before the defense."));
+C.push(P("**How it was deployed (15–16 October 2026).** All Railway services run in the Singapore region (`asia-southeast1`), the region closest to the Philippines. Each code service is built from its Dockerfile in its own root directory and deploys automatically from GitHub `main` when its folder changes (Railway watch paths, so a frontend-only push rebuilds nothing on Railway). The services, variables, volume and public domain were configured with the Railway CLI and its GraphQL API; the database users were created and the demo data seeded (`php artisan db:seed --force`) over Railway's SSH access, so neither the database nor the internal services have a public port. The demo accounts' email notifications are switched off in production because their `@opendoor.test` addresses cannot receive mail."));
+C.push(P("**Limitations.** The deployment uses Railway's Free Trial: a one-time US$5 credit valid for 30 days, at most five services per project and 1 GB RAM with shared vCPU per service – which is why the scheduler shares the Core container instead of running as a sixth service. All tests of 15–16 October used about US$0.05 of the credit. Vercel's Hobby plan hosts the frontend. Neither is sized for production load (Section 7.3). Demo accounts for every role and enough feedback to show a published trust score are seeded; a second demo employer has two responses and a demo candidate's hire with the feedback window open, so the third response (test T10) can be shown live. Both URLs are documented in the README and submitted before the defense."));
 C.push(H2("8.3 Git and Repository Workflow"));
 C.push(P("OpenDoor uses one GitHub **monorepo** so that contracts, services and tests change together:"));
 C.push(...code(`
@@ -685,8 +699,8 @@ C.push(P("GitHub Actions workflow `.github/workflows/ci.yml`:"));
 C.push(...table(["Stage", "Trigger", "Steps"], [
   ["Validate & test", "Push to `main` or `develop`; pull request to either; manual run (runs every job)", "Path-filtered jobs (only the changed components) run in parallel: **frontend** – `npm ci`, oxlint (with `jsx-a11y` accessibility rules), Vitest unit tests (React Testing Library), `npm run build`; **gateway** and **insights-service** – `npm ci`, ESLint, Jest unit tests (external APIs mocked with nock); **core-api** – `composer install`, Laravel Pint, `php artisan test` against a MySQL 8 service container (policies, status transitions, trust score); **business-registry-soap** – `php -l`, WSDL checked with `xmllint`, unit and SOAP smoke tests."],
   ["Integration test", "Same as above, after the jobs pass", "Throwaway secrets generated; `docker compose up` of gateway, core, insights, registry and MySQL from the same Dockerfiles as Railway, with PSGC, Nominatim and Overpass replaced by a mock server; migrate and seed; Newman runs the full collection and a second time folder 07 with Overpass unreachable (T13); the built frontend is checked with axe (WCAG 2.1 A/AA) on the main pages of every role with Playwright Chromium; the Newman HTML reports are uploaded as an artifact."],
-  ["Deploy", "Push/merge to `main`", "Vercel and Railway GitHub integrations build and deploy the changed components automatically; Laravel migrations run as the Railway release command."],
-  ["Post-deploy smoke test", "After deploy on `main`", "Newman runs the smoke folder (health, login, search, snapshot) against the production gateway; failure marks the run red and the team rolls back with Railway/Vercel \"redeploy previous\"."],
+  ["Deploy", "Push/merge to `main`", "Vercel and Railway GitHub integrations build and deploy the changed components automatically (Railway watch paths: only the services whose folder changed); Laravel migrations run as the Railway pre-deploy command; Railway health checks (`/up`, `/health`, `/api/health`) gate the switch to the new version."],
+  ["Post-deploy smoke test", "After a deploy (run by the team, not yet in `ci.yml`)", "`node tests/postman/build-smoke.mjs` builds the read-only subset of the collection (73 requests) and Newman runs it against the production gateway with the production demo password (16 Oct 2026: 389 assertions, 0 failures, Section 7.2). Automating it in CI would need that password as a GitHub secret. If it fails, the team rolls back with Railway/Vercel \"redeploy previous\"."],
 ], [1800, 2400, 5880], { size: 16 }));
 C.push(H2("8.5 Environment and Startup Instructions"));
 C.push(P("Full instructions are in the repository README. Local development runs every component natively (PHP 8.4, Composer, Node.js 22, MySQL 8); Docker is used only by the CI pipeline and the Railway images. Summary (no real secret values shown):"));
@@ -720,26 +734,26 @@ npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/l
 // ---------- 9 Screens ----------
 C.push(H1("9. Application Screens and Demonstration"));
 C.push(H2("9.1 Key Application Screens"));
-C.push(note("Screens of the final build with the seeded demo data, captured on 14 October 2026 in a desktop browser 1,440 px wide (`npm run ui-reference` in `tests/a11y`). The nearby places in the snapshot are live OpenStreetMap data from that day."));
+C.push(note("Screens of the deployed system (https://opendoor-rust.vercel.app) with the seeded demo data, captured read-only with the demo accounts on 16 October 2026 in a desktop browser 1,440 px wide. The job details page and its snapshot are from the 14 October 2026 capture of the local stack (`npm run ui-reference` in `tests/a11y`, earlier logo), because both public Overpass servers were failing on 16 October; the nearby places shown are live OpenStreetMap data from 14 October."));
 [
   ["Public – Browse jobs (/jobs)", "Guests search by keyword and filter by category and accommodation; job cards show the offered accommodations, the employer's Verified badge and trust score (M5).",
-    [["guest-jobs.jpg", 1350, 1143, 560]]],
+    [["guest-jobs.jpg", 1350, 1144, 560]]],
   ["Candidate – Profile and accommodation needs (/candidate/profile)", "The candidate records accommodation needs once from the shared, grouped list; disability type is optional and private (M2).",
-    [["cand-profile-1.jpg", 1350, 1106, 560]]],
+    [["cand-profile-1.jpg", 1350, 1108, 560]]],
   ["Candidate – Find jobs in \"Matches my needs\" mode (/candidate/jobs)", "Postings ranked by needs met (\"Meets all 3 of your needs\", \"Meets 1 of your 3 needs\") – the output of the matching integration; Save keeps a job for later (M5, M12).",
-    [["cand-jobs.jpg", 1350, 1287, 580]]],
+    [["cand-jobs.jpg", 1350, 1294, 580]]],
   ["Candidate – Job details with Accessibility Snapshot (/candidate/jobs/:id)", "One page combines the posting, match, trust score and – when opened – the Workplace Accessibility Snapshot from the Insights mashup (Core + PSGC + Nominatim + Overpass); Apply with an interview accommodation request; Read aloud and Voice input (M4, M6, M7).",
     [["cand-job.jpg", 1350, 1448, 420], ["crop-snapshot.jpg", 1075, 1036, 300]]],
   ["Candidate – My applications and feedback form", "Status tracking of every application, and the per-accommodation rating a hired candidate gives from day 30 after hire (M6, M7).",
-    [["cand-applications.jpg", 1350, 690, 300], ["cand2-feedback.jpg", 1350, 1118, 420]]],
-  ["Employer – Post a job, step 3 Accommodations (/employer/jobs/:id/edit)", "Four-step wizard: structured accommodations with optional notes; step 2 holds the interview format and the PSGC location picker (M4).",
-    [["emp-posting-step3-1.jpg", 1350, 961, 560]]],
+    [["cand-applications.jpg", 1350, 620, 300], ["cand2-feedback.jpg", 1350, 1125, 420]]],
+  ["Employer – Post or edit a job, step 3 Accommodations (/employer/jobs/:id/edit)", "Four-step wizard, the same for a new posting and for editing (shown: the open \"Data Encoder\" posting, which goes back for approval when saved): structured accommodations with optional notes; step 2 holds the interview format and the PSGC location picker (M4).",
+    [["emp-posting-step3-1.jpg", 1350, 1017, 560]]],
   ["Employer – Applicants and trust score", "Review applicants and record decisions; see the aggregated trust score with its per-accommodation breakdown (M6, M7).",
-    [["emp-applicants.jpg", 1350, 683, 300], ["emp-trust.jpg", 1350, 934, 420]]],
+    [["emp-applicants.jpg", 1350, 638, 300], ["emp-trust.jpg", 1350, 940, 420]]],
   ["Admin – Employer verification with registry check (/admin/employers/:id)", "Result of the SOAP Business Registry check (status, registered name, name match) shown beside the employer's submitted details; the administrator decides (M3, M10).",
-    [["admin-employer.jpg", 1350, 964, 560]]],
+    [["admin-employer.jpg", 1350, 970, 560]]],
   ["Admin – Dashboard (/admin/dashboard)", "Work queues (employers to verify, postings to approve, open reports) and platform counts: users by role, postings and applications by status, feedback responses and published trust scores (M8).",
-    [["admin-dashboard-1.jpg", 1350, 862, 340]]],
+    [["admin-dashboard-1.jpg", 1350, 866, 340]]],
 ].forEach(([cap, fn, images]) => C.push(...screenSlot(cap, fn, images)));
 C.push(H2("9.2 End-to-End Demonstration Scenario"));
 C.push(...numbered([
@@ -748,7 +762,7 @@ C.push(...numbered([
   "**Service-to-service interaction:** the Core Service authenticates the token, computes the match and returns the trust score; the Insights Service calls the Core Service's internal summary endpoint with its service key.",
   "**External/legacy API interaction:** the Insights Service resolves the PSGC code, geocodes the address with Nominatim and queries Overpass for wheelchair-tagged places within 500 m. (Separately, the admin demo shows the Core Service calling the SOAP Business Registry for the employer waiting for verification, Kalinga Foods Inc., SEC `CS201912345`: ACTIVE, name match 100%.)",
   "**Transformation/mashup:** OSM tags are mapped to accessible transit, toilets and parking with distances, and merged with the employer's advertised accommodations and the community trust score into the Workplace Accessibility Snapshot.",
-  "**Final result shown to user:** the job details page shows \"Meets all 3 of your needs\", the Verified employer badge, the trust score \"79% of promised accommodations were delivered. Based on 3 responses.\" and the accessible places OpenStreetMap lists within 500 m (when the screenshots in 9.1 were taken: no tagged transit stops, toilets or parking, and two other places 423 m and 462 m away). The candidate applies with an interview accommodation request and sees the application as Submitted (`pending`), while the employer receives an in-app notification and, with emails on, an email. On a posting that meets only some needs, the details page names the missing accommodations.",
+  "**Final result shown to user:** the job details page shows \"Meets all 3 of your needs\", the Verified employer badge, the trust score \"79% of promised accommodations were delivered. Based on 3 responses.\" and the accessible places OpenStreetMap lists within 500 m (when the job-page screenshot in 9.1 was taken on 14 October 2026: no tagged transit stops, toilets or parking, and two other places 423 m and 462 m away). The candidate applies with an interview accommodation request and sees the application as Submitted (`pending`), while the employer receives an in-app notification and, with emails on, an email. On a posting that meets only some needs, the details page names the missing accommodations.",
 ]));
 
 // ---------- 10 Evaluation ----------
@@ -758,8 +772,8 @@ C.push(...table(["Objective", "Success Measure", "Result / Evidence"], [
   ["1 – Integrated application", "All Must-have modules work end to end through the gateway; T01–T11 pass", "Achieved – T01–T11 pass (CI run 38493807232, Section 7.1); all 13 modules M1–M13 are built, including the \"Could have\" M12 and M13, and were checked in the browser with the demo accounts of every role (screens in 9.1)."],
   ["2 – Service, external and legacy integration", "Snapshot built from 4 sources; SOAP registry check stored; degradation works (T12–T16)", "Achieved – T12–T16 pass; the snapshot combines Core, PSGC, Nominatim and Overpass (live APIs on 7 Oct 2026, live map data in 9.1); registry checks are stored in `registry_checks`; each source failing is covered by Jest/nock and Core tests and degrades as designed."],
   ["3 – Security", "Security tests T08, T09, T16 pass; no secrets in repository (secret scan)", "Achieved – T08, T09, T16 and the further security cases of folder 09 pass; only `.env.example` files with placeholders are tracked and CI generates throwaway secrets; secret scan with gitleaks 8.30.1 over the full git history (169 commits, 14 Oct 2026): no leaks found."],
-  ["4 – Quality assurance", "Newman run with 0 failed assertions; JMeter P95 < 1,500 ms and error rate < 1% at 50 users", "Newman: 933 assertions, 0 failed (Section 7.2). [[JMeter production run: P95 and error rate at 50 users]]"],
-  ["5 – Cloud deployment and DevOps", "Public URLs working; CI green on main; automatic deploy and smoke test", "CI green on `main` with all seven jobs (run 38493807232). [[Public URLs, automatic deploy and smoke test after deployment]]"],
+  ["4 – Quality assurance", "Newman run with 0 failed assertions; JMeter P95 < 1,500 ms and error rate < 1% at 50 users", "Achieved – Newman: 933 assertions, 0 failed in CI, and 389 assertions, 0 failed in the production smoke run (Section 7.2). JMeter on production (16 Oct 2026): P95 748 ms with 50 concurrent users (204 ms in the documented 60 s ramp-up profile) and 0% errors in all six runs (Section 7.3)."],
+  ["5 – Cloud deployment and DevOps", "Public URLs working; CI green on main; automatic deploy and smoke test", "Achieved – frontend https://opendoor-rust.vercel.app and gateway https://gateway-production-4e58.up.railway.app (Railway, Singapore; only the gateway public); CI green on `main` with all seven jobs (run 38493807232); Vercel and Railway deploy `main` automatically from GitHub (Railway per changed service folder); read-only Newman smoke against production: 73 requests, 389 assertions, 0 failed (16 Oct 2026). The smoke run is started by the team, not yet by CI."],
   ["6 – Accessibility and usability", "No critical axe/Lighthouse issues; NVDA walkthrough; mean SUS ≥ 68 (n ≥ 5 PWD, 3 employers)", "axe: no violations on 34 pages of the seeded stack (also high contrast at 150% text, 14 Oct 2026) and on 33 pages in CI; Lighthouse accessibility 100 on the 6 guest pages (11 Oct 2026, before the redesign); scripted keyboard, focus and reflow checks pass (`docs/accessibility/wcag-audit.md`). [[NVDA walkthrough]] [[Mean SUS score (n PWD, n employers)]]"],
 ], [2600, 4000, 3480]));
 C.push(H2("10.2 Technical Limitations"));
@@ -767,10 +781,10 @@ C.push(...bullets([
   "**Simulated legacy integration:** the Business Registry is a SOAP simulation with seeded data, not the real DTI/SEC systems; real integration would require an agreement with those agencies.",
   "**Open data coverage:** accessibility data near workplaces depends on OpenStreetMap tagging, which is incomplete in many Philippine areas; absence of data does not mean a place is inaccessible.",
   "**Provider restrictions:** public Nominatim and Overpass instances are rate-limited and intended for light use; heavier use would need self-hosted instances or a commercial provider.",
-  "**Scale:** hobby-tier hosting, a single MySQL instance shared by two schemas, and synchronous calls limit throughput; apart from the small database queue for password-reset emails there is no message broker, and no horizontal scaling is used.",
+  "**Scale:** trial-tier hosting with one Core instance on a shared vCPU (throughput levels off at about 80 requests/s, Section 7.3), a single MySQL instance shared by two schemas, and synchronous calls limit throughput; apart from the small database queue for password-reset emails there is no message broker, and no horizontal scaling is used.",
   "**Security scope:** no multi-factor authentication or OAuth 2.0; service keys are static shared secrets rather than mutual TLS or signed tokens.",
   "**Trust score validity:** the score depends on honest self-reported feedback and needs enough hires per employer to be meaningful.",
-  "**Simplified in the final build:** keyword search uses a case-insensitive `LIKE` instead of the MySQL full-text index; Voice input depends on the browser's speech service and is therefore offered only in Chrome and Edge; email delivery depends on a mail provider chosen at deployment; the \"Contact us\" page of the UI design was not built because no contact details were available.",
+  "**Simplified in the final build:** keyword search uses a case-insensitive `LIKE` instead of the MySQL full-text index; Voice input depends on the browser's speech service and is therefore offered only in Chrome and Edge; emails go through Brevo's free plan (300 per day) from a single verified sender address (a team member's school email) instead of an authenticated OpenDoor domain, so receiving servers may sort them as spam; the \"Contact us\" page of the UI design was not built because no contact details were available.",
 ]));
 C.push(H2("10.3 Recommended Improvements"));
 C.push(...bullets([
@@ -811,6 +825,7 @@ C.push(H1("12. References"));
   "Apache Software Foundation. (n.d.). Apache JMeter user's manual. https://jmeter.apache.org/usermanual/",
   "Axios. (n.d.). Axios documentation. https://axios-http.com/docs/intro",
   "Braille Institute of America. (n.d.). Atkinson Hyperlegible font. https://www.brailleinstitute.org/freefont/",
+  "Brevo. (n.d.). Send a transactional email (API reference). Brevo Developers. https://developers.brevo.com/reference/sendtransacemail",
   "Department of Labor and Employment. (n.d.). PhilJobNet and PESO Employment Information System. Retrieved September 28, 2026, from https://philjobnet.gov.ph/",
   "Deque Systems. (n.d.). axe-core: Accessibility engine for automated web UI testing. https://github.com/dequelabs/axe-core",
   "Docker. (n.d.). Docker Compose documentation. https://docs.docker.com/compose/",
@@ -837,7 +852,7 @@ C.push(H1("12. References"));
   "Postman. (n.d.). Writing tests and running collections with Newman. https://learning.postman.com/docs/",
   "PSGC API. (n.d.). Philippine Standard Geographic Code API. https://psgc.gitlab.io/api/",
   "PWD-E. (n.d.). PWD-E: Future begins today. Retrieved September 28, 2026, from https://pwd-e.com/home/",
-  "Railway. (n.d.). Private networking. https://docs.railway.com/",
+  "Railway. (n.d.). Free trial; Private networking; Outbound networking. https://docs.railway.com/",
   "Rappler. (2023). Still a long road ahead: PWDs struggle to join Philippine workforce. https://www.rappler.com/newsbreak/in-depth/persons-with-disability-struggle-philippine-workforce/",
   "Remix Software. (n.d.). React Router documentation (version 7). https://reactrouter.com/",
   "Republic Act No. 7277. (1992). Magna Carta for Disabled Persons. Official Gazette of the Republic of the Philippines.",
@@ -845,6 +860,7 @@ C.push(H1("12. References"));
   "Republic Act No. 10524. (2013). An Act expanding the positions reserved for persons with disability, amending Republic Act No. 7277. Official Gazette of the Republic of the Philippines.",
   "Respicio & Co. (n.d.). PWD right to reasonable accommodation in the workplace (Philippines). https://www.lawyer-philippines.com/",
   "SDDirect. (2023). Disability inclusion in the Philippines (Disability Inclusion Helpdesk Report No. 61). https://sddirect.org.uk/",
+  "Symfony. (n.d.). Sending emails with Mailer: Brevo transport. https://symfony.com/doc/current/mailer.html",
   "Testing Library. (n.d.). React Testing Library. https://testing-library.com/docs/react-testing-library/intro/",
   "United Nations. (n.d.). Goal 8: Promote sustained, inclusive and sustainable economic growth, full and productive employment and decent work for all. https://sdgs.un.org/goals/goal8",
   "Vercel. (n.d.). Vite on Vercel. https://vercel.com/docs",
@@ -898,6 +914,7 @@ C.push(...table(["Module", "Method", "Endpoint", "Access", "Purpose"], [
   ["M12 Saved jobs", "GET, POST, DELETE", "/candidate/saved-jobs, /candidate/saved-jobs/{jobId}", "C", "Bookmarks of visible postings; POST and DELETE idempotent; `saved` flag on search results and posting details"],
   ["M13 Settings", "PUT", "/me/display-prefs", "any", "Text size, contrast, motion saved with the account (returned by login and /me)"],
   ["M13 Settings", "PUT", "/me/email-notifications", "C / E", "Notification emails on (default) or off"],
+  ["Onboarding", "PATCH", "/me/onboarding", "C / E", "Welcome tour done; \"Get started\" list hidden or shown again (state returned by login and /me; new accounts start with both false)"],
   ["Insights", "GET", "/insights/job-postings/{id}", "P", "Accessibility Snapshot"],
   ["Insights", "GET", "/insights/locations/{regions|provinces|cities}?parent=", "P", "PSGC lists"],
   ["Internal", "GET", "/internal/job-postings/{id}/summary (Core, not public)", "S", "Data for mashup"],
@@ -945,7 +962,7 @@ C.push(...code(`
 </binding>
 <service name="BusinessRegistryService">
   <port name="BusinessRegistryPort" binding="tns:BusinessRegistryBinding">
-    <soap:address location="http://registry.railway.internal:8003/soap"/>
+    <soap:address location="http://business-registry-soap.railway.internal:8003/soap"/>
   </port>
 </service>`));
 C.push(P("**Overpass QL query** sent by the Insights Service (coordinates from Nominatim):"));
@@ -973,6 +990,7 @@ C.push(...table(["Item", "Reference"], [
   ["Chained variables", "`candidateToken`, `employerToken`, `adminToken`, `jobPostingId`, `applicationId`, `employerId`"],
   ["CI command", "`newman run ... -e tests/postman/ci.postman_environment.json --reporters cli,htmlextra --reporter-htmlextra-export newman-report.html`"],
   ["Evidence", "Newman HTML reports `full.html` and `t13-overpass-down.html`, artifact `newman-reports` of CI run 38493807232: 193 requests / 933 assertions / 0 failed and 15 / 87 / 0 (Section 7.2)"],
+  ["Production smoke", "`node tests/postman/build-smoke.mjs` → `OpenDoor.smoke.postman_collection.json` (73 read-only requests); run with `-e production.postman_environment.json` on 16 Oct 2026: 73 / 389 / 0, 18.4 s, average response 170 ms (report `tests/postman/reports/production-smoke-2026-10-16.html`, kept out of git)"],
 ], [2400, 7680], { kv: true }));
 
 C.push(H2("Appendix D - JMeter/load-test configuration and results"));
@@ -980,28 +998,41 @@ C.push(...table(["Element", "Configuration"], [
   ["Test plan", "`tests/jmeter/opendoor-matching.jmx`"],
   ["User Defined Variables", "`host` = gateway host, `protocol` = https, `port`, `pageSize` = 12 (each read from a `-J` property with a default)"],
   ["CSV Data Set Config", "`tokens.csv` (`-Jtokens=`) – 50 load-test candidate tokens written by `php artisan load-test:data` (load-test accounts only, never real users; removed with `--remove`)"],
-  ["Thread Groups", "One Thread Group driven by `-Jthreads`, `-Jrampup`, `-Jloops`: Load 50 threads, 60 s ramp-up, 10 loops · Stress 100 and 200 threads, 60 s ramp-up, 5 loops"],
+  ["Thread Groups", "One Thread Group driven by `-Jthreads`, `-Jrampup`, `-Jloops`: Load 50 threads, 60 s ramp-up, 10 loops · Stress 100 and 200 threads, 60 s ramp-up, 5 loops · the same three again with `-Jrampup=5` (burst) so that all users run at the same time"],
   ["Samplers", "HTTP Request `GET /api/job-postings?match=1&page=${__Random(1,10)}`; HTTP Request `GET /api/job-postings/${postingId}`"],
   ["Header Manager", "`Authorization: Bearer ${token}`, `Accept: application/json`"],
   ["Assertions", "Response Assertion: code 200; JSON Assertions: `$.meta.match_mode == true` and `$.meta.per_page == ${pageSize}`; Duration Assertion: 3,000 ms"],
   ["Listeners", "Summary Report, Aggregate Report; HTML dashboard generated with `-e -o report/`"],
-  ["Results", "[[Insert the Aggregate Report table and the response-time-over-time chart for each run.]]"],
+  ["Results", "Production, 16 October 2026: summary table in Section 7.3; per-sampler Aggregate Report below. HTML dashboards `tests/jmeter/report/prod-*` and raw results `results-prod-*.jtl` (kept out of git; the burst dashboards were also generated at 1 s granularity with `jmeter -g … -Jjmeter.reportgenerator.overall_granularity=1000`, because the runs lasted under a minute)."],
 ], [2400, 7680], { kv: true }));
+C.push(...table(["Run", "Sampler", "Samples", "Average", "Median", "P90", "P95", "P99", "Max", "Error %", "Throughput"], [
+  ["Load 50 (60 s)", "Search", "500", "134", "116", "204", "226", "334", "1,117", "0.00", "8.2/s"],
+  ["", "Details", "500", "82", "76", "100", "119", "177", "241", "0.00", "8.4/s"],
+  ["Stress 100 (60 s)", "Search", "500", "143", "118", "222", "234", "317", "929", "0.00", "8.3/s"],
+  ["", "Details", "500", "81", "76", "99", "123", "179", "191", "0.00", "8.4/s"],
+  ["Stress 200 (60 s)", "Search", "1,000", "144", "123", "219", "239", "308", "895", "0.00", "16.6/s"],
+  ["", "Details", "1,000", "81", "75", "100", "118", "161", "492", "0.00", "16.8/s"],
+  ["Burst 50 (5 s)", "Total", "1,000", "497", "500", "699", "748", "825", "1,114", "0.00", "72.4/s"],
+  ["Burst 100 (5 s)", "Total", "1,000", "862", "909", "1,281", "1,333", "1,404", "1,463", "0.00", "77.5/s"],
+  ["Burst 200 (5 s)", "Total", "2,000", "1,954", "2,010", "2,786", "2,838", "2,922", "2,997", "0.00", "81.3/s"],
+], [1500, 900, 850, 850, 850, 800, 800, 800, 850, 840, 1040], { size: 14 }));
+C.push(P("Times in milliseconds. Search = `GET /api/job-postings?match=1&page=…`, Details = `GET /api/job-postings/{id}`."));
+C.push(...fig("screens/jmeter-burst-200.png", 1110, 769, "JMeter dashboard, Response Times Over Time (1 s granularity): 200 users at the same time – averages climb to about 2.8 s while all users are active, with no failed request"));
 
 C.push(H2("Appendix E - Repository structure / deployment notes"));
 C.push(P("Repository structure: Section 8.3. Additional deployment notes:"));
 C.push(...bullets([
   "Local development runs natively (Section 8.5). `docker-compose.yml` is used only in CI: it defines `mysql`, `core-api`, `insights-service`, `business-registry-soap`, `gateway` and a `mock-external` server so tests never depend on public Nominatim/Overpass.",
-  "Railway: one project with five services – `gateway`, `core-api`, `core-scheduler` (same image, runs `schedule:work`), `insights-service`, `business-registry-soap` – plus MySQL; only `gateway` has a public domain; services reference each other with `${{service.RAILWAY_PRIVATE_DOMAIN}}` variables.",
+  "Railway (Free Trial, Singapore region): one project with five services – `gateway`, `core-api` (also runs `schedule:work` when `RUN_SCHEDULER=1`, because the trial allows only five services), `insights-service`, `business-registry-soap` and `MySQL`; only `gateway` has a public domain; services reference each other with `${{service.RAILWAY_PRIVATE_DOMAIN}}` variables. Production secrets were generated once and entered through the Railway API; administration (database users, seeding, load-test data) used `railway ssh` instead of public database ports.",
   "Laravel production: `php artisan config:cache route:cache`, `migrate --force` as the pre-deploy command. In-app notices are stored at once and their emails are sent after the HTTP response; password-reset emails go through the `database` queue, which the scheduler works every minute.",
   "Seeders: 11 job categories, 18 RA 7277-based accommodation types in five groups, one administrator, demo candidate/employer accounts (passwords from `DEMO_PASSWORD`), sample feedback that publishes one employer's trust score (79% from three responses), a second employer with two responses and an open demo hire for test T10, and sample DTI/SEC records in `registry.db`. JMeter data is created separately with `php artisan load-test:data`.",
-  "Before the defense: open the frontend and call `/api/health` a few minutes early to wake sleeping services.",
+  "Before the defense: call `/api/health`, and open each job page once the day before so that the Accessibility Snapshot's nearby places are cached (the public Overpass servers are often overloaded; a cached result stays fresh for 24 hours and is served as `stale` after that).",
 ]));
 
 C.push(H2("Appendix F - Additional screenshots or diagrams"));
 C.push(P("**Core Service data model** (MySQL `opendoor_core`). Accommodations are stored once in a lookup table and linked to postings, candidate needs and feedback through pivot tables, so the same vocabulary drives filtering, matching and per-accommodation ratings."));
 C.push(...table(["Table", "Key Fields", "Notes"], [
-  ["users", "id, name, email, password, role, is_active, consented_at, display_prefs (JSON), email_notifications, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent; M13 settings (emails on by default)"],
+  ["users", "id, name, email, password, role, is_active, consented_at, display_prefs (JSON), email_notifications, onboarding_tour_done, onboarding_checklist_hidden, timestamps", "Shared auth table (Sanctum); unique email; suspension; consent; M13 settings (emails on by default); onboarding state (new accounts start with both false; accounts that existed before onboarding and the demo accounts start as done)"],
   ["password_reset_tokens", "email (PK), token (hashed), created_at", "One reset link per account; valid 60 minutes, removed once used"],
   ["candidate_profiles", "id, user_id, headline, skills, experience, location_psgc, location_label, disability_type (nullable), show_disability, resume_path", "1:1 with candidate users; disability type optional and hidden"],
   ["employers", "id, user_id, company_name, business_reg_no, registry_type, industry, address, location_psgc, location_label, description, logo_path, verified_at, verification_rejected_reason, trust_score, feedback_count", "`trust_score` is a whole percentage 0–100 (null until rated); shown publicly only from 3 responses"],
