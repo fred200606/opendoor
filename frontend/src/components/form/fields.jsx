@@ -37,7 +37,8 @@ function Label({ htmlFor, required, children }) {
 /**
  * Text input, email, password, number, date… Error and hint are linked with aria-describedby.
  * Pass `id` when the ErrorSummary must link to the field (defaults to `name`).
- * `voice` adds a "Speak" button (browser speech recognition, see VoiceInput).
+ * `voice` adds a "Speak" button (browser speech recognition, see VoiceInput); a one-line field takes
+ * the spoken words without the punctuation the speech service adds.
  */
 export function TextField({ label, name, id = name, error, hint, required, className = '', voice = false, ...inputProps }) {
   const hintId = hint ? `${id}-hint` : null;
@@ -59,7 +60,9 @@ export function TextField({ label, name, id = name, error, hint, required, class
         className="field__input"
         {...inputProps}
       />
-      {voice && <VoiceInput fieldLabel={label} name={name} value={inputProps.value ?? ''} onChange={inputProps.onChange} maxLength={inputProps.maxLength} />}
+      {voice && (
+        <VoiceInput fieldLabel={label} name={name} value={inputProps.value ?? ''} onChange={inputProps.onChange} maxLength={inputProps.maxLength} punctuation={false} />
+      )}
     </div>
   );
 }

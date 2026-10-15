@@ -63,6 +63,15 @@ function rememberNoService() {
   noServiceListeners.forEach((hide) => hide());
 }
 
+/**
+ * Words only, for single-line fields such as the search keyword: Chrome and Edge end what they hear
+ * with a full stop ("Data encoder."), and the search then finds nothing. Only punctuation that ends
+ * a word goes, so "Node.js" stays.
+ */
+function withoutPunctuation(text) {
+  return text.replace(/[.,!?;:]+(?=\s|$)/g, '');
+}
+
 /** The field's value with the spoken text added at the end (one space between), within maxLength. */
 function appendSpoken(value, text, maxLength) {
   const spoken = text.trim();
@@ -76,9 +85,10 @@ function appendSpoken(value, text, maxLength) {
  * recognition adds what the user says to the field. Chrome and Edge send the audio to their speech
  * service, so a notice explains this before the first use. It listens only after a click, until
  * "Stop listening". Not shown where the browser has no speech recognition (e.g. Firefox) or no
- * speech service (Brave, and others after their first failure).
+ * speech service (Brave, and others after their first failure). `punctuation={false}` keeps only
+ * the words (single-line fields); text areas keep the sentences as spoken.
  */
-export default function VoiceInput({ fieldLabel, name, value, onChange, maxLength }) {
+export default function VoiceInput({ fieldLabel, name, value, onChange, maxLength, punctuation = true }) {
   const [listening, setListening] = useState(false);
   const [message, setMessage] = useState('');
   const [askNotice, setAskNotice] = useState(false);
@@ -123,6 +133,7 @@ export default function VoiceInput({ fieldLabel, name, value, onChange, maxLengt
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) text += event.results[i][0].transcript;
       }
+      if (!punctuation) text = withoutPunctuation(text);
       const current = field.current.value ?? '';
       const next = appendSpoken(current, text, maxLength);
       if (next === current) return;

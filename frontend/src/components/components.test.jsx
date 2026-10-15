@@ -14,7 +14,7 @@ import ResultCount from './ResultCount.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import StatusTimeline from './StatusTimeline.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
-import { TextArea } from './form/fields.jsx';
+import { TextArea, TextField } from './form/fields.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
 import { readableChunks } from '../lib/readAloud.js';
@@ -269,6 +269,39 @@ describe('Voice input', () => {
     await user.click(speak);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(instances).toHaveLength(2);
+  });
+
+  test('a one-line field (search keyword) gets the words without the punctuation the speech service adds', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    localStorage.setItem('opendoor.voiceNotice', 'accepted');
+    function Keyword() {
+      const [value, setValue] = useState('');
+      return <TextField label="Keyword" name="q" type="search" voice value={value} onChange={(event) => setValue(event.target.value)} />;
+    }
+    render(<Keyword />);
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Keyword)' }));
+    const field = screen.getByRole('searchbox', { name: 'Keyword' });
+    act(() => instances[0].onresult(said('Data encoder.')));
+    expect(field).toHaveValue('Data encoder');
+    expect(screen.getByRole('status')).toHaveTextContent('Added: Data encoder');
+    act(() => instances[0].onresult(said(' Node.js, remote? ')));
+    expect(field).toHaveValue('Data encoder Node.js remote');
+    // Nothing but a full stop heard: the field stays as it is.
+    act(() => instances[0].onresult(said('.')));
+    expect(field).toHaveValue('Data encoder Node.js remote');
+  });
+
+  test('text areas keep the sentences as spoken', async () => {
+    const user = userEvent.setup();
+    const instances = recognitionMock();
+    localStorage.setItem('opendoor.voiceNotice', 'accepted');
+    render(<CoverNote />);
+
+    await user.click(screen.getByRole('button', { name: 'Speak instead of typing (Cover note)' }));
+    act(() => instances[0].onresult(said('next week.')));
+    expect(screen.getByRole('textbox', { name: 'Cover note' })).toHaveValue('I can start next week.');
   });
 
   test('does not listen when the notice is cancelled; explains errors; stops when the page changes', async () => {
