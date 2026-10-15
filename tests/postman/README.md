@@ -20,6 +20,14 @@ npx newman run tests/postman/OpenDoor.postman_collection.json `
 
 Environments: `local` (gateway on `http://localhost:8080/api`), `ci` (docker compose service `gateway`), `production` (Railway gateway). The run creates a throwaway candidate (`pm-candidate-<timestamp>@opendoor.test`, which also gets a profile, two needs and a résumé) and a category/accommodation and two postings that it deletes again. Folder 05 leaves one hired application (on its deleted posting) and in-app notifications for the demo employer – applications are never deleted. Demo profiles are only read, never changed. Folder 06 (T10) rates the seeded hire of `candidate2@` at `employer2@` – the 3rd response that publishes that trust score. On a freshly seeded database it expects 201; on later runs 409 `FEEDBACK_EXISTS` (the score checks still run). Re-seed from scratch (`php artisan migrate:fresh --seed`) to see the 201 again.
 
+**Production smoke (read-only).** The full run changes data, so production gets a subset: `node tests/postman/build-smoke.mjs` writes `OpenDoor.smoke.postman_collection.json` with the requests that change nothing – GET requests, the demo logins and requests the API must refuse (401/403/404/422) – and drops every request that needs something a writing request would create (73 of 199 requests). Run it against the Railway gateway with the production `DEMO_PASSWORD` (a Railway variable of `core-api`):
+
+```powershell
+npx -p newman@6 -p newman-reporter-htmlextra@1 newman run tests/postman/OpenDoor.smoke.postman_collection.json `
+  -e tests/postman/production.postman_environment.json --env-var "demoPassword=<production DEMO_PASSWORD>" `
+  --reporters cli,htmlextra --reporter-htmlextra-export tests/postman/reports/production-smoke.html
+```
+
 Folder 07 needs the Insights Service (`:8002`) and calls the live PSGC, Nominatim and Overpass APIs, so it checks the snapshot's shape and `sources` flags, not specific places. Two requests run only when asked:
 
 - **T16** (Core `/internal` without `X-Service-Key` → 401) calls Core directly. It runs when `coreUrl` is set; `local` sets it to `http://127.0.0.1:8001`, `production` leaves it empty because Core is private there, and the CI runner (`run-ci.sh`, inside the compose network) passes `http://core-api:8001`.
