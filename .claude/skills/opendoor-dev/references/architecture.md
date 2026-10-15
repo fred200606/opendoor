@@ -56,13 +56,13 @@ Paths are forwarded **unchanged** (Core serves `/api/*`; Insights must serve `/a
 
 - **frontend:** `VITE_API_URL`
 - **gateway:** `PORT`, `CORE_URL`, `INSIGHTS_URL`, `CORS_ALLOWED_ORIGIN` (comma-separated list allowed), `RATE_LIMIT_PER_MIN`, `TRUST_PROXY` (0 locally, 1 on Railway)
-- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `PUBLIC_API_URL` (gateway URL for file links such as `logo_url`), `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders), `PUBLIC_APP_URL` (links in emails), `MAIL_*` (mail provider; `log` locally), `PASSWORD_RESET_QUEUE=database`
+- **core-api:** standard Laravel (`APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, `DB_HOST`, `DB_PORT`, `DB_DATABASE=opendoor_core`, `DB_USERNAME`, `DB_PASSWORD`), `SANCTUM_*` as needed, `SERVICE_KEY_INSIGHTS`, `PUBLIC_API_URL` (gateway URL for file links such as `logo_url`), `REGISTRY_WSDL_URL`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`, `REGISTRY_TIMEOUT=5`, `DEMO_PASSWORD` (seeders), `PUBLIC_APP_URL` (links in emails), `MAIL_*` (`log` locally; production `MAIL_MAILER=brevo` + `BREVO_API_KEY` – Brevo HTTPS API, Railway blocks SMTP), `PASSWORD_RESET_QUEUE=database`, `RUN_SCHEDULER=1` on Railway (scheduler in the Core container)
 - **insights-service:** `PORT`, `CORE_INTERNAL_URL`, `SERVICE_KEY_INSIGHTS`, `NOMINATIM_URL`, `OVERPASS_URL`, `OVERPASS_FALLBACK_URL`, `PSGC_URL`, `NOMINATIM_CONTACT_EMAIL`, `CACHE_DB_HOST`, `CACHE_DB_NAME=insights_cache`, `CACHE_DB_USER`, `CACHE_DB_PASSWORD`
 - **business-registry-soap:** `PORT`, `REGISTRY_SOAP_USER`, `REGISTRY_SOAP_PASSWORD`
 
 ## Deployment
 
 - Vercel: root `frontend/`, build `npm run build`, output `dist/`, SPA rewrite to `index.html`.
-- Railway: one project, services `gateway`, `core-api` (Dockerfile, FrankenPHP; pre-deploy `php artisan migrate --force`; volume for logos/résumés), `core-scheduler` (same image, `php artisan schedule:work`), `insights-service`, `business-registry-soap` (Dockerfile, FrankenPHP), plus MySQL; mail provider chosen at deployment. Only `gateway` gets a public domain; others use `${{service.RAILWAY_PRIVATE_DOMAIN}}`.
+- Railway (Free Trial, max 5 services – decision 2026-10-15): one project, services `gateway`, `core-api` (Dockerfile, FrankenPHP; pre-deploy `php artisan migrate --force`; volume for logos/résumés; `RUN_SCHEDULER=1` runs `php artisan schedule:work` in the same container instead of a separate `core-scheduler` service), `insights-service`, `business-registry-soap` (Dockerfile, FrankenPHP), plus MySQL; mail through Brevo's HTTPS API (mailer `brevo`). Only `gateway` gets a public domain; others use `${{service.RAILWAY_PRIVATE_DOMAIN}}`.
 - Production: `APP_DEBUG=false`, fresh `APP_KEY`, CORS restricted to the Vercel domain.
 - Free/hobby tiers sleep: wake the app (`/api/health`) a few minutes before demos.

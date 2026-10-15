@@ -65,6 +65,13 @@ return [
             'transport' => 'resend',
         ],
 
+        // Production (decision 2026-10-15): Brevo's HTTPS API – Railway blocks outbound SMTP.
+        // The transport is registered in AppServiceProvider.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
