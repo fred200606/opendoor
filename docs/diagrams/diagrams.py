@@ -116,7 +116,7 @@ arrow(ax, (0.76, 0.39), (0.84, 0.60))
 arrow(ax, (0.76, 0.36), (0.84, 0.465))
 arrow(ax, (0.76, 0.33), (0.84, 0.325))
 ax.text(0.80, 0.25, "HTTPS\nREST/JSON", ha="center", fontsize=7.5)
-box(ax, 0.84, 0.08, 0.13, 0.10, "Email provider\n(SMTP, chosen\nat deployment)", C["ext"], 8)
+box(ax, 0.84, 0.08, 0.13, 0.10, "Email provider\n(Brevo,\nHTTPS API)", C["ext"], 8)
 arrow(ax, (0.57, 0.26), (0.84, 0.15), "notices,\nreset links", off=(0.085, 0.005))
 lx = 0.02
 for i, (k, lab) in enumerate([("client", "Client"), ("gw", "Gateway"), ("svc", "Service"),
@@ -205,12 +205,12 @@ ax.text(0.5, 0.975, "Deployment architecture and network boundaries", ha="center
         fontsize=12, fontweight="bold", color=GOLD)
 box(ax, 0.02, 0.62, 0.13, 0.13, "User browser\n(desktop / phone,\nscreen reader)", C["actor"], 8.5, True)
 zone(ax, 0.20, 0.60, 0.17, 0.25, "Vercel  (public)")
-box(ax, 0.215, 0.63, 0.14, 0.14, "React SPA build\nopendoor.vercel.app\nVITE_API_URL", C["client"], 8.5)
+box(ax, 0.215, 0.63, 0.14, 0.14, "React SPA build\nopendoor-rust.vercel.app\nVITE_API_URL", C["client"], 8.5)
 zone(ax, 0.42, 0.05, 0.40, 0.85, "Railway project  ·  production environment")
 zone(ax, 0.44, 0.66, 0.36, 0.17, "Public network (HTTPS, *.up.railway.app)")
 box(ax, 0.52, 0.68, 0.20, 0.10, "api-gateway\n:8080 (Express)", C["gw"], 8.5, True)
 zone(ax, 0.44, 0.08, 0.36, 0.55, "Private network (*.railway.internal, not reachable from internet)")
-box(ax, 0.46, 0.40, 0.15, 0.12, "core-api :8001\nLaravel 13, FrankenPHP\n+ core-scheduler", C["svc"], 8)
+box(ax, 0.46, 0.40, 0.15, 0.12, "core-api :8001\nLaravel 13, FrankenPHP\n+ scheduler (same container)", C["svc"], 8)
 box(ax, 0.63, 0.40, 0.15, 0.12, "insights-service\n:8002 Node 22", C["svc"], 8)
 box(ax, 0.46, 0.12, 0.15, 0.12, "business-registry-soap\n:8003 PHP 8.4\n(FrankenPHP)", C["legacy"], 8)
 box(ax, 0.63, 0.12, 0.15, 0.12, "MySQL 8 (managed)\nopendoor_core\ninsights_cache", C["db"], 8)
@@ -218,7 +218,7 @@ zone(ax, 0.86, 0.20, 0.13, 0.50, "Internet")
 box(ax, 0.87, 0.55, 0.11, 0.08, "Nominatim", C["ext"], 8)
 box(ax, 0.87, 0.45, 0.11, 0.08, "Overpass", C["ext"], 8)
 box(ax, 0.87, 0.35, 0.11, 0.08, "PSGC API", C["ext"], 8)
-box(ax, 0.87, 0.23, 0.11, 0.08, "Email (SMTP)", C["ext"], 8)
+box(ax, 0.87, 0.23, 0.11, 0.08, "Brevo email\n(HTTPS API)", C["ext"], 8)
 zone(ax, 0.02, 0.08, 0.35, 0.40, "GitHub")
 box(ax, 0.04, 0.27, 0.14, 0.12, "Monorepo\nmain / develop", C["db"], 8)
 box(ax, 0.21, 0.27, 0.14, 0.12, "GitHub Actions\nlint · test · build\nNewman · axe", C["gw"], 8)
@@ -281,7 +281,8 @@ def rel(points, a, b):
 
 table("notifications", 0, 0.93, ["id PK (UUIDv7)", "type", "notifiable_id FK (+ type)", "data (message, url, ids)", "read_at, created_at"])
 table("users", 1, 0.93, ["id PK", "name", "email (unique)", "password (bcrypt)", "role", "is_active", "consented_at",
-                         "display_prefs (JSON)", "email_notifications"])
+                         "display_prefs (JSON)", "email_notifications",
+                         "onboarding_tour_done", "onboarding_checklist_hidden"])
 table("employers", 2, 0.93, ["id PK", "user_id FK (unique)", "company_name", "business_reg_no, registry_type",
                              "industry, address", "location_psgc, location_label", "description, logo_path",
                              "verified_at", "verification_rejected_reason", "trust_score, feedback_count"])
