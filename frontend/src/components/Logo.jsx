@@ -1,12 +1,13 @@
-import door from '../assets/logo-door.svg';
+import mascot from '../assets/logo-mascot.png';
 
-/** Figma "Logo": door mark on a brand square + "OpenDoor" (Lexend SemiBold 26). */
+/**
+ * Figma "Logo" (2:56): mascot image + "OpenDoor" (Lexend SemiBold 26). The image is decorative
+ * (alt=""): the wordmark names the logo.
+ */
 export default function Logo() {
   return (
     <span className="logo">
-      <span className="logo__mark">
-        <img src={door} alt="" width="24" height="24" />
-      </span>
+      <img className="logo__mark" src={mascot} alt="" width="36" height="50" />
       <span className="logo__text">OpenDoor</span>
     </span>
   );

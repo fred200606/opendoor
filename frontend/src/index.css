@@ -341,13 +341,10 @@ main:focus {
 }
 
 .logo__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 10px;
-  background: var(--primary);
+  flex: none;
+  width: 2.25rem; /* Figma mascot slot 36 × 50, image contained */
+  height: 3.125rem;
+  object-fit: contain;
 }
 
 .logo__text {
@@ -450,8 +447,8 @@ main:focus {
   }
 
   .site-nav--compact .logo__mark {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 1.875rem;
+    height: 2.625rem;
   }
 
   .site-nav__compact-actions {
