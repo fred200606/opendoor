@@ -734,7 +734,7 @@ npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/l
 // ---------- 9 Screens ----------
 C.push(H1("9. Application Screens and Demonstration"));
 C.push(H2("9.1 Key Application Screens"));
-C.push(note("Screens of the deployed system (https://opendoor-rust.vercel.app) with the seeded demo data, captured read-only with the demo accounts on 16 October 2026 in a desktop browser 1,440 px wide. The job details page and its snapshot are from the 14 October 2026 capture of the local stack (`npm run ui-reference` in `tests/a11y`, earlier logo), because both public Overpass servers were failing on 16 October; the nearby places shown are live OpenStreetMap data from 14 October."));
+C.push(note("Screens of the deployed system (https://opendoor-rust.vercel.app) with the seeded demo data, captured read-only with the demo accounts on 16 October 2026 in a desktop browser 1,440 px wide. The nearby places in the snapshot are live OpenStreetMap data from that day."));
 [
   ["Public – Browse jobs (/jobs)", "Guests search by keyword and filter by category and accommodation; job cards show the offered accommodations, the employer's Verified badge and trust score (M5).",
     [["guest-jobs.jpg", 1350, 1144, 560]]],
@@ -743,7 +743,7 @@ C.push(note("Screens of the deployed system (https://opendoor-rust.vercel.app) w
   ["Candidate – Find jobs in \"Matches my needs\" mode (/candidate/jobs)", "Postings ranked by needs met (\"Meets all 3 of your needs\", \"Meets 1 of your 3 needs\") – the output of the matching integration; Save keeps a job for later (M5, M12).",
     [["cand-jobs.jpg", 1350, 1294, 580]]],
   ["Candidate – Job details with Accessibility Snapshot (/candidate/jobs/:id)", "One page combines the posting, match, trust score and – when opened – the Workplace Accessibility Snapshot from the Insights mashup (Core + PSGC + Nominatim + Overpass); Apply with an interview accommodation request; Read aloud and Voice input (M4, M6, M7).",
-    [["cand-job.jpg", 1350, 1448, 420], ["crop-snapshot.jpg", 1075, 1036, 300]]],
+    [["cand-job.jpg", 1350, 1455, 420], ["crop-snapshot.jpg", 1075, 1036, 300]]],
   ["Candidate – My applications and feedback form", "Status tracking of every application, and the per-accommodation rating a hired candidate gives from day 30 after hire (M6, M7).",
     [["cand-applications.jpg", 1350, 620, 300], ["cand2-feedback.jpg", 1350, 1125, 420]]],
   ["Employer – Post or edit a job, step 3 Accommodations (/employer/jobs/:id/edit)", "Four-step wizard, the same for a new posting and for editing (shown: the open \"Data Encoder\" posting, which goes back for approval when saved): structured accommodations with optional notes; step 2 holds the interview format and the PSGC location picker (M4).",
@@ -762,7 +762,7 @@ C.push(...numbered([
   "**Service-to-service interaction:** the Core Service authenticates the token, computes the match and returns the trust score; the Insights Service calls the Core Service's internal summary endpoint with its service key.",
   "**External/legacy API interaction:** the Insights Service resolves the PSGC code, geocodes the address with Nominatim and queries Overpass for wheelchair-tagged places within 500 m. (Separately, the admin demo shows the Core Service calling the SOAP Business Registry for the employer waiting for verification, Kalinga Foods Inc., SEC `CS201912345`: ACTIVE, name match 100%.)",
   "**Transformation/mashup:** OSM tags are mapped to accessible transit, toilets and parking with distances, and merged with the employer's advertised accommodations and the community trust score into the Workplace Accessibility Snapshot.",
-  "**Final result shown to user:** the job details page shows \"Meets all 3 of your needs\", the Verified employer badge, the trust score \"79% of promised accommodations were delivered. Based on 3 responses.\" and the accessible places OpenStreetMap lists within 500 m (when the job-page screenshot in 9.1 was taken on 14 October 2026: no tagged transit stops, toilets or parking, and two other places 423 m and 462 m away). The candidate applies with an interview accommodation request and sees the application as Submitted (`pending`), while the employer receives an in-app notification and, with emails on, an email. On a posting that meets only some needs, the details page names the missing accommodations.",
+  "**Final result shown to user:** the job details page shows \"Meets all 3 of your needs\", the Verified employer badge, the trust score \"79% of promised accommodations were delivered. Based on 3 responses.\" and the accessible places OpenStreetMap lists within 500 m (when the screenshots in 9.1 were taken on 16 October 2026: no tagged transit stops, toilets or parking, and two other places – The Marketplace 427 m and Army Navy 447 m away). The candidate applies with an interview accommodation request and sees the application as Submitted (`pending`), while the employer receives an in-app notification and, with emails on, an email. On a posting that meets only some needs, the details page names the missing accommodations.",
 ]));
 
 // ---------- 10 Evaluation ----------
