@@ -19,7 +19,7 @@ React SPA (Vercel) ──HTTPS──▶ API Gateway (Node/Express, :8080) ─┬
 | `services/core-api/` | Core Service – auth, profiles, postings, matching, applications, feedback, trust score |
 | `services/insights-service/` | Accessibility Insights mashup – Workplace Accessibility Snapshot, PSGC locations |
 | `services/business-registry-soap/` | Simulated DTI/SEC registry exposed as a legacy SOAP 1.1 service |
-| `tests/postman/`, `tests/jmeter/` | API and load tests |
+| `tests/postman/`, `tests/jmeter/`, `tests/validate/` | API and load tests; quick service validation script |
 | `docs/` | SIA documentation, diagrams, `openapi.yaml`, setup scripts |
 
 ## Requirements
@@ -72,6 +72,7 @@ cd services/insights-service && npm test
 cd services/business-registry-soap && php tests/run.php
 cd frontend && npm run lint && npm test
 npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json
+python tests/validate/validate_opendoor.py   # running stack: services up, gateway routing, Insights -> Core
 ```
 
 **CI** (`.github/workflows/ci.yml`, GitHub Actions) runs on every push and pull request to `main`/`develop`:
