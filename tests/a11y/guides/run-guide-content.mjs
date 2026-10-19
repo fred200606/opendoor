@@ -68,7 +68,7 @@ export const steps = {
     inside: [
       '<code>GET /api/job-postings?match=1&amp;sort=best</code> – Core reads the candidate’s saved needs and ranks the open, approved postings by how many of them each one offers – full matches first, then newest.',
       'Each posting comes back with <code>match: { met, total, missing }</code>; the disability type is never used for matching (RA 10173).',
-      'In development React runs each page load twice (StrictMode), so DevTools shows every call two times. The built app on Vercel calls once.',
+      'With <code>npm run dev</code> React’s StrictMode loads each page twice, so DevTools shows every call two times. The built app (Vercel, and these captures) calls once.',
     ],
     db: 'Nothing changes – this is a read. The rows below are the candidate’s needs that the match uses (<code>candidate_accommodation</code>).',
   },
@@ -81,7 +81,7 @@ export const steps = {
       'Then PSGC (official place names), Nominatim (coordinates of the address) and Overpass (wheelchair-accessible places nearby). Each answer is cached in the <code>insights_cache</code> database.',
       'The whole snapshot must finish in 12 s. A source that is down or slow is reported in <code>sources</code> as <code>unavailable</code> or <code>stale</code> and the snapshot is still 200 – external services never block hiring.',
     ],
-    db: 'Insights owns its own cache tables (database <code>insights_cache</code>). Core’s data is not copied – Insights only asks Core’s API.',
+    db: 'Insights owns its own cache tables (database <code>insights_cache</code>); Core’s data is never copied there – Insights only asks Core’s API. The rows below are the cached answers this posting’s snapshot uses: the coordinates of its address (Nominatim, kept 30 days), the accessible places around them (Overpass, 24 h – after that the old copy is only used as <code>stale</code> when Overpass fails) and the PSGC place lists. <code>fetched_at</code> shows when each answer was fetched.',
   },
   apply: {
     click: 'Fill <b>Cover note</b> and <b>Interview accommodation request</b>, then press <b>Send application</b>.',
@@ -158,7 +158,7 @@ export const testResults = {
   'Jest (Insights)': '135 passed (Oct 19, 2026)',
   'Registry runner': '39/39 checks passed (Oct 19, 2026)',
   'Vitest (React)': '165 passed (Oct 19, 2026)',
-  'Postman / Newman': 'CI: 193 requests / 933 assertions / 0 failures; production smoke 73 / 389 / 0 (Oct 16, 2026)',
+  'Postman / Newman': 'CI: 193 requests / 933 assertions / 0 failures (collection before onboarding); production smoke 73 / 389 / 0 (Oct 16, 2026)',
   'JMeter': 'Production, 50 users: P95 204 ms, 0 % errors (Oct 16, 2026) – SIA doc 7.3',
   'axe-core / Lighthouse': 'axe: 0 violations on 33 pages (CI); Lighthouse 100 on 6 guest pages',
   'Validation script': '14/14 local (Oct 19, 2026)',

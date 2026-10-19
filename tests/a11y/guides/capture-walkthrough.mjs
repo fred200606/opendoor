@@ -329,7 +329,6 @@ try {
     candidate,
     { id: 'snapshot', title: 'Open a job and its Workplace Accessibility Snapshot (mashup)', role: 'Candidate' },
     {
-      before: () => query(cache, 'SELECT address_hash, query, lat, lon, `precision`, fetched_at FROM geocode_cache ORDER BY fetched_at DESC LIMIT 2'),
       act: async (page) => {
         await page.goto(`${APP_URL}/candidate/jobs/${dataEncoderId}`, { waitUntil: 'networkidle' });
         await settle(page);
@@ -339,11 +338,17 @@ try {
         await page.locator('.snapshot').first().scrollIntoViewIfNeeded();
         return [details, await screenshot(page, 'job-snapshot')];
       },
-      after: async () => ({
-        geocode: await query(cache, 'SELECT address_hash, query, lat, lon, `precision`, fetched_at FROM geocode_cache ORDER BY fetched_at DESC LIMIT 2'),
-        overpass: await query(cache, 'SELECT `key`, fetched_at FROM overpass_cache ORDER BY fetched_at DESC LIMIT 2'),
-        psgc: await query(cache, 'SELECT `key`, fetched_at FROM psgc_cache ORDER BY fetched_at DESC LIMIT 2'),
-      }),
+      // The cache rows this posting's snapshot uses: its address, the places around it, the PSGC lists.
+      after: async () => {
+        const [[posting]] = await core.query('SELECT address, location_psgc FROM job_postings WHERE id = ?', [dataEncoderId]);
+        const geocode = await query(cache, 'SELECT LEFT(address_hash, 12) AS address_hash, query, lat, lon, `precision`, fetched_at FROM geocode_cache WHERE query LIKE ?', [`${posting.address}%`]);
+        const around = geocode.rows.length ? `${Number(geocode.rows[0][2]).toFixed(4)},${Number(geocode.rows[0][3]).toFixed(4)},%` : 'none';
+        return {
+          geocode,
+          overpass: await query(cache, 'SELECT `key`, JSON_LENGTH(payload) AS osm_elements, fetched_at FROM overpass_cache WHERE `key` LIKE ?', [around]),
+          psgc: await query(cache, 'SELECT `key`, JSON_LENGTH(payload) AS entries, fetched_at FROM psgc_cache WHERE `key` LIKE ? ORDER BY `key`', [`%${posting.location_psgc.slice(0, 2)}00000000`]),
+        };
+      },
     },
   );
 

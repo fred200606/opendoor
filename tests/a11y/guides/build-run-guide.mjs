@@ -214,16 +214,19 @@ const diagram = `<svg class="diagram" viewBox="0 0 720 250" role="img" aria-labe
     <rect x="375" y="165" width="150" height="60" rx="8" fill="#f3effa" stroke="#6a4c9c"/><text x="450" y="190" text-anchor="middle" font-weight="700">Insights Service</text><text x="450" y="208" text-anchor="middle" font-size="10.5">Express :8002</text>
     <rect x="580" y="25" width="130" height="60" rx="8" fill="#fff8e6" stroke="#9a6700"/><text x="645" y="50" text-anchor="middle" font-weight="700">Business Registry</text><text x="645" y="68" text-anchor="middle" font-size="10.5">SOAP 1.1 :8003</text>
     <rect x="580" y="165" width="130" height="60" rx="8" fill="#effaf3" stroke="#1a7f37"/><text x="645" y="185" text-anchor="middle" font-weight="700">PSGC · Nominatim</text><text x="645" y="203" text-anchor="middle" font-weight="700">Overpass</text><text x="645" y="218" text-anchor="middle" font-size="10">public REST APIs</text>
-    <rect x="375" y="105" width="150" height="40" rx="6" fill="#fff" stroke="#8a939c" stroke-dasharray="4 3"/><text x="450" y="122" text-anchor="middle" font-size="10.5">MySQL :3306</text><text x="450" y="137" text-anchor="middle" font-size="9.5">opendoor_core · insights_cache</text>
+    <rect x="430" y="103" width="130" height="44" rx="6" fill="#fff" stroke="#8a939c" stroke-dasharray="4 3"/><text x="495" y="121" text-anchor="middle" font-size="10.5">MySQL :3306</text><text x="495" y="137" text-anchor="middle" font-size="8.5">opendoor_core · insights_cache</text>
     <g stroke="#47306f" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
-      <path d="M130 125 H183"/><path d="M315 115 L373 62"/><path d="M315 135 L373 188"/><path d="M525 55 H578"/><path d="M525 195 H578"/><path d="M430 165 L430 87"/>
+      <path d="M130 125 H183"/><path d="M315 115 L373 62"/><path d="M315 135 L373 188"/><path d="M525 55 H578"/><path d="M525 195 H578"/><path d="M395 165 L395 87"/>
+    </g>
+    <g stroke="#8a939c" stroke-width="1.2" fill="none" stroke-dasharray="3 2">
+      <path d="M495 85 V103"/><path d="M495 165 V147"/>
     </g>
     <text x="150" y="115" font-size="10">HTTPS</text>
     <text x="318" y="78" font-size="10">/api/*</text>
     <text x="300" y="180" font-size="10">/api/insights/*</text>
     <text x="530" y="47" font-size="10">SOAP</text>
     <text x="530" y="187" font-size="10">REST</text>
-    <text x="436" y="160" font-size="9.5">/internal</text>
+    <text x="345" y="130" font-size="9.5">/internal</text>
   </g>
 </svg>`;
 
@@ -319,6 +322,7 @@ const demo = `<section class="chapter" id="demo">
   ${list([
     'Production: open <code>/api/health</code> and every open job page once (wakes Railway, fills the snapshot cache).',
     'Local: start everything (section 3) and run the validation script.',
+    'Production: as the admin, check that an employer and a posting are still waiting for approval (<b>Employers</b> / <b>Postings</b>). If earlier tests already approved Kalinga Foods or Packing Line Staff, use any waiting one, or register a new employer and submit a posting before the presentation.',
     'The demo changes data (an application, a hire, an approval). On production these stay; locally re-seed with <code>php artisan migrate:fresh --seed</code> to start again (deletes all local data).',
     'Keep a browser with DevTools open (F12 → <b>Network</b>, filter <b>Fetch/XHR</b>) and the gateway terminal visible.',
   ])}
@@ -334,7 +338,7 @@ const walkIntro = `<section class="chapter" id="walkthrough">
     '<b>Core / registry terminals:</b> each request Core and the SOAP registry receive. Insights logs every request and every external source that fails.',
     '<b>Database:</b> MySQL Workbench or <code>mysql -u opendoor_core -p opendoor_core</code>, then run the <code>SELECT</code> shown under each step.',
   ])}
-  <p class="note">Captured ${captured} on the local stack, freshly seeded database (<code>${walkthrough.database}</code>), development build of the React app. Times in the logs are UTC (Manila = UTC+8). Core here ran on PHP’s built-in server; <code>php artisan serve</code> shows the same requests in its own format. Response bodies are shortened (long lists show 2 items).</p>
+  <p class="note">Captured ${captured} on the local stack, freshly seeded database (<code>${walkthrough.database}</code>), built React app (<code>npm run build</code> + <code>npx vite preview --port 5173</code>), so each call appears once. Times in the logs are UTC (Manila = UTC+8). Core here ran on PHP’s built-in server; <code>php artisan serve</code> shows the same requests in its own format. Response bodies are shortened (long lists show 2 items).</p>
 </section>`;
 
 const validate = `<section class="chapter" id="validate">
