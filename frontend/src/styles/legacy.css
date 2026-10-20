@@ -1,0 +1,3607 @@
+/* OpenDoor base styles – look from the team's Figma "OpenDoor — SIA UI" (Foundations & Components).
+   WCAG 2.1 AA: text contrast ≥ 4.5:1, UI borders ≥ 3:1, visible focus, readable at 200% zoom and
+   360 px width. Contrast ratios are noted against white. */
+
+:root {
+  /* Figma "OpenDoor colour" variables (Standard mode); High contrast and Quiet mode at the end. */
+  --od-text-default: #241b3a; /* 16.2:1 */
+  --od-text-muted: #4e4568; /* 8.8:1 */
+  --od-text-on-primary: #ffffff; /* 6.7:1 on brand/primary */
+  --od-text-accent: #47306f; /* 10.9:1 – links */
+  --od-brand-primary: #6a4c9c; /* 6.7:1 */
+  --od-brand-primary-dark: #47306f;
+  --od-surface-page: #ffffff;
+  --od-surface-subtle: #f5f1fc;
+  --od-surface-tint: #ebe3f7;
+  --od-surface-current: #dccff1;
+  --od-border-subtle: #ddd5ee; /* decorative only */
+  --od-border-input: #6f5f94; /* 5.6:1 */
+  --od-border-focus: #241b3a;
+  --od-accent-orange: #fdba5a;
+  --od-accent-pink: #f8b5d1;
+  --od-accent-sky: #9adff0;
+  --od-accent-lilac: #d4c4ef;
+  --od-status-danger: #b42318; /* 6.6:1 */
+  --od-status-danger-bg: #fef1f1;
+  --od-status-success: #116329; /* 7.4:1 */
+  --od-status-success-bg: #eef8f0;
+  --od-status-warning: #7a4300; /* 7.4:1 on its background */
+  --od-status-warning-bg: #fff6e1;
+  --od-status-info: #47306f;
+  --od-status-info-bg: #f5f1fc;
+
+  /* Short names used by the rules below. */
+  --text: var(--od-text-default);
+  --text-muted: var(--od-text-muted);
+  --bg: var(--od-surface-page);
+  --surface: var(--od-surface-subtle);
+  --border: var(--od-border-input);
+  --divider: var(--od-border-subtle);
+  --primary: var(--od-brand-primary);
+  --primary-dark: var(--od-brand-primary-dark);
+  --link: var(--od-text-accent);
+  --danger: var(--od-status-danger);
+  --danger-bg: var(--od-status-danger-bg);
+  --danger-hover: #8a1209;
+  --success: var(--od-status-success);
+  --success-bg: var(--od-status-success-bg);
+  --warning: var(--od-status-warning);
+  --warning-bg: var(--od-status-warning-bg);
+  --info: var(--od-status-info);
+  --info-bg: var(--od-status-info-bg);
+  --focus: var(--od-border-focus);
+
+  /* Type: Lexend for headings, numbers and buttons; Atkinson Hyperlegible (made for low vision) for text. */
+  --font-heading: 'Lexend', system-ui, 'Segoe UI', Arial, sans-serif;
+  --font-body: 'Atkinson Hyperlegible', system-ui, 'Segoe UI', Arial, sans-serif;
+
+  /* 8 px grid; radius 12 / 16 / 20 / pill. */
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --pill: 999px;
+  --space: 1rem;
+  --max-width: 81rem; /* 1,264 px of content inside 1 rem padding, as on the 1,440 px frames */
+
+  color-scheme: light;
+  font-family: var(--font-body);
+  font-size: 100%;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  display: contents;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: 1.3;
+  margin: 0 0 0.75rem;
+  overflow-wrap: break-word; /* long words at 200% text on phones */
+}
+
+/* Figma text styles: H1 Lexend Bold 34/42, H2 SemiBold 22/30, H3 SemiBold 18/26. */
+h1 {
+  font-size: 2.125rem;
+  font-weight: 700;
+  line-height: 1.235;
+  letter-spacing: -0.03rem;
+}
+
+h2 {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+h3,
+h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+h1:focus {
+  outline: none; /* focused programmatically on navigation, not by the user */
+}
+
+p {
+  margin: 0 0 1rem;
+  max-width: 70ch;
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--primary-dark);
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- layout */
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space);
+}
+
+/* `main.container`: the class's padding shorthand would otherwise drop the top space. */
+main,
+main.container {
+  flex: 1;
+  padding-top: 3rem;
+  padding-bottom: 4rem;
+}
+
+@media (max-width: 40rem) {
+  main,
+  main.container {
+    padding-top: 1.5rem;
+  }
+}
+
+main:focus {
+  outline: none;
+}
+
+/* ---------- Figma "Utility bar" */
+
+.utility-bar {
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+.utility-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1.75rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0.375rem 3rem;
+}
+
+.utility-bar__skip {
+  flex: 1 1 auto;
+  color: var(--text-muted);
+  text-decoration: none;
+  line-height: 1.375rem;
+}
+
+.utility-bar__skip:hover,
+.utility-bar__skip:focus-visible {
+  text-decoration: underline;
+}
+
+.utility-bar__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--od-text-accent);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  cursor: pointer;
+}
+
+.utility-bar__button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.utility-bar__button:hover {
+  text-decoration: underline;
+}
+
+/* Pressed toggles (High contrast, Quiet mode) look pressed, not only sound pressed. */
+.utility-bar__button[aria-pressed='true'] {
+  padding: 0 0.5rem;
+  border-radius: var(--pill);
+  background: var(--od-surface-current);
+}
+
+/* ---------- Figma "Header": links left and right of the centred logo */
+
+.site-header {
+  border-bottom: 2px solid var(--divider);
+  background: var(--bg);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: 0.75rem 3rem;
+}
+
+.site-nav__side {
+  flex: 1 1 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav__side--right {
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.site-nav__logo {
+  flex: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-nav__compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.site-nav--compact {
+  position: relative;
+  flex-wrap: wrap; /* at large text sizes the buttons go under the logo instead of off-screen */
+  row-gap: 0.5rem;
+}
+
+/* Figma "Nav item": pill; the current page is filled and outlined (aria-current="page"). */
+.nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: var(--pill);
+  color: var(--text);
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.nav-item[aria-current='page'],
+.nav-item[aria-current='true'] {
+  border-color: var(--primary-dark);
+  background: var(--od-surface-current);
+  color: var(--od-text-accent);
+  font-weight: 700;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: var(--pill);
+  background: var(--od-surface-tint);
+  color: var(--od-text-accent);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* Figma "Logo" */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.logo__mark {
+  flex: none;
+  width: 2.25rem; /* Figma mascot slot 36 × 50, image contained */
+  height: 3.125rem;
+  object-fit: contain;
+}
+
+.logo__text {
+  font-family: var(--font-heading);
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 2rem;
+  letter-spacing: -0.02rem;
+  color: var(--od-text-accent);
+}
+
+/* Compact menu panel ("Menu open" frame): two columns of links with icons. */
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 3rem;
+  z-index: 20;
+  width: min(25rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 2px solid var(--primary-dark);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 0.5rem 1.5rem rgb(36 27 58 / 0.15);
+}
+
+.menu-panel[hidden] {
+  display: none;
+}
+
+.menu-panel__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-panel__link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-panel__link svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.menu-panel__link:hover {
+  background: var(--surface);
+}
+
+.menu-panel__link[aria-current='page'] {
+  border-color: var(--primary-dark);
+  background: var(--od-surface-current);
+  color: var(--od-text-accent);
+  font-weight: 700;
+}
+
+.menu-panel__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 40rem) {
+  .utility-bar__inner,
+  .site-nav {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .menu-panel {
+    right: 1rem;
+  }
+
+  .site-nav__compact-actions .nav-item {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
+
+/* Phones: the avatar alone stands for Account (its name is still "Account"). */
+@media (max-width: 30rem) {
+  .site-nav--compact .logo__text {
+    font-size: 1.375rem;
+  }
+
+  .site-nav--compact .logo__mark {
+    width: 1.875rem;
+    height: 2.625rem;
+  }
+
+  .site-nav__compact-actions {
+    gap: 0.5rem;
+  }
+
+  .site-nav__compact-actions .nav-item__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Figma "Footer" */
+
+.site-footer {
+  border-top: 2px solid var(--divider);
+  background: var(--bg);
+  color: var(--text-muted);
+  padding: 1.75rem 0 1.25rem;
+  text-align: center;
+}
+
+.site-footer p {
+  max-width: none;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 2rem;
+  margin: 0 0 0.625rem;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__links a {
+  color: var(--text);
+}
+
+.lead {
+  font-size: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.read-aloud {
+  margin-bottom: 1rem;
+}
+
+.page__actions .read-aloud {
+  margin: 0;
+}
+
+.voice-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.voice-input .field__hint {
+  margin: 0;
+}
+
+/* "Voice input does not work in this browser" takes the Speak button's place and receives focus. */
+.voice-input .field__hint:focus-visible {
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.loading {
+  color: var(--text-muted);
+}
+
+/* ---------- buttons */
+
+/* Figma "Button": pills, MD 52 px / SM 44 px tall, Lexend SemiBold 18 / 16. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 3.25rem;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: var(--od-text-on-primary);
+}
+
+.button svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.button--secondary {
+  background: var(--bg);
+  color: var(--primary);
+}
+
+.button--secondary:hover {
+  background: var(--surface);
+  color: var(--primary-dark);
+}
+
+.button--small {
+  min-height: 2.75rem;
+  padding: 0.5625rem 1.125rem;
+  font-size: 1rem;
+  line-height: 1.375rem;
+}
+
+.button--small svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Text-style action ("Report this job", "Delete" in a table). Underlined so it reads as a link. */
+.button--link {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--link);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.375rem;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.button--link:hover {
+  background: none;
+  color: var(--primary-dark);
+  text-decoration-thickness: 2px;
+}
+
+/* Decorative orange arrow on call-to-action buttons; hidden in Quiet mode. */
+.button__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--pill);
+  background: var(--od-accent-orange);
+  color: var(--od-text-default);
+}
+
+.button__arrow svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ---------- utilities */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.page--narrow {
+  max-width: 36rem;
+}
+
+/* Text pages (Privacy, Accessibility statement, How trust scores work): about 70 characters wide. */
+.page--reading {
+  max-width: 48rem;
+}
+
+.page--reading h2 {
+  margin-top: 2rem;
+}
+
+.page--reading li {
+  margin-bottom: 0.5rem;
+}
+
+.form-footer {
+  margin-top: 1.5rem;
+}
+
+.privacy-notice {
+  margin: 0 0 1.25rem;
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font-size: 1.125rem;
+}
+
+.privacy-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.privacy-notice h3 {
+  font-size: 1.375rem;
+}
+
+.privacy-notice__law {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.privacy-notice h2 {
+  font-size: 1.125rem;
+}
+
+.privacy-notice p {
+  margin: 0;
+}
+
+/* ---------- form fields */
+
+.field {
+  margin: 0 0 1.25rem;
+}
+
+/* Figma "Form controls": label above (Atkinson Bold 17), hint (16, muted), then the control. */
+.field__label {
+  display: block;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.field__required {
+  font-weight: 700;
+  color: inherit;
+}
+
+.field__hint {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  line-height: 1.375rem;
+}
+
+.field__error {
+  margin: 0 0 0.5rem;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.field__input {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 3.625rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+}
+
+select.field__input {
+  padding-right: 2.75rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23241b3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1.25rem;
+}
+
+input[type='file'].field__input {
+  font-size: 1rem;
+}
+
+.field__textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.field--invalid .field__input {
+  border-color: var(--danger);
+  background-color: var(--danger-bg);
+}
+
+.field--invalid.fieldset {
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--danger);
+}
+
+.fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.fieldset:focus {
+  outline: none;
+}
+
+/* Figma "Checkbox" / "Radio": 24 px controls (6 px corners / round), checked = brand fill. */
+.checkbox,
+.radio {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0 0.75rem;
+  align-items: start;
+  margin: 0.625rem 0;
+}
+
+.checkbox input,
+.radio input {
+  appearance: none;
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.0625rem 0 0;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg) center / 1rem no-repeat;
+  cursor: pointer;
+}
+
+.radio input {
+  border-radius: 50%;
+}
+
+.checkbox input:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+
+.radio input:checked {
+  border-color: var(--primary);
+  background: radial-gradient(circle, var(--bg) 0 0.3rem, var(--primary) 0.34rem);
+}
+
+/* Windows high-contrast themes draw native controls; custom ones would vanish. */
+@media (forced-colors: active) {
+  .checkbox input,
+  .radio input {
+    appearance: auto;
+  }
+}
+
+.checkbox label,
+.radio label {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.625rem;
+  cursor: pointer;
+}
+
+.radio__hint {
+  grid-column: 2;
+}
+
+/* ---------- alerts and error summary */
+
+/* Figma "Alert": tone border and background, 24 px icon, bold title in the tone, body 18. */
+.alert {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 48rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid currentColor;
+  border-radius: 14px;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+}
+
+.alert__icon {
+  flex: none;
+  display: flex;
+  padding-top: 0.0625rem;
+}
+
+.alert__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.alert__body > :last-child {
+  margin-bottom: 0;
+}
+
+.alert__title {
+  font-weight: 700;
+  margin-bottom: 0.125rem;
+}
+
+.alert__reference {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.alert--info {
+  color: var(--od-text-accent);
+  border-color: var(--info);
+  background: var(--info-bg);
+}
+
+.alert--success {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.alert--warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.alert--error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.alert p {
+  color: var(--text);
+}
+
+.alert .alert__title {
+  color: inherit;
+}
+
+/* Figma "Alert / Error summary": danger alert with a warning icon, links to the fields. */
+.error-summary {
+  max-width: 48rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--danger);
+  border-radius: 14px;
+  background: var(--danger-bg);
+}
+
+.error-summary:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.error-summary__title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+  color: var(--danger);
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.error-summary__title svg {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.error-summary ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.error-summary li + li {
+  margin-top: 0.375rem;
+}
+
+.error-summary a {
+  font-weight: 700;
+}
+
+/* Messages above a narrow form are as wide as its card. */
+.page--narrow .alert,
+.page--narrow .error-summary {
+  max-width: 31.5rem;
+}
+
+/* ---------- badges and tags */
+
+/* Figma "Status badge": icon + word + colour, always (Atkinson Bold 15). */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.625rem;
+  border: 1.5px solid currentColor;
+  border-radius: var(--pill);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.badge--info svg {
+  width: 0.625rem; /* the small ring of the Figma Info badge */
+  height: 0.625rem;
+  margin: 0 0.1875rem;
+}
+
+.badge--success { color: var(--success); background: var(--success-bg); }
+.badge--danger { color: var(--danger); background: var(--danger-bg); }
+.badge--warning { color: var(--warning); background: var(--warning-bg); }
+.badge--info { color: var(--od-text-accent); border-color: var(--info); background: var(--od-surface-tint); }
+.badge--neutral,
+.badge--muted { color: var(--text); border-color: var(--text-muted); background: var(--surface); }
+
+/* Figma "Tag": accommodations on cards. */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 0.25rem 0.875rem;
+  border-radius: var(--pill);
+  background: var(--od-surface-tint);
+  line-height: 1.5rem;
+}
+
+/* Figma "Icon tile": 44 px (12 px corners) or 80 px (22 px corners), icon in text colour. */
+.icon-tile {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--od-accent-orange);
+  color: var(--od-text-default);
+}
+
+.icon-tile svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.icon-tile--lg {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 22px;
+}
+
+.icon-tile--lg svg {
+  width: 2.375rem;
+  height: 2.375rem;
+}
+
+.icon-tile--pink { background: var(--od-accent-pink); }
+.icon-tile--sky { background: var(--od-accent-sky); }
+.icon-tile--lilac { background: var(--od-accent-lilac); }
+
+.tag--more {
+  color: var(--text-muted);
+}
+
+.field--short .field__input {
+  max-width: 10rem;
+}
+
+/* Skills picker (decision 2026-10-21): text field + Add, chosen skills as tags with Remove. */
+.skills-picker__entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.skills-picker__entry .field__input {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.skills-picker__list {
+  margin-top: 0.75rem;
+}
+
+.tag--removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.tag__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.5rem -0.25rem -0.5rem 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tag__remove:hover {
+  background: var(--od-surface-current);
+}
+
+.tag__remove svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* ---------- cards, lists, tables */
+
+/* Cards: 2 px subtle border, 20 px corners. */
+.card,
+.job-card {
+  margin: 0 0 1rem;
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+/* Figma "Job card": icon tile, title link (Lexend 22), company + Verified, meta, tags, footer.
+   The card is a size container so it stacks by its own width – also at large text sizes, which
+   viewport media queries do not see (container-query rem follows the root font size). */
+.job-card {
+  container-type: inline-size;
+}
+
+.job-card__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.job-card__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.job-card__title {
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  margin: 0;
+}
+
+.job-card__title a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.job-card__title a:hover,
+.job-card__title a:focus-visible {
+  text-decoration: underline;
+}
+
+.job-card__employer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.job-card__meta,
+.job-card__footer {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.375rem;
+}
+
+.job-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+}
+
+.job-card__action {
+  flex: none;
+}
+
+/* Long badges ("Meets all 3 of your needs") wrap inside the card instead of sticking out (1.4.10). */
+.job-card__content .badge {
+  white-space: normal;
+}
+
+/* Narrow card (phones, 200 % text): the text gets the full width, icon tile above, action below. */
+@container (max-width: 30rem) {
+  .job-card__content {
+    flex-basis: 100%;
+  }
+}
+
+.result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.5rem;
+}
+
+.table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+
+.table th,
+.table td {
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Figma "Table": tinted header row, 1 px row lines, in a 16 px-corner box. */
+.table thead th {
+  background: var(--od-surface-tint);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.table th,
+.table td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1.5rem;
+  border: 1.5px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+.table-wrap .table {
+  margin: 0;
+}
+
+.table-wrap .table tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Figma "Empty state": a card with an icon tile, title, help text and an action. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 31rem;
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.empty-state .icon-tile {
+  margin-bottom: 0.25rem;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.empty-state .button {
+  margin-top: 0.5rem;
+}
+
+/* Figma "Pagination": text links with chevrons around "Page 1 of 3". */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.pagination .button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.pagination .button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.pagination .button[aria-disabled='true'] {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.pagination__status {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* ---------- trust score and match */
+
+.trust-card {
+  margin: 0 0 1.5rem;
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.trust-card--compact {
+  padding: 1rem 1.25rem;
+}
+
+.trust-card__title {
+  font-size: 1.375rem;
+}
+
+/* Figma "Number/Score": Lexend Bold 56. */
+.trust-card__value {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--od-text-accent);
+  margin-right: 0.25rem;
+}
+
+.trust-card--compact .trust-card__value {
+  display: inline;
+  font-size: 2.375rem;
+}
+
+.trust-card__score {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.trust-card__basis {
+  color: var(--text-muted);
+}
+
+.match {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.match__missing {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* Match score (decision 2026-10-21): reasons under the badge; each part with an icon and a hidden word. */
+.match__reasons {
+  margin: -0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+.recommended-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommended-list li {
+  margin: 0 0 1rem;
+}
+
+.match-parts {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.match-part {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  margin: 0 0 0.875rem;
+}
+
+.match-part__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  padding: 0.1875rem;
+}
+
+.match-part--yes .match-part__icon { color: var(--success); background: var(--success-bg); }
+.match-part--partly .match-part__icon { color: var(--warning); background: var(--warning-bg); }
+.match-part--no .match-part__icon { color: var(--danger); background: var(--danger-bg); }
+
+.match-part__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.match-part__text {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+}
+
+.trust-card__link {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ---------- pickers */
+
+.accommodation-picker__group {
+  min-width: 0; /* fieldsets default to min-content and overflow narrow screens */
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+}
+
+/* Figma: the group title sits inside its box (a floated legend leaves the border). */
+.accommodation-picker__group > legend,
+.fieldset--box > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  color: var(--od-text-accent);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.accommodation-picker__group > legend + *,
+.fieldset--box > legend + * {
+  clear: both;
+}
+
+.card--needs .accommodation-picker__group {
+  max-width: 36rem;
+}
+
+.accommodation-picker__desc,
+.accommodation-picker__note {
+  margin-left: 2.25rem;
+}
+
+.accommodation-picker__item .checkbox {
+  margin-bottom: 0.125rem;
+}
+
+.location-picker {
+  display: grid;
+  gap: 0 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+}
+
+/* ---------- dialog */
+
+.dialog {
+  /* Phones and large text: px/vw limits, so 200 % text does not eat the width (the browser's own
+     max-width is 2em short of the screen). */
+  width: min(36rem, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  padding: min(2rem, 6vw);
+  border: 2px solid var(--primary-dark);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.dialog::backdrop {
+  background: rgb(36 27 58 / 0.55);
+}
+
+.dialog__title {
+  font-size: 1.375rem;
+}
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.button--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.button--danger:hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+
+/* ---------- notifications link: unread count (Figma "Nav item" Count) */
+
+/* Flex, so the space before the badge (part of the link's name, WCAG 2.5.3) is not underlined. */
+.notifications-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.count-badge {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--pill);
+  background: var(--danger);
+  color: var(--od-text-on-primary);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+/* ---------- search and details */
+
+.search-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .search-layout {
+    /* minmax: at 200 % text the cards wrap instead of widening the page (1.4.4) */
+    grid-template-columns: 20rem minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.search-filters {
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.search-filters__title {
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+}
+
+.search-filters .field__input {
+  max-width: none;
+}
+
+.search-filters__hint {
+  margin: 0.75rem 0 0;
+}
+
+/* Figma "Accordion: accommodations": a bordered box with a chevron that turns when open. */
+.filter-details {
+  margin: 0 0 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.filter-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.filter-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-details summary::after {
+  content: '';
+  flex: none;
+  width: 1.375rem;
+  height: 1.375rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23241b3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.filter-details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.filter-details > :not(summary) {
+  margin: 0 1rem 1rem;
+}
+
+.result-count {
+  font-size: 1.125rem;
+  font-weight: 700;
+  min-height: 1.5rem;
+}
+
+/* Muted line under a page heading (Figma page headings). */
+.page__subtitle {
+  margin-top: -0.25rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+/* Figma "Details list": muted label column (180 px), bold value. Stacks on narrow screens. */
+.details-list {
+  display: grid;
+  grid-template-columns: minmax(0, 11.25rem) minmax(0, 1fr);
+  gap: 0.625rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.details-list dt {
+  color: var(--text-muted);
+  line-height: 1.5rem;
+}
+
+.details-list dd {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.625rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 30rem) {
+  .details-list {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .details-list dd {
+    margin-bottom: 0.625rem;
+  }
+}
+
+.prose {
+  white-space: pre-line;
+  max-width: 70ch;
+  margin: 0 0 1.5rem;
+}
+
+/* Figma "Accordion: snapshot" (closed: one 16 px-corner row) and "Snapshot (open)". */
+.snapshot {
+  font-size: 1.125rem;
+}
+
+.snapshot:not(.snapshot--open) {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius);
+}
+
+.snapshot__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.snapshot__header h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.snapshot:not(.snapshot--open) .snapshot__header h2 {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.disclosure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.disclosure-button:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+.disclosure-button svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.snapshot__body {
+  margin-top: 0.875rem;
+}
+
+.snapshot__body p,
+.snapshot__body ul {
+  margin: 0 0 0.875rem;
+}
+
+.snapshot h3 {
+  margin: 0 0 0.875rem;
+  color: var(--od-text-accent);
+  font-size: 1.125rem;
+}
+
+.snapshot__group {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.snapshot__hint,
+.snapshot__disclaimer {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.snapshot__places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.snapshot__place {
+  flex: 0 1 11.25rem;
+  padding: 1rem;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.snapshot__place--wide {
+  flex: 0 1 35rem;
+}
+
+.snapshot__place h4 {
+  margin: 0 0 0.375rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.snapshot .snapshot__place p,
+.snapshot .snapshot__place ul {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.snapshot__place p {
+  color: var(--text-muted);
+}
+
+.snapshot__place ul {
+  padding: 0;
+  list-style: none;
+}
+
+.snapshot__disclaimer {
+  margin: 0;
+}
+
+
+.employer-logo {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 30rem) {
+  .details-list {
+    grid-template-columns: 1fr;
+  }
+
+  .details-list dd {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* ---------- dashboards and status lines */
+
+/* Figma "Stat tile": icon tile, number (Lexend Bold 38), label, "View"; the whole tile is the link. */
+.stats__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.stats__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+  padding: 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.stats__item:has(a:hover) {
+  border-color: var(--primary);
+  background: var(--surface);
+}
+
+.stats__item .icon-tile {
+  margin-bottom: 0.375rem;
+}
+
+.stats__value {
+  font-family: var(--font-heading);
+  font-size: 2.375rem;
+  font-weight: 700;
+  line-height: 2.75rem;
+  color: var(--od-text-accent);
+}
+
+.stats__label {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.stats__view {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* The link covers the tile, so the tile is one click target with one accessible name. */
+.stats__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stats__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.stats__link:focus-visible {
+  outline: none;
+}
+
+.stats__link.stats__view {
+  color: var(--primary);
+}
+
+.stats__item:has(.stats__link:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin: 0 0 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--info);
+  border-radius: var(--radius);
+  background: var(--info-bg);
+}
+
+.callout p {
+  margin: 0;
+}
+
+.save-status {
+  min-height: 1.5rem;
+  margin: 0.75rem 0 0;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.filter-inline {
+  max-width: 20rem;
+}
+
+.card > h2 {
+  font-size: 1.375rem;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+/* On a table cell, flex would take the cell out of the row (its line would not line up): keep it a
+   cell and space the actions with margins instead. */
+td.table-actions {
+  display: table-cell;
+}
+
+td.table-actions > * {
+  margin: 0.25rem 0.75rem 0.25rem 0;
+  vertical-align: middle;
+}
+
+.needs-list__ok {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.needs-list__missing {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* ---------- admin */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-bar .field {
+  flex: 1 1 14rem;
+}
+
+.filter-bar .button {
+  margin-bottom: 1.25rem;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 1rem;
+  margin-top: 1rem;
+}
+
+.inline-form .field {
+  flex: 1 1 16rem;
+}
+
+.inline-form .button {
+  margin-bottom: 1.25rem;
+}
+
+.admin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.quote {
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--divider);
+  background: var(--surface);
+  white-space: pre-line;
+}
+
+/* ---------- notifications */
+
+.notifications-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.notification-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Figma "Notifications": one card each; unread ones tinted with a strong border and "New". */
+.notification-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.notification-list .notification--unread {
+  border-color: var(--primary-dark);
+  background: var(--surface);
+}
+
+.notification__main {
+  flex: 1 1 24rem;
+  min-width: 0;
+}
+
+.notification__text {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+}
+
+.notification__text .badge {
+  margin-right: 0.375rem;
+  vertical-align: 0.125rem;
+}
+
+.notification__date {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.notification__action {
+  flex: none;
+}
+
+.notifications-header {
+  margin-bottom: 1rem;
+}
+
+.notifications-header__count {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ---------- M13 display settings (data attributes on <html>, see lib/displayPrefs.js) */
+
+:root[data-text-size='125'] {
+  font-size: 125%;
+}
+
+:root[data-text-size='150'] {
+  font-size: 150%;
+}
+
+/* Figma "High contrast" mode of the same variables. */
+:root[data-contrast='high'] {
+  --od-text-default: #000000;
+  --od-text-muted: #1e1b2e;
+  --od-text-accent: #2a1850;
+  --od-brand-primary: #3b2466;
+  --od-brand-primary-dark: #2a1850;
+  --od-surface-subtle: #ffffff;
+  --od-border-subtle: #241b3a;
+  --od-border-input: #000000;
+  --od-border-focus: #000000;
+  --od-status-danger: #8a1209;
+  --od-status-danger-bg: #ffffff;
+  --od-status-success: #0b4a1d;
+  --od-status-success-bg: #ffffff;
+  --od-status-warning: #5a3100;
+  --od-status-warning-bg: #ffffff;
+  --od-status-info: #2a1850;
+  --od-status-info-bg: #ffffff;
+}
+
+:root[data-contrast='high'] :focus-visible {
+  outline-width: 4px;
+}
+
+:root[data-contrast='high'] a {
+  text-decoration-thickness: 2px;
+}
+
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after,
+:root[data-quiet='on'] *,
+:root[data-quiet='on'] *::before,
+:root[data-quiet='on'] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Quiet mode (Figma "Quiet mode · Home"): one calm accent instead of orange / pink / sky, and no
+   decorations (arrows, sparkles). Browser-only setting from the utility bar. */
+:root[data-quiet='on'] {
+  --od-accent-orange: #d4c4ef;
+  --od-accent-pink: #d4c4ef;
+  --od-accent-sky: #d4c4ef;
+}
+
+:root[data-quiet='on'] .button__arrow,
+:root[data-quiet='on'] .decoration {
+  display: none;
+}
+
+/* ---------- Figma "3.1 Home" */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  text-align: center;
+}
+
+.home > h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 1.25rem + 3.5vw, 3.75rem); /* Display: Lexend Bold 60/68 */
+  line-height: 1.13;
+  letter-spacing: -0.06rem;
+}
+
+.home__line {
+  display: block;
+}
+
+.home__line + .home__line {
+  margin-top: 0.75rem;
+}
+
+.home__sparkle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 0.87em;
+  margin-left: 0.27em;
+  border-radius: var(--pill);
+  background: var(--od-accent-orange);
+  vertical-align: middle;
+}
+
+.home__sparkle svg {
+  width: 0.47em;
+  height: 0.47em;
+  fill: #ffffff; /* white sparkle, as in the design (decorative) */
+  stroke: #ffffff;
+}
+
+.home__highlight {
+  padding: 0 0.3em;
+  border-radius: var(--radius);
+  background: var(--od-accent-orange);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.home__lead {
+  margin: -1rem auto 0;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+  max-width: 48rem;
+}
+
+.home__actions {
+  justify-content: center;
+  margin: -1rem 0 0;
+}
+
+.home__support {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem 4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home__support li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.home__how {
+  width: 100%;
+}
+
+.home__how-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0 0 1.5rem;
+  color: var(--od-text-accent);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.home__how-title svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.home__steps {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+@media (min-width: 56rem) {
+  .home__steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.home__step {
+  padding: 1.5rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.home__step h3 {
+  margin-bottom: 0.625rem;
+  font-size: 1.375rem;
+}
+
+.home__step p {
+  margin-bottom: 0.625rem;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.home__step-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.home__step-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--pill);
+  background: var(--od-accent-orange);
+  color: var(--od-text-default);
+}
+
+.home__step-arrow svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.home__step--featured {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.home__step--featured h3,
+.home__step--featured p,
+.home__step--featured .home__step-link {
+  color: var(--od-text-on-primary);
+}
+
+/* Quiet mode (Figma "Quiet mode · Home"): no orange highlight or filled card. */
+:root[data-quiet='on'] .home__highlight {
+  background: var(--od-surface-tint);
+}
+
+:root[data-quiet='on'] .home__step--featured {
+  border-color: var(--od-border-focus);
+  background: var(--surface);
+}
+
+:root[data-quiet='on'] .home__step--featured h3,
+:root[data-quiet='on'] .home__step--featured p {
+  color: var(--text);
+}
+
+:root[data-quiet='on'] .home__step--featured .home__step-link {
+  color: var(--primary);
+}
+
+:root[data-quiet='on'] .home__step-arrow {
+  display: none;
+}
+
+/* ---------- Figma "3.3 Job details" */
+
+.back-link {
+  margin: 0 0 1.5rem;
+}
+
+.back-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 700;
+}
+
+.back-link svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Heading with a button to its right (Read aloud, Post a new job). */
+.page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page__heading {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.page__heading h1 {
+  margin-bottom: 0.5rem;
+}
+
+.page__heading > :last-child {
+  margin-bottom: 0;
+}
+
+.job-employer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.job-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* wide tables scroll in their own box instead of widening the page */
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .job-layout {
+    grid-template-columns: minmax(0, 1fr) 23.75rem;
+    align-items: start;
+  }
+}
+
+.job-layout__main,
+.job-layout__side,
+.job-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.job-layout .card,
+.job-layout .trust-card,
+.job-layout .match,
+.job-actions-group .alert {
+  margin: 0;
+}
+
+.job-layout .card > h2 {
+  margin-bottom: 1rem;
+}
+
+.job-layout .details-list,
+.job-layout .prose {
+  margin: 0;
+}
+
+.job-layout .prose {
+  font-size: 1.125rem;
+}
+
+.job-notes {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+}
+
+.job-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-layout .job-actions > h2,
+.job-actions > p {
+  margin: 0;
+}
+
+.job-actions__lead {
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.job-actions .field {
+  margin-bottom: 1rem;
+}
+
+.job-actions__more {
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.button--block {
+  width: 100%;
+}
+
+.button--link:disabled {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: default;
+  opacity: 1;
+}
+
+.focus-target:focus {
+  outline: none;
+}
+
+.focus-target:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 14px;
+}
+
+/* ---------- Figma "3.4 Employer page" */
+
+.page__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.page__title-row h1 {
+  margin: 0;
+}
+
+.employer-intro {
+  margin-bottom: 1.5rem;
+}
+
+.employer-intro .employer-logo {
+  margin-bottom: 0.75rem;
+}
+
+.employer-intro__meta {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.employer-intro .prose {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.employer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* wide tables scroll in their own box instead of widening the page */
+  gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .employer-layout {
+    grid-template-columns: minmax(0, 15fr) minmax(0, 16fr);
+    align-items: start;
+  }
+}
+
+.employer-layout .trust-card {
+  margin: 0;
+}
+
+.employer-layout h2 {
+  margin-bottom: 1rem;
+}
+
+/* Breakdown table inside the trust card: white box, tinted header row. */
+.trust-card .table-wrap {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border-width: 1.5px;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.trust-card .table thead th {
+  border-bottom: 0;
+  background: var(--od-surface-tint);
+  font-size: 1.0625rem;
+}
+
+.trust-card .table th,
+.trust-card .table td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.trust-card .table tbody th {
+  font-weight: 400;
+}
+
+@media (max-width: 30rem) {
+  .trust-card {
+    padding: 1.25rem 1rem;
+  }
+
+  .trust-card .table th,
+  .trust-card .table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* ---------- Figma "3.5 Log in": the form in a card, Show password next to Forgot your password? */
+
+.form-card {
+  max-width: 31.5rem;
+  padding: 1.5rem 1.625rem;
+}
+
+.form-card .field__input {
+  max-width: none;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.form-row .field {
+  margin: 0;
+}
+
+.form-row .checkbox {
+  margin: 0;
+}
+
+.form-row__link {
+  font-weight: 700;
+}
+
+.form-card__footer {
+  margin: 1rem 0 0;
+}
+
+/* ---------- Figma "3.6 Create account": step label, progress bars, role cards */
+
+.register .field__input {
+  max-width: none;
+}
+
+.wizard__step {
+  margin: 0 0 0.5rem;
+  color: var(--od-text-accent);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.wizard__step:focus {
+  outline: none; /* focused programmatically when the step changes */
+}
+
+.wizard__progress {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.wizard__bar {
+  height: 0.375rem;
+  border-radius: var(--pill);
+  background: var(--od-surface-current);
+}
+
+.wizard__bar--done {
+  background: var(--primary);
+}
+
+.wizard__actions {
+  margin-top: 1.5rem;
+}
+
+.radio-cards > .field__label {
+  margin-bottom: 1rem;
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+/* Each option is a card; the label's ::after makes the whole card clickable. */
+.radio-cards .radio {
+  position: relative;
+  margin: 0 0 0.875rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.radio-cards .radio:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--od-surface-tint);
+}
+
+.radio-cards .radio label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.radio-cards .radio input {
+  position: relative;
+  z-index: 1;
+}
+
+.radio-cards .radio__hint {
+  margin: 0.25rem 0 0;
+}
+
+/* ---------- Figma "4.1 Dashboard" (job seeker): tiles on the left, three cards on the right */
+
+.muted {
+  color: var(--text-muted);
+}
+
+.plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plain-list li + li {
+  margin-top: 0.5rem;
+}
+
+.card--tint {
+  background: var(--surface);
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem 2rem;
+}
+
+@media (min-width: 64rem) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 660fr) minmax(0, 572fr);
+    align-items: start;
+  }
+}
+
+.dashboard-layout .stats h2,
+.dashboard-side h2 {
+  margin-bottom: 1rem;
+}
+
+.dashboard-layout .stats__list {
+  margin: 0;
+}
+
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-side .card {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.dashboard-side .card > :last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-side .tag-list {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dashboard-side__link {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dashboard-side__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dashboard-side__title {
+  margin-bottom: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* ---------- Figma "Tabs" (Profile and needs): pill tabs above one card */
+
+.tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.625rem;
+  margin-bottom: 1.25rem;
+}
+
+.tabs__tab {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.125rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--bg);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabs__tab:hover {
+  background: var(--surface);
+}
+
+.tabs__tab[aria-selected='true'] {
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+}
+
+.tabs__panel > .card {
+  margin: 0;
+}
+
+.card--form {
+  max-width: 47.5rem;
+}
+
+.card--form .field__input {
+  max-width: none;
+}
+
+.profile-intro {
+  color: var(--text-muted);
+}
+
+.fieldset--box {
+  padding: 1rem 1rem 0.25rem;
+  min-width: 0;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+
+/* File input: a bordered box with a pill "Choose file" button. */
+input[type='file'].field__input {
+  padding: 0.375rem;
+}
+
+input[type='file']::file-selector-button {
+  min-height: 2.5rem;
+  margin-right: 0.75rem;
+  padding: 0.375rem 1rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--pill);
+  background: var(--bg);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fieldset--box > legend {
+  color: var(--text);
+}
+
+.job-card .match {
+  margin: 0.125rem 0;
+}
+
+/* ---------- Figma "4.4 My applications": "Show" filter with the count beside it */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-bar > p {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.field--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin: 0;
+}
+
+.field--inline .field__label {
+  margin: 0;
+}
+
+.field--inline .field__input {
+  width: auto;
+  min-width: 13rem;
+}
+
+.table tbody th a {
+  font-weight: 700;
+}
+
+.filter-bar > .field {
+  flex: 0 1 auto;
+  width: auto;
+}
+
+/* ---------- Figma "4.5 Application" (job seeker): timeline, details card, actions */
+
+.button--danger-outline {
+  border-color: var(--danger);
+  background: var(--bg);
+  color: var(--danger);
+}
+
+.button--danger-outline:hover {
+  border-color: var(--danger-hover);
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+}
+
+.application-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 47.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.application-page__body > .alert {
+  margin: 0;
+}
+
+.application-page__body > .card {
+  margin: 0;
+}
+
+.application-page__actions {
+  margin-bottom: 1rem;
+}
+
+.timeline-card h2 {
+  margin-bottom: 1rem;
+}
+
+/* Three steps in a row joined by short lines; stacked on narrow screens. */
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.timeline__step + .timeline__step::before {
+  content: '';
+  position: absolute;
+  top: 0.6875rem;
+  left: -2rem; /* centred in the 1rem gap between this step and the one before */
+  width: 3rem;
+  height: 3px;
+  border-radius: var(--pill);
+  background: var(--primary);
+}
+
+.timeline__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+}
+
+.timeline__mark svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  stroke-width: 3;
+}
+
+.timeline__step--current .timeline__mark,
+.timeline__step--upcoming .timeline__mark,
+.timeline__step--skipped .timeline__mark {
+  border: 2px dashed var(--border);
+  background: var(--bg);
+}
+
+.timeline__step--stopped .timeline__mark {
+  background: var(--text-muted);
+}
+
+.timeline__label {
+  font-weight: 700;
+}
+
+.timeline__detail {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 30rem) {
+  .timeline {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .timeline__step {
+    flex-direction: row;
+    flex-wrap: wrap;
+    text-align: left;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .timeline__mark {
+    margin: 0;
+  }
+
+  .timeline__step + .timeline__step::before {
+    display: none;
+  }
+}
+
+.application-page .alert {
+  max-width: 36rem;
+}
+
+/* ---------- Figma "4.6 Rate your accommodations": one card per accommodation, options in a row */
+
+.narrow-form {
+  max-width: 36rem;
+}
+
+.narrow-form .field__input {
+  max-width: none;
+}
+
+.fieldset--card {
+  min-width: 0;
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1.125rem 0.625rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+}
+
+.fieldset--card > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.fieldset--card > legend + * {
+  clear: both;
+}
+
+.radio-group--inline .radio {
+  display: inline-grid;
+  margin: 0.375rem 1.5rem 0.375rem 0;
+}
+
+/* ---------- Figma "4.7 Saved jobs": removal message with Undo beside it */
+
+.undo-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.undo-bar:not(:has(.alert)) {
+  margin: 0;
+}
+
+.undo-bar__message {
+  flex: 1 1 24rem;
+}
+
+.undo-bar .alert {
+  max-width: none;
+  margin: 0;
+}
+
+/* ---------- Figma "5.1 Dashboard" (employer) */
+
+@media (min-width: 64rem) {
+  .dashboard-layout--employer {
+    grid-template-columns: minmax(0, 560fr) minmax(0, 672fr);
+  }
+}
+
+.stats--compact .stats__list {
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+}
+
+.dashboard-side .trust-card {
+  margin: 0;
+}
+
+.dashboard-side .trust-card > :last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-notice {
+  max-width: none;
+}
+
+.callout__icon {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--od-text-accent);
+}
+
+.callout > p {
+  flex: 1 1 20rem;
+  max-width: none;
+}
+
+/* ---------- Figma "5.2 Company profile": two-column form, optional details folded away */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.form-grid .field__input,
+.form-details .field__input {
+  max-width: none;
+}
+
+.form-details {
+  margin-bottom: 1.5rem;
+}
+
+/* ---------- Figma "5.3 Job postings": Post a new job at the end of the filter bar, row actions */
+
+.filter-bar__end {
+  margin-left: auto;
+}
+
+.table-actions__link {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.table-actions__link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Figma "5.4 Post a new job" (4 steps) */
+
+.posting-wizard {
+  max-width: 36rem;
+}
+
+.posting-wizard--wide {
+  max-width: none;
+}
+
+.posting-wizard .field__input {
+  max-width: none;
+}
+
+@media (min-width: 56rem) {
+  .accommodation-picker--columns .accommodation-picker__groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.25rem;
+    align-items: start;
+  }
+}
+
+.review-card {
+  margin: 0 0 1.25rem;
+}
+
+.review-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.review-card__header h3 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+
+.review-card .details-list {
+  margin: 0;
+}
+
+.review-card .prose {
+  margin: 0;
+}
+
+.review-card dd.prose {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.posting-wizard--wide .wizard__progress {
+  max-width: 36rem;
+}
+
+.posting-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+/* ---------- Figma "5.6 Applicant" (employer): needs as badges, cards */
+
+.applicant-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+}
+
+.application-page__body .card > h2 {
+  margin-bottom: 0.875rem;
+}
+
+.application-page__body .card > :last-child {
+  margin-bottom: 0;
+}
+
+.needs-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.needs-badges .badge {
+  white-space: normal;
+}
+
+.employer-layout .dashboard-side .alert {
+  max-width: none;
+  margin: 0;
+}
+
+/* ---------- Figma "6.1 Administration": every group of tiles fills its row */
+
+.stats--fit .stats__list {
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+}
+
+.admin-dashboard .stats h2 {
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard .stats__list {
+  margin-bottom: 1.75rem;
+}
+
+/* Filter row with labels above the fields (Figma "6.2 Employers"): the button lines up with the fields. */
+.filter-bar--fields {
+  align-items: flex-end;
+}
+
+.filter-bar--fields .field {
+  margin: 0;
+}
+
+.filter-bar--fields .field__input {
+  width: auto;
+  min-width: 13rem;
+}
+
+.result-count > p {
+  margin: 0 0 1rem;
+}
+
+/* ---------- Figma "6.3 Employer verification": company left, registry and decision right */
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .review-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.review-layout .card {
+  margin: 0;
+}
+
+.review-layout .card > h2 {
+  margin-bottom: 1rem;
+}
+
+.review-layout .details-list {
+  margin: 0;
+}
+
+.review-layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.review-layout__side > p,
+.review-layout__side .alert {
+  max-width: none;
+  margin: 0;
+}
+
+.registry-status {
+  margin-bottom: 0.875rem;
+}
+
+/* ---------- Figma "6.4 Postings" (admin approval queue) */
+
+.review-posting .job-card__meta {
+  margin-bottom: 0.875rem;
+}
+
+.review-posting .filter-details {
+  margin-bottom: 1rem;
+}
+
+.review-posting .filter-details .prose {
+  max-width: none;
+}
+
+.filter-bar--fields > .button {
+  margin-bottom: 0;
+}
+
+/* ---------- Figma "6.5 Users" / "6.6 Reports" */
+
+.report-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+}
+
+.quote {
+  border-left-width: 3px;
+  background: none;
+}
+
+.feedback-card__title {
+  margin-bottom: 0.375rem;
+  font-size: 1.125rem;
+}
+
+.review-posting .tag-list {
+  margin: 0.5rem 0;
+}
+
+/* ---------- Figma "6.8 Master data" */
+
+.master-card {
+  margin-bottom: 1.5rem;
+}
+
+.master-card > h2 {
+  margin-bottom: 1rem;
+}
+
+.master-card .table-wrap {
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Figma "7.3 Account": display settings in a grid of three */
+
+.display-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .display-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.display-grid .fieldset {
+  margin-bottom: 1rem;
+}
+
+.account-result .alert {
+  margin: 1rem 0 0;
+}
+
+.email-example {
+  margin: 1.5rem 0 0;
+}
+
+.email-example figcaption {
+  margin-bottom: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.email-example__body {
+  padding: 1.25rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.email-example__subject {
+  font-weight: 700;
+}
+
+.email-example__button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: var(--pill);
+  background: var(--primary);
+  color: var(--od-text-on-primary);
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.email-example__footer {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+/* ---------- Onboarding (decision 2026-10-14): welcome tour dialog and the dashboard's "Get started" list */
+
+.tour .icon-tile {
+  margin-bottom: 1rem;
+}
+
+.tour__title {
+  font-size: 1.25rem;
+}
+
+.tour__title:focus {
+  outline: none; /* focused programmatically when the step changes */
+}
+
+.tour__count {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--od-text-accent);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tour__progress {
+  margin-bottom: 1.25rem;
+}
+
+.tour__tip {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.tour__skip {
+  align-self: center;
+}
+
+.get-started {
+  container-type: inline-size;
+  margin-bottom: 1.5rem;
+}
+
+.get-started__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 1rem;
+}
+
+.get-started__header h2 {
+  margin-bottom: 0.5rem;
+}
+
+.get-started__count {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.get-started__progress {
+  margin-bottom: 1rem;
+}
+
+.get-started__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Mark · text · link in one row; the link moves under the text when the card is narrow. */
+.get-started__step {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem 1rem;
+  padding: 0.875rem 0;
+  border-top: 2px solid var(--divider);
+}
+
+.get-started__step:first-child {
+  border-top: 0;
+}
+
+.get-started__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--od-text-on-primary);
+}
+
+.get-started__step--done .get-started__mark {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.get-started__mark svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 3;
+}
+
+.get-started__text {
+  overflow-wrap: break-word; /* long words at 200 % text on phones */
+}
+
+.get-started__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.get-started__step--done .get-started__title {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.get-started__hint {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+}
+
+/* Narrow card (phones, large text): the link gets its own row across the whole card. */
+@container (max-width: 34rem) {
+  .get-started__step {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+  }
+
+  .get-started__link {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+.get-started__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--divider);
+}
+
+.get-started__hidden {
+  max-width: none;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+}

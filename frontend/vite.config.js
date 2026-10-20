@@ -1,9 +1,11 @@
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  // Tailwind CSS 4 for the IPT look (Decision 2026-10-21b); src/index.css imports it.
+  plugins: [react(), tailwindcss()],
   server: { port: 5173, strictPort: true }, // must match the gateway's CORS_ALLOWED_ORIGIN
   test: {
     environment: 'jsdom',

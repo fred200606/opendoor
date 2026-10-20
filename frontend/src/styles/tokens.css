@@ -1,0 +1,91 @@
+/*
+ * Design tokens of the IPT look (Decision 2026-10-21b), taken from Francis Ruzgal's opendoor-ipt
+ * (same Figma file "OpenDoor — SIA UI"; brand/primary → --od-brand-primary). Text pairs meet
+ * 4.5:1 and borders 3:1 in both themes. Our display settings are attributes on <html>
+ * (lib/displayPrefs.js): data-text-size="100|125|150", data-contrast="normal|high",
+ * data-motion="normal|reduce", data-quiet="off|on", data-menu="full|compact".
+ */
+:root {
+  --od-text-default: #241b3a;
+  --od-text-muted: #4e4568;
+  --od-text-on-primary: #ffffff;
+  --od-text-accent: #47306f;
+
+  --od-brand-primary: #6a4c9c;
+  --od-brand-primary-dark: #47306f;
+
+  --od-surface-page: #ffffff;
+  /* The page behind the white cards (UI_FEEDBACK_PLAN §3.1): a quiet violet-grey. */
+  --od-surface-canvas: #f6f5f9;
+  --od-surface-subtle: #f5f1fc;
+  --od-surface-tint: #ebe3f7;
+  --od-surface-current: #dccff1;
+
+  --od-border-subtle: #ddd5ee;
+  --od-border-input: #6f5f94;
+  --od-border-focus: #241b3a;
+
+  /* Decoration only (icon tiles, the arrow pill, sparkles): never the only carrier of meaning. */
+  --od-accent-orange: #fdba5a;
+  --od-accent-pink: #f8b5d1;
+  --od-accent-sky: #9adff0;
+  --od-accent-lilac: #d4c4ef;
+  /* Yellow, to warm up the violet (2026-10-17): decoration and backgrounds only, never text. */
+  --od-accent-yellow: #ffd23f;
+  --od-accent-yellow-soft: #fff6d2;
+
+  /* Chart series (UI_FEEDBACK_WAVE_B_PLAN B3): OpenDoor's violet, sky, orange and pink, deepened
+     until they pass the dataviz validator (lightness band, chroma, colour-blind separation, 3:1). */
+  --od-chart-1: #6a4c9c;
+  --od-chart-2: #0f8fb8;
+  --od-chart-3: #c9772b;
+  --od-chart-4: #c2477a;
+
+  --od-status-danger: #b42318;
+  --od-status-danger-bg: #fef1f1;
+  --od-status-success: #116329;
+  --od-status-success-bg: #eef8f0;
+  --od-status-warning: #7a4300;
+  --od-status-warning-bg: #fff6e1;
+  --od-status-info: #47306f;
+  --od-status-info-bg: #f5f1fc;
+
+}
+
+/* High contrast (Account → Display): the same light theme, darker. */
+:root[data-contrast='high'] {
+  --od-text-default: #000000;
+  --od-text-muted: #1e1b2e;
+  --od-text-accent: #2a1850;
+  --od-brand-primary: #3b2466;
+  --od-brand-primary-dark: #2a1850;
+  --od-surface-subtle: #ffffff;
+  --od-surface-canvas: #ffffff;
+  --od-surface-tint: #ffffff;
+  --od-surface-current: #d3c1f3;
+  --od-accent-yellow-soft: #ffffff;
+  --od-border-subtle: #241b3a;
+  --od-border-input: #000000;
+  --od-border-focus: #000000;
+  --od-status-danger: #8a1209;
+  --od-status-danger-bg: #ffffff;
+  --od-status-success: #0b4a1d;
+  --od-status-success-bg: #ffffff;
+  --od-status-warning: #5a3100;
+  --od-status-warning-bg: #ffffff;
+  --od-status-info: #2a1850;
+  --od-status-info-bg: #ffffff;
+}
+
+/* Printing (My résumé): black on white in every theme, since browsers leave out backgrounds. */
+@media print {
+  :root,
+  :root[data-contrast='high'] {
+    --od-surface-page: #ffffff;
+    --od-surface-subtle: #ffffff;
+    --od-surface-canvas: #ffffff;
+    --od-text-default: #000000;
+    --od-text-muted: #000000;
+    --od-border-subtle: #000000;
+  }
+}
