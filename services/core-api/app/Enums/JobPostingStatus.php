@@ -2,11 +2,13 @@
 
 namespace App\Enums;
 
-/** Posting lifecycle: draft → pending_approval → open → closed (business-rules.md). */
+/**
+ * Posting lifecycle: draft → open → closed (business-rules.md). A verified employer's submitted
+ * posting opens at once; there is no admin approval step (Decision 2026-10-21).
+ */
 enum JobPostingStatus: string
 {
     case Draft = 'draft';
-    case PendingApproval = 'pending_approval';
     case Open = 'open';
     case Closed = 'closed';
 

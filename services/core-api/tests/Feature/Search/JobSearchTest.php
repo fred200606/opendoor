@@ -63,7 +63,7 @@ class JobSearchTest extends TestCase
         $this->posting('Older', daysAgo: 3);
         $this->posting('Newer', daysAgo: 1);
         JobPosting::factory()->create(['title' => 'Draft']);
-        JobPosting::factory()->pending()->create(['title' => 'Pending']);
+        JobPosting::factory()->open()->unverifiedEmployer()->create(['title' => 'Unverified company']);
         JobPosting::factory()->closed()->create(['title' => 'Closed']);
         $this->posting('Deleted')->delete();
 
@@ -100,7 +100,7 @@ class JobSearchTest extends TestCase
     {
         $this->posting('Data Encoder');
         $this->posting('Clerk', attributes: ['description' => 'Encode payroll DATA every week.']);
-        $this->posting('Tester', attributes: ['employer_id' => Employer::factory()->create(['company_name' => 'Datos Inc.'])->id]);
+        $this->posting('Tester', attributes: ['employer_id' => Employer::factory()->verified()->create(['company_name' => 'Datos Inc.'])->id]);
         $this->posting('Cashier');
 
         $this->assertEqualsCanonicalizing(['Data Encoder', 'Clerk'], $this->titles($this->getJson('/api/job-postings?q=data')));

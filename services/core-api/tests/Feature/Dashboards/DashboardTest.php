@@ -25,7 +25,7 @@ class DashboardTest extends TestCase
 
     private const NO_APPLICATIONS = ['pending' => 0, 'reviewed' => 0, 'hired' => 0, 'rejected' => 0, 'withdrawn' => 0];
 
-    private const NO_POSTINGS = ['draft' => 0, 'pending_approval' => 0, 'open' => 0, 'closed' => 0];
+    private const NO_POSTINGS = ['draft' => 0, 'open' => 0, 'closed' => 0];
 
     protected function tearDown(): void
     {
@@ -43,7 +43,7 @@ class DashboardTest extends TestCase
         JobPosting::factory()->open()->withAccommodations($ramp, $interpreter)->create();
         JobPosting::factory()->open()->withAccommodations($ramp, $interpreter, $captions)->create();
         JobPosting::factory()->open()->withAccommodations($ramp)->create();
-        JobPosting::factory()->pending()->withAccommodations($ramp, $interpreter)->create();
+        JobPosting::factory()->open()->unverifiedEmployer()->withAccommodations($ramp, $interpreter)->create();
         JobPosting::factory()->open()->withAccommodations($ramp, $interpreter)->create()->delete();
 
         $mine = Application::factory()->for($profile);
@@ -99,7 +99,6 @@ class DashboardTest extends TestCase
         $employer = Employer::factory()->verified()->withTrustScore(86, 5)->create();
         $own = JobPosting::factory()->for($employer);
         $own->create();
-        $own->pending()->create();
         $open = $own->open()->create();
         $own->open()->create();
         $own->closed()->create();
@@ -116,7 +115,7 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertExactJson([
                 'company' => ['exists' => true, 'verified' => true, 'verification_rejected_reason' => null],
-                'postings' => ['draft' => 1, 'pending_approval' => 1, 'open' => 2, 'closed' => 1],
+                'postings' => ['draft' => 1, 'open' => 2, 'closed' => 1],
                 // Applicants include those of the deleted posting (as in the applicants list).
                 'applications' => ['pending' => 1, 'reviewed' => 1, 'hired' => 1, 'rejected' => 0, 'withdrawn' => 0],
                 'trust_score' => ['published' => true, 'score' => 86, 'based_on' => 5],
@@ -153,7 +152,6 @@ class DashboardTest extends TestCase
 
         $own = JobPosting::factory()->for($employer);
         $own->create();
-        $own->pending()->create();
         $open = $own->open()->create();
         $closed = $own->closed()->create();
         $deleted = $own->open()->create();
@@ -178,7 +176,7 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertExactJson([
                 'users' => ['candidate' => 3, 'employer' => 6, 'admin' => 1, 'suspended' => 1],
-                'postings' => ['draft' => 1, 'pending_approval' => 1, 'open' => 1, 'closed' => 1],
+                'postings' => ['draft' => 1, 'open' => 1, 'closed' => 1],
                 'applications' => ['pending' => 1, 'reviewed' => 0, 'hired' => 2, 'rejected' => 0, 'withdrawn' => 0],
                 'verification_queue' => 2,
                 'open_reports' => 2,

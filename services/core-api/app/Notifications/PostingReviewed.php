@@ -2,30 +2,24 @@
 
 namespace App\Notifications;
 
-use App\Enums\JobPostingStatus;
 use App\Models\JobPosting;
 use Illuminate\Support\Str;
 
 /**
- * M9 in-app notice (and M13 email) to the employer when an admin approves a posting (now open),
- * sends it back to draft, or removes it (with `$removedReason`).
+ * M9 in-app notice (and M13 email) to the employer when an admin removes a posting, with the
+ * reason. Postings are no longer approved one by one (Decision 2026-10-21), so removal is the only
+ * posting review left; the type stays `posting_review` with `approved:false, removed:true`.
  */
 class PostingReviewed extends AppNotice
 {
-    public function __construct(private readonly JobPosting $posting, private readonly ?string $removedReason = null)
+    public function __construct(private readonly JobPosting $posting, private readonly string $removedReason)
     {
         parent::__construct();
     }
 
     protected function subject(object $notifiable): string
     {
-        $outcome = match (true) {
-            $this->removedReason !== null => 'removed',
-            $this->posting->status === JobPostingStatus::Open => 'approved',
-            default => 'not approved',
-        };
-
-        return "Your job posting {$this->posting->title} was {$outcome}";
+        return "Your job posting {$this->posting->title} was removed";
     }
 
     public function databaseType(object $notifiable): string
@@ -38,28 +32,13 @@ class PostingReviewed extends AppNotice
      */
     public function toArray(object $notifiable): array
     {
-        $posting = $this->posting;
-
-        if ($this->removedReason !== null) {
-            return [
-                'message' => "Your posting {$posting->title} was removed by an administrator: ".Str::finish(rtrim($this->removedReason, '.!? '), '.'),
-                // The posting itself is gone; its edit page would be a 404.
-                'url' => '/employer/jobs',
-                'job_posting_id' => $posting->id,
-                'approved' => false,
-                'removed' => true,
-            ];
-        }
-
-        $approved = $posting->status === JobPostingStatus::Open;
-
         return [
-            'message' => $approved
-                ? "Your posting {$posting->title} was approved and is now open to candidates."
-                : "Your posting {$posting->title} was not approved: ".Str::finish(rtrim((string) $posting->rejection_reason, '.!? '), '.').' Edit it and submit it again.',
-            'url' => $approved ? "/jobs/{$posting->id}" : "/employer/jobs/{$posting->id}/edit",
-            'job_posting_id' => $posting->id,
-            'approved' => $approved,
+            'message' => "Your posting {$this->posting->title} was removed by an administrator: ".Str::finish(rtrim($this->removedReason, '.!? '), '.'),
+            // The posting itself is gone; its edit page would be a 404.
+            'url' => '/employer/jobs',
+            'job_posting_id' => $this->posting->id,
+            'approved' => false,
+            'removed' => true,
         ];
     }
 }

@@ -114,9 +114,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('dashboard', [DashboardController::class, 'admin'])->name('dashboard');
         Route::apiResource('categories', Admin\CategoryController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('accommodations', Admin\AccommodationController::class)->only(['index', 'store', 'update', 'destroy']);
-        Route::get('job-postings', [Admin\PostingApprovalController::class, 'index'])->name('job-postings.index');
-        Route::patch('job-postings/{jobPosting}/approve', [Admin\PostingApprovalController::class, 'review'])->name('job-postings.review');
-        Route::delete('job-postings/{jobPosting}', [Admin\PostingApprovalController::class, 'destroy'])->name('job-postings.destroy');
+        // M4/M10: postings are published without approval; admins list them and remove inappropriate ones
+        Route::get('job-postings', [Admin\PostingModerationController::class, 'index'])->name('job-postings.index');
+        Route::delete('job-postings/{jobPosting}', [Admin\PostingModerationController::class, 'destroy'])->name('job-postings.destroy');
         // M3 verification: SOAP registry check + the admin's decision (Phase 6)
         Route::get('employers', [Admin\EmployerVerificationController::class, 'index'])->name('employers.index');
         Route::get('employers/{employer}', [Admin\EmployerVerificationController::class, 'show'])->name('employers.show');

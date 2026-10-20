@@ -123,7 +123,7 @@ class PostingSummaryTest extends TestCase
     /** @return array<string, array{string}> */
     public static function hiddenPostings(): array
     {
-        return ['draft' => ['draft'], 'pending approval' => ['pending'], 'closed' => ['closed'], 'deleted' => ['deleted']];
+        return ['draft' => ['draft'], 'unverified employer' => ['unverified'], 'closed' => ['closed'], 'deleted' => ['deleted']];
     }
 
     #[DataProvider('hiddenPostings')]
@@ -131,7 +131,7 @@ class PostingSummaryTest extends TestCase
     {
         $posting = match ($state) {
             'draft' => JobPosting::factory()->create(['employer_id' => $this->employer->id]),
-            'pending' => JobPosting::factory()->pending()->create(['employer_id' => $this->employer->id]),
+            'unverified' => JobPosting::factory()->open()->unverifiedEmployer()->create(),
             'closed' => JobPosting::factory()->closed()->create(['employer_id' => $this->employer->id]),
             'deleted' => tap(JobPosting::factory()->open()->create(['employer_id' => $this->employer->id]))->delete(),
         };

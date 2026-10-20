@@ -19,7 +19,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * status, is_approved and rejection_reason are not fillable: they change only through the
- * submit flag, the open/close endpoint and admin approval.
+ * submit flag and the open/close endpoint. is_approved is true once a verified employer published
+ * the posting (kept for older rows; there is no admin approval step any more).
  */
 #[Fillable(['category_id', 'title', 'description', 'address', 'location_psgc', 'location_label', 'employment_type', 'work_setup', 'interview_format', 'closes_at'])]
 class JobPosting extends Model
@@ -72,7 +73,6 @@ class JobPosting extends Model
         return $this->hasMany(Application::class);
     }
 
-    /** Open, approved and still before the end of `closes_at` (Manila) – the cron may not have run yet. */
     /**
      * Candidates who bookmarked this posting (M12).
      *
@@ -83,25 +83,29 @@ class JobPosting extends Model
         return $this->belongsToMany(CandidateProfile::class, 'saved_jobs')->withTimestamps();
     }
 
+    /** Visible and still before the end of `closes_at` (Manila) – the cron may not have run yet. */
     public function acceptsApplications(): bool
     {
         return $this->isVisible() && ! $this->closes_at->copy()->endOfDay()->isPast();
     }
 
     /**
-     * Postings anyone may see: open, approved, not soft-deleted and from an employer that is not
-     * suspended (search, matching, snapshot). Lifting the suspension shows them again.
+     * Postings anyone may see: open, approved, not soft-deleted and from a verified employer that
+     * is not suspended (search, matching, snapshot). Lifting the suspension or verifying the
+     * company again shows them again.
      */
     #[Scope]
     protected function visible(Builder $query): void
     {
         $query->where('status', JobPostingStatus::Open)->where('is_approved', true)
-            ->whereRelation('employer.user', 'is_active', true);
+            ->whereHas('employer', fn (Builder $employer) => $employer->whereNotNull('verified_at')
+                ->whereRelation('user', 'is_active', true));
     }
 
     public function isVisible(): bool
     {
-        return $this->status === JobPostingStatus::Open && $this->is_approved && ! $this->trashed() && $this->ownerIsActive();
+        return $this->status === JobPostingStatus::Open && $this->is_approved && ! $this->trashed()
+            && (bool) $this->employer?->isVerified() && $this->ownerIsActive();
     }
 
     /** False while the employer's account is suspended (M10). */

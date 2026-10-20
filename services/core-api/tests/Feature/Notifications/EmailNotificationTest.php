@@ -125,16 +125,16 @@ class EmailNotificationTest extends TestCase
     public function test_admin_decisions_are_emailed_with_the_reason(): void
     {
         $employer = Employer::factory()->create(['company_name' => 'Kalinga Foods Inc.']);
-        $posting = JobPosting::factory()->pending()->for($employer)->create(['title' => 'Packing Line Staff']);
+        $posting = JobPosting::factory()->open()->for($employer)->create(['title' => 'Packing Line Staff']);
         Sanctum::actingAs(User::factory()->admin()->create());
 
-        $this->patchJson("/api/admin/job-postings/{$posting->id}/approve", ['action' => 'reject', 'reason' => 'Add the working hours.'])->assertOk();
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'Add the working hours.'])->assertNoContent();
         $this->patchJson("/api/admin/employers/{$employer->id}/verify", ['action' => 'approve'])->assertOk();
 
         [$review, $verification] = $this->sentEmails()->all();
-        $this->assertSame('Your job posting Packing Line Staff was not approved', $review->getSubject());
-        $this->assertStringContainsString('was not approved: Add the working hours. Edit it and submit it again.', $review->getTextBody());
-        $this->assertStringContainsString("https://app.opendoor.test/employer/jobs/{$posting->id}/edit", $review->getTextBody());
+        $this->assertSame('Your job posting Packing Line Staff was removed', $review->getSubject());
+        $this->assertStringContainsString('was removed by an administrator: Add the working hours.', $review->getTextBody());
+        $this->assertStringContainsString('https://app.opendoor.test/employer/jobs', $review->getTextBody());
         $this->assertSame('Kalinga Foods Inc. is now verified on OpenDoor', $verification->getSubject());
         $this->assertSame([$employer->user->email], array_map(fn ($address) => $address->getAddress(), $verification->getTo()));
     }

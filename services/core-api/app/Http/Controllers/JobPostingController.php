@@ -57,7 +57,10 @@ class JobPostingController extends Controller
 
         $posting = new JobPosting($request->safe()->except(['accommodations', 'submit']));
         $posting->employer()->associate($employer);
-        $posting->status = $request->boolean('submit') ? JobPostingStatus::PendingApproval : JobPostingStatus::Draft;
+        $posting->status = JobPostingStatus::Draft;
+        if ($request->boolean('submit')) {
+            $this->publish($posting);
+        }
 
         DB::transaction(function () use ($posting, $request) {
             $posting->save();
@@ -68,8 +71,8 @@ class JobPostingController extends Controller
     }
 
     /**
-     * submit=true sends the posting (back) to admin approval – also when it was open, so changed
-     * accommodation claims are reviewed. submit=false is only for postings that are still drafts.
+     * submit=true publishes the posting (also an open or closed one, with the changes); only a
+     * verified employer may publish. submit=false is only for postings that are still drafts.
      */
     public function update(JobPostingRequest $request, JobPosting $jobPosting): JobPostingResource
     {
@@ -77,14 +80,12 @@ class JobPostingController extends Controller
 
         $submit = $request->boolean('submit');
         if (! $submit && $jobPosting->status !== JobPostingStatus::Draft) {
-            throw ValidationException::withMessages(['submit' => 'A posting that was submitted cannot go back to draft. Submit your changes for approval instead.']);
+            throw ValidationException::withMessages(['submit' => 'A published posting cannot go back to draft. Publish your changes instead.']);
         }
 
         $jobPosting->fill($request->safe()->except(['accommodations', 'submit']));
         if ($submit) {
-            $jobPosting->status = JobPostingStatus::PendingApproval;
-            $jobPosting->is_approved = false;
-            $jobPosting->rejection_reason = null;
+            $this->publish($jobPosting);
         }
 
         DB::transaction(function () use ($jobPosting, $request) {
@@ -104,7 +105,22 @@ class JobPostingController extends Controller
         return response()->noContent();
     }
 
-    /** open → closed any time; closed → open only when approved and before the closing date. */
+    /**
+     * Opens the posting right away (Decision 2026-10-21: no admin approval step). Only a verified
+     * company may publish; an unverified one can still save drafts.
+     */
+    private function publish(JobPosting $posting): void
+    {
+        if (! $posting->employer->isVerified()) {
+            throw ValidationException::withMessages(['submit' => 'Your company must be verified by an administrator before you can publish job postings. You can save this posting as a draft for now.']);
+        }
+
+        $posting->status = JobPostingStatus::Open;
+        $posting->is_approved = true;
+        $posting->rejection_reason = null;
+    }
+
+    /** open → closed any time; closed → open only for a verified company and before the closing date. */
     public function updateStatus(Request $request, JobPosting $jobPosting): JobPostingResource
     {
         Gate::authorize('changeStatus', $jobPosting);
@@ -117,8 +133,11 @@ class JobPostingController extends Controller
         };
         if (! $allowed) {
             throw ValidationException::withMessages(['status' => $target === JobPostingStatus::Open
-                ? 'Only an approved posting that was closed can be opened again.'
+                ? 'Only a published posting that was closed can be opened again.'
                 : 'Only an open posting can be closed.']);
+        }
+        if ($target === JobPostingStatus::Open && ! $jobPosting->employer->isVerified()) {
+            throw ValidationException::withMessages(['status' => 'Your company must be verified by an administrator before the posting can be opened again.']);
         }
         if ($target === JobPostingStatus::Open && $jobPosting->closes_at->isBefore(today())) {
             throw ValidationException::withMessages(['status' => 'The closing date has passed. Change the closing date and submit the posting again.']);

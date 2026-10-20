@@ -81,7 +81,8 @@ class DemoPostingSeeder extends Seeder
                 'employment_type' => 'part_time',
                 'work_setup' => 'onsite',
                 'interview_format' => 'onsite',
-                'status' => 'pending_approval',
+                // Kalinga Foods is not verified yet, so it can only keep drafts (Decision 2026-10-21).
+                'status' => 'draft',
                 'accommodations' => [
                     'Adjustable workstation' => 'Seated or standing packing table.',
                     'Part-time schedule' => null,

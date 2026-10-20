@@ -77,7 +77,7 @@ class ReportTest extends TestCase
     public function test_postings_that_are_not_visible_cannot_be_reported(): void
     {
         $draft = JobPosting::factory()->create();
-        $pending = JobPosting::factory()->pending()->create();
+        $pending = JobPosting::factory()->open()->unverifiedEmployer()->create();
         $deleted = JobPosting::factory()->open()->create();
         $deleted->delete();
         Sanctum::actingAs($this->candidate);

@@ -100,7 +100,7 @@ class ApplyTest extends TestCase
     public function test_unpublished_or_deleted_postings_are_not_found(): void
     {
         $this->apply(JobPosting::factory()->create())->assertNotFound()->assertJsonPath('error.code', 'NOT_FOUND');
-        $this->apply(JobPosting::factory()->pending()->create())->assertNotFound();
+        $this->apply(JobPosting::factory()->open()->unverifiedEmployer()->create())->assertNotFound();
 
         $deleted = JobPosting::factory()->open()->create();
         $deleted->delete();

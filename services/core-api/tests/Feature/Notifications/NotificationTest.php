@@ -39,7 +39,7 @@ class NotificationTest extends TestCase
         $posting = JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Data Encoder']);
         for ($i = $count; $i > 0; $i--) {
             Carbon::setTestNow(now()->subMinutes($i));
-            $this->employer->user->notify(new PostingReviewed($posting));
+            $this->employer->user->notify(new PostingReviewed($posting, 'Duplicate posting.'));
         }
         Carbon::setTestNow();
     }
@@ -58,7 +58,7 @@ class NotificationTest extends TestCase
             ->assertJsonPath('meta.unread_count', 12)
             ->assertJsonPath('data.0.type', 'posting_review')
             ->assertJsonPath('data.0.read_at', null)
-            ->assertJsonPath('data.0.data.message', 'Your posting Data Encoder was approved and is now open to candidates.')
+            ->assertJsonPath('data.0.data.message', 'Your posting Data Encoder was removed by an administrator: Duplicate posting.')
             ->assertJsonStructure(['data' => [['id', 'type', 'data' => ['message', 'url'], 'read_at', 'created_at']]]);
 
         $dates = array_column($response->json('data'), 'created_at');
@@ -71,7 +71,7 @@ class NotificationTest extends TestCase
     {
         $posting = JobPosting::factory()->open()->for($this->employer)->create();
         $this->freezeSecond(function () use ($posting) {
-            $this->employer->user->notify(new PostingReviewed($posting));
+            $this->employer->user->notify(new PostingReviewed($posting, 'Duplicate posting.'));
             $this->employer->user->notify(new VerificationDecision($this->employer));
         });
         Sanctum::actingAs($this->employer->user);
@@ -156,23 +156,19 @@ class NotificationTest extends TestCase
         $this->assertTrue($notices[1]->data['verified']);
     }
 
-    public function test_posting_reviews_notify_the_employer(): void
+    public function test_a_removed_posting_notifies_the_employer_with_the_reason(): void
     {
-        $rejected = JobPosting::factory()->pending()->for($this->employer)->create(['title' => 'Chat Support']);
-        $approved = JobPosting::factory()->pending()->for($this->employer)->create(['title' => 'Data Encoder']);
+        $posting = JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Chat Support']);
         Sanctum::actingAs(User::factory()->admin()->create());
 
-        $this->patchJson("/api/admin/job-postings/{$rejected->id}/approve", ['action' => 'reject', 'reason' => 'Add the working hours.'])->assertOk();
-        $this->patchJson("/api/admin/job-postings/{$approved->id}/approve", ['action' => 'approve'])->assertOk();
+        $this->deleteJson("/api/admin/job-postings/{$posting->id}", ['reason' => 'Misleading salary'])->assertNoContent();
 
-        $data = $this->employer->user->notifications()->get()->pluck('data', 'data.job_posting_id');
         $this->assertSame([
-            'message' => 'Your posting Chat Support was not approved: Add the working hours. Edit it and submit it again.',
-            'url' => "/employer/jobs/{$rejected->id}/edit",
-            'job_posting_id' => $rejected->id,
+            'message' => 'Your posting Chat Support was removed by an administrator: Misleading salary.',
+            'url' => '/employer/jobs',
+            'job_posting_id' => $posting->id,
             'approved' => false,
-        ], $data[$rejected->id]);
-        $this->assertSame("/jobs/{$approved->id}", $data[$approved->id]['url']);
-        $this->assertTrue($data[$approved->id]['approved']);
+            'removed' => true,
+        ], $this->employer->user->notifications()->sole()->data);
     }
 }

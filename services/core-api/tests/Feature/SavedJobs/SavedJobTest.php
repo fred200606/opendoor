@@ -138,7 +138,7 @@ class SavedJobTest extends TestCase
     public function test_postings_that_are_not_visible_cannot_be_saved(): void
     {
         $draft = JobPosting::factory()->create();
-        $pending = JobPosting::factory()->pending()->create();
+        $pending = JobPosting::factory()->open()->unverifiedEmployer()->create();
         $closed = JobPosting::factory()->closed()->create();
         $deleted = JobPosting::factory()->open()->create();
         $deleted->delete();

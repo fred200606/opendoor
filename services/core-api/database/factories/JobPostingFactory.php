@@ -20,7 +20,8 @@ class JobPostingFactory extends Factory
     public function definition(): array
     {
         return [
-            'employer_id' => Employer::factory(),
+            // Verified: only a verified company's open postings are visible (Decision 2026-10-21).
+            'employer_id' => Employer::factory()->verified(),
             'category_id' => Category::factory(),
             'title' => fake()->jobTitle(),
             'description' => fake()->paragraphs(2, true),
@@ -36,11 +37,6 @@ class JobPostingFactory extends Factory
         ];
     }
 
-    public function pending(): static
-    {
-        return $this->state(fn () => ['status' => JobPostingStatus::PendingApproval]);
-    }
-
     /** Open and approved – visible in search. */
     public function open(): static
     {
@@ -50,6 +46,12 @@ class JobPostingFactory extends Factory
     public function closed(): static
     {
         return $this->state(fn () => ['status' => JobPostingStatus::Closed, 'is_approved' => true]);
+    }
+
+    /** From a company that is not verified (yet): hidden even when open (Decision 2026-10-21). */
+    public function unverifiedEmployer(): static
+    {
+        return $this->state(fn () => ['employer_id' => Employer::factory()]);
     }
 
     /** Attaches the given accommodations (without notes) after creating the posting. */

@@ -74,7 +74,7 @@ class JobPostingTest extends TestCase
         $response = $this->postJson('/api/job-postings', $this->payload());
 
         $response->assertCreated()
-            ->assertJsonPath('status', 'pending_approval')
+            ->assertJsonPath('status', 'open')
             ->assertJsonPath('employer', ['id' => $this->employer->id, 'company_name' => $this->employer->company_name, 'verified' => true])
             ->assertJsonPath('category', ['id' => $this->category->id, 'name' => 'Administrative'])
             ->assertJsonPath('location', ['psgc_code' => '1381300000', 'label' => 'Quezon City, NCR'])
@@ -86,8 +86,37 @@ class JobPostingTest extends TestCase
             ->assertJsonPath('rejection_reason', null);
 
         $posting = JobPosting::sole();
-        $this->assertFalse($posting->is_approved);
+        $this->assertTrue($posting->is_approved);
         $this->assertSame(3, $posting->accommodations()->count());
+        $this->getJson('/api/job-postings')->assertJsonPath('data.0.id', $posting->id);
+    }
+
+    public function test_an_unverified_company_can_only_save_drafts(): void
+    {
+        $this->employer->forceFill(['verified_at' => null])->save();
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['submit' => 'Your company must be verified by an administrator before you can publish job postings. You can save this posting as a draft for now.']);
+        $this->assertSame(0, JobPosting::count());
+
+        $draft = $this->postJson('/api/job-postings', $this->payload(['submit' => false]))->assertCreated()->assertJsonPath('status', 'draft');
+        $this->putJson("/api/job-postings/{$draft->json('id')}", $this->payload())->assertUnprocessable()->assertJsonValidationErrors('submit');
+        $this->assertSame(JobPostingStatus::Draft, JobPosting::sole()->status);
+    }
+
+    public function test_postings_of_a_company_that_loses_its_verification_are_hidden(): void
+    {
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
+        $this->getJson("/api/job-postings/{$posting->id}")->assertOk();
+
+        $this->employer->forceFill(['verified_at' => null])->save();
+
+        $this->getJson("/api/job-postings/{$posting->id}")->assertNotFound();
+        $this->getJson('/api/job-postings')->assertJsonPath('meta.total', 0);
+        $this->actingAsOwner();
+        $this->getJson("/api/job-postings/{$posting->id}")->assertOk()->assertJsonPath('status', 'open');
     }
 
     public function test_save_as_draft(): void
@@ -105,9 +134,9 @@ class JobPostingTest extends TestCase
 
         $this->postJson('/api/job-postings', $this->payload(['status' => 'open', 'is_approved' => true]))
             ->assertCreated()
-            ->assertJsonPath('status', 'pending_approval');
+            ->assertJsonPath('status', 'open');
 
-        $this->assertFalse(JobPosting::sole()->is_approved);
+        $this->assertSame(['title' => 'Data Encoder'], JobPosting::sole()->only('title'));
     }
 
     public function test_a_company_profile_is_required_first(): void
@@ -146,7 +175,7 @@ class JobPostingTest extends TestCase
 
     // ---------- update
 
-    public function test_editing_an_open_posting_sends_it_back_for_approval(): void
+    public function test_editing_an_open_posting_keeps_it_open(): void
     {
         $posting = JobPosting::factory()->open()->for($this->employer)->create(['rejection_reason' => null]);
         $this->actingAsOwner();
@@ -154,9 +183,9 @@ class JobPostingTest extends TestCase
         $this->putJson("/api/job-postings/{$posting->id}", $this->payload(['title' => 'Senior Data Encoder']))
             ->assertOk()
             ->assertJsonPath('title', 'Senior Data Encoder')
-            ->assertJsonPath('status', 'pending_approval');
+            ->assertJsonPath('status', 'open');
 
-        $this->assertFalse($posting->fresh()->is_approved);
+        $this->assertTrue($posting->fresh()->is_approved);
     }
 
     public function test_resubmitting_clears_the_rejection_reason(): void
@@ -172,7 +201,7 @@ class JobPostingTest extends TestCase
 
     public function test_a_submitted_posting_cannot_go_back_to_draft(): void
     {
-        $posting = JobPosting::factory()->pending()->for($this->employer)->create();
+        $posting = JobPosting::factory()->open()->for($this->employer)->create();
         $this->actingAsOwner();
 
         $this->putJson("/api/job-postings/{$posting->id}", $this->payload(['submit' => false]))
@@ -204,7 +233,7 @@ class JobPostingTest extends TestCase
 
     // ---------- open / close / delete
 
-    public function test_owner_closes_and_reopens_an_approved_posting(): void
+    public function test_owner_closes_and_reopens_a_published_posting(): void
     {
         $posting = JobPosting::factory()->open()->for($this->employer)->create();
         $this->actingAsOwner();
@@ -213,10 +242,10 @@ class JobPostingTest extends TestCase
         $this->patchJson("/api/job-postings/{$posting->id}/status", ['status' => 'open'])->assertOk()->assertJsonPath('status', 'open');
     }
 
-    public function test_unapproved_or_expired_postings_cannot_be_opened(): void
+    public function test_drafts_expired_postings_and_unverified_companies_cannot_open_postings(): void
     {
         $this->actingAsOwner();
-        $pending = JobPosting::factory()->pending()->for($this->employer)->create();
+        $pending = JobPosting::factory()->for($this->employer)->create();
         $expired = JobPosting::factory()->closed()->for($this->employer)->create(['closes_at' => now()->subDay()->toDateString()]);
 
         $this->patchJson("/api/job-postings/{$pending->id}/status", ['status' => 'open'])->assertUnprocessable()->assertJsonValidationErrors('status');
@@ -224,6 +253,12 @@ class JobPostingTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['status' => 'The closing date has passed. Change the closing date and submit the posting again.']);
         $this->patchJson("/api/job-postings/{$pending->id}/status", ['status' => 'draft'])->assertUnprocessable();
+
+        $closed = JobPosting::factory()->closed()->for($this->employer)->create();
+        $this->employer->forceFill(['verified_at' => null])->save();
+        $this->patchJson("/api/job-postings/{$closed->id}/status", ['status' => 'open'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status' => 'Your company must be verified by an administrator before the posting can be opened again.']);
     }
 
     public function test_delete_is_a_soft_delete_that_hides_the_posting(): void
@@ -283,7 +318,7 @@ class JobPostingTest extends TestCase
     public function test_public_employer_page_lists_open_postings_only(): void
     {
         JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Visible']);
-        JobPosting::factory()->pending()->for($this->employer)->create(['title' => 'Hidden']);
+        JobPosting::factory()->for($this->employer)->create(['title' => 'Hidden']);
         JobPosting::factory()->open()->for($this->employer)->create(['title' => 'Deleted'])->delete();
 
         $this->getJson("/api/employers/{$this->employer->id}")
