@@ -63,6 +63,9 @@ export const ACCOMMODATION_GROUPS = {
 
 export const SORTS = { best: 'Best match', newest: 'Newest', closing: 'Closing soon' };
 
+// Distance filter (km from the candidate's city centre); remote jobs are always shown.
+export const DISTANCES = { '': 'Anywhere', 10: 'Within 10 km', 25: 'Within 25 km', 50: 'Within 50 km', 100: 'Within 100 km' };
+
 /** { key: label } → [{ value, label }] for SelectField / RadioGroup. */
 export function toOptions(labels) {
   return Object.entries(labels).map(([value, label]) => ({ value, label }));

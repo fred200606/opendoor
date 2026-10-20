@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
+import { searchJobs } from '../../api/jobs.js';
 import { getCandidateProfile } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import GetStarted from '../../components/GetStarted.jsx';
+import MatchBadge from '../../components/MatchBadge.jsx';
 import Page from '../../components/Page.jsx';
 import StatCards from '../../components/StatCards.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
@@ -46,12 +48,12 @@ export default function CandidateDashboardPage() {
                 {dashboard.feedback_due?.some((item) => item.is_open) ? (
                   <>
                     <RatingsToGive due={dashboard.feedback_due} />
-                    <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                    <JobsForYou />
                     <YourNeeds count={dashboard.needs_count ?? 0} />
                   </>
                 ) : (
                   <>
-                    <JobsForYou count={dashboard.matching_jobs ?? 0} />
+                    <JobsForYou />
                     <YourNeeds count={dashboard.needs_count ?? 0} />
                     <RatingsToGive due={dashboard.feedback_due ?? []} />
                   </>
@@ -99,7 +101,7 @@ function CandidateGetStarted({ dashboard }) {
           id: 'apply',
           title: 'Apply to a job that fits',
           done: applied,
-          hint: '“Matches my needs” in Find jobs shows the best fits first.',
+          hint: '“Recommended for me” in Find jobs shows the best fits first.',
           link: { to: '/candidate/jobs', label: 'Find jobs' },
         },
       ]}
@@ -107,21 +109,39 @@ function CandidateGetStarted({ dashboard }) {
   );
 }
 
-function JobsForYou({ count }) {
+const RECOMMENDED = 3;
+
+/** The best fits right away (decision 2026-10-21): the first "Recommended for me" results. */
+function JobsForYou() {
+  const state = useAsync(() => searchJobs({ match: 1 }), []);
+  const jobs = (state.data?.data ?? []).slice(0, RECOMMENDED);
+
   return (
     <section aria-labelledby="matches-title">
-      <h2 id="matches-title">Jobs for you</h2>
-      <div className={count > 0 ? 'card card--tint' : 'card'}>
-        <p>{matchingJobsText(count)} all the accommodations you need.</p>
-        {count > 0 ? (
-          <Link className="button button--block" to="/candidate/jobs">
-            See matching jobs
-          </Link>
-        ) : (
-          <p className="dashboard-side__link">
-            <Link to="/candidate/jobs">See matching jobs</Link>
-          </p>
-        )}
+      <h2 id="matches-title">Recommended for you</h2>
+      <div className="card card--tint">
+        <AsyncContent state={state} label="Finding jobs for you">
+          {() =>
+            jobs.length === 0 ? (
+              <p>No open jobs yet. We will show the best fits here.</p>
+            ) : (
+              <ul className="recommended-list">
+                {jobs.map((job) => (
+                  <li key={job.id}>
+                    <Link to={`/candidate/jobs/${job.id}`} state={{ back: { to: '/candidate/dashboard', label: 'Back to your dashboard' } }}>
+                      {job.title}
+                    </Link>
+                    <span className="muted"> – {job.employer?.company_name}</span>
+                    <MatchBadge match={job.match} />
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </AsyncContent>
+        <p className="dashboard-side__link">
+          <Link to="/candidate/jobs">See all recommended jobs</Link>
+        </p>
       </div>
     </section>
   );
@@ -200,9 +220,4 @@ function YourNeeds({ count }) {
       </div>
     </section>
   );
-}
-
-function matchingJobsText(count) {
-  if (count === 0) return 'No open jobs offer';
-  return count === 1 ? '1 open job offers' : `${count} open jobs offer`;
 }

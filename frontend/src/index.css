@@ -1382,6 +1382,57 @@ input[type='file'].field__input {
   margin: 0;
 }
 
+/* Match score (decision 2026-10-21): reasons under the badge; each part with an icon and a hidden word. */
+.match__reasons {
+  margin: -0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+.recommended-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommended-list li {
+  margin: 0 0 1rem;
+}
+
+.match-parts {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.match-part {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  margin: 0 0 0.875rem;
+}
+
+.match-part__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  padding: 0.1875rem;
+}
+
+.match-part--yes .match-part__icon { color: var(--success); background: var(--success-bg); }
+.match-part--partly .match-part__icon { color: var(--warning); background: var(--warning-bg); }
+.match-part--no .match-part__icon { color: var(--danger); background: var(--danger-bg); }
+
+.match-part__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.match-part__text {
+  margin: 0.125rem 0 0;
+  color: var(--text-muted);
+}
+
 .trust-card__link {
   margin: 0;
   font-weight: 700;

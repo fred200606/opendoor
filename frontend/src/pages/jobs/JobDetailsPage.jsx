@@ -11,7 +11,7 @@ import Button from '../../components/Button.jsx';
 import Dialog from '../../components/Dialog.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { TextArea } from '../../components/form/fields.jsx';
-import MatchBadge from '../../components/MatchBadge.jsx';
+import MatchDetails from '../../components/MatchDetails.jsx';
 import Page from '../../components/Page.jsx';
 import ReadAloud from '../../components/ReadAloud.jsx';
 import SaveJobButton from '../../components/SaveJobButton.jsx';
@@ -95,7 +95,7 @@ function JobDetails({ job }) {
     >
       <div ref={readRef} className="job-layout">
         <div className="job-layout__main">
-          {isCandidate && <MatchBadge match={job.match} detailed />}
+          {isCandidate && <MatchDetails job={job} />}
           {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
           {isCandidate ? [accommodations, requirements, details, about] : [details, requirements, about, accommodations]}
           <AccessibilitySnapshot jobId={job.id} />

@@ -16,7 +16,8 @@ describe('JobSearchPage', () => {
 
     expect(await screen.findByText('1 job found')).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/jobs/42');
-    expect(screen.queryByLabelText('Matches my needs')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Recommended for me')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Distance from where you live/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument();
     const search = calls.find((call) => call.key === 'GET /job-postings');
     expect(search.config.params.get('match')).toBeNull();
@@ -28,19 +29,30 @@ describe('JobSearchPage', () => {
       routes: { ...masterData, 'GET /job-postings': () => [200, paged([job], { match_mode: true })] },
     });
 
-    expect(await screen.findByLabelText('Matches my needs')).toBeChecked();
-    await screen.findByText('Meets 1 of your 2 needs');
+    expect(await screen.findByLabelText('Recommended for me')).toBeChecked();
+    await screen.findByText('Good match, 74%');
+    expect(screen.getByText('1 of 2 skills · In your city, about 2.4 km away · Meets 1 of your 2 needs')).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Category'), 'Information Technology');
     await user.click(screen.getByText(/Must offer these accommodations/));
     await user.click(screen.getByLabelText('Sign language interpreter'));
+    await user.click(within(screen.getByRole('group', { name: /Work setup/ })).getByLabelText('Remote'));
+    await user.selectOptions(screen.getByLabelText(/Distance from where you live/), 'Within 25 km');
     await user.type(screen.getByLabelText('Keyword'), 'encoder');
 
-    await waitFor(() => expect(location()).toBe('/candidate/jobs?category=3&acc=5&q=encoder'));
+    await waitFor(() => expect(location()).toBe('/candidate/jobs?category=3&acc=5&setup=remote&dist=25&q=encoder'));
     // The request for the new URL is sent by an effect after the render, so wait for it too.
     await waitFor(() => {
       const last = calls.filter((call) => call.key === 'GET /job-postings').at(-1).config.params;
-      expect(Object.fromEntries(last)).toEqual({ q: 'encoder', category: '3', 'accommodations[]': '5', match: '1', sort: 'best' });
+      expect([...last.entries()]).toEqual([
+        ['q', 'encoder'],
+        ['category', '3'],
+        ['accommodations[]', '5'],
+        ['work_setup[]', 'remote'],
+        ['distance', '25'],
+        ['match', '1'],
+        ['sort', 'best'],
+      ]);
     });
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
     // Filters change only the query string: focus stays where the user is typing.
@@ -67,13 +79,14 @@ describe('JobSearchPage', () => {
     expect(await screen.findByRole('button', { name: 'Saved Data Encoder' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('candidate without needs is told to add them', async () => {
-    renderApp('/candidate/jobs', {
+  test('a distance that cannot be used is explained', async () => {
+    renderApp('/candidate/jobs?dist=10', {
       as: 'candidate',
-      routes: { ...masterData, 'GET /job-postings': () => [200, paged([], { total: 0, match_mode: false })] },
+      routes: { ...masterData, 'GET /job-postings': () => [200, paged([], { total: 0, match_mode: true, distance: null })] },
     });
 
-    expect(await screen.findByRole('link', { name: 'your profile' })).toHaveAttribute('href', '/candidate/profile');
+    expect(await screen.findByText(/We could not find your city on the map yet/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'your profile' })).toHaveAttribute('href', '/candidate/profile?tab=about');
     expect(screen.getByText('No jobs match these filters')).toBeInTheDocument();
   });
 });
@@ -97,8 +110,18 @@ describe('JobDetailsPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Data Encoder' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to job results' })).toHaveAttribute('href', '/candidate/jobs');
     expect(screen.getByText(/Ramp at main entrance/)).toBeInTheDocument();
-    expect(screen.getByText('Meets 1 of your 2 needs')).toBeInTheDocument();
-    expect(screen.getByText('Not mentioned in this posting: Accessible restroom')).toBeInTheDocument();
+    const fit = screen.getByRole('region', { name: 'How this job fits you' });
+    expect(within(fit).getByText('Good match, 74%')).toBeInTheDocument();
+    expect(within(fit).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'Partly fits: You have 1 of the 2 skills it needsYou have: Data entry. Not in your profile: Microsoft Excel.',
+      'Fits: In your city, about 2.4 km away',
+      'Fits: Education: Senior high school or higherYour education meets this.',
+      'Does not fit: Experience: at least 1 yearYour profile shows less experience, or none.',
+      'Fits: On-site workOne of the work setups you prefer.',
+      'Fits: Full-timeA type of work you want.',
+      'Partly fits: Meets 1 of your 2 needs',
+    ]);
+    expect(within(fit).getByText('Not mentioned in this posting: Accessible restroom')).toBeInTheDocument();
     expect(screen.getByText('86%')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'How trust scores work' })).toHaveAttribute('href', '/trust-scores');
 

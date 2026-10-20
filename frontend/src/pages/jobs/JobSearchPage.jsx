@@ -7,7 +7,7 @@ import { jobPath } from '../../auth/navigation.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
-import { CheckboxField, SelectField, TextField } from '../../components/form/fields.jsx';
+import { CheckboxField, CheckboxGroup, SelectField, TextField } from '../../components/form/fields.jsx';
 import JobCard from '../../components/JobCard.jsx';
 import Loading from '../../components/Loading.jsx';
 import Page from '../../components/Page.jsx';
@@ -16,7 +16,7 @@ import SaveJobButton from '../../components/SaveJobButton.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue.js';
 import { plural } from '../../lib/format.js';
-import { SORTS, toOptions } from '../../lib/labels.js';
+import { DISTANCES, SORTS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
 
 /** URL query → search parameters (the URL is the single source of truth for filters). */
 function readFilters(params, isCandidate) {
@@ -24,7 +24,9 @@ function readFilters(params, isCandidate) {
     q: params.get('q') ?? '',
     category: params.get('category') ?? '',
     accommodations: (params.get('acc') ?? '').split(',').filter(Boolean).map(Number),
-    // Candidates see "Matches my needs" by default; they can switch it off.
+    workSetups: (params.get('setup') ?? '').split(',').filter((setup) => setup in WORK_SETUPS),
+    distance: isCandidate && params.get('dist') in DISTANCES ? params.get('dist') : '',
+    // Candidates see "Recommended for me" by default; they can switch it off.
     match: isCandidate ? params.get('match') !== '0' : false,
     sort: params.get('sort') ?? 'best',
     page: Number(params.get('page') ?? 1),
@@ -71,7 +73,9 @@ export default function JobSearchPage() {
 
   return (
     <Page title="Find jobs">
-      <p className="page__subtitle">{isCandidate ? 'Jobs that offer what you need come first.' : 'Search open jobs and filter by the support you need.'}</p>
+      <p className="page__subtitle">
+        {isCandidate ? 'The jobs that fit your skills, place, preferences and needs best come first.' : 'Search open jobs and filter by the support you need.'}
+      </p>
       <div className="search-layout">
         <form className="search-filters" role="search" aria-labelledby="filters-title" onSubmit={(event) => event.preventDefault()}>
           <h2 id="filters-title" className="search-filters__title">
@@ -80,10 +84,20 @@ export default function JobSearchPage() {
           {isCandidate && (
             <CheckboxField
               name="match"
-              label="Matches my needs"
-              hint="Show jobs that offer the accommodations in your profile first."
+              label="Recommended for me"
+              hint="Ranks jobs by your skills, where you live, your qualifications, work preferences and accommodation needs."
               checked={filters.match}
               onChange={(event) => update({ match: event.target.checked ? '' : '0' })}
+            />
+          )}
+          {isCandidate && (
+            <SelectField
+              label="Distance from where you live"
+              name="distance"
+              hint="Remote jobs are always shown."
+              options={toOptions(DISTANCES)}
+              value={filters.distance}
+              onChange={(event) => update({ dist: event.target.value })}
             />
           )}
 
@@ -104,6 +118,15 @@ export default function JobSearchPage() {
             options={categories.map((category) => ({ value: String(category.id), label: category.name }))}
             value={filters.category}
             onChange={(event) => update({ category: event.target.value })}
+          />
+
+          <CheckboxGroup
+            legend="Work setup"
+            name="work_setup"
+            hint="None ticked shows all."
+            options={toOptions(WORK_SETUPS)}
+            value={filters.workSetups}
+            onChange={(setups) => update({ setup: setups })}
           />
 
           <SelectField
@@ -150,11 +173,11 @@ export default function JobSearchPage() {
             {meta && !results.loading ? `${plural(meta.total, 'job')} found` : ''}
           </p>
 
-          {isCandidate && meta && meta.match_mode === false && filters.match && (
+          {isCandidate && meta && filters.distance && meta.distance === null && (
             <Alert type="info">
               <p>
-                Add the accommodations you need to <Link to="/candidate/profile">your profile</Link> to see which jobs match
-                them.
+                We could not find your city on the map yet, so the distance filter is not used. Check where you live in{' '}
+                <Link to="/candidate/profile?tab=about">your profile</Link>.
               </p>
             </Alert>
           )}

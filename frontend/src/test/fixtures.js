@@ -50,7 +50,19 @@ export const job = {
     { id: 1, name: 'Wheelchair-accessible entrance', group: 'physical_access', note: 'Ramp at main entrance' },
     { id: 5, name: 'Sign language interpreter', group: 'communication', note: null },
   ],
-  match: { met: 1, total: 2, missing: [{ id: 2, name: 'Accessible restroom' }] },
+  // MatchingService (decision 2026-10-21).
+  match: {
+    score: 74,
+    label: 'good',
+    met: 1,
+    total: 2,
+    missing: [{ id: 2, name: 'Accessible restroom' }],
+    skills: { matched: ['Data entry'], missing: ['Microsoft Excel'] },
+    location: { tier: 'same_city', distance_km: 2.4 },
+    education: { required: 'senior_high', met: true },
+    experience: { required_years: 1, met: false },
+    preferences: { work_setup: true, employment_type: true },
+  },
   trust_score: { published: true, score: 86, based_on: 5 },
   created_at: '2026-10-01T09:00:00+08:00',
 };

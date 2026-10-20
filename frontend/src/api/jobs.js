@@ -3,14 +3,17 @@ import { api } from './client.js';
 // M5 Search and matching, M4 Job postings, M12 Saved jobs, M10 reports
 
 /**
- * params: { q, category, accommodations: [ids], match: 0|1, sort, page }
- * → { data: [JobPosting], meta: { current_page, last_page, total, match_mode } }
+ * params: { q, category, accommodations: [ids], workSetups: [onsite|hybrid|remote], distance (km),
+ * match: 0|1, sort, page } → { data: [JobPosting], meta: { current_page, last_page, total,
+ * match_mode, distance } }; `distance` in meta is null when it could not be applied.
  */
-export async function searchJobs({ q, category, accommodations = [], match, sort, page } = {}) {
+export async function searchJobs({ q, category, accommodations = [], workSetups = [], distance, match, sort, page } = {}) {
   const params = new URLSearchParams();
   if (q) params.set('q', q);
   if (category) params.set('category', category);
   accommodations.forEach((id) => params.append('accommodations[]', id));
+  workSetups.forEach((setup) => params.append('work_setup[]', setup));
+  if (distance) params.set('distance', distance);
   if (match) params.set('match', '1');
   if (sort) params.set('sort', sort);
   if (page > 1) params.set('page', page);

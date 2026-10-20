@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
-import { accommodationGroups, application, skillsList } from '../../test/fixtures.js';
+import { accommodationGroups, application, job, skillsList } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, users, validationError } from '../../test/render.jsx';
 
 const profile = {
@@ -427,28 +427,36 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
             feedback_due: [{ application_id: 11, job_title: 'Data Encoder', company_name: 'Bayanihan Tech', opens_on: '2026-02-01', is_open: true }],
           },
         ],
+        'GET /job-postings': () => [200, paged([])],
       },
     });
 
     expect(await screen.findByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View Submitted (2)' })).toHaveAttribute('href', '/candidate/applications?status=pending');
     expect(screen.getByRole('link', { name: 'Rate the accommodations now for Data Encoder' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
-    // A rating that is due now comes before Jobs for you.
+    // A rating that is due now comes before the recommendations.
     const headings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
-    expect(headings.indexOf('Ratings to give')).toBeLessThan(headings.indexOf('Jobs for you'));
-    expect(screen.getByRole('region', { name: 'Jobs for you' })).toHaveTextContent('4 open jobs offer all the accommodations you need.');
+    expect(headings.indexOf('Ratings to give')).toBeLessThan(headings.indexOf('Recommended for you'));
+    expect(await within(screen.getByRole('region', { name: 'Recommended for you' })).findByText('No open jobs yet. We will show the best fits here.')).toBeInTheDocument();
   });
 
-  test('one matching job is worded in the singular', async () => {
-    renderApp('/candidate/dashboard', {
+  test('the three best recommended jobs are shown with their match', async () => {
+    const jobs = [1, 2, 3, 4].map((id) => ({ ...job, id, title: `Job ${id}` }));
+    const { calls } = renderApp('/candidate/dashboard', {
       as: 'candidate',
       routes: {
         'GET /candidate/dashboard': () => [200, { applications: {}, needs_count: 1, matching_jobs: 1, feedback_due: [] }],
         'GET /candidate/profile': () => [200, profile],
+        'GET /job-postings': () => [200, paged(jobs, { match_mode: true })],
       },
     });
 
-    expect(await screen.findByRole('region', { name: 'Jobs for you' })).toHaveTextContent('1 open job offers all the accommodations you need.');
+    const recommended = await screen.findByRole('region', { name: 'Recommended for you' });
+    expect(await within(recommended).findByRole('link', { name: 'Job 1' })).toHaveAttribute('href', '/candidate/jobs/1');
+    expect(within(recommended).getAllByText('Good match, 74%')).toHaveLength(3);
+    expect(within(recommended).queryByRole('link', { name: 'Job 4' })).not.toBeInTheDocument();
+    expect(within(recommended).getByRole('link', { name: 'See all recommended jobs' })).toHaveAttribute('href', '/candidate/jobs');
+    expect(calls.find((call) => call.key === 'GET /job-postings').config.params.get('match')).toBe('1');
     // Your needs lists the saved needs from the profile; nothing is due for rating yet.
     const needs = screen.getByRole('region', { name: 'Your needs' });
     expect(await within(needs).findByText('Accessible restroom')).toBeInTheDocument();

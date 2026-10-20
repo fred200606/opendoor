@@ -397,18 +397,26 @@ describe('Voice input', () => {
 });
 
 describe('MatchBadge', () => {
-  test('full match and partial match wording, missing needs listed', () => {
-    const { rerender } = render(<MatchBadge match={{ met: 3, total: 3, missing: [] }} />);
-    expect(screen.getByText('Meets all 3 of your needs')).toBeInTheDocument();
+  const base = { met: 0, total: 0, missing: [], skills: { matched: [], missing: [] }, location: { tier: 'unknown', distance_km: null } };
 
-    rerender(<MatchBadge detailed match={{ met: 1, total: 2, missing: [{ id: 5, name: 'Sign language interpreter' }] }} />);
-    expect(screen.getByText('Meets 1 of your 2 needs')).toBeInTheDocument();
-    expect(screen.getByText('Not mentioned in this posting: Sign language interpreter')).toBeInTheDocument();
-    expect(screen.getByText('You can ask the employer about this when you apply.')).toBeInTheDocument();
+  test('label, score and short reasons: skills, place and needs', () => {
+    const { rerender } = render(
+      <MatchBadge
+        match={{ ...base, score: 92, label: 'strong', met: 3, total: 3, skills: { matched: ['Typing', 'Data entry'], missing: [] }, location: { tier: 'same_province', distance_km: 0.4 } }}
+      />,
+    );
+    expect(screen.getByText('Strong match, 92%')).toBeInTheDocument();
+    expect(screen.getByText('2 of 2 skills · In your province, less than 1 km away · Meets all 3 of your needs')).toBeInTheDocument();
+
+    rerender(<MatchBadge match={{ ...base, score: 35, label: 'low', met: 1, total: 2, location: { tier: 'remote', distance_km: 400 } }} />);
+    expect(screen.getByText('Low match, 35%')).toBeInTheDocument();
+    expect(screen.getByText('Remote work · Meets 1 of your 2 needs')).toBeInTheDocument();
   });
 
-  test('renders nothing without needs', () => {
-    const { container } = render(<MatchBadge match={null} />);
+  test('renders nothing without a score', () => {
+    const { container, rerender } = render(<MatchBadge match={null} />);
+    expect(container).toBeEmptyDOMElement();
+    rerender(<MatchBadge match={{ ...base, score: null, label: null }} />);
     expect(container).toBeEmptyDOMElement();
   });
 });
