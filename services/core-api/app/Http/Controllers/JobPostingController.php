@@ -8,7 +8,7 @@ use App\Exceptions\ApiException;
 use App\Http\Requests\Postings\JobPostingRequest;
 use App\Http\Resources\JobPostingResource;
 use App\Models\JobPosting;
-use App\Services\NeedsMatcher;
+use App\Services\MatchingService;
 use App\Services\SkillCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +25,7 @@ class JobPostingController extends Controller
 
     /**
      * Public for open postings; owners and admins also see their drafts. Others get 404, not 403.
-     * Candidates with saved needs also get `match`.
+     * Candidates also get `match` (MatchingService).
      */
     public function show(Request $request, JobPosting $jobPosting): JobPostingResource
     {
@@ -35,7 +35,7 @@ class JobPostingController extends Controller
 
         $viewer = $request->user('sanctum');
         $jobPosting->load(self::RELATIONS);
-        NeedsMatcher::for($viewer)?->annotate($jobPosting);
+        MatchingService::for($viewer)?->annotate($jobPosting);
 
         // A candidate sees an earlier application instead of the apply form, and whether it is saved (M12).
         if ($viewer?->role === UserRole::Candidate) {

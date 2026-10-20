@@ -7,7 +7,7 @@ use App\Http\Controllers\JobPostingController;
 use App\Http\Resources\JobPostingResource;
 use App\Models\CandidateProfile;
 use App\Models\JobPosting;
-use App\Services\NeedsMatcher;
+use App\Services\MatchingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -33,7 +33,7 @@ class SavedJobController extends Controller
             ->orderByDesc('job_postings.id')
             ->paginate(self::PER_PAGE);
 
-        $matcher = NeedsMatcher::for($request->user());
+        $matcher = MatchingService::for($request->user());
         $postings->getCollection()->each(function (JobPosting $posting) use ($matcher) {
             $posting->setAttribute('saved', true);
             $matcher?->annotate($posting);
@@ -50,7 +50,7 @@ class SavedJobController extends Controller
         $changes = CandidateProfile::for($request->user())->savedJobs()->syncWithoutDetaching([$jobPosting->id]);
 
         $jobPosting->load(JobPostingController::RELATIONS)->setAttribute('saved', true);
-        NeedsMatcher::for($request->user())?->annotate($jobPosting);
+        MatchingService::for($request->user())?->annotate($jobPosting);
 
         return (new JobPostingResource($jobPosting))->response()->setStatusCode($changes['attached'] === [] ? 200 : 201);
     }

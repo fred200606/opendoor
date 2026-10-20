@@ -28,9 +28,10 @@ class JobPostingFactory extends Factory
             'address' => fake()->streetAddress(),
             'location_psgc' => null,
             'location_label' => 'Quezon City, Metro Manila',
-            'employment_type' => fake()->randomElement(['full_time', 'part_time', 'contract', 'internship']),
-            'work_setup' => fake()->randomElement(['onsite', 'hybrid', 'remote']),
-            'interview_format' => fake()->randomElement(['online', 'onsite']),
+            // Fixed, not random: they count in the match score (Decision 2026-10-21).
+            'employment_type' => 'full_time',
+            'work_setup' => 'onsite',
+            'interview_format' => 'online',
             'status' => JobPostingStatus::Draft,
             'closes_at' => now()->addMonth()->toDateString(),
             'is_approved' => false,

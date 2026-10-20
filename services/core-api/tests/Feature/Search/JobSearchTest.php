@@ -150,7 +150,10 @@ class JobSearchTest extends TestCase
 
         $this->assertSame(['All three', 'Two of three, newer', 'Two of three, older', 'One of three', 'None of three'], $this->titles($response));
         $response
-            ->assertJsonPath('data.0.match', ['met' => 3, 'total' => 3, 'missing' => []])
+            ->assertJsonPath('data.0.match.met', 3)
+            ->assertJsonPath('data.0.match.total', 3)
+            ->assertJsonPath('data.0.match.missing', [])
+            ->assertJsonPath('data.0.match.score', 100)
             ->assertJsonPath('data.3.match.met', 1)
             ->assertJsonPath('data.3.match.missing', [
                 ['id' => $this->interpreter->id, 'name' => 'Sign language interpreter'],
@@ -183,13 +186,11 @@ class JobSearchTest extends TestCase
         $response->assertJsonPath('data.0.match.met', 0)->assertJsonPath('data.1.match.met', 1);
     }
 
-    public function test_no_match_mode_without_saved_needs_or_for_other_roles(): void
+    public function test_no_match_mode_without_a_candidate_profile_or_for_other_roles(): void
     {
         $this->posting('Job', [$this->ramp]);
 
-        // A disability type alone is never used for matching.
-        $candidate = CandidateProfile::factory()->create(['disability_type' => 'Mobility', 'show_disability' => true])->user;
-        foreach ([$candidate, User::factory()->candidate()->create(), User::factory()->employer()->create(), User::factory()->admin()->create()] as $user) {
+        foreach ([User::factory()->candidate()->create(), User::factory()->employer()->create(), User::factory()->admin()->create()] as $user) {
             Sanctum::actingAs($user);
             $this->getJson('/api/job-postings?match=1')
                 ->assertOk()
@@ -197,11 +198,19 @@ class JobSearchTest extends TestCase
                 ->assertJsonPath('data.0.match', null);
         }
 
+        // A disability type is never used: without needs, the needs part is left out.
+        Sanctum::actingAs(CandidateProfile::factory()->create(['disability_type' => 'Mobility', 'show_disability' => true])->user);
+        $this->getJson('/api/job-postings?match=1')
+            ->assertOk()
+            ->assertJsonPath('meta.match_mode', true)
+            ->assertJsonPath('data.0.match.total', 0)
+            ->assertJsonPath('data.0.match.score', 100);
+
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/job-postings?match=1')->assertOk()->assertJsonPath('meta.match_mode', false);
     }
 
-    public function test_job_details_include_the_match_for_candidates_with_needs(): void
+    public function test_job_details_include_the_match_for_candidates(): void
     {
         $posting = $this->posting('Data Encoder', [$this->ramp, $this->parking]);
 
@@ -210,11 +219,12 @@ class JobSearchTest extends TestCase
         Sanctum::actingAs($this->candidateNeeding($this->ramp, $this->interpreter));
         $this->getJson("/api/job-postings/{$posting->id}")
             ->assertOk()
-            ->assertJsonPath('match', [
-                'met' => 1,
-                'total' => 2,
-                'missing' => [['id' => $this->interpreter->id, 'name' => 'Sign language interpreter']],
-            ]);
+            ->assertJsonPath('match.met', 1)
+            ->assertJsonPath('match.total', 2)
+            ->assertJsonPath('match.missing', [['id' => $this->interpreter->id, 'name' => 'Sign language interpreter']])
+            // Preferences 10 × 1 + needs 15 × ½ = 17.5 of 25 → 70.
+            ->assertJsonPath('match.score', 70)
+            ->assertJsonPath('match.label', 'good');
     }
 
     public function test_search_parameters_are_validated(): void
@@ -223,5 +233,8 @@ class JobSearchTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'VALIDATION_FAILED')
             ->assertJsonValidationErrors(['sort', 'category', 'accommodations.0', 'page']);
+        $this->getJson('/api/job-postings?work_setup[]=beach&distance=30')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['work_setup.0', 'distance']);
     }
 }
