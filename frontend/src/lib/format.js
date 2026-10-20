@@ -39,3 +39,15 @@ export function plural(count, one, many = `${one}s`) {
 export function todayInManila() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(new Date());
 }
+
+/** Up to two initials of a company name ("Bayanihan Tech Solutions" → "BT"), for logo stand-ins. */
+export function companyInitials(name = '') {
+  return name
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+}

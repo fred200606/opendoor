@@ -19,7 +19,7 @@ import StatusBadge, { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { formatDate } from '../../lib/format.js';
+import { companyInitials, formatDate } from '../../lib/format.js';
 import MascotMessage from '../../components/mascot/MascotMessage.jsx';
 import { ACCOMMODATION_GROUPS, EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
 
@@ -114,17 +114,6 @@ function JobDetails({ job }) {
   );
 }
 
-function initials(name = '') {
-  const words = name
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  return words
-    .slice(0, 2)
-    .map((word) => word[0].toUpperCase())
-    .join('');
-}
 
 /** The employer at the top of the job (IPT): initials, name and badge, the facts and the trust score. */
 function EmployerSummary({ job, backTo }) {
@@ -132,7 +121,7 @@ function EmployerSummary({ job, backTo }) {
   return (
     <section aria-label="Employer" className={`${CARD} flex gap-4`}>
       <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-xl font-semibold text-accent">
-        {initials(job.employer?.company_name)}
+        {companyInitials(job.employer?.company_name)}
       </span>
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1">

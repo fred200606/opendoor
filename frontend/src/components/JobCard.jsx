@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { formatDate, todayInManila } from '../lib/format.js';
+import { companyInitials, formatDate, todayInManila } from '../lib/format.js';
 import { EMPLOYMENT_TYPES, WORK_SETUPS } from '../lib/labels.js';
 import MatchBadge from './MatchBadge.jsx';
 import { VerifiedBadge } from './StatusBadge.jsx';
@@ -22,17 +22,6 @@ function labelsOf(job, today) {
   return labels;
 }
 
-function initials(name = '') {
-  const words = name
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  return words
-    .slice(0, 2)
-    .map((word) => word[0].toUpperCase())
-    .join('');
-}
 
 /** Joins short facts with a visible middle dot that screen readers hear as a comma. */
 function DotList({ items }) {
@@ -102,7 +91,7 @@ export default function JobCard({ job, to, state, headingLevel = 2, children }) 
         aria-hidden="true"
         className="grid size-12 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-base font-semibold text-accent"
       >
-        {initials(job.employer?.company_name)}
+        {companyInitials(job.employer?.company_name)}
       </span>
 
       <div className="min-w-0 flex-1">

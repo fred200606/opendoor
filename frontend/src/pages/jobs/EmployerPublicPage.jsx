@@ -9,8 +9,10 @@ import Page from '../../components/Page.jsx';
 import { VerifiedBadge } from '../../components/StatusBadge.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
+import { companyInitials } from '../../lib/format.js';
 
-/** Public employer page (Figma 3:908): company, verified badge, trust score with breakdown, open jobs. */
+
+/** Public employer page (Figma 3:908, IPT look): company, verified badge, trust score with breakdown, open jobs. */
 export default function EmployerPublicPage() {
   const { id } = useParams();
   const { state: locationState } = useLocation();
@@ -29,37 +31,48 @@ export default function EmployerPublicPage() {
       {([employer, trustScore]) => (
         <Page
           title={employer.company_name}
-          className="employer-page"
           back={back}
           badge={<VerifiedBadge verified={employer.verified} />}
           subtitle={
-            <div className="employer-intro">
-              {employer.logo_url && <img src={employer.logo_url} alt={`${employer.company_name} logo`} className="employer-logo" />}
-              <p className="employer-intro__meta">{[employer.industry, employer.location?.label ?? employer.address].filter(Boolean).join(' · ')}</p>
-              {employer.description && <div className="prose">{employer.description}</div>}
-            </div>
+            <section aria-label="About the company" className="od mt-6 flex gap-4 rounded-lg border-2 border-border bg-surface p-5 sm:p-6">
+              {employer.logo_url ? (
+                <img src={employer.logo_url} alt={`${employer.company_name} logo`} className="size-16 shrink-0 rounded-md border border-border bg-surface object-contain" />
+              ) : (
+                <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-xl font-semibold text-accent">
+                  {companyInitials(employer.company_name)}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="text-muted">{[employer.industry, employer.location?.label ?? employer.address].filter(Boolean).join(' · ')}</p>
+                {employer.description && <div className="mt-2 max-w-prose whitespace-pre-line">{employer.description}</div>}
+              </div>
+            </section>
           }
         >
-          <div className="employer-layout">
+          <div className="od mt-6 grid items-start gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
             <TrustScoreCard trustScore={trustScore ?? employer.trust_score} breakdown={trustScore?.breakdown} />
 
             <section aria-labelledby="open-jobs-title">
-              <h2 id="open-jobs-title">Open jobs</h2>
+              <h2 id="open-jobs-title" className="font-display text-2xl font-bold">
+                Open jobs
+              </h2>
               {employer.open_postings?.length ? (
-                <ul className="result-list">
-              {employer.open_postings.map((job) => (
-                <li key={job.id}>
-                  <JobCard
-                    job={{ ...job, employer: job.employer ?? employer }}
-                    to={jobPath(user?.role, job.id)}
-                    state={{ back: { to: `/employers/${employer.id}`, label: `Back to ${employer.company_name}` } }}
-                    headingLevel={3}
-                  />
-                </li>
-              ))}
+                <ul className="mt-4 space-y-4">
+                  {employer.open_postings.map((job) => (
+                    <li key={job.id}>
+                      <JobCard
+                        job={{ ...job, employer: job.employer ?? employer }}
+                        to={jobPath(user?.role, job.id)}
+                        state={{ back: { to: `/employers/${employer.id}`, label: `Back to ${employer.company_name}` } }}
+                        headingLevel={3}
+                      />
+                    </li>
+                  ))}
                 </ul>
               ) : (
-                <EmptyState title="No open jobs right now" />
+                <div className="mt-4">
+                  <EmptyState title="No open jobs right now" mascot />
+                </div>
               )}
             </section>
           </div>
