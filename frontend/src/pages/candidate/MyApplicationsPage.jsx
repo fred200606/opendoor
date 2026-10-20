@@ -35,7 +35,7 @@ export default function MyApplicationsPage() {
         {({ data, meta }) => (
           <>
             {data.length === 0 ? (
-              <EmptyState title={status ? 'No applications with this status' : 'You have not applied to any jobs yet'}>
+              <EmptyState title={status ? 'No applications with this status' : 'You have not applied to any jobs yet'} mascot>
                 <p>
                   <Link to="/candidate/jobs">Find jobs that match your needs</Link>
                 </p>

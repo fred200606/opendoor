@@ -1,4 +1,3 @@
-import { Bookmark } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getSavedJobs, saveJob, unsaveJob } from '../../api/jobs.js';
@@ -75,7 +74,7 @@ export default function SavedJobsPage() {
       <AsyncContent state={state} label="Loading saved jobs">
         {({ data, meta }) =>
           data.length === 0 ? (
-            <EmptyState title="No saved jobs" icon={Bookmark}>
+            <EmptyState title="No saved jobs" mascot>
               <p>Use “Save job” on a job’s page to keep it here.</p>
               <Link className="button" to="/candidate/jobs">
                 Find jobs

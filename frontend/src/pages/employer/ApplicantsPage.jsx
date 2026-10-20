@@ -42,7 +42,7 @@ export default function ApplicantsPage() {
       <AsyncContent state={state} label="Loading applicants">
         {({ data, meta }) =>
           data.length === 0 ? (
-            <EmptyState title="No applicants yet" />
+            <EmptyState title="No applicants yet" mascot />
           ) : (
             <>
               <div className="table-wrap">

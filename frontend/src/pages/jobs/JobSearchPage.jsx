@@ -186,7 +186,7 @@ export default function JobSearchPage() {
           {results.loading && !results.data && <Loading label="Searching jobs" />}
 
           {results.data && jobs.length === 0 && (
-            <EmptyState title="No jobs match these filters">
+            <EmptyState title="No jobs match these filters" mascot>
               <p>Try fewer filters or a different keyword.</p>
             </EmptyState>
           )}
