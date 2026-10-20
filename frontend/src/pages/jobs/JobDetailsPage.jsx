@@ -1,4 +1,4 @@
-import { Flag } from 'lucide-react';
+import { Accessibility, Briefcase, Building2, Calendar, Check, Clock, Flag, Laptop, MapPin, MessageSquare, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
@@ -20,7 +20,13 @@ import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
-import { EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
+import MascotMessage from '../../components/mascot/MascotMessage.jsx';
+import { ACCOMMODATION_GROUPS, EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
+
+// IPT look (Francis Ruzgal's opendoor-ipt, decision 2026-10-21b): white cards on the canvas.
+const CARD = 'od rounded-lg border-2 border-border bg-surface p-5 sm:p-6';
+const CARD_TITLE = 'font-display text-2xl font-bold';
+const GROUP_ICONS = { physical_access: Accessibility, communication: MessageSquare, work_arrangement: Clock, assistive_technology: Laptop, support: Users };
 
 const APPLY_ERRORS = {
   ALREADY_APPLIED: 'You have already applied to this job. You can follow it in My applications.',
@@ -47,32 +53,36 @@ function JobDetails({ job }) {
   const back = isBackLink(state?.back) ? state.back : { to: isCandidate ? '/candidate/jobs' : '/jobs', label: 'Back to job results' };
   const trustScore = <TrustScoreCard trustScore={job.trust_score} explain />;
 
+  const facts = [
+    { icon: Building2, label: 'Work setup', value: WORK_SETUPS[job.work_setup] },
+    { icon: Clock, label: 'Employment type', value: EMPLOYMENT_TYPES[job.employment_type] },
+    { icon: MapPin, label: 'Location', value: [job.address, job.location?.label].filter(Boolean).join(', ') },
+    { icon: MessageSquare, label: 'Interview', value: INTERVIEW_FORMATS[job.interview_format] },
+    { icon: Calendar, label: 'Apply by', value: formatDate(job.closes_at) },
+    { icon: Briefcase, label: 'Category', value: job.category?.name },
+  ];
   const details = (
-    <section key="details" className="card">
-      <h2>Details</h2>
-      <dl className="details-list">
-        <dt>Category</dt>
-        <dd>{job.category?.name}</dd>
-        <dt>Employment</dt>
-        <dd>{EMPLOYMENT_TYPES[job.employment_type]}</dd>
-        <dt>Work setup</dt>
-        <dd>{WORK_SETUPS[job.work_setup]}</dd>
-        <dt>Interview</dt>
-        <dd>{INTERVIEW_FORMATS[job.interview_format]}</dd>
-        <dt>Address</dt>
-        <dd>
-          {job.address}
-          {job.location?.label && `, ${job.location.label}`}
-        </dd>
-        <dt>Apply by</dt>
-        <dd>{formatDate(job.closes_at)}</dd>
+    <section key="details" className={CARD} aria-labelledby="job-details-title">
+      <h2 id="job-details-title" className={CARD_TITLE}>
+        Job details
+      </h2>
+      <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+        {facts.map((fact) => (
+          <div key={fact.label} className="grid grid-cols-[1.25rem_1fr] gap-x-2">
+            <fact.icon className="mt-0.5 size-5 text-accent" aria-hidden="true" focusable="false" />
+            <dt className="font-bold">{fact.label}</dt>
+            <dd className="col-start-2">{fact.value}</dd>
+          </div>
+        ))}
       </dl>
     </section>
   );
   const about = (
-    <section key="about" className="card">
-      <h2>About the job</h2>
-      <div className="prose">{job.description}</div>
+    <section key="about" className={CARD} aria-labelledby="job-about-title">
+      <h2 id="job-about-title" className={CARD_TITLE}>
+        About the job
+      </h2>
+      <div className="mt-3 whitespace-pre-line">{job.description}</div>
     </section>
   );
   const accommodations = <OfferedAccommodations key="accommodations" items={job.accommodations ?? []} />;
@@ -81,32 +91,66 @@ function JobDetails({ job }) {
   return (
     <Page
       title={job.title}
-      className="job-page"
       back={back}
-      subtitle={
-        <p className="job-employer">
-          <Link to={`/employers/${job.employer?.id}`} state={{ back: { to: pathname, label: `Back to ${job.title}` } }}>
-            {job.employer?.company_name}
-          </Link> <VerifiedBadge verified={job.employer?.verified} />
-          {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
-        </p>
-      }
       actions={<ReadAloud targetRef={readRef} title={[job.title, job.employer?.company_name].filter(Boolean).join('. ')} label="Read this job aloud" />}
     >
-      <div ref={readRef} className="job-layout">
-        <div className="job-layout__main">
-          {isCandidate && <MatchDetails job={job} />}
-          {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
-          {isCandidate ? [accommodations, requirements, details, about] : [details, requirements, about, accommodations]}
-          <AccessibilitySnapshot jobId={job.id} />
-        </div>
-        <div className="job-layout__side">
-          {!isCandidate && trustScore}
-          <JobActions job={job} />
-          {isCandidate && trustScore}
+      <div ref={readRef} className="od mt-6 grid gap-6">
+        <EmployerSummary job={job} backTo={{ to: pathname, label: `Back to ${job.title}` }} />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="grid min-w-0 gap-6">
+            {isCandidate && <MatchDetails job={job} />}
+            {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
+            {isCandidate ? [accommodations, requirements, details, about] : [details, requirements, about, accommodations]}
+            <AccessibilitySnapshot jobId={job.id} />
+          </div>
+          <div className="grid gap-6 lg:sticky lg:top-4">
+            {!isCandidate && trustScore}
+            <JobActions job={job} />
+            {isCandidate && trustScore}
+          </div>
         </div>
       </div>
     </Page>
+  );
+}
+
+function initials(name = '') {
+  const words = name
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return words
+    .slice(0, 2)
+    .map((word) => word[0].toUpperCase())
+    .join('');
+}
+
+/** The employer at the top of the job (IPT): initials, name and badge, the facts and the trust score. */
+function EmployerSummary({ job, backTo }) {
+  const trust = job.trust_score;
+  return (
+    <section aria-label="Employer" className={`${CARD} flex gap-4`}>
+      <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-xl font-semibold text-accent">
+        {initials(job.employer?.company_name)}
+      </span>
+      <div className="min-w-0">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Link to={`/employers/${job.employer?.id}`} state={{ back: backTo }} className="font-display text-lg font-semibold text-primary underline underline-offset-4 hover:no-underline">
+            {job.employer?.company_name}
+          </Link>
+          <VerifiedBadge verified={job.employer?.verified} />
+          {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
+        </p>
+        <p className="mt-2 text-muted">
+          {[job.location?.label ?? job.address, WORK_SETUPS[job.work_setup], EMPLOYMENT_TYPES[job.employment_type]].filter(Boolean).join(' · ')}
+        </p>
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-subtle px-3 py-1 text-sm text-muted">
+          <ShieldCheck className="size-4" aria-hidden="true" focusable="false" />
+          {trust?.published ? `Trust score: ${trust.score}% (${trust.based_on} ratings)` : 'Trust score: not rated yet'}
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -121,12 +165,12 @@ function Requirements({ job }) {
   const years = job.experience_years;
 
   return (
-    <section className="card">
-      <h2>Skills and qualifications</h2>
+    <section className={CARD}>
+      <h2 className={CARD_TITLE}>Skills and qualifications</h2>
       {skills.length === 0 ? (
         <p>The employer did not list any skills.</p>
       ) : (
-        <ul className="tag-list" aria-label="Skills this job needs">
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Skills this job needs">
           {skills.map((skill) => (
             <li key={skill} className="tag">
               {skill}
@@ -150,33 +194,41 @@ function Requirements({ job }) {
   );
 }
 
+/** The accommodations by group, each with a tick and the employer's note (IPT: a violet left edge). */
 function OfferedAccommodations({ items }) {
-  const notes = items.filter((item) => item.note);
+  const groups = Object.keys(ACCOMMODATION_GROUPS)
+    .map((group) => ({ group, items: items.filter((item) => item.group === group) }))
+    .filter((entry) => entry.items.length > 0);
+  const ungrouped = items.filter((item) => !ACCOMMODATION_GROUPS[item.group]);
 
   return (
-    <section className="card">
-      <h2>Accommodations offered</h2>
+    <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="job-accommodations-title">
+      <h2 id="job-accommodations-title" className={CARD_TITLE}>
+        Accommodations offered
+      </h2>
       {items.length === 0 ? (
-        <p>The employer did not list any accommodations.</p>
+        <p className="mt-3">The employer did not list any accommodations.</p>
       ) : (
-        <>
-          <ul className="tag-list">
-            {items.map((item) => (
-              <li key={item.id} className="tag">
-                {item.name}
-              </li>
-            ))}
-          </ul>
-          {notes.length > 0 && (
-            <ul className="job-notes">
-              {notes.map((item) => (
-                <li key={item.id}>
-                  {item.name}: {item.note}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        [...groups, ...(ungrouped.length > 0 ? [{ group: 'other', items: ungrouped }] : [])].map(({ group, items: groupItems }) => {
+          const Icon = GROUP_ICONS[group] ?? Check;
+          return (
+            <div key={group} className="mt-4">
+              <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-accent">
+                <Icon className="size-5" aria-hidden="true" focusable="false" />
+                {ACCOMMODATION_GROUPS[group] ?? 'Other'}
+              </h3>
+              <ul className="mt-2 grid gap-2">
+                {groupItems.map((item) => (
+                  <li key={item.id} className="grid grid-cols-[1.25rem_1fr] gap-x-2">
+                    <Check className="mt-0.5 size-5 text-success" aria-hidden="true" focusable="false" />
+                    <span className="font-bold">{item.name}</span>
+                    {item.note && <span className="col-start-2 text-muted">{item.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })
       )}
     </section>
   );
@@ -211,12 +263,12 @@ function JobActions({ job }) {
   return (
     <div className="job-actions-group" data-read-aloud="skip">
       {justApplied && (
-        <div ref={sentRef} tabIndex={-1} className="focus-target">
-          <Alert type="success" live="polite" title="Application sent">
+        <div ref={sentRef} tabIndex={-1} className="focus-target" role="status">
+          <MascotMessage mood="happy" title="Application sent" headingLevel={2}>
             <p>
               The employer will review it. You can follow its status in <Link to="/candidate/applications">My applications</Link>.
             </p>
-          </Alert>
+          </MascotMessage>
         </div>
       )}
       <section className="card job-actions" aria-labelledby="apply-title">

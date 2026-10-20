@@ -73,7 +73,7 @@ export default function HomePage() {
   return (
     <Page
       title="Find work that fits how you work"
-      headingClassName="text-[clamp(2.25rem,1.2rem+3.4vw,3.75rem)] leading-[1.12] tracking-tight"
+      headingClassName="no-bar text-[clamp(2.25rem,1.2rem+3.4vw,3.75rem)] leading-[1.12] tracking-tight"
       heading={
         <span className="block">
           <span className="block animate-hero-text" style={step(0)}>
