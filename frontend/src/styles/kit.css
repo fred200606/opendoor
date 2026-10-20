@@ -381,4 +381,9 @@
   .table th {
     @apply bg-subtle font-display text-sm font-semibold text-text;
   }
+
+  /* ---------- header extras: the unread count is a red pill (the words "unread" stay for screen readers) */
+  .count-badge {
+    @apply ml-0.5 inline-grid min-w-6 place-items-center rounded-full bg-danger px-1.5 text-xs font-bold text-on-primary;
+  }
 }

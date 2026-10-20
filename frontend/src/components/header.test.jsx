@@ -48,17 +48,32 @@ describe('Utility bar (Figma design)', () => {
   });
 });
 
-describe('Header (Figma design)', () => {
-  test('role links on both sides of the logo, the current page marked', async () => {
-    renderApp('/candidate/saved-jobs', { as: 'candidate', routes: { 'GET /candidate/saved-jobs': () => [200, { data: [], meta: { total: 0, current_page: 1, last_page: 1 } }] } });
+describe('Header (IPT look)', () => {
+  test('logo, role links with the current page marked, and an account menu with the own pages and Log out', async () => {
+    const { user } = renderApp('/candidate/saved-jobs', {
+      as: 'candidate',
+      routes: { 'GET /candidate/saved-jobs': () => [200, { data: [], meta: { total: 0, current_page: 1, last_page: 1 } }] },
+    });
 
-    const nav = await screen.findByRole('navigation', { name: 'Main' });
+    expect(await screen.findByRole('link', { name: 'OpenDoor home' })).toHaveAttribute('href', '/candidate/dashboard');
+    const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Saved jobs' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'OpenDoor home' })).toHaveAttribute('href', '/candidate/dashboard');
-    for (const name of ['Dashboard', 'Find jobs', 'Applications', 'Profile', 'Account']) {
+    for (const name of ['Dashboard', 'Find jobs', 'Applications']) {
       expect(within(nav).getByRole('link', { name })).toBeInTheDocument();
     }
+    expect(within(nav).queryByRole('button', { name: 'Log out' })).not.toBeInTheDocument();
+
+    const account = within(nav).getByRole('button', { name: 'Account' });
+    await user.click(account);
+    expect(account).toHaveAttribute('aria-expanded', 'true');
+    expect(within(nav).getByText('candidate@opendoor.test')).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/candidate/profile');
+    expect(within(nav).getByRole('link', { name: 'Account' })).toHaveAttribute('href', '/account');
     expect(within(nav).getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(account).toHaveAttribute('aria-expanded', 'false');
+    expect(account).toHaveFocus();
   });
 
   test('compact menu: one Menu button; Escape closes it and returns focus; a chosen link closes it', async () => {

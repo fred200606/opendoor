@@ -4,6 +4,7 @@ import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, TextField } from '../../components/form/fields.jsx';
+import AuthScene from '../../components/AuthScene.jsx';
 import Page from '../../components/Page.jsx';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { homeFor } from '../../auth/roles.js';
@@ -46,57 +47,59 @@ export default function LoginPage() {
   }
 
   return (
-    <Page title="Log in" className="page--narrow" subtitle={<p className="page__subtitle">Use your email and password.</p>}>
-      {expired && !form.formError && (
-        <Alert type="info" title="Your session has ended">
-          <p>Please log in again to continue.</p>
-        </Alert>
-      )}
-      {passwordReset && !form.formError && (
-        <Alert type="success" live="polite" title="Your password is changed">
-          <p>Log in with your new password.</p>
-        </Alert>
-      )}
+    <AuthScene>
+      <Page title="Log in" className="page--narrow" subtitle={<p className="page__subtitle">Use your email and password.</p>}>
+        {expired && !form.formError && (
+          <Alert type="info" title="Your session has ended">
+            <p>Please log in again to continue.</p>
+          </Alert>
+        )}
+        {passwordReset && !form.formError && (
+          <Alert type="success" live="polite" title="Your password is changed">
+            <p>Log in with your new password.</p>
+          </Alert>
+        )}
 
-      <ErrorSummary errors={form.fieldErrors} fields={FIELDS} />
-      {known ? (
-        <Alert type="error" live="assertive" title={known.title}>
-          <p>{known.text}</p>
-        </Alert>
-      ) : (
-        <ApiErrorAlert error={form.formError} title="We could not log you in" />
-      )}
+        <ErrorSummary errors={form.fieldErrors} fields={FIELDS} />
+        {known ? (
+          <Alert type="error" live="assertive" title={known.title}>
+            <p>{known.text}</p>
+          </Alert>
+        ) : (
+          <ApiErrorAlert error={form.formError} title="We could not log you in" />
+        )}
 
-      <form className="card form-card" onSubmit={handleSubmit} noValidate>
-        <TextField
-          label="Email address"
-          type="email"
-          autoComplete="email"
-          required
-          error={form.fieldErrors.email}
-          {...form.bind('email')}
-        />
-        <TextField
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          required
-          error={form.fieldErrors.password}
-          {...form.bind('password')}
-        />
-        <div className="form-row">
-          <CheckboxField id="show-password" label="Show password" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
-          <Link to="/forgot-password" className="form-row__link">
-            Forgot your password?
-          </Link>
-        </div>
-        <Button type="submit" className="button button--block" disabled={form.submitting}>
-          {form.submitting ? 'Logging in…' : 'Log in'}
-        </Button>
-        <p className="form-card__footer">
-          New to OpenDoor? <Link to="/register">Create an account</Link>
-        </p>
-      </form>
-    </Page>
+        <form className="card form-card" onSubmit={handleSubmit} noValidate>
+          <TextField
+            label="Email address"
+            type="email"
+            autoComplete="email"
+            required
+            error={form.fieldErrors.email}
+            {...form.bind('email')}
+          />
+          <TextField
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            required
+            error={form.fieldErrors.password}
+            {...form.bind('password')}
+          />
+          <div className="form-row">
+            <CheckboxField id="show-password" label="Show password" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
+            <Link to="/forgot-password" className="form-row__link">
+              Forgot your password?
+            </Link>
+          </div>
+          <Button type="submit" className="button button--block" disabled={form.submitting}>
+            {form.submitting ? 'Logging in…' : 'Log in'}
+          </Button>
+          <p className="form-card__footer">
+            New to OpenDoor? <Link to="/register">Create an account</Link>
+          </p>
+        </form>
+      </Page>
+    </AuthScene>
   );
 }

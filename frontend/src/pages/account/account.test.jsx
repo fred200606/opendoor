@@ -74,7 +74,7 @@ describe('AccountPage', () => {
     expect(await screen.findByLabelText('Large (125%)')).toBeChecked();
     expect(document.documentElement.dataset.textSize).toBe('125');
     expect(document.documentElement.dataset.motion).toBe('reduce');
-    expect(JSON.parse(localStorage.getItem('opendoor.display'))).toEqual({ textSize: '125', contrast: 'high', motion: 'reduce', quiet: 'off', menu: 'full' });
+    expect(JSON.parse(localStorage.getItem('opendoor.display'))).toEqual({ textSize: '125', contrast: 'high', motion: 'reduce', quiet: 'off', menu: 'full', bar: 'auto' });
   });
 
   test('email notifications are turned off and on, and the choice stays after moving around', async () => {
@@ -93,6 +93,7 @@ describe('AccountPage', () => {
     expect(calls.find((call) => call.key === 'PUT /me/email-notifications').data).toEqual({ enabled: false });
 
     await user.click(screen.getByRole('link', { name: /^Notifications/ }));
+    await user.click(await screen.findByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('link', { name: 'Account' }));
     await user.click(await screen.findByRole('tab', { name: 'Email notifications' }));
     expect(screen.getByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();

@@ -345,4 +345,68 @@
     }
   }
 
+
+  /* The display settings bar folds into a thin line on screens with a mouse, until pointed at or
+     until something in it has keyboard focus (UtilityBar). It then opens over the header, so the
+     page doesn't jump. "Keep open" (data-bar="pinned"), touch screens and print keep it as it is. */
+  .od-utility-hint,
+  .od-pointer-only {
+    display: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .od-pointer-only {
+      display: inline-flex;
+    }
+    :root:not([data-bar='pinned']) .od-utility {
+      height: 1.5rem;
+    }
+    /* The bar is never shorter than the line, and the hint sits over it instead of above the row,
+       so opening and closing only cross-fade the two: nothing disappears and comes back. */
+    :root:not([data-bar='pinned']) .od-utility-bar {
+      position: absolute;
+      inset-inline: 0;
+      top: 0;
+      min-height: 1.5rem;
+      box-shadow: 0 8px 20px rgb(36 27 58 / 0);
+      transition: box-shadow 200ms var(--ease-soft) 350ms;
+    }
+    :root:not([data-bar='pinned']) .od-utility-hint {
+      position: absolute;
+      inset-inline: 0;
+      top: 0;
+      display: flex;
+      height: 1.5rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--od-text-muted);
+      pointer-events: none;
+      transition: opacity 160ms var(--ease-soft) 350ms;
+    }
+    :root:not([data-bar='pinned']) .od-utility-row {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition:
+        max-height 220ms var(--ease-soft) 350ms,
+        opacity 160ms var(--ease-soft) 350ms;
+    }
+    :root:not([data-bar='pinned']) .od-utility:is(:hover, :focus-within) .od-utility-bar {
+      box-shadow: 0 8px 20px rgb(36 27 58 / 0.14);
+      transition-delay: 0s;
+    }
+    :root:not([data-bar='pinned']) .od-utility:is(:hover, :focus-within) .od-utility-hint {
+      opacity: 0;
+      transition-delay: 0s;
+    }
+    :root:not([data-bar='pinned']) .od-utility:is(:hover, :focus-within) .od-utility-row {
+      max-height: 12rem;
+      overflow: visible;
+      opacity: 1;
+      transition-delay: 0s;
+    }
+  }
+
 }

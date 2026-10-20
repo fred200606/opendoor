@@ -48,7 +48,7 @@ describe('role routing', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Checking your session');
     expect(await screen.findByRole('heading', { level: 1, name: 'Welcome, Maria Santos' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Account' })).toHaveAttribute('aria-expanded', 'false');
     expect(calls[0].key).toBe('GET /me');
   });
 
@@ -75,6 +75,7 @@ describe('role routing', () => {
     const calls = fakeApi({ 'GET /me': () => [200, users.candidate], 'POST /logout': () => [204, ''] });
     renderAt('/candidate/dashboard');
 
+    (await screen.findByRole('button', { name: 'Account' })).click();
     (await screen.findByRole('button', { name: 'Log out' })).click();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Find work that fits how you work' })).toBeInTheDocument();

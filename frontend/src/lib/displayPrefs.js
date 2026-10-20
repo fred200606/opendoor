@@ -1,14 +1,15 @@
 // Display settings. Kept in this browser (applied before the first render, also for guests).
 // Text size, contrast and motion (M13) are also saved with the account (PUT /me/display-prefs) so
 // they follow a signed-in user to other devices; the account's settings are applied after login.
-// Quiet mode and the compact menu (Figma design, 2026-10-13) stay in this browser only.
+// Quiet mode, the compact menu (Figma design, 2026-10-13) and keeping the display bar open (IPT look,
+// decision 2026-10-21b) stay in this browser only.
 
 import { updateDisplayPrefs } from '../api/account.js';
 
 const KEY = 'opendoor.display';
 export const DISPLAY_CHANGED = 'opendoor:display-changed';
 
-export const DEFAULT_PREFS = { textSize: '100', contrast: 'normal', motion: 'normal', quiet: 'off', menu: 'full' };
+export const DEFAULT_PREFS = { textSize: '100', contrast: 'normal', motion: 'normal', quiet: 'off', menu: 'full', bar: 'auto' };
 export const TEXT_SIZES = ['100', '125', '150'];
 export const TEXT_SIZE_LABELS = { 100: 'Standard', 125: 'Large (125%)', 150: 'Extra large (150%)' };
 const ACCOUNT_KEYS = ['textSize', 'contrast', 'motion'];
@@ -29,6 +30,7 @@ export function applyDisplayPrefs(prefs) {
   root.dataset.motion = prefs.motion;
   root.dataset.quiet = prefs.quiet;
   root.dataset.menu = prefs.menu;
+  root.dataset.bar = prefs.bar;
 }
 
 /** Stores and applies the settings, and tells every open control (utility bar, Account settings). */

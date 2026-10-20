@@ -1,29 +1,34 @@
 import { Link } from 'react-router-dom';
 
 const YEAR = new Date().getFullYear();
+const LINK = 'inline-flex min-h-11 items-center px-2 text-sm text-muted underline-offset-4 hover:text-text hover:underline';
 
 /**
- * Figma "Footer": on every page, with the OpenStreetMap and PSGC attribution the Accessibility
- * Snapshot and the location pickers need. "Contact us" waits for real contact details (2026-10-13).
+ * The footer on every page (IPT look, decision 2026-10-21b), with the OpenStreetMap and PSGC
+ * attribution the Accessibility Snapshot and the location pickers need.
  */
 export default function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="container">
-        <ul className="site-footer__links">
+    <footer className="border-t border-border bg-surface print:hidden">
+      <nav aria-label="Footer" className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+        <ul className="flex flex-wrap items-center justify-center gap-x-4">
           <li>
-            <Link to="/privacy">Privacy</Link>
+            <Link to="/privacy" className={LINK}>
+              Privacy
+            </Link>
           </li>
           <li>
-            <Link to="/accessibility">Accessibility statement</Link>
+            <Link to="/accessibility" className={LINK}>
+              Accessibility statement
+            </Link>
           </li>
-          <li className="site-footer__copyright">© {YEAR} OpenDoor</li>
+          <li className="inline-flex min-h-11 items-center px-2 text-sm text-muted">© {YEAR} OpenDoor</li>
         </ul>
-        <p>
-          OpenDoor – inclusive hiring for persons with disabilities. Map data © OpenStreetMap contributors. Location lists from
-          the Philippine Standard Geographic Code (PSGC).
+        <p className="mt-1 text-center text-xs text-muted">
+          OpenDoor – inclusive hiring for persons with disabilities. Map data © OpenStreetMap contributors. Location lists from the Philippine Standard
+          Geographic Code (PSGC). Look and mascot after opendoor-ipt by Francis Ruzgal.
         </p>
-      </div>
+      </nav>
     </footer>
   );
 }

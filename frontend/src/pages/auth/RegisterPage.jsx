@@ -4,6 +4,7 @@ import { ApiErrorAlert } from '../../components/Alert.jsx';
 import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
+import AuthScene from '../../components/AuthScene.jsx';
 import Page from '../../components/Page.jsx';
 import WizardProgress from '../../components/WizardProgress.jsx';
 import { useAuth } from '../../auth/AuthContext.jsx';
@@ -108,101 +109,103 @@ export default function RegisterPage() {
   const last = step === STEPS.length - 1;
 
   return (
-    <Page
-      title="Create account"
-      documentTitle={`Create account (step ${step + 1} of ${STEPS.length})`}
-      className="page--narrow register"
-      subtitle={<p className="page__subtitle">{STEPS[step].intro}</p>}
-    >
-      <WizardProgress steps={STEPS} current={step} headingRef={stepRef} />
+    <AuthScene>
+      <Page
+        title="Create account"
+        documentTitle={`Create account (step ${step + 1} of ${STEPS.length})`}
+        className="page--narrow register"
+        subtitle={<p className="page__subtitle">{STEPS[step].intro}</p>}
+      >
+        <WizardProgress steps={STEPS} current={step} headingRef={stepRef} />
 
-      <ErrorSummary errors={stepErrors} fields={FIELDS} />
-      <ApiErrorAlert error={form.formError} title="We could not create your account" />
+        <ErrorSummary errors={stepErrors} fields={FIELDS} />
+        <ApiErrorAlert error={form.formError} title="We could not create your account" />
 
-      <form onSubmit={last ? handleSubmit : next} noValidate>
-        {step === 0 && (
-          <RadioGroup
-            legend="What brings you to OpenDoor?"
-            name="role"
-            required
-            className="radio-cards"
-            value={form.values.role}
-            onChange={(value) => form.setValue('role', value)}
-            options={ROLE_OPTIONS}
-            error={stepErrors.role}
-          />
-        )}
-
-        {step === 1 && (
-          <>
-            <TextField label="Full name" autoComplete="name" required error={stepErrors.name} {...form.bind('name')} />
-            <TextField
-              label="Email address"
-              type="email"
-              autoComplete="email"
+        <form onSubmit={last ? handleSubmit : next} noValidate>
+          {step === 0 && (
+            <RadioGroup
+              legend="What brings you to OpenDoor?"
+              name="role"
               required
-              hint="We never share it."
-              error={stepErrors.email}
-              {...form.bind('email')}
+              className="radio-cards"
+              value={form.values.role}
+              onChange={(value) => form.setValue('role', value)}
+              options={ROLE_OPTIONS}
+              error={stepErrors.role}
             />
-            <TextField
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              hint="At least 8 characters."
-              error={stepErrors.password}
-              {...form.bind('password')}
-            />
-            <TextField
-              label="Confirm password"
-              id="password_confirmation"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              error={stepErrors.password_confirmation}
-              {...form.bind('passwordConfirmation')}
-            />
-            <CheckboxField id="show-password" label="Show password" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <section className="privacy-notice" aria-labelledby="privacy-title">
-              <h3 id="privacy-title">Your privacy</h3>
-              <p>
-                OpenDoor stores your account details and, if you add them, the workplace accommodations you need. We use your
-                accommodation needs only to match you with jobs. Employers see them only when you apply to their posting. Your
-                disability type is optional, never used for matching, and hidden unless you choose to show it.
-              </p>
-              <p className="privacy-notice__law">This follows the Data Privacy Act of 2012 (RA 10173).</p>
-            </section>
-            <CheckboxField
-              label="I agree that OpenDoor may process my personal data as described above."
-              error={stepErrors.consent}
-              {...form.bindCheckbox('consent')}
-            />
-          </>
-        )}
-
-        <div className="actions wizard__actions">
-          {step > 0 && (
-            <button type="button" className="button button--secondary" onClick={() => goTo(step - 1)}>
-              Back
-            </button>
           )}
-          <Button type="submit" className="button" disabled={form.submitting}>
-            {last ? (form.submitting ? 'Creating account…' : 'Create account') : 'Next'}
-          </Button>
-        </div>
-      </form>
 
-      {step === 0 && (
-        <p className="form-footer">
-          Already have an account? <Link to="/login">Log in</Link>
-        </p>
-      )}
-    </Page>
+          {step === 1 && (
+            <>
+              <TextField label="Full name" autoComplete="name" required error={stepErrors.name} {...form.bind('name')} />
+              <TextField
+                label="Email address"
+                type="email"
+                autoComplete="email"
+                required
+                hint="We never share it."
+                error={stepErrors.email}
+                {...form.bind('email')}
+              />
+              <TextField
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                hint="At least 8 characters."
+                error={stepErrors.password}
+                {...form.bind('password')}
+              />
+              <TextField
+                label="Confirm password"
+                id="password_confirmation"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                error={stepErrors.password_confirmation}
+                {...form.bind('passwordConfirmation')}
+              />
+              <CheckboxField id="show-password" label="Show password" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <section className="privacy-notice" aria-labelledby="privacy-title">
+                <h3 id="privacy-title">Your privacy</h3>
+                <p>
+                  OpenDoor stores your account details and, if you add them, the workplace accommodations you need. We use your
+                  accommodation needs only to match you with jobs. Employers see them only when you apply to their posting. Your
+                  disability type is optional, never used for matching, and hidden unless you choose to show it.
+                </p>
+                <p className="privacy-notice__law">This follows the Data Privacy Act of 2012 (RA 10173).</p>
+              </section>
+              <CheckboxField
+                label="I agree that OpenDoor may process my personal data as described above."
+                error={stepErrors.consent}
+                {...form.bindCheckbox('consent')}
+              />
+            </>
+          )}
+
+          <div className="actions wizard__actions">
+            {step > 0 && (
+              <button type="button" className="button button--secondary" onClick={() => goTo(step - 1)}>
+                Back
+              </button>
+            )}
+            <Button type="submit" className="button" disabled={form.submitting}>
+              {last ? (form.submitting ? 'Creating account…' : 'Create account') : 'Next'}
+            </Button>
+          </div>
+        </form>
+
+        {step === 0 && (
+          <p className="form-footer">
+            Already have an account? <Link to="/login">Log in</Link>
+          </p>
+        )}
+      </Page>
+    </AuthScene>
   );
 }

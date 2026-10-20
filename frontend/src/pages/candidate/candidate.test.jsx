@@ -403,7 +403,7 @@ describe('FeedbackPage', () => {
       },
     });
 
-    for (const group of await screen.findAllByRole('group')) {
+    for (const group of await within(screen.getByRole('main')).findAllByRole('group')) {
       await user.click(within(group).getByLabelText('Not delivered'));
     }
     await user.click(screen.getByRole('button', { name: 'Submit ratings' }));
