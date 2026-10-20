@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests\Candidate;
 
+use App\Enums\EducationLevel;
+use App\Enums\EmploymentType;
+use App\Enums\WorkSetup;
+use App\Services\SkillCatalog;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /** CandidateProfileInput in docs/openapi.yaml. */
 class ProfileRequest extends FormRequest
@@ -35,6 +40,12 @@ class ProfileRequest extends FormRequest
             'skills' => ['nullable', 'array', 'max:30'],
             'skills.*' => ['string', 'max:50'],
             'experience' => ['nullable', 'string', 'max:5000'],
+            'education_level' => ['nullable', Rule::enum(EducationLevel::class)],
+            'experience_years' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'preferred_work_setups' => ['nullable', 'array', 'max:3'],
+            'preferred_work_setups.*' => ['distinct', Rule::enum(WorkSetup::class)],
+            'preferred_employment_types' => ['nullable', 'array', 'max:4'],
+            'preferred_employment_types.*' => ['distinct', Rule::enum(EmploymentType::class)],
             'location_psgc' => ['nullable', 'string', 'regex:/^\d{9,10}$/'],
             'location_label' => ['nullable', 'string', 'max:255'],
             'disability_type' => ['nullable', 'string', 'max:100'],
@@ -47,6 +58,24 @@ class ProfileRequest extends FormRequest
      */
     public function messages(): array
     {
-        return ['location_psgc.regex' => 'Choose the city or municipality from the list.'];
+        return [
+            'location_psgc.regex' => 'Choose the city or municipality from the list.',
+            'experience_years.max' => 'Enter up to 60 years of experience.',
+        ];
+    }
+
+    /**
+     * The validated input with skills stored under their list names (Decision 2026-10-21).
+     *
+     * @return array<string, mixed>
+     */
+    public function profile(SkillCatalog $catalog): array
+    {
+        $data = $this->validated();
+        if (isset($data['skills'])) {
+            $data['skills'] = $catalog->normalize($data['skills']);
+        }
+
+        return $data;
     }
 }

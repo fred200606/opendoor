@@ -19,6 +19,7 @@ use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResumeController;
+use App\Http\Controllers\SkillController;
 use Illuminate\Support\Facades\Route;
 
 // M1 Auth – public
@@ -30,6 +31,7 @@ Route::post('reset-password', [PasswordResetController::class, 'reset'])->middle
 // M11 Master data – public filter options
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('accommodations', [AccommodationController::class, 'index']);
+Route::get('skills', [SkillController::class, 'index']); // shared skills list (Decision 2026-10-21)
 
 // M3 Company – public employer page and logo
 Route::get('employers/{employer}', [EmployerController::class, 'show']);

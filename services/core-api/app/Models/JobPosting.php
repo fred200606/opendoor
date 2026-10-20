@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EducationLevel;
 use App\Enums\EmploymentType;
 use App\Enums\InterviewFormat;
 use App\Enums\JobPostingStatus;
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * submit flag and the open/close endpoint. is_approved is true once a verified employer published
  * the posting (kept for older rows; there is no admin approval step any more).
  */
-#[Fillable(['category_id', 'title', 'description', 'address', 'location_psgc', 'location_label', 'employment_type', 'work_setup', 'interview_format', 'closes_at'])]
+#[Fillable(['category_id', 'title', 'description', 'skills', 'education_level', 'experience_years', 'qualifications', 'address', 'location_psgc', 'location_label', 'employment_type', 'work_setup', 'interview_format', 'closes_at'])]
 class JobPosting extends Model
 {
     /** @use HasFactory<JobPostingFactory> */
@@ -46,6 +47,9 @@ class JobPosting extends Model
             'interview_format' => InterviewFormat::class,
             'closes_at' => 'date',
             'is_approved' => 'boolean',
+            'skills' => 'array',
+            'education_level' => EducationLevel::class,
+            'experience_years' => 'integer',
         ];
     }
 

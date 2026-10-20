@@ -4,6 +4,7 @@ namespace Tests\Feature\Candidate;
 
 use App\Models\Accommodation;
 use App\Models\CandidateProfile;
+use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -39,6 +40,8 @@ class CandidateProfileTest extends TestCase
             ->assertOk()
             ->assertJsonPath('headline', null)
             ->assertJsonPath('skills', [])
+            ->assertJsonPath('education_level', null)
+            ->assertJsonPath('preferred_work_setups', [])
             ->assertJsonPath('location', ['psgc_code' => null, 'label' => null])
             ->assertJsonPath('show_disability', false)
             ->assertJsonPath('resume_url', null)
@@ -66,6 +69,36 @@ class CandidateProfileTest extends TestCase
             ->assertJsonPath('location', ['psgc_code' => '1381300000', 'label' => 'Quezon City, NCR'])
             ->assertJsonPath('disability_type', 'Deaf')
             ->assertJsonPath('show_disability', true);
+    }
+
+    public function test_education_experience_and_work_preferences_are_saved(): void
+    {
+        Skill::factory()->create(['name' => 'Microsoft Excel', 'aliases' => ['Excel']]);
+
+        $this->putJson('/api/candidate/profile', [
+            'skills' => ['excel', 'Microsoft  Excel', 'Typing'],
+            'education_level' => 'college',
+            'experience_years' => 3,
+            'preferred_work_setups' => ['remote', 'hybrid'],
+            'preferred_employment_types' => ['full_time'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('skills', ['Microsoft Excel', 'Typing'])
+            ->assertJsonPath('education_level', 'college')
+            ->assertJsonPath('experience_years', 3)
+            ->assertJsonPath('preferred_work_setups', ['remote', 'hybrid'])
+            ->assertJsonPath('preferred_employment_types', ['full_time']);
+
+        $this->putJson('/api/candidate/profile', [
+            'education_level' => 'doctorate',
+            'experience_years' => 61,
+            'preferred_work_setups' => ['remote', 'remote', 'beach'],
+            'preferred_employment_types' => ['freelance'],
+        ])->assertUnprocessable()->assertJsonValidationErrors([
+            'education_level',
+            'experience_years' => 'Enter up to 60 years of experience.',
+            'preferred_work_setups.0', 'preferred_work_setups.2', 'preferred_employment_types.0',
+        ]);
     }
 
     public function test_show_disability_is_off_without_a_disability_type(): void

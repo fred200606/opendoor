@@ -27,6 +27,10 @@ class JobPostingResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'skills' => $this->skills ?? [],
+            'education_level' => $this->education_level,
+            'experience_years' => $this->experience_years,
+            'qualifications' => $this->qualifications,
             'employer' => [
                 'id' => $this->employer->id,
                 'company_name' => $this->employer->company_name,

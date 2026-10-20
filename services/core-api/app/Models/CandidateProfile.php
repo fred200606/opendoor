@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EducationLevel;
 use App\Support\PublicUrl;
 use Database\Factories\CandidateProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * A candidate's profile and accommodation needs. Needs drive matching (M5);
  * disability_type never does (RA 10173).
  */
-#[Fillable(['headline', 'skills', 'experience', 'location_psgc', 'location_label', 'disability_type', 'show_disability'])]
+#[Fillable(['headline', 'skills', 'experience', 'education_level', 'experience_years', 'preferred_work_setups', 'preferred_employment_types', 'location_psgc', 'location_label', 'disability_type', 'show_disability'])]
 class CandidateProfile extends Model
 {
     /** @use HasFactory<CandidateProfileFactory> */
@@ -35,6 +36,10 @@ class CandidateProfile extends Model
     {
         return [
             'skills' => 'array',
+            'education_level' => EducationLevel::class,
+            'experience_years' => 'integer',
+            'preferred_work_setups' => 'array',
+            'preferred_employment_types' => 'array',
             'show_disability' => 'boolean',
         ];
     }

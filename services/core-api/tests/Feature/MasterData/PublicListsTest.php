@@ -5,6 +5,7 @@ namespace Tests\Feature\MasterData;
 use App\Models\Accommodation;
 use Database\Seeders\AccommodationSeeder;
 use Database\Seeders\CategorySeeder;
+use Database\Seeders\SkillSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,6 +23,20 @@ class PublicListsTest extends TestCase
         $this->assertCount(count(CategorySeeder::CATEGORIES), $names);
         $this->assertSame($names, collect($names)->sort()->values()->all());
         $response->assertJsonStructure(['data' => [['id', 'name']]]);
+    }
+
+    public function test_guest_gets_the_skills_list_sorted_by_name_with_other_spellings(): void
+    {
+        $this->seed(SkillSeeder::class);
+
+        $response = $this->getJson('/api/skills')->assertOk()->assertJsonStructure(['data' => [['id', 'name', 'aliases']]]);
+
+        $names = array_column($response->json('data'), 'name');
+        $this->assertCount(count(SkillSeeder::SKILLS), $names);
+        $this->assertSame($names, collect($names)->sortBy(fn ($name) => $name, SORT_NATURAL | SORT_FLAG_CASE)->values()->all());
+        $excel = collect($response->json('data'))->firstWhere('name', 'Microsoft Excel');
+        $this->assertSame(['Excel', 'MS Excel', 'Spreadsheets'], $excel['aliases']);
+        $this->assertSame([], collect($response->json('data'))->firstWhere('name', 'PHP')['aliases']);
     }
 
     public function test_guest_gets_accommodations_grouped_in_group_order(): void

@@ -55,6 +55,8 @@ class ApplicationResource extends JsonResource
             'headline' => $profile->headline,
             'skills' => $profile->skills ?? [],
             'experience' => $profile->experience,
+            'education_level' => $profile->education_level,
+            'experience_years' => $profile->experience_years,
             'accommodations' => AccommodationResource::collection($profile->accommodations),
             'disability_type' => $profile->show_disability ? $profile->disability_type : null,
             'resume_url' => $profile->resumeUrl(),

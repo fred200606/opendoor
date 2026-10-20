@@ -9,6 +9,7 @@ use App\Http\Requests\Postings\JobPostingRequest;
 use App\Http\Resources\JobPostingResource;
 use App\Models\JobPosting;
 use App\Services\NeedsMatcher;
+use App\Services\SkillCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -50,12 +51,12 @@ class JobPostingController extends Controller
         return new JobPostingResource($jobPosting);
     }
 
-    public function store(JobPostingRequest $request): JsonResponse
+    public function store(JobPostingRequest $request, SkillCatalog $catalog): JsonResponse
     {
         $employer = $request->user()->employer
             ?? throw ValidationException::withMessages(['company' => 'Create your company profile before posting a job.']);
 
-        $posting = new JobPosting($request->safe()->except(['accommodations', 'submit']));
+        $posting = new JobPosting($request->posting($catalog));
         $posting->employer()->associate($employer);
         $posting->status = JobPostingStatus::Draft;
         if ($request->boolean('submit')) {
@@ -74,7 +75,7 @@ class JobPostingController extends Controller
      * submit=true publishes the posting (also an open or closed one, with the changes); only a
      * verified employer may publish. submit=false is only for postings that are still drafts.
      */
-    public function update(JobPostingRequest $request, JobPosting $jobPosting): JobPostingResource
+    public function update(JobPostingRequest $request, JobPosting $jobPosting, SkillCatalog $catalog): JobPostingResource
     {
         Gate::authorize('update', $jobPosting);
 
@@ -83,7 +84,7 @@ class JobPostingController extends Controller
             throw ValidationException::withMessages(['submit' => 'A published posting cannot go back to draft. Publish your changes instead.']);
         }
 
-        $jobPosting->fill($request->safe()->except(['accommodations', 'submit']));
+        $jobPosting->fill($request->posting($catalog));
         if ($submit) {
             $this->publish($jobPosting);
         }

@@ -17,6 +17,10 @@ class DemoPostingSeeder extends Seeder
         'employer@opendoor.test' => [
             [
                 'title' => 'Data Encoder',
+                'skills' => ['Data entry', 'Typing', 'Microsoft Excel', 'Attention to detail'],
+                'education_level' => 'senior_high',
+                'experience_years' => 1,
+                'qualifications' => 'At least 1 year of encoding work. Training is provided for our CRM.',
                 'category' => 'Administrative',
                 'description' => "Encode and check customer records in our CRM.\nMonday to Friday, 9:00 to 17:00. Training is provided.",
                 'address' => '25 Scout Tobias St., South Triangle',
@@ -35,6 +39,10 @@ class DemoPostingSeeder extends Seeder
             ],
             [
                 'title' => 'Customer Support Associate (Chat)',
+                'skills' => ['Chat support', 'Email support', 'English communication', 'CRM software'],
+                'education_level' => 'senior_high',
+                'experience_years' => null,
+                'qualifications' => 'Good written English. Fresh graduates are welcome.',
                 'category' => 'Customer Service',
                 'description' => "Answer customer questions by chat and email.\nNo phone calls. Rotating day shifts.",
                 'address' => '25 Scout Tobias St., South Triangle',
@@ -53,6 +61,10 @@ class DemoPostingSeeder extends Seeder
             ],
             [
                 'title' => 'Junior Web Developer',
+                'skills' => ['HTML', 'CSS', 'JavaScript', 'React', 'Git'],
+                'education_level' => 'college',
+                'experience_years' => null,
+                'qualifications' => 'A portfolio or GitHub profile with at least one web project.',
                 'category' => 'Information Technology',
                 'description' => "Build and test accessible web pages with our product team.\nKnowledge of HTML and JavaScript required.",
                 'address' => 'Remote (team based in Quezon City)',
@@ -73,6 +85,10 @@ class DemoPostingSeeder extends Seeder
         'employer2@opendoor.test' => [
             [
                 'title' => 'Packing Line Staff',
+                'skills' => ['Packing and labeling', 'Attention to detail', 'Teamwork'],
+                'education_level' => 'elementary',
+                'experience_years' => null,
+                'qualifications' => null,
                 'category' => 'Manufacturing and Production',
                 'description' => "Pack and label food products.\nSeated workstation available.",
                 'address' => '1200 Pasong Tamo Ext.',
@@ -92,6 +108,10 @@ class DemoPostingSeeder extends Seeder
             [
                 // Filled and closed: the hires for DemoFeedbackSeeder (2 responses + one open for Postman T10).
                 'title' => 'Quality Control Assistant',
+                'skills' => ['Quality control', 'Attention to detail', 'Food safety'],
+                'education_level' => 'high_school',
+                'experience_years' => 1,
+                'qualifications' => null,
                 'category' => 'Manufacturing and Production',
                 'description' => "Check packed products against the quality checklist.\nDay shift, Monday to Friday.",
                 'address' => '1200 Pasong Tamo Ext.',
@@ -127,6 +147,10 @@ class DemoPostingSeeder extends Seeder
                 $posting->fill([
                     'category_id' => $categories[$data['category']],
                     'description' => $data['description'],
+                    'skills' => $data['skills'],
+                    'education_level' => $data['education_level'],
+                    'experience_years' => $data['experience_years'],
+                    'qualifications' => $data['qualifications'],
                     'address' => $data['address'],
                     'location_psgc' => $data['location_psgc'],
                     'location_label' => $data['location_label'],

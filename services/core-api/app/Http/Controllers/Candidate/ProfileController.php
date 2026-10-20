@@ -8,6 +8,7 @@ use App\Http\Resources\AccommodationResource;
 use App\Http\Resources\CandidateProfileResource;
 use App\Models\CandidateProfile;
 use App\Rules\UsableAccommodation;
+use App\Services\SkillCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -21,10 +22,10 @@ class ProfileController extends Controller
         return new CandidateProfileResource($this->profile($request)->load('accommodations'));
     }
 
-    public function update(ProfileRequest $request): CandidateProfileResource
+    public function update(ProfileRequest $request, SkillCatalog $catalog): CandidateProfileResource
     {
         $profile = $this->profile($request);
-        $profile->fill($request->validated());
+        $profile->fill($request->profile($catalog));
         // Showing the disability type only makes sense when one is given.
         if ($profile->disability_type === null) {
             $profile->show_disability = false;

@@ -7,6 +7,7 @@ use App\Models\Accommodation;
 use App\Models\Category;
 use App\Models\Employer;
 use App\Models\JobPosting;
+use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -42,6 +43,7 @@ class JobPostingTest extends TestCase
         return [
             'title' => 'Data Encoder',
             'description' => 'Encode records for the admin team.',
+            'skills' => ['Data entry', 'Microsoft Excel'],
             'category_id' => $this->category->id,
             'address' => '25 Scout Tobias St.',
             'location_psgc' => '1381300000',
@@ -117,6 +119,37 @@ class JobPostingTest extends TestCase
         $this->getJson('/api/job-postings')->assertJsonPath('meta.total', 0);
         $this->actingAsOwner();
         $this->getJson("/api/job-postings/{$posting->id}")->assertOk()->assertJsonPath('status', 'open');
+    }
+
+    public function test_skills_and_qualifications_are_saved_under_their_list_names(): void
+    {
+        Skill::factory()->create(['name' => 'Microsoft Excel', 'aliases' => ['Excel', 'MS Excel']]);
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload([
+            'skills' => [' ms excel ', 'Excel', 'Inventory  counting', ''],
+            'education_level' => 'senior_high',
+            'experience_years' => 1,
+            'qualifications' => '  TESDA NC II in bookkeeping is a plus. ',
+        ]))
+            ->assertCreated()
+            ->assertJsonPath('skills', ['Microsoft Excel', 'Inventory counting'])
+            ->assertJsonPath('education_level', 'senior_high')
+            ->assertJsonPath('experience_years', 1)
+            ->assertJsonPath('qualifications', 'TESDA NC II in bookkeeping is a plus.');
+    }
+
+    public function test_a_published_job_needs_a_skill_but_a_draft_does_not(): void
+    {
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload(['skills' => []]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['skills' => 'List at least one skill this job needs.']);
+        $this->postJson('/api/job-postings', $this->payload(['skills' => [], 'submit' => false]))->assertCreated()->assertJsonPath('skills', []);
+        $this->postJson('/api/job-postings', $this->payload(['education_level' => 'phd', 'experience_years' => 41, 'skills' => [str_repeat('x', 51)]]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['education_level', 'experience_years' => 'Ask for at most 40 years of experience.', 'skills.0']);
     }
 
     public function test_save_as_draft(): void
