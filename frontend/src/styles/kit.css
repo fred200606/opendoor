@@ -308,6 +308,14 @@
     @apply bg-subtle;
   }
 
+  .recommended-list a {
+    @apply font-display font-semibold text-primary underline underline-offset-4;
+  }
+
+  .recommended-list a:hover {
+    @apply text-primary-hover no-underline;
+  }
+
   .job-card__title a {
     @apply font-display text-lg font-semibold text-accent no-underline;
   }
@@ -371,6 +379,11 @@
   }
 
   /* ---------- dialogs (Modal: 12 px corners, deep shadow, violet backdrop, settles in) */
+  /* Tailwind's reset removes the browser's `margin: auto` that centres a modal <dialog>. */
+  .dialog {
+    margin: auto;
+  }
+
   .dialog {
     @apply animate-dialog-in rounded-lg border-0 bg-surface text-text;
     box-shadow: 0 24px 48px rgb(36 27 58 / 0.35);
