@@ -10,3 +10,6 @@ Schedule::command('feedback:remind')->dailyAt('08:00')->withoutOverlapping();
 
 // Forgot password: send the queued reset links (config opendoor.password_reset_queue), within a minute.
 Schedule::command('queue:work database --stop-when-empty --max-time=50')->everyMinute()->withoutOverlapping();
+
+// Matching (Decision 2026-10-21): city centre points that Insights could not give when saved.
+Schedule::command('locations:resolve')->everyFifteenMinutes()->withoutOverlapping();

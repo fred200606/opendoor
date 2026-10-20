@@ -161,6 +161,7 @@ class DemoPostingSeeder extends Seeder
                 ]);
                 $posting->status = JobPostingStatus::from($data['status']);
                 $posting->is_approved = in_array($data['status'], ['open', 'closed'], true);
+                DemoPlaces::apply($posting);
                 $posting->save();
 
                 $posting->accommodations()->sync(

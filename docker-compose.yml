@@ -54,6 +54,8 @@ services:
       QUEUE_CONNECTION: sync
       FILESYSTEM_DISK: local
       SERVICE_KEY_INSIGHTS: ${SERVICE_KEY_INSIGHTS:?}
+      # Core -> Insights place lookups for job matching (Decision 2026-10-21)
+      INSIGHTS_INTERNAL_URL: http://insights-service:8002
       REGISTRY_WSDL_URL: http://business-registry-soap:8003/soap?wsdl
       REGISTRY_SOAP_USER: opendoor-core
       REGISTRY_SOAP_PASSWORD: ${REGISTRY_SOAP_PASSWORD:?}

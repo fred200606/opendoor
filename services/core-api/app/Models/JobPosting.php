@@ -7,6 +7,7 @@ use App\Enums\EmploymentType;
 use App\Enums\InterviewFormat;
 use App\Enums\JobPostingStatus;
 use App\Enums\WorkSetup;
+use App\Models\Concerns\HasLocationPoint;
 use Database\Factories\JobPostingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class JobPosting extends Model
 {
     /** @use HasFactory<JobPostingFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasLocationPoint, SoftDeletes;
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -50,6 +51,9 @@ class JobPosting extends Model
             'skills' => 'array',
             'education_level' => EducationLevel::class,
             'experience_years' => 'integer',
+            'location_lat' => 'float',
+            'location_lon' => 'float',
+            'location_checked_at' => 'datetime',
         ];
     }
 

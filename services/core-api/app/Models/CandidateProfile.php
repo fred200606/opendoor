@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EducationLevel;
+use App\Models\Concerns\HasLocationPoint;
 use App\Support\PublicUrl;
 use Database\Factories\CandidateProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CandidateProfile extends Model
 {
     /** @use HasFactory<CandidateProfileFactory> */
-    use HasFactory;
+    use HasFactory, HasLocationPoint;
 
     public const RESUME_LINK_MINUTES = 30;
 
@@ -41,6 +42,9 @@ class CandidateProfile extends Model
             'preferred_work_setups' => 'array',
             'preferred_employment_types' => 'array',
             'show_disability' => 'boolean',
+            'location_lat' => 'float',
+            'location_lon' => 'float',
+            'location_checked_at' => 'datetime',
         ];
     }
 

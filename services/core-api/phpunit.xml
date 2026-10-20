@@ -33,5 +33,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- No Core -> Insights place lookups unless a test sets the URL and fakes Http (Decision 2026-10-21). -->
+        <env name="INSIGHTS_INTERNAL_URL" value=""/>
     </php>
 </phpunit>

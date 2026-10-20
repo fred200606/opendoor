@@ -28,9 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // Shared secret the Insights Service sends as X-Service-Key on /internal/* calls.
+    // Shared secret the Insights Service sends as X-Service-Key on /internal/* calls; Core sends
+    // it too on its place lookups (Decision 2026-10-21). An empty URL turns the lookups off.
     'insights' => [
         'key' => env('SERVICE_KEY_INSIGHTS'),
+        'url' => env('INSIGHTS_INTERNAL_URL'),
+        'timeout' => (int) env('INSIGHTS_TIMEOUT', 4),
     ],
 
     // Legacy Business Registry (SOAP). The password is a secret: never log it.

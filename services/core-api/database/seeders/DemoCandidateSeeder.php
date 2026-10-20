@@ -50,7 +50,9 @@ class DemoCandidateSeeder extends Seeder
 
             $profile = CandidateProfile::firstOrNew(['user_id' => $user->id]);
             $profile->user_id = $user->id;
-            $profile->fill(collect($data)->except('needs')->all())->save();
+            $profile->fill(collect($data)->except('needs')->all());
+            DemoPlaces::apply($profile);
+            $profile->save();
             $profile->accommodations()->sync(collect($data['needs'])->map(fn ($name) => $accommodations[$name])->all());
         }
     }
