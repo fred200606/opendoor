@@ -154,6 +154,43 @@ export function CheckboxField({ label, name, id = name, error, hint, className =
   );
 }
 
+/** Checkboxes in a fieldset; `value` is the list of checked option values. options: [{ value, label }] */
+export function CheckboxGroup({ legend, name, value = [], onChange, options, error, hint, required, className = '' }) {
+  const groupId = useId();
+  const hintId = hint ? `${name}-hint` : null;
+  const errorId = error ? `${name}-error` : null;
+
+  function toggle(optionValue, checked) {
+    // Keep the options' order, whatever order they were ticked in.
+    onChange(options.map((option) => option.value).filter((item) => (item === optionValue ? checked : value.includes(item))));
+  }
+
+  return (
+    <fieldset
+      id={name}
+      className={`field fieldset ${error ? 'field--invalid' : ''} ${className}`.trim()}
+      aria-describedby={describedBy(hintId, errorId)}
+      tabIndex={-1}
+    >
+      <legend className="field__label">
+        {legend}
+        {required && <span className="field__required"> (required)</span>}
+      </legend>
+      <Hint id={hintId}>{hint}</Hint>
+      <FieldError id={errorId} error={error} />
+      {options.map((option) => {
+        const optionId = `${groupId}-${option.value}`;
+        return (
+          <div className="checkbox" key={option.value}>
+            <input type="checkbox" id={optionId} name={name} value={option.value} checked={value.includes(option.value)} onChange={(event) => toggle(option.value, event.target.checked)} />
+            <label htmlFor={optionId}>{option.label}</label>
+          </div>
+        );
+      })}
+    </fieldset>
+  );
+}
+
 /** Radio buttons in a fieldset. options: [{ value, label, hint? }] */
 export function RadioGroup({ legend, name, value, onChange, options, error, required, className = '' }) {
   const groupId = useId();

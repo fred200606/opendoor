@@ -10,7 +10,7 @@ const isNcr = (code) => code === NCR_CODE || code?.startsWith('13');
  * ("Quezon City, National Capital Region (NCR)") for Core to store. `currentLabel` shows the saved
  * location until the user changes it. Lists come from the Insights Service (cached PSGC data).
  */
-export default function LocationPicker({ value, currentLabel, onChange, error, legend = 'Location', id = 'location_psgc' }) {
+export default function LocationPicker({ value, currentLabel, onChange, error, legend = 'Location', id = 'location_psgc', required = false }) {
   const baseId = useId();
   const [editing, setEditing] = useState(!value);
   const [regions, setRegions] = useState([]);
@@ -81,7 +81,10 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
   if (!editing) {
     return (
       <div className="field">
-        <p className="field__label">{legend}</p>
+        <p className="field__label">
+          {legend}
+          {required && <span className="field__required"> (required)</span>}
+        </p>
         <p>
           {currentLabel || 'Saved location'}{' '}
           <button
@@ -108,7 +111,10 @@ export default function LocationPicker({ value, currentLabel, onChange, error, l
       className={`field fieldset ${errorText ? 'field--invalid' : ''}`}
       aria-describedby={[`${baseId}-hint`, errorText && `${baseId}-error`].filter(Boolean).join(' ')}
     >
-      <legend className="field__label">{legend}</legend>
+      <legend className="field__label">
+        {legend}
+        {required && <span className="field__required"> (required)</span>}
+      </legend>
       <p id={`${baseId}-hint`} className="field__hint">
         Choose the region first, then the city or municipality.
       </p>

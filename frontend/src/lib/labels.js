@@ -11,6 +11,16 @@ export const WORK_SETUPS = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remot
 
 export const INTERVIEW_FORMATS = { online: 'Online interview', onsite: 'On-site interview' };
 
+// In order: a level meets every requirement at or below it (Core EducationLevel).
+export const EDUCATION_LEVELS = {
+  elementary: 'Elementary',
+  high_school: 'High school (junior)',
+  senior_high: 'Senior high school',
+  vocational: 'Vocational or TESDA certificate',
+  college: 'College degree',
+  postgraduate: 'Postgraduate degree',
+};
+
 export const POSTING_STATUSES = {
   draft: 'Draft',
   open: 'Open',

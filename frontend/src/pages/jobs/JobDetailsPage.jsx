@@ -20,7 +20,7 @@ import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
-import { EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
+import { EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
 
 const APPLY_ERRORS = {
   ALREADY_APPLIED: 'You have already applied to this job. You can follow it in My applications.',
@@ -75,6 +75,7 @@ function JobDetails({ job }) {
     </section>
   );
   const accommodations = <OfferedAccommodations key="accommodations" items={job.accommodations ?? []} />;
+  const requirements = <Requirements key="requirements" job={job} />;
 
   return (
     <Page
@@ -95,7 +96,7 @@ function JobDetails({ job }) {
         <div className="job-layout__main">
           {isCandidate && <MatchBadge match={job.match} detailed />}
           {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
-          {isCandidate ? [accommodations, details, about] : [details, about, accommodations]}
+          {isCandidate ? [accommodations, requirements, details, about] : [details, requirements, about, accommodations]}
           <AccessibilitySnapshot jobId={job.id} />
         </div>
         <div className="job-layout__side">
@@ -111,6 +112,41 @@ function JobDetails({ job }) {
 /** A back link handed over by the page that linked here (search, saved jobs, employer page). */
 function isBackLink(back) {
   return typeof back?.to === 'string' && back.to.startsWith('/') && typeof back.label === 'string';
+}
+
+/** Skills and qualifications the employer asks for (decision 2026-10-21). */
+function Requirements({ job }) {
+  const skills = job.skills ?? [];
+  const years = job.experience_years;
+
+  return (
+    <section className="card">
+      <h2>Skills and qualifications</h2>
+      {skills.length === 0 ? (
+        <p>The employer did not list any skills.</p>
+      ) : (
+        <ul className="tag-list" aria-label="Skills this job needs">
+          {skills.map((skill) => (
+            <li key={skill} className="tag">
+              {skill}
+            </li>
+          ))}
+        </ul>
+      )}
+      <dl className="details-list">
+        <dt>Minimum education</dt>
+        <dd>{EDUCATION_LEVELS[job.education_level] ?? 'No minimum'}</dd>
+        <dt>Minimum experience</dt>
+        <dd>{years ? `${years} ${years === 1 ? 'year' : 'years'}` : 'None needed'}</dd>
+        {job.qualifications && (
+          <>
+            <dt>Other qualifications</dt>
+            <dd className="prose">{job.qualifications}</dd>
+          </>
+        )}
+      </dl>
+    </section>
+  );
 }
 
 function OfferedAccommodations({ items }) {

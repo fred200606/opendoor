@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createPosting, getJob, updatePosting } from '../../api/jobs.js';
 import { getCompany } from '../../api/profile.js';
-import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
+import { getAccommodationGroups, getCategories, getSkills } from '../../api/masterData.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { RadioGroup, SelectField, TextArea, TextField } from '../../components/form/fields.jsx';
+import SkillsPicker from '../../components/form/SkillsPicker.jsx';
 import LocationPicker from '../../components/LocationPicker.jsx';
 import Page from '../../components/Page.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
@@ -16,11 +17,29 @@ import WizardProgress from '../../components/WizardProgress.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, todayInManila } from '../../lib/format.js';
-import { EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
+import { EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
+import { collapseItemErrors } from '../../lib/skills.js';
+
+const MAX_JOB_SKILLS = 20;
 
 const FIELDS = {
   ...Object.fromEntries(
-    ['title', 'description', 'category_id', 'address', 'location_psgc', 'employment_type', 'work_setup', 'interview_format', 'closes_at', 'accommodations'].map(
+    [
+      'title',
+      'description',
+      'category_id',
+      'address',
+      'location_psgc',
+      'employment_type',
+      'work_setup',
+      'interview_format',
+      'closes_at',
+      'skills',
+      'education_level',
+      'experience_years',
+      'qualifications',
+      'accommodations',
+    ].map(
       (name) => [name, { id: name }],
     ),
   ),
@@ -28,19 +47,27 @@ const FIELDS = {
   submit: { id: 'posting-publish' },
 };
 
-// Figma "5.4 Post a new job": four steps, one request at the end. A verified company's job goes
-// live when it is published; there is no approval step (decision 2026-10-21).
+// Figma "5.4 Post a new job", plus a skills step (decision 2026-10-21): one request at the end. A
+// verified company's job goes live when it is published; there is no approval step.
 const STEPS = [
   { title: 'Job basics', intro: 'Your job goes live as soon as you publish it.', fields: ['title', 'category_id', 'employment_type', 'work_setup'] },
   { title: 'Description and place', intro: 'Describe the work and where it happens.', fields: ['description', 'interview_format', 'address', 'location_psgc', 'closes_at'] },
+  {
+    title: 'Skills and qualifications',
+    intro: 'What the person needs to do the job. We use it to recommend the job to the right people.',
+    fields: ['skills', 'education_level', 'experience_years', 'qualifications'],
+  },
   { title: 'Accommodations', intro: 'Tell people what support you offer.', fields: ['accommodations'] },
   { title: 'Review and publish', intro: 'Check everything, then publish the job.', fields: [] },
 ];
 const REVIEW = STEPS.length - 1;
+const SKILLS_STEP = 2;
+const ACCOMMODATIONS_STEP = 3;
 
 /** The step that shows a field (accommodations.0.note → Accommodations); others stay on Review. */
 function stepOf(field) {
-  if (field.startsWith('accommodations')) return 2;
+  if (field.startsWith('accommodations')) return ACCOMMODATIONS_STEP;
+  if (field.startsWith('skills')) return SKILLS_STEP;
   const index = STEPS.findIndex((step) => step.fields.includes(field));
   return index === -1 ? REVIEW : index;
 }
@@ -61,6 +88,7 @@ function checkStep(index, values) {
     if (!values.closes_at) errors.closes_at = ['Choose the date applications close.'];
     else if (values.closes_at < todayInManila()) errors.closes_at = ['The closing date cannot be in the past.'];
   }
+  if (index === SKILLS_STEP && values.skills.length === 0) errors.skills = ['List at least one skill this job needs.'];
   return errors;
 }
 
@@ -72,6 +100,7 @@ export default function PostingFormPage() {
       Promise.all([
         getCategories(),
         getAccommodationGroups(),
+        getSkills(),
         id ? getJob(id) : Promise.resolve(null),
         // No company yet → 404; the form then shows the "company profile is missing" message on save.
         getCompany().catch(() => null),
@@ -81,12 +110,14 @@ export default function PostingFormPage() {
 
   return (
     <AsyncContent state={state} label="Loading the posting form">
-      {([categories, groups, job, company]) => <PostingForm categories={categories} groups={groups} job={job} verified={Boolean(company?.verified_at)} />}
+      {([categories, groups, skills, job, company]) => (
+        <PostingForm categories={categories} groups={groups} skillOptions={skills} job={job} verified={Boolean(company?.verified_at)} />
+      )}
     </AsyncContent>
   );
 }
 
-function PostingForm({ categories, groups, job, verified }) {
+function PostingForm({ categories, groups, skillOptions, job, verified }) {
   const navigate = useNavigate();
   const isEdit = Boolean(job);
   const [step, setStep] = useState(0);
@@ -103,6 +134,10 @@ function PostingForm({ categories, groups, job, verified }) {
     work_setup: job?.work_setup ?? '',
     interview_format: job?.interview_format ?? '',
     closes_at: job?.closes_at ?? '',
+    skills: job?.skills ?? [],
+    education_level: job?.education_level ?? '',
+    experience_years: job?.experience_years ?? '',
+    qualifications: job?.qualifications ?? '',
     accommodationIds: (job?.accommodations ?? []).map((item) => item.id),
     notes: Object.fromEntries((job?.accommodations ?? []).map((item) => [item.id, item.note ?? ''])),
   });
@@ -111,7 +146,10 @@ function PostingForm({ categories, groups, job, verified }) {
 
   // Only this step's messages are shown (`company` is its own message with a link, below).
   const stepErrors = useMemo(() => {
-    const errors = Object.fromEntries(Object.entries(fieldErrors).filter(([key]) => key !== 'company' && stepOf(key) === step));
+    const errors = collapseItemErrors(
+      Object.fromEntries(Object.entries(fieldErrors).filter(([key]) => key !== 'company' && stepOf(key) === step)),
+      ['skills'],
+    );
     // Item-level API errors (accommodations.0.note) are shown once, on the accommodations group.
     const itemError = Object.entries(errors).find(([key]) => key.startsWith('accommodations.'))?.[1];
     for (const key of Object.keys(errors)) if (key.startsWith('accommodations.')) delete errors[key];
@@ -151,6 +189,10 @@ function PostingForm({ categories, groups, job, verified }) {
         work_setup: current.work_setup,
         interview_format: current.interview_format,
         closes_at: current.closes_at,
+        skills: current.skills,
+        education_level: current.education_level || null,
+        experience_years: current.experience_years === '' ? null : Number(current.experience_years),
+        qualifications: current.qualifications.trim() || null,
         accommodations: current.accommodationIds.map((accommodationId) => ({ id: accommodationId, note: current.notes[accommodationId]?.trim() || null })),
         submit,
       };
@@ -201,7 +243,7 @@ function PostingForm({ categories, groups, job, verified }) {
         )
       }
     >
-      <div className={step === 2 ? 'posting-wizard posting-wizard--wide' : 'posting-wizard'}>
+      <div className={step === ACCOMMODATIONS_STEP ? 'posting-wizard posting-wizard--wide' : 'posting-wizard'}>
         {job?.rejection_reason && (
           // Only postings reviewed before decision 2026-10-21 can still carry a reason.
           <Alert type="error" title="This posting was not approved">
@@ -305,7 +347,50 @@ function PostingForm({ categories, groups, job, verified }) {
             </>
           )}
 
-          {step === 2 && (
+          {step === SKILLS_STEP && (
+            <>
+              <SkillsPicker
+                id="skills"
+                label="Skills this job needs"
+                hint="List the skills you look for, most important first."
+                required
+                value={values.skills}
+                onChange={(skills) => form.setValue('skills', skills)}
+                options={skillOptions}
+                max={MAX_JOB_SKILLS}
+                error={stepErrors.skills}
+              />
+              <SelectField
+                label="Minimum education"
+                name="education_level"
+                placeholder="No minimum"
+                options={toOptions(EDUCATION_LEVELS)}
+                error={stepErrors.education_level}
+                {...form.bind('education_level')}
+              />
+              <TextField
+                label="Minimum years of experience"
+                name="experience_years"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={40}
+                className="field--short"
+                hint="Leave empty if none is needed."
+                error={stepErrors.experience_years}
+                {...form.bind('experience_years')}
+              />
+              <TextArea
+                label="Other qualifications"
+                hint="Optional. Licences or certificates, for example TESDA NC II."
+                maxLength={2000}
+                error={stepErrors.qualifications}
+                {...form.bind('qualifications')}
+              />
+            </>
+          )}
+
+          {step === ACCOMMODATIONS_STEP && (
             <>
               <Alert type="warning" title="List only what you really provide">
                 <p>Hired employees will rate each one.</p>
@@ -401,10 +486,31 @@ function Review({ values, categories, groups, onChange }) {
         </dl>
       </section>
 
+      <section className="card review-card" aria-labelledby="review-skills">
+        <div className="review-card__header">
+          <h3 id="review-skills">Skills and qualifications</h3>
+          {changeButton(SKILLS_STEP, 'skills and qualifications')}
+        </div>
+        <dl className="details-list">
+          <dt>Skills</dt>
+          <dd>{values.skills.length > 0 ? values.skills.join(', ') : 'None listed yet.'}</dd>
+          <dt>Minimum education</dt>
+          <dd>{EDUCATION_LEVELS[values.education_level] ?? 'No minimum'}</dd>
+          <dt>Minimum experience</dt>
+          <dd>{yearsText(values.experience_years)}</dd>
+          {values.qualifications.trim() && (
+            <>
+              <dt>Other qualifications</dt>
+              <dd className="prose">{values.qualifications.trim()}</dd>
+            </>
+          )}
+        </dl>
+      </section>
+
       <section className="card review-card" aria-labelledby="review-accommodations">
         <div className="review-card__header">
           <h3 id="review-accommodations">Accommodations offered</h3>
-          {changeButton(2, 'accommodations')}
+          {changeButton(ACCOMMODATIONS_STEP, 'accommodations')}
         </div>
         {accommodations.length === 0 ? (
           <p>None listed. Jobs that list what they provide are easier to find for people who need it.</p>
@@ -431,8 +537,13 @@ function Review({ values, categories, groups, onChange }) {
       </section>
 
       <Alert type="info" title="What happens next">
-        <p>An administrator checks the job. You get a notification when it is live or if something needs changing.</p>
+        <p>The job goes live as soon as you publish it. We recommend it to job seekers whose skills and needs fit.</p>
       </Alert>
     </>
   );
+}
+
+function yearsText(years) {
+  if (years === '' || years === null || years === undefined) return 'None needed';
+  return Number(years) === 1 ? '1 year' : `${years} years`;
 }

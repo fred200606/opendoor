@@ -1,13 +1,17 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
-import { accommodationGroups, application } from '../../test/fixtures.js';
+import { accommodationGroups, application, skillsList } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
 
 const profile = {
   id: 3,
   headline: 'Data encoder',
-  skills: ['Excel', 'Typing'],
+  skills: ['Microsoft Excel', 'Typing'],
   experience: '3 years',
+  education_level: 'senior_high',
+  experience_years: 3,
+  preferred_work_setups: ['onsite'],
+  preferred_employment_types: ['full_time'],
   location_psgc: '1381300000',
   location: { psgc_code: '1381300000', label: 'Quezon City, NCR' },
   disability_type: null,
@@ -20,6 +24,7 @@ describe('CandidateProfilePage', () => {
   const routes = {
     'GET /candidate/profile': () => [200, profile],
     'GET /accommodations': () => [200, { data: accommodationGroups }],
+    'GET /skills': () => [200, { data: skillsList }],
   };
 
   test('saves needs as accommodation_ids', async () => {
@@ -36,16 +41,25 @@ describe('CandidateProfilePage', () => {
     expect(calls.find((call) => call.key === 'PUT /candidate/accommodations').data).toEqual({ accommodation_ids: [2, 5] });
   });
 
-  test('saves the profile with skills as a list; disability stays private by default', async () => {
+  test('saves the profile with skills from the list or typed; disability stays private by default', async () => {
     const { user, calls } = renderApp('/candidate/profile', {
       as: 'candidate',
       routes: { ...routes, 'PUT /candidate/profile': () => [200, profile] },
     });
 
     await user.click(await screen.findByRole('tab', { name: 'About you' }));
-    const skills = screen.getByLabelText('Skills');
-    await user.clear(skills);
-    await user.type(skills, 'Excel, Filing , ');
+    const skills = screen.getByRole('combobox', { name: /Your skills/ });
+    await user.click(screen.getByRole('button', { name: 'Remove Typing' }));
+    expect(skills).toHaveFocus();
+    expect(screen.getByText('Removed Typing.')).toBeInTheDocument();
+    await user.type(skills, 'filing{Enter}');
+    expect(screen.getByText('Added Filing and records management.')).toBeInTheDocument();
+    await user.type(skills, ' inventory   counting ');
+    await user.click(screen.getByRole('button', { name: 'Add skill' }));
+    await user.type(skills, 'ms excel{Enter}');
+    expect(screen.getByText('Microsoft Excel is already in the list.')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText(/Highest education/), 'College degree');
+    await user.click(within(screen.getByRole('group', { name: /Work setups you prefer/ })).getByLabelText('Remote'));
     expect(screen.queryByLabelText(/Show my disability type/)).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Disability type'), 'Deaf');
     expect(screen.getByLabelText(/Show my disability type/)).not.toBeChecked();
@@ -54,10 +68,14 @@ describe('CandidateProfilePage', () => {
     expect(await screen.findByText('Your profile is saved.')).toBeInTheDocument();
     expect(calls.find((call) => call.key === 'PUT /candidate/profile').data).toEqual({
       headline: 'Data encoder',
-      skills: ['Excel', 'Filing'],
-      experience: '3 years',
       location_psgc: '1381300000',
       location_label: 'Quezon City, NCR',
+      skills: ['Microsoft Excel', 'Filing and records management', 'inventory counting'],
+      education_level: 'college',
+      experience_years: 3,
+      preferred_work_setups: ['onsite', 'remote'],
+      preferred_employment_types: ['full_time'],
+      experience: '3 years',
       disability_type: 'Deaf',
       show_disability: false,
     });
@@ -91,7 +109,7 @@ describe('CandidateProfilePage', () => {
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'About you' })).toHaveFocus();
     expect(location()).toBe('/candidate/profile?tab=about');
-    expect(screen.getByLabelText('Skills')).toBeVisible();
+    expect(screen.getByRole('combobox', { name: /Your skills/ })).toBeVisible();
   });
 
   test('résumé upload refuses non-PDF files before sending', async () => {

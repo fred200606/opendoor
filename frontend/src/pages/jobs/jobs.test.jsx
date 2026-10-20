@@ -102,6 +102,11 @@ describe('JobDetailsPage', () => {
     expect(screen.getByText('86%')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'How trust scores work' })).toHaveAttribute('href', '/trust-scores');
 
+    const requirements = screen.getByRole('heading', { level: 2, name: 'Skills and qualifications' }).closest('section');
+    expect(within(requirements).getByRole('list', { name: 'Skills this job needs' })).toHaveTextContent('Data entryMicrosoft Excel');
+    expect(within(requirements).getByText('Senior high school')).toBeInTheDocument();
+    expect(within(requirements).getByText('1 year')).toBeInTheDocument();
+
     // The snapshot is closed at first and is only requested when opened.
     expect(calls.some((call) => call.key === 'GET /insights/job-postings/42')).toBe(false);
     await openSnapshot(user);

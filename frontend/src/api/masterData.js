@@ -8,6 +8,12 @@ export async function getCategories() {
   return data.data;
 }
 
+/** The shared skills list: [{ id, name, aliases }] sorted by name (decision 2026-10-21). */
+export async function getSkills() {
+  const { data } = await api.get('/skills');
+  return data.data;
+}
+
 /** [{ group, label, items: [Accommodation] }] – active types only */
 export async function getAccommodationGroups() {
   const { data } = await api.get('/accommodations');

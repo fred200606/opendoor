@@ -1055,6 +1055,58 @@ input[type='file'].field__input {
   color: var(--text-muted);
 }
 
+.field--short .field__input {
+  max-width: 10rem;
+}
+
+/* Skills picker (decision 2026-10-21): text field + Add, chosen skills as tags with Remove. */
+.skills-picker__entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.skills-picker__entry .field__input {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.skills-picker__list {
+  margin-top: 0.75rem;
+}
+
+.tag--removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.tag__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.5rem -0.25rem -0.5rem 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tag__remove:hover {
+  background: var(--od-surface-current);
+}
+
+.tag__remove svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
 /* ---------- cards, lists, tables */
 
 /* Cards: 2 px subtle border, 20 px corners. */

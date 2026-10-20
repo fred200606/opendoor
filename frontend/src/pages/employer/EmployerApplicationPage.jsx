@@ -8,6 +8,7 @@ import Page from '../../components/Page.jsx';
 import StatusBadge, { BadgeIcon } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
+import { EDUCATION_LEVELS } from '../../lib/labels.js';
 
 // Employer decisions allowed by the status workflow (pending → reviewed happens on opening).
 const DECISIONS = {
@@ -115,6 +116,10 @@ function ApplicationReview({ application, onChange }) {
           <dl className="details-list">
             <dt>Skills</dt>
             <dd>{(candidate.skills ?? []).length > 0 ? candidate.skills.join(', ') : 'Not listed'}</dd>
+            <dt>Highest education</dt>
+            <dd>{EDUCATION_LEVELS[candidate.education_level] ?? 'Not listed'}</dd>
+            <dt>Years of experience</dt>
+            <dd>{candidate.experience_years ?? 'Not listed'}</dd>
             <dt>Work experience</dt>
             <dd className="prose">{candidate.experience || 'Not listed'}</dd>
             {candidate.disability_type && (

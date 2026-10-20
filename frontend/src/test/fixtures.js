@@ -5,6 +5,14 @@ export const categories = [
   { id: 3, name: 'Information Technology' },
 ];
 
+// GET /skills (decision 2026-10-21)
+export const skillsList = [
+  { id: 4, name: 'Data entry', aliases: ['Encoding'] },
+  { id: 3, name: 'Filing and records management', aliases: ['Filing'] },
+  { id: 1, name: 'Microsoft Excel', aliases: ['Excel', 'MS Excel'] },
+  { id: 2, name: 'Typing', aliases: [] },
+];
+
 export const accommodationGroups = [
   {
     group: 'physical_access',
@@ -25,6 +33,10 @@ export const job = {
   id: 42,
   title: 'Data Encoder',
   description: 'Encode records.\nWork with the admin team.',
+  skills: ['Data entry', 'Microsoft Excel'],
+  education_level: 'senior_high',
+  experience_years: 1,
+  qualifications: null,
   employer: { id: 7, company_name: 'Bayanihan Tech Solutions', verified: true },
   category: { id: 1, name: 'Administrative' },
   address: '123 Quezon Ave.',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { getAccommodationGroups } from '../../api/masterData.js';
+import { getAccommodationGroups, getSkills } from '../../api/masterData.js';
 import { getCandidateProfile, updateCandidateProfile, updateNeeds, uploadResume } from '../../api/profile.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
@@ -8,11 +8,13 @@ import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, TextArea, TextField } from '../../components/form/fields.jsx';
-import LocationPicker from '../../components/LocationPicker.jsx';
+import MatchingFields from '../../components/MatchingFields.jsx';
 import Page from '../../components/Page.jsx';
 import Tabs from '../../components/Tabs.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
+import { MATCHING_FIELD_IDS, matchingPayload, matchingValues } from '../../lib/matchingProfile.js';
+import { collapseItemErrors } from '../../lib/skills.js';
 
 const RESUME_MAX_MB = 5;
 
@@ -20,6 +22,10 @@ const EMPTY_PROFILE = {
   headline: '',
   skills: [],
   experience: '',
+  education_level: null,
+  experience_years: null,
+  preferred_work_setups: [],
+  preferred_employment_types: [],
   location_psgc: null,
   location: null,
   disability_type: null,
@@ -44,6 +50,7 @@ export default function CandidateProfilePage() {
         // A brand-new candidate has no profile yet.
         getCandidateProfile().catch((error) => (error.status === 404 ? EMPTY_PROFILE : Promise.reject(error))),
         getAccommodationGroups(),
+        getSkills(),
       ]),
     [],
   );
@@ -56,7 +63,7 @@ export default function CandidateProfilePage() {
         </Alert>
       )}
       <AsyncContent state={state} label="Loading your profile">
-        {([profile, groups]) => (
+        {([profile, groups, skills]) => (
           <Tabs
             label="Parts of your profile"
             selected={params.get('tab') ?? 'needs'}
@@ -67,7 +74,7 @@ export default function CandidateProfilePage() {
                 tab.id === 'needs' ? (
                   <NeedsSection profile={profile} groups={groups} />
                 ) : tab.id === 'about' ? (
-                  <ProfileSection profile={profile} />
+                  <ProfileSection profile={profile} skillOptions={skills} />
                 ) : (
                   <ResumeSection profile={profile} />
                 ),
@@ -126,23 +133,21 @@ function NeedsSection({ profile, groups }) {
 
 const PROFILE_FIELDS = {
   headline: { id: 'headline' },
-  skills: { id: 'skills' },
+  ...MATCHING_FIELD_IDS,
   experience: { id: 'experience' },
-  location_psgc: { id: 'location_psgc' },
   disability_type: { id: 'disability_type' },
 };
 
-function ProfileSection({ profile }) {
+function ProfileSection({ profile, skillOptions }) {
   const [saved, setSaved] = useState(false);
   const form = useApiForm({
     headline: profile.headline ?? '',
-    skills: (profile.skills ?? []).join(', '),
+    ...matchingValues(profile),
     experience: profile.experience ?? '',
-    location_psgc: profile.location_psgc ?? null,
-    location_label: profile.location?.label ?? null,
     disability_type: profile.disability_type ?? '',
     show_disability: Boolean(profile.show_disability),
   });
+  const errors = collapseItemErrors(form.fieldErrors, ['skills', 'preferred_work_setups', 'preferred_employment_types']);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -150,13 +155,8 @@ function ProfileSection({ profile }) {
     const result = await form.submit((values) =>
       updateCandidateProfile({
         headline: values.headline,
-        skills: values.skills
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean),
+        ...matchingPayload(values),
         experience: values.experience,
-        location_psgc: values.location_psgc,
-        location_label: values.location_label,
         disability_type: values.disability_type || null,
         show_disability: values.disability_type ? values.show_disability : false,
       }),
@@ -169,19 +169,12 @@ function ProfileSection({ profile }) {
       <h2 id="profile-title" className="visually-hidden">
         About you
       </h2>
-      <ErrorSummary errors={form.fieldErrors} fields={PROFILE_FIELDS} />
+      <ErrorSummary errors={errors} fields={PROFILE_FIELDS} />
       <ApiErrorAlert error={form.formError} title="Your profile was not saved" />
       <form onSubmit={handleSubmit} noValidate>
-        <TextField label="Headline" hint="For example: Data encoder with 3 years of experience." maxLength={255} error={form.fieldErrors.headline} {...form.bind('headline')} />
-        <TextField label="Skills" hint="Separate skills with commas." error={form.fieldErrors.skills} {...form.bind('skills')} />
-        <TextArea label="Work experience" voice error={form.fieldErrors.experience} {...form.bind('experience')} />
-        <LocationPicker
-          legend="Where you live"
-          value={form.values.location_psgc}
-          currentLabel={profile.location?.label}
-          onChange={(code, label) => form.setValues((values) => ({ ...values, location_psgc: code, location_label: label }))}
-          error={form.fieldErrors.location_psgc}
-        />
+        <TextField label="Headline" hint="For example: Data encoder with 3 years of experience." maxLength={255} error={errors.headline} {...form.bind('headline')} />
+        <MatchingFields form={form} errors={errors} skillOptions={skillOptions} currentLocationLabel={profile.location?.label} />
+        <TextArea label="Work experience" hint="Where you worked and what you did." voice error={errors.experience} {...form.bind('experience')} />
 
         <fieldset className="fieldset field fieldset--box">
           <legend className="field__label">Disability (optional)</legend>

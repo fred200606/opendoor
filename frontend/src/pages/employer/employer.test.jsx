@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
-import { accommodationGroups, application, categories, job } from '../../test/fixtures.js';
+import { accommodationGroups, application, categories, job, skillsList } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
 
 const company = {
@@ -100,11 +100,12 @@ describe('PostingFormPage', () => {
   const routes = {
     'GET /categories': () => [200, { data: categories }],
     'GET /accommodations': () => [200, { data: accommodationGroups }],
+    'GET /skills': () => [200, { data: skillsList }],
     'GET /insights/locations/regions': () => [200, []],
     'GET /employer/company': () => [200, { id: 3, company_name: 'Bayanihan Tech Solutions', verified_at: '2026-10-01T09:00:00+08:00' }],
   };
 
-  // Walks through the four steps to the review.
+  // Walks through the steps to the review.
   async function fillRequired(user) {
     await user.type(await screen.findByLabelText(/Job title/), 'Data Encoder');
     await user.selectOptions(screen.getByLabelText(/Category/), 'Administrative');
@@ -116,6 +117,8 @@ describe('PostingFormPage', () => {
     await user.type(screen.getByLabelText(/Workplace address/), '123 Quezon Ave.');
     await user.type(screen.getByLabelText(/Applications close on/), '2099-11-30');
     await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByRole('combobox', { name: /Skills this job needs/ }), 'encoding{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByLabelText('Wheelchair-accessible entrance'));
     await user.type(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/), 'Ramp at gate 2');
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -124,7 +127,7 @@ describe('PostingFormPage', () => {
   test('each step is checked before the next; the review shows everything', async () => {
     const { user, calls } = renderApp('/employer/jobs/new', { as: 'employer', routes });
 
-    await screen.findByRole('heading', { level: 2, name: 'Step 1 of 4 · Job basics' });
+    await screen.findByRole('heading', { level: 2, name: 'Step 1 of 5 · Job basics' });
     await user.click(screen.getByRole('button', { name: 'Next' }));
     const summary = await screen.findByRole('alert');
     expect(summary).toHaveFocus();
@@ -132,11 +135,12 @@ describe('PostingFormPage', () => {
     expect(summary).toHaveTextContent('Choose a work setup.');
 
     await fillRequired(user);
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and publish' })).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 5 of 5 · Review and publish' })).toHaveFocus();
     const basics = screen.getByRole('region', { name: 'Job basics' });
     expect(basics).toHaveTextContent('Data Encoder');
     expect(basics).toHaveTextContent('Part-time');
     expect(screen.getByRole('region', { name: 'Accommodations offered' })).toHaveTextContent('Wheelchair-accessible entrance: Ramp at gate 2');
+    expect(screen.getByRole('region', { name: 'Skills and qualifications' })).toHaveTextContent('Data entry');
 
     await user.click(screen.getByRole('button', { name: 'Change description and place' }));
     expect(screen.getByLabelText(/Workplace address/)).toHaveValue('123 Quezon Ave.');
@@ -169,6 +173,10 @@ describe('PostingFormPage', () => {
       work_setup: 'hybrid',
       interview_format: 'online',
       closes_at: '2099-11-30',
+      skills: ['Data entry'],
+      education_level: null,
+      experience_years: null,
+      qualifications: null,
       accommodations: [{ id: 1, note: 'Ramp at gate 2' }],
       submit: true,
     });
@@ -185,7 +193,7 @@ describe('PostingFormPage', () => {
 
     // The error sends the employer back to the Accommodations step.
     await user.click(await screen.findByRole('link', { name: /may not be greater than 255/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 3 of 4 · Accommodations' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 5 · Accommodations' })).toBeInTheDocument();
     expect(document.getElementById('accommodations')).toHaveFocus();
     expect(calls.find((call) => call.key === 'POST /job-postings').data.submit).toBe(false);
   });
@@ -204,11 +212,14 @@ describe('PostingFormPage', () => {
   });
 
   test('editing an open posting publishes the changes and offers Cancel, not draft', async () => {
-    const { user } = renderApp('/employer/jobs/42/edit', { as: 'employer', routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'open' }] } });
+    const { user } = renderApp('/employer/jobs/42/edit', {
+      as: 'employer',
+      routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'open', skills: ['Data entry'] }] },
+    });
 
     expect(await screen.findByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/employer/jobs');
     expect(screen.queryByRole('button', { name: 'Save as draft' })).not.toBeInTheDocument();
-    for (let step = 0; step < 3; step += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
+    for (let step = 0; step < 4; step += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('button', { name: 'Publish changes' })).toBeInTheDocument();
   });
 
@@ -235,7 +246,7 @@ describe('PostingFormPage', () => {
   test('editing loads the posting and shows a rejection reason', async () => {
     const { user } = renderApp('/employer/jobs/42/edit', {
       as: 'employer',
-      routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'draft', rejection_reason: 'Please describe the hours.' }] },
+      routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'draft', skills: ['Data entry'], rejection_reason: 'Please describe the hours.' }] },
     });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Edit “Data Encoder”' })).toBeInTheDocument();
@@ -244,6 +255,8 @@ describe('PostingFormPage', () => {
     // Editing starts at step 1 with the saved values; each step keeps them.
     expect(screen.getByLabelText(/Job title/)).toHaveValue('Data Encoder');
     await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('list', { name: /Skills this job needs/ })).toHaveTextContent('Data entry');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByLabelText('Wheelchair-accessible entrance')).toBeChecked();
     expect(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/)).toHaveValue('Ramp at main entrance');
@@ -322,7 +335,7 @@ describe('EmployerApplicationPage', () => {
     });
 
     expect(await screen.findByText('No résumé uploaded')).toBeInTheDocument();
-    expect(screen.getAllByText('Not listed')).toHaveLength(2);
+    expect(screen.getAllByText('Not listed')).toHaveLength(4);
     expect(screen.queryByText('Disability (shared by the applicant)')).not.toBeInTheDocument();
   });
 

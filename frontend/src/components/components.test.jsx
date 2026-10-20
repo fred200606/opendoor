@@ -15,6 +15,7 @@ import StatusBadge from './StatusBadge.jsx';
 import StatusTimeline from './StatusTimeline.jsx';
 import TrustScoreCard from './TrustScoreCard.jsx';
 import { TextArea, TextField } from './form/fields.jsx';
+import SkillsPicker from './form/SkillsPicker.jsx';
 import { useApiForm } from '../hooks/useApiForm.js';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
 import { readableChunks } from '../lib/readAloud.js';
@@ -719,5 +720,39 @@ describe('StatusTimeline', () => {
     rerender(<StatusTimeline application={{ ...base, status: 'withdrawn' }} />);
     expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedNot reviewed', 'WithdrawnOctober 12, 2026']);
     expect(screen.queryByRole('listitem', { current: 'step' })).not.toBeInTheDocument();
+  });
+});
+
+describe('SkillsPicker', () => {
+  const options = [
+    { id: 1, name: 'Microsoft Excel', aliases: ['Excel'] },
+    { id: 2, name: 'Typing', aliases: [] },
+  ];
+
+  function Picker({ initial = [], max }) {
+    const [value, setValue] = useState(initial);
+    return <SkillsPicker id="skills" label="Your skills" hint="Add at least 3." value={value} onChange={setValue} options={options} max={max} />;
+  }
+
+  test('suggests list names, refuses empty and over-long entries, and keeps to the maximum', async () => {
+    const user = userEvent.setup();
+    render(<Picker initial={['Typing']} max={2} />);
+    const input = screen.getByRole('combobox', { name: 'Your skills' });
+    expect(input).toHaveAccessibleDescription('Add at least 3. Type to see suggestions, or add your own. 1 added.');
+    expect([...document.querySelectorAll('datalist option')].map((option) => option.value)).toEqual(['Microsoft Excel', 'Typing']);
+
+    await user.click(screen.getByRole('button', { name: 'Add skill' }));
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription(/Type a skill, then choose Add skill\./);
+
+    await user.type(input, `${'x'.repeat(51)}{Enter}`);
+    expect(screen.getByText('A skill can have at most 50 characters.')).toBeInTheDocument();
+    await user.clear(input);
+
+    await user.type(input, 'excel{Enter}');
+    expect(screen.getByRole('list', { name: 'Your skills: added' })).toHaveTextContent('TypingMicrosoft Excel');
+    await user.type(input, 'Sewing{Enter}');
+    expect(screen.getByText('You can add up to 2 skills. Remove one first.')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Remove / })).toHaveLength(2);
   });
 });
