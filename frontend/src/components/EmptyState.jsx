@@ -9,7 +9,7 @@ import IconTile from './IconTile.jsx';
 export default function EmptyState({ title, icon, tone = 'lilac', mascot = false, children }) {
   return (
     <div
-      className={`empty-state rounded-lg border-2 border-border bg-surface p-6 ${mascot ? 'flex flex-col items-center gap-x-6 gap-y-3 text-center sm:flex-row sm:text-left' : ''}`}
+      className={`od empty-state rounded-lg border-2 border-border bg-surface p-6 ${mascot ? 'flex flex-col items-center gap-x-6 gap-y-3 text-center sm:flex-row sm:text-left' : ''}`}
     >
       {mascot ? <MascotSad className="w-28 shrink-0" /> : icon && <IconTile icon={icon} tone={tone} />}
       <div>

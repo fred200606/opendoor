@@ -4,10 +4,10 @@ import { searchJobs } from '../../api/jobs.js';
 import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import { jobPath } from '../../auth/navigation.js';
-import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
-import { CheckboxField, CheckboxGroup, SelectField, TextField } from '../../components/form/fields.jsx';
+import FilterChips from '../../components/FilterChips.jsx';
+import { TextField } from '../../components/form/fields.jsx';
 import JobCard from '../../components/JobCard.jsx';
 import Loading from '../../components/Loading.jsx';
 import Page from '../../components/Page.jsx';
@@ -16,7 +16,7 @@ import SaveJobButton from '../../components/SaveJobButton.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue.js';
 import { plural } from '../../lib/format.js';
-import { DISTANCES, SORTS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
+import { DISTANCES, SORTS, WORK_SETUPS } from '../../lib/labels.js';
 
 /** URL query → search parameters (the URL is the single source of truth for filters). */
 function readFilters(params, isCandidate) {
@@ -67,6 +67,7 @@ export default function JobSearchPage() {
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedKeyword]);
 
+  const activeCount = [filters.q, filters.category, filters.distance].filter(Boolean).length + filters.accommodations.length + filters.workSetups.length;
   const meta = results.data?.meta;
   const jobs = results.data?.data ?? [];
   const [categories, groups] = options.data ?? [[], []];
@@ -76,100 +77,37 @@ export default function JobSearchPage() {
       <p className="page__subtitle">
         {isCandidate ? 'The jobs that fit your skills, place, preferences and needs best come first.' : 'Search open jobs and filter by the support you need.'}
       </p>
-      <div className="search-layout">
-        <form className="search-filters" role="search" aria-labelledby="filters-title" onSubmit={(event) => event.preventDefault()}>
-          <h2 id="filters-title" className="search-filters__title">
-            Filter jobs
-          </h2>
-          {isCandidate && (
-            <CheckboxField
-              name="match"
-              label="Recommended for me"
-              hint="Ranks jobs by your skills, where you live, your qualifications, work preferences and accommodation needs."
-              checked={filters.match}
-              onChange={(event) => update({ match: event.target.checked ? '' : '0' })}
-            />
-          )}
-          {isCandidate && (
-            <SelectField
-              label="Distance from where you live"
-              name="distance"
-              hint="Remote jobs are always shown."
-              options={toOptions(DISTANCES)}
-              value={filters.distance}
-              onChange={(event) => update({ dist: event.target.value })}
-            />
-          )}
+      <form role="search" aria-label="Search jobs" className="mt-6 max-w-2xl" onSubmit={(event) => event.preventDefault()}>
+        <TextField
+          label="Search jobs"
+          voice
+          name="q"
+          type="search"
+          hint="Job title, description or company name. Results update as you type."
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+          className="mb-0 [&_.field\_\_input]:max-w-none"
+        />
+      </form>
 
-          <TextField
-            label="Keyword"
-            voice
-            name="q"
-            type="search"
-            hint="Job title, description or company name."
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-          />
+      <FilterChips
+        filters={filters}
+        isCandidate={isCandidate}
+        options={{ workSetups: WORK_SETUPS, categories, distances: isCandidate ? DISTANCES : null, sorts: SORTS, groups }}
+        onChange={(changes) => update(changes)}
+        activeCount={activeCount}
+        onClear={() => {
+          setKeyword('');
+          setParams(isCandidate && !filters.match ? { match: '0' } : {}, { replace: true });
+        }}
+      />
 
-          <SelectField
-            label="Category"
-            name="category"
-            placeholder="All categories"
-            options={categories.map((category) => ({ value: String(category.id), label: category.name }))}
-            value={filters.category}
-            onChange={(event) => update({ category: event.target.value })}
-          />
-
-          <CheckboxGroup
-            legend="Work setup"
-            name="work_setup"
-            hint="None ticked shows all."
-            options={toOptions(WORK_SETUPS)}
-            value={filters.workSetups}
-            onChange={(setups) => update({ setup: setups })}
-          />
-
-          <SelectField
-            label="Sort by"
-            name="sort"
-            options={toOptions(SORTS)}
-            value={filters.sort}
-            onChange={(event) => update({ sort: event.target.value === 'best' ? '' : event.target.value })}
-          />
-
-          <details className="filter-details" open={filters.accommodations.length > 0}>
-            <summary>Must offer these accommodations{filters.accommodations.length > 0 && ` (${filters.accommodations.length})`}</summary>
-            {options.data ? (
-              <AccommodationPicker
-                id="filter-accommodations"
-                legend="Only show jobs that offer"
-                groups={groups}
-                selected={filters.accommodations}
-                onChange={(ids) => update({ acc: ids })}
-              />
-            ) : (
-              <Loading label="Loading accommodations" />
-            )}
-          </details>
-
-          <button
-            type="button"
-            className="button button--link"
-            onClick={() => {
-              setKeyword('');
-              setParams(isCandidate && !filters.match ? { match: '0' } : {}, { replace: true });
-            }}
-          >
-            Clear filters
-          </button>
-          <p className="field__hint search-filters__hint">Results update as you type.</p>
-        </form>
-
-        <section className="search-results" aria-labelledby="results-heading">
-          <h2 id="results-heading" className="visually-hidden">
+      <div className="mt-6">
+        <section aria-labelledby="results-heading">
+          <h2 id="results-heading" className="sr-only">
             Results
           </h2>
-          <p className="result-count" aria-live="polite" aria-atomic="true">
+          <p className="font-display text-xl font-bold" aria-live="polite" aria-atomic="true">
             {meta && !results.loading ? `${plural(meta.total, 'job')} found` : ''}
           </p>
 
@@ -191,7 +129,7 @@ export default function JobSearchPage() {
             </EmptyState>
           )}
 
-          <ul className="result-list" aria-busy={results.loading}>
+          <ul className="mt-4 space-y-4" aria-busy={results.loading}>
             {jobs.map((job) => (
               <li key={job.id}>
                 <JobCard job={job} to={jobPath(user?.role, job.id)} state={backHere} headingLevel={3}>

@@ -18,7 +18,7 @@ export default function MascotMessage({ mood = 'sad', title, children, action, h
     <section
       role={role}
       aria-labelledby={headingId}
-      className={`flex flex-col items-center gap-x-6 gap-y-3 rounded-lg border p-5 text-center sm:flex-row sm:p-6 sm:text-left ${tone} ${className}`}
+      className={`od flex flex-col items-center gap-x-6 gap-y-3 rounded-lg border p-5 text-center sm:flex-row sm:p-6 sm:text-left ${tone} ${className}`}
     >
       <div className="w-32 shrink-0 sm:w-36">
         <Mascot className="w-full" />

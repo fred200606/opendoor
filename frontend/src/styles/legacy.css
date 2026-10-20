@@ -88,13 +88,18 @@ body {
   display: contents;
 }
 
+/* Element spacing of the pre-IPT pages. Components converted to the IPT look carry the class
+   `od` and space their own elements with utilities (Decision 2026-10-21b). */
+:is(h1, h2, h3, h4):not(.od *) {
+  margin: 0 0 0.75rem;
+}
+
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-heading);
   line-height: 1.3;
-  margin: 0 0 0.75rem;
   overflow-wrap: break-word; /* long words at 200% text on phones */
 }
 
@@ -121,7 +126,7 @@ h1:focus {
   outline: none; /* focused programmatically on navigation, not by the user */
 }
 
-p {
+p:not(.od *) {
   margin: 0 0 1rem;
   max-width: 70ch;
 }

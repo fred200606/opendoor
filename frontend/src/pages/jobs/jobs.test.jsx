@@ -16,8 +16,9 @@ describe('JobSearchPage', () => {
 
     expect(await screen.findByText('1 job found')).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/jobs/42');
-    expect(screen.queryByLabelText('Recommended for me')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Distance from where you live/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Recommended for me' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Distance' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Work setup' })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument();
     const search = calls.find((call) => call.key === 'GET /job-postings');
     expect(search.config.params.get('match')).toBeNull();
@@ -29,16 +30,31 @@ describe('JobSearchPage', () => {
       routes: { ...masterData, 'GET /job-postings': () => [200, paged([job], { match_mode: true })] },
     });
 
-    expect(await screen.findByLabelText('Recommended for me')).toBeChecked();
+    expect(await screen.findByRole('button', { name: 'Recommended for me' })).toHaveAttribute('aria-pressed', 'true');
     await screen.findByText('Good match, 74%');
     expect(screen.getByText('1 of 2 skills · In your city, about 2.4 km away · Meets 1 of your 2 needs')).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('Category'), 'Information Technology');
-    await user.click(screen.getByText(/Must offer these accommodations/));
-    await user.click(screen.getByLabelText('Sign language interpreter'));
-    await user.click(within(screen.getByRole('group', { name: /Work setup/ })).getByLabelText('Remote'));
-    await user.selectOptions(screen.getByLabelText(/Distance from where you live/), 'Within 25 km');
-    await user.type(screen.getByLabelText('Keyword'), 'encoder');
+    // Each chip opens its panel; Escape closes it and puts focus back on the chip.
+    const categoryChip = screen.getByRole('button', { name: 'Category' });
+    await user.click(categoryChip);
+    expect(categoryChip).toHaveAttribute('aria-expanded', 'true');
+    await user.click(within(screen.getByRole('group', { name: 'Category' })).getByLabelText('Information Technology'));
+    await user.keyboard('{Escape}');
+    expect(categoryChip).toHaveAttribute('aria-expanded', 'false');
+    expect(categoryChip).toHaveFocus();
+    expect(categoryChip).toHaveAccessibleName('Category: Information Technology');
+
+    await user.click(screen.getByRole('button', { name: 'Accommodations' }));
+    const dialog = screen.getByRole('dialog', { name: 'Accommodations provided' });
+    await user.click(within(dialog).getByLabelText('Sign language interpreter'));
+    await user.click(within(dialog).getByRole('button', { name: 'Show jobs' }));
+    expect(screen.getByRole('button', { name: 'Accommodations: 1 accommodation' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Work setup' }));
+    await user.click(within(screen.getByRole('group', { name: 'Work setup' })).getByLabelText('Remote'));
+    await user.click(screen.getByRole('button', { name: 'Distance' }));
+    await user.click(within(screen.getByRole('group', { name: 'Distance' })).getByLabelText('Within 25 km'));
+    await user.type(screen.getByRole('searchbox', { name: 'Search jobs' }), 'encoder');
 
     await waitFor(() => expect(location()).toBe('/candidate/jobs?category=3&acc=5&setup=remote&dist=25&q=encoder'));
     // The request for the new URL is sent by an effect after the render, so wait for it too.
@@ -56,7 +72,7 @@ describe('JobSearchPage', () => {
     });
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
     // Filters change only the query string: focus stays where the user is typing.
-    expect(screen.getByLabelText('Keyword')).toHaveFocus();
+    expect(screen.getByRole('searchbox', { name: 'Search jobs' })).toHaveFocus();
   });
 
   test('candidates can save or unsave a job from its result card; guests see no Save', async () => {

@@ -36,7 +36,7 @@ export default function UtilityBar() {
   const pinned = prefs.bar === 'pinned';
 
   return (
-    <div className="od-utility relative z-30 print:hidden">
+    <div className="od od-utility relative z-30 print:hidden">
       <div className="od-utility-bar border-b border-border bg-yellow-soft">
         <p aria-hidden="true" className="od-utility-hint">
           <ChevronDown className="size-3.5" focusable="false" />

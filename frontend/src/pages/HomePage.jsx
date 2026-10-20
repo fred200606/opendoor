@@ -84,7 +84,7 @@ export default function HomePage() {
           </span>
         </span>
       }
-      className="[&_.page\_\_header]:grid [&_.page\_\_header]:items-center [&_.page\_\_header]:gap-x-10 [&_.page\_\_header]:gap-y-6 [&_.page\_\_header]:overflow-x-clip md:[&_.page\_\_header]:grid-cols-[1.2fr_1fr]"
+      className="od [&_.page\_\_header]:grid [&_.page\_\_header]:items-center [&_.page\_\_header]:gap-x-10 [&_.page\_\_header]:gap-y-6 [&_.page\_\_header]:overflow-x-clip md:[&_.page\_\_header]:grid-cols-[1.2fr_1fr]"
       subtitle={
         <div className="max-w-2xl">
           <p className="mt-6 max-w-[46ch] animate-hero-text text-lg text-muted" style={step(2)}>

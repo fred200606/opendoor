@@ -108,7 +108,7 @@ export default function SiteHeader() {
   );
 
   return (
-    <header className="relative z-20 border-b-[3px] border-yellow bg-surface print:hidden">
+    <header className="od relative z-20 border-b-[3px] border-yellow bg-surface print:hidden">
       <div ref={rowRef} className="mx-auto max-w-6xl px-4 py-2 sm:px-6">
         {compact ? (
           <CompactRow key="compact" home={home} links={links} user={user} role={role} showNotifications={showNotifications} onLogout={logout} />

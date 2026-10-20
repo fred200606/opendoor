@@ -43,7 +43,7 @@ export default function MatchDetails({ job }) {
   const missingNeeds = match.missing ?? [];
 
   return (
-    <section className="card match-details" aria-labelledby="match-title">
+    <section className="od card match-details" aria-labelledby="match-title">
       <h2 id="match-title">How this job fits you</h2>
       <p className="match">
         <span className={`badge badge--${tone}`}>

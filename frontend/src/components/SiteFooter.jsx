@@ -9,7 +9,7 @@ const LINK = 'inline-flex min-h-11 items-center px-2 text-sm text-muted underlin
  */
 export default function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-surface print:hidden">
+    <footer className="od border-t border-border bg-surface print:hidden">
       <nav aria-label="Footer" className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         <ul className="flex flex-wrap items-center justify-center gap-x-4">
           <li>
