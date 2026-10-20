@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { job } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, users, validationError } from '../../test/render.jsx';
@@ -104,24 +104,19 @@ describe('AdminEmployerPage', () => {
 });
 
 describe('AdminPostingsPage', () => {
-  test('approves a pending posting and rejects another with a reason', async () => {
+  test('lists every posting without approval buttons; the filter narrows to one status', async () => {
     const { user, calls } = renderApp('/admin/job-postings', {
       as: 'admin',
-      routes: {
-        'GET /admin/job-postings': () => [200, paged([{ ...job, status: 'pending_approval' }])],
-        'PATCH /admin/job-postings/42/approve': () => [200, { ...job, status: 'open' }],
-      },
+      routes: { 'GET /admin/job-postings': () => [200, paged([{ ...job, status: 'open' }])] },
     });
 
-    await user.click(await screen.findByRole('button', { name: 'Approve Data Encoder' }));
-    expect(await screen.findByText('“Data Encoder” is approved and now open.')).toBeInTheDocument();
-    expect(calls.find((call) => call.key === 'PATCH /admin/job-postings/42/approve').data).toEqual({ action: 'approve' });
+    expect(await screen.findByRole('button', { name: 'Remove Data Encoder' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Approve/ })).not.toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'GET /admin/job-postings').config.params.status).toBeUndefined();
+    expect(screen.getByLabelText('Show')).toHaveValue('');
 
-    await user.click(await screen.findByRole('button', { name: 'Do not approve Data Encoder' }));
-    await user.type(screen.getByLabelText('Reason shown to the employer'), 'Add the working hours.');
-    await user.click(screen.getByRole('button', { name: 'Save decision' }));
-    await screen.findByText(/was not approved/);
-    expect(calls.filter((call) => call.key === 'PATCH /admin/job-postings/42/approve').at(-1).data).toEqual({ action: 'reject', reason: 'Add the working hours.' });
+    await user.selectOptions(screen.getByLabelText('Show'), 'Closed');
+    await waitFor(() => expect(calls.filter((call) => call.key === 'GET /admin/job-postings').at(-1).config.params.status).toBe('closed'));
   });
 
   test('removes an open posting only with a reason', async () => {
@@ -340,7 +335,7 @@ describe('AdminDashboardPage', () => {
             verification_queue: 1,
             open_reports: 2,
             users: { candidate: 14, employer: 5, admin: 1, suspended: 0 },
-            postings: { draft: 1, pending_approval: 1, open: 3, closed: 1 },
+            postings: { draft: 1, open: 3, closed: 1 },
             applications: { pending: 1, reviewed: 1, hired: 6, rejected: 0, withdrawn: 0 },
             feedback: { responses: 9, hidden: 0 },
             published_trust_scores: 2,
@@ -350,7 +345,7 @@ describe('AdminDashboardPage', () => {
     });
 
     expect(await screen.findByRole('link', { name: 'Open queue Employers to verify (1)' })).toHaveAttribute('href', '/admin/employers');
-    expect(screen.getByRole('link', { name: 'Open queue Postings to approve (1)' })).toHaveAttribute('href', '/admin/job-postings');
+    expect(screen.queryByText('Postings to approve')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open queue Open reports (2)' })).toHaveAttribute('href', '/admin/reports');
     const verification = screen.getByRole('region', { name: 'Verification after hire' });
     expect(within(verification).getAllByRole('listitem').map((item) => item.textContent)).toEqual([

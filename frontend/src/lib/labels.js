@@ -13,7 +13,6 @@ export const INTERVIEW_FORMATS = { online: 'Online interview', onsite: 'On-site 
 
 export const POSTING_STATUSES = {
   draft: 'Draft',
-  pending_approval: 'Waiting for approval',
   open: 'Open',
   closed: 'Closed',
 };

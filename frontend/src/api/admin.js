@@ -1,6 +1,6 @@
 import { api } from './client.js';
 
-// Administration: verification (M3), posting approval (M4), moderation (M10)
+// Administration: verification (M3), postings (M4), moderation (M10)
 
 /** status: 'pending' | 'verified' | 'rejected' */
 export async function adminListEmployers({ status, q, page } = {}) {
@@ -19,14 +19,9 @@ export async function adminVerifyEmployer(id, action, reason) {
   return data;
 }
 
-export async function adminListPostings({ status = 'pending_approval', page } = {}) {
-  const { data } = await api.get('/admin/job-postings', { params: { status, page } });
-  return data;
-}
-
-/** action: 'approve' | 'reject' */
-export async function adminReviewPosting(id, action, reason) {
-  const { data } = await api.patch(`/admin/job-postings/${id}/approve`, { action, reason: reason || undefined });
+/** Every posting, or one status (verified companies publish without approval). */
+export async function adminListPostings({ status, page } = {}) {
+  const { data } = await api.get('/admin/job-postings', { params: { status: status || undefined, page } });
   return data;
 }
 

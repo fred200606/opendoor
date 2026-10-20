@@ -2,7 +2,6 @@ import { Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
-import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import GetStarted from '../../components/GetStarted.jsx';
 import Page from '../../components/Page.jsx';
@@ -26,7 +25,6 @@ export default function EmployerDashboardPage() {
     <Page title={`Welcome, ${user.name}`} subtitle={<p className="page__subtitle">Your postings, applications and trust score at a glance.</p>}>
       <AsyncContent state={state} label="Loading your summary">
         {(dashboard) => {
-          const waiting = dashboard.postings?.pending_approval ?? 0;
           const steps = employerSteps(dashboard);
           return (
             <>
@@ -49,18 +47,12 @@ export default function EmployerDashboardPage() {
                   <p>
                     {dashboard.company.verification_rejected_reason
                       ? `Verification was not approved: ${dashboard.company.verification_rejected_reason}`
-                      : 'Your business registration is waiting for verification. Your jobs go live after an administrator checks it.'}
+                      : 'Your business registration is waiting for verification. You can prepare jobs as drafts and publish them once an administrator has verified your company.'}
                   </p>
                   <Link className="button button--secondary button--small" to="/employer/company">
                     View company profile
                   </Link>
                 </div>
-              )}
-              {/* Before verification, the callout above already says that jobs wait (Figma 16:5756). */}
-              {waiting > 0 && dashboard.company?.verified && (
-                <Alert type="info" className="dashboard-notice" title={waiting === 1 ? '1 job is waiting for approval.' : `${waiting} jobs are waiting for approval.`}>
-                  <p>An administrator checks every job before it goes live. We will notify you.</p>
-                </Alert>
               )}
 
               <div className="dashboard-layout dashboard-layout--employer">
@@ -104,7 +96,7 @@ export default function EmployerDashboardPage() {
 /** Onboarding "Get started" steps, from the dashboard data. */
 function employerSteps(dashboard) {
   const company = dashboard.company ?? {};
-  const submitted = ['pending_approval', 'open', 'closed'].some((status) => (dashboard.postings?.[status] ?? 0) > 0);
+  const submitted = ['open', 'closed'].some((status) => (dashboard.postings?.[status] ?? 0) > 0);
   let verificationHint = 'An administrator is checking your registration. We will notify you.';
   if (!company.exists) verificationHint = 'An administrator checks your registration after you set up your company profile.';
   else if (company.verification_rejected_reason) verificationHint = 'Not approved yet. Update your company profile and it is checked again.';
@@ -127,9 +119,9 @@ function employerSteps(dashboard) {
     },
     {
       id: 'post',
-      title: 'Post your first job',
+      title: 'Publish your first job',
       done: submitted,
-      hint: 'List the accommodations it offers. An administrator approves each job before it goes live.',
+      hint: 'List the skills it needs and the accommodations it offers. It goes live as soon as you publish it.',
       link: company.exists ? { to: '/employer/jobs/new', label: 'Post a job' } : undefined,
     },
   ];

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { createPosting, getJob, updatePosting } from '../../api/jobs.js';
+import { getCompany } from '../../api/profile.js';
 import { getAccommodationGroups, getCategories } from '../../api/masterData.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
@@ -17,18 +18,23 @@ import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, todayInManila } from '../../lib/format.js';
 import { EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
 
-const FIELDS = Object.fromEntries(
-  ['title', 'description', 'category_id', 'address', 'location_psgc', 'employment_type', 'work_setup', 'interview_format', 'closes_at', 'accommodations'].map(
-    (name) => [name, { id: name }],
+const FIELDS = {
+  ...Object.fromEntries(
+    ['title', 'description', 'category_id', 'address', 'location_psgc', 'employment_type', 'work_setup', 'interview_format', 'closes_at', 'accommodations'].map(
+      (name) => [name, { id: name }],
+    ),
   ),
-);
+  // "Your company must be verified…" belongs to the Publish button.
+  submit: { id: 'posting-publish' },
+};
 
-// Figma "5.4 Post a new job": four steps, one request at the end (the API is unchanged).
+// Figma "5.4 Post a new job": four steps, one request at the end. A verified company's job goes
+// live when it is published; there is no approval step (decision 2026-10-21).
 const STEPS = [
-  { title: 'Job basics', intro: 'An administrator approves every job before it goes live.', fields: ['title', 'category_id', 'employment_type', 'work_setup'] },
+  { title: 'Job basics', intro: 'Your job goes live as soon as you publish it.', fields: ['title', 'category_id', 'employment_type', 'work_setup'] },
   { title: 'Description and place', intro: 'Describe the work and where it happens.', fields: ['description', 'interview_format', 'address', 'location_psgc', 'closes_at'] },
   { title: 'Accommodations', intro: 'Tell people what support you offer.', fields: ['accommodations'] },
-  { title: 'Review and submit', intro: 'Check everything, then send it for approval.', fields: [] },
+  { title: 'Review and publish', intro: 'Check everything, then publish the job.', fields: [] },
 ];
 const REVIEW = STEPS.length - 1;
 
@@ -61,16 +67,26 @@ function checkStep(index, values) {
 /** Create (/employer/jobs/new) or edit (/employer/jobs/:id/edit) a posting. */
 export default function PostingFormPage() {
   const { id } = useParams();
-  const state = useAsync(() => Promise.all([getCategories(), getAccommodationGroups(), id ? getJob(id) : Promise.resolve(null)]), [id]);
+  const state = useAsync(
+    () =>
+      Promise.all([
+        getCategories(),
+        getAccommodationGroups(),
+        id ? getJob(id) : Promise.resolve(null),
+        // No company yet → 404; the form then shows the "company profile is missing" message on save.
+        getCompany().catch(() => null),
+      ]),
+    [id],
+  );
 
   return (
     <AsyncContent state={state} label="Loading the posting form">
-      {([categories, groups, job]) => <PostingForm categories={categories} groups={groups} job={job} />}
+      {([categories, groups, job, company]) => <PostingForm categories={categories} groups={groups} job={job} verified={Boolean(company?.verified_at)} />}
     </AsyncContent>
   );
 }
 
-function PostingForm({ categories, groups, job }) {
+function PostingForm({ categories, groups, job, verified }) {
   const navigate = useNavigate();
   const isEdit = Boolean(job);
   const [step, setStep] = useState(0);
@@ -152,13 +168,15 @@ function PostingForm({ categories, groups, job }) {
     });
     if (saved) {
       navigate('/employer/jobs', {
-        state: { message: submit ? `“${saved.title}” was sent for approval.` : `“${saved.title}” was saved as a draft.` },
+        state: { message: submit ? `“${saved.title}” is published and open to job seekers.` : `“${saved.title}” was saved as a draft.` },
       });
     }
   }
 
-  // A submitted posting cannot go back to draft (Core refuses it): Cancel instead (Figma 16:6324).
-  const draftButton = canDraft ? (
+  // A published posting cannot go back to draft (Core refuses it): Cancel instead (Figma 16:6324).
+  // Before verification a draft is all a company can save, so that is the main button on Review.
+  const draftOnly = !verified && canDraft && step === REVIEW;
+  const draftButton = draftOnly ? null : canDraft ? (
     <Button type="button" className="button button--secondary" disabled={form.submitting} onClick={() => save(false)}>
       Save as draft
     </Button>
@@ -184,18 +202,19 @@ function PostingForm({ categories, groups, job }) {
       }
     >
       <div className={step === 2 ? 'posting-wizard posting-wizard--wide' : 'posting-wizard'}>
-        {job?.rejection_reason ? (
+        {job?.rejection_reason && (
+          // Only postings reviewed before decision 2026-10-21 can still carry a reason.
           <Alert type="error" title="This posting was not approved">
-            <p>Reason: {job.rejection_reason} Edit it and submit it again.</p>
+            <p>Reason: {job.rejection_reason} Edit it and publish it again.</p>
           </Alert>
-        ) : (
-          isEdit &&
-          job.status !== 'draft' && (
-            // Core sets an edited posting back to "waiting for approval", which hides it from search.
-            <Alert type="info" title="Saving changes sends this job back for approval.">
-              <p>It is hidden from job seekers until an administrator approves it again.</p>
-            </Alert>
-          )
+        )}
+        {!verified && (
+          <Alert type="info" title="Your company is not verified yet">
+            <p>
+              You can save this job as a draft. You can publish it once an administrator has verified your company.{' '}
+              <Link to="/employer/company">View your company profile</Link>
+            </p>
+          </Alert>
         )}
 
         <WizardProgress steps={STEPS} current={step} headingRef={stepRef} />
@@ -315,9 +334,15 @@ function PostingForm({ categories, groups, job }) {
               </button>
             )}
             {draftButton}
-            <Button type="submit" className="button" disabled={form.submitting}>
-              {step < REVIEW ? 'Next' : 'Submit for approval'}
-            </Button>
+            {draftOnly ? (
+              <Button type="button" className="button" disabled={form.submitting} onClick={() => save(false)}>
+                Save as draft
+              </Button>
+            ) : (
+              <Button type="submit" id={step === REVIEW ? 'posting-publish' : undefined} className="button" disabled={form.submitting}>
+                {step < REVIEW ? 'Next' : isEdit && job.status !== 'draft' ? 'Publish changes' : 'Publish job'}
+              </Button>
+            )}
           </div>
         </form>
       </div>

@@ -9,7 +9,7 @@ const KINDS = {
   },
   posting: {
     labels: POSTING_STATUSES,
-    tone: { draft: 'neutral', pending_approval: 'warning', open: 'success', closed: 'neutral' },
+    tone: { draft: 'neutral', open: 'success', closed: 'neutral' },
   },
   registry: {
     labels: REGISTRY_STATUSES,

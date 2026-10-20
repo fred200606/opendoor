@@ -10,7 +10,7 @@ const done = { tour_done: true, checklist_hidden: true };
 const newCandidateDashboard = { applications: {}, needs_count: 0, matching_jobs: 0, feedback_due: [] };
 const newEmployerDashboard = {
   company: { exists: false, verified: false },
-  postings: { draft: 0, pending_approval: 0, open: 0, closed: 0 },
+  postings: { draft: 0, open: 0, closed: 0 },
   applications: {},
   trust_score: { published: false, based_on: 0 },
 };

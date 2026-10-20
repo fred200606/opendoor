@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { adminListPostings, adminRemovePosting, adminReviewPosting } from '../../api/admin.js';
+import { adminListPostings, adminRemovePosting } from '../../api/admin.js';
 import ActionFeedback from '../../components/ActionFeedback.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
@@ -16,27 +16,17 @@ import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
 import { EMPLOYMENT_TYPES, POSTING_STATUSES, WORK_SETUPS, toOptions } from '../../lib/labels.js';
 
-/** Posting approval queue (pending_approval → open, or rejected with a reason); any posting can be removed. */
+/**
+ * Every posting, newest first. Verified companies publish without approval (decision 2026-10-21),
+ * so admins only remove postings that break the rules (the employer is told why).
+ */
 export default function AdminPostingsPage() {
   const [params, setParams] = useSearchParams();
-  const status = params.get('status') ?? 'pending_approval';
+  const status = params.get('status') ?? '';
   const page = Number(params.get('page') ?? 1);
   const state = useAsync(() => adminListPostings({ status, page }), [status, page]);
   const action = useAction();
-  const [rejecting, setRejecting] = useState(null);
   const [removing, setRemoving] = useState(null);
-
-  async function approve(posting) {
-    const result = await action.run(() => adminReviewPosting(posting.id, 'approve'), `“${posting.title}” is approved and now open.`);
-    if (result) state.reload();
-  }
-
-  async function reject(reason) {
-    const posting = rejecting;
-    const result = await action.run(() => adminReviewPosting(posting.id, 'reject', reason), `“${posting.title}” was not approved. The employer can see your reason.`);
-    setRejecting(null);
-    if (result) state.reload();
-  }
 
   async function remove(reason) {
     const posting = removing;
@@ -46,15 +36,15 @@ export default function AdminPostingsPage() {
   }
 
   return (
-    <Page title="Postings" subtitle={<p className="page__subtitle">Approve new or edited jobs, or remove any posting.</p>}>
+    <Page title="Postings" subtitle={<p className="page__subtitle">Jobs of verified companies go live without approval. Remove any posting that breaks the rules.</p>}>
       <div className="filter-bar">
         <SelectField
           label="Show"
           name="status"
           className="field--inline"
-          options={toOptions(POSTING_STATUSES)}
+          options={[{ value: '', label: 'All postings' }, ...toOptions(POSTING_STATUSES)]}
           value={status}
-          onChange={(event) => setParams({ status: event.target.value }, { replace: true })}
+          onChange={(event) => setParams(event.target.value ? { status: event.target.value } : {}, { replace: true })}
         />
         <ResultCount state={state} one="posting" />
       </div>
@@ -63,7 +53,7 @@ export default function AdminPostingsPage() {
       <AsyncContent state={state} label="Loading postings">
         {({ data, meta }) =>
           data.length === 0 ? (
-            <EmptyState title={status === 'pending_approval' ? 'No postings are waiting for approval' : 'No postings here'} />
+            <EmptyState title="No postings here" />
           ) : (
             <>
               <ul className="result-list">
@@ -93,16 +83,6 @@ export default function AdminPostingsPage() {
                         </ul>
                       </details>
                       <div className="actions">
-                        {posting.status === 'pending_approval' && (
-                          <>
-                            <Button type="button" className="button" disabled={action.busy} aria-label={`Approve ${posting.title}`} onClick={() => approve(posting)}>
-                              Approve
-                            </Button>
-                            <Button type="button" className="button button--secondary" disabled={action.busy} aria-label={`Do not approve ${posting.title}`} onClick={() => setRejecting(posting)}>
-                              Do not approve
-                            </Button>
-                          </>
-                        )}
                         <Button type="button" className="button button--danger-outline" disabled={action.busy} aria-label={`Remove ${posting.title}`} onClick={() => setRemoving(posting)}>
                           Remove
                         </Button>
@@ -111,23 +91,11 @@ export default function AdminPostingsPage() {
                   </li>
                 ))}
               </ul>
-              <Pagination meta={meta} onPageChange={(next) => setParams({ status, page: String(next) }, { replace: true })} />
+              <Pagination meta={meta} onPageChange={(next) => setParams({ ...(status ? { status } : {}), page: String(next) }, { replace: true })} />
             </>
           )
         }
       </AsyncContent>
-
-      {rejecting && (
-        <ReasonDialog
-          title={`Do not approve “${rejecting.title}”`}
-          label="Reason shown to the employer"
-          hint="Explain what to change, for example: unclear working hours or a missing accommodation detail."
-          confirmLabel="Save decision"
-          busy={action.busy}
-          onSubmit={reject}
-          onClose={() => setRejecting(null)}
-        />
-      )}
 
       {removing && (
         <ReasonDialog

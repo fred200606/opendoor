@@ -51,7 +51,7 @@ const STEPS = {
       tone: 'sky',
       text: [
         'Add your company profile under “Company” with your DTI or SEC registration number. An administrator checks it against the business registry.',
-        'An administrator also approves each job before it goes live. We notify you of every decision.',
+        'Once your company is verified, each job goes live as soon as you publish it. Administrators remove postings that break the rules.',
       ],
     },
     {

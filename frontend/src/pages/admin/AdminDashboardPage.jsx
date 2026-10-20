@@ -1,4 +1,4 @@
-import { Building2, ClipboardCheck, EyeOff, Flag, MessageSquare, ShieldCheck, TriangleAlert, User } from 'lucide-react';
+import { Building2, EyeOff, Flag, MessageSquare, ShieldCheck, TriangleAlert, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import AsyncContent from '../../components/AsyncContent.jsx';
@@ -22,7 +22,6 @@ export default function AdminDashboardPage() {
               className="stats--fit"
               items={[
                 { label: 'Employers to verify', value: dashboard.verification_queue ?? 0, to: '/admin/employers', linkLabel: 'Open queue', icon: Building2, tone: 'lilac' },
-                { label: 'Postings to approve', value: dashboard.postings?.pending_approval ?? 0, to: '/admin/job-postings', linkLabel: 'Open queue', icon: ClipboardCheck, tone: 'sky' },
                 { label: 'Open reports', value: dashboard.open_reports ?? 0, to: '/admin/reports', linkLabel: 'Open queue', icon: Flag, tone: 'orange' },
               ]}
             />

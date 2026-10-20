@@ -101,6 +101,7 @@ describe('PostingFormPage', () => {
     'GET /categories': () => [200, { data: categories }],
     'GET /accommodations': () => [200, { data: accommodationGroups }],
     'GET /insights/locations/regions': () => [200, []],
+    'GET /employer/company': () => [200, { id: 3, company_name: 'Bayanihan Tech Solutions', verified_at: '2026-10-01T09:00:00+08:00' }],
   };
 
   // Walks through the four steps to the review.
@@ -131,7 +132,7 @@ describe('PostingFormPage', () => {
     expect(summary).toHaveTextContent('Choose a work setup.');
 
     await fillRequired(user);
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and submit' })).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 4 · Review and publish' })).toHaveFocus();
     const basics = screen.getByRole('region', { name: 'Job basics' });
     expect(basics).toHaveTextContent('Data Encoder');
     expect(basics).toHaveTextContent('Part-time');
@@ -142,20 +143,20 @@ describe('PostingFormPage', () => {
     expect(calls.some((call) => call.key === 'POST /job-postings')).toBe(false);
   });
 
-  test('submits a new posting for approval with accommodations and notes', async () => {
+  test('publishes a new posting with accommodations and notes', async () => {
     const { user, calls, location } = renderApp('/employer/jobs/new', {
       as: 'employer',
       routes: {
         ...routes,
-        'POST /job-postings': () => [201, { ...job, status: 'pending_approval' }],
+        'POST /job-postings': () => [201, { ...job, status: 'open' }],
         'GET /employer/job-postings': () => [200, paged([])],
       },
     });
 
     await fillRequired(user);
-    await user.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await user.click(screen.getByRole('button', { name: 'Publish job' }));
 
-    expect(await screen.findByText('“Data Encoder” was sent for approval.')).toBeInTheDocument();
+    expect(await screen.findByText('“Data Encoder” is published and open to job seekers.')).toBeInTheDocument();
     expect(location()).toBe('/employer/jobs');
     expect(calls.find((call) => call.key === 'POST /job-postings').data).toEqual({
       title: 'Data Encoder',
@@ -196,18 +197,39 @@ describe('PostingFormPage', () => {
     });
 
     await fillRequired(user);
-    await user.click(screen.getByRole('button', { name: 'Submit for approval' }));
+    await user.click(screen.getByRole('button', { name: 'Publish job' }));
 
     expect(await screen.findByRole('link', { name: 'Set up your company profile' })).toHaveAttribute('href', '/employer/company');
     expect(screen.queryByText('There is a problem')).not.toBeInTheDocument();
   });
 
-  test('editing an open posting says it goes back for approval and offers Cancel, not draft', async () => {
-    renderApp('/employer/jobs/42/edit', { as: 'employer', routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'open' }] } });
+  test('editing an open posting publishes the changes and offers Cancel, not draft', async () => {
+    const { user } = renderApp('/employer/jobs/42/edit', { as: 'employer', routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, status: 'open' }] } });
 
-    expect(await screen.findByText('Saving changes sends this job back for approval.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/employer/jobs');
+    expect(await screen.findByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/employer/jobs');
     expect(screen.queryByRole('button', { name: 'Save as draft' })).not.toBeInTheDocument();
+    for (let step = 0; step < 3; step += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('button', { name: 'Publish changes' })).toBeInTheDocument();
+  });
+
+  test('an unverified company is told why and can only save a draft', async () => {
+    const { user, calls } = renderApp('/employer/jobs/new', {
+      as: 'employer',
+      routes: {
+        ...routes,
+        'GET /employer/company': () => [200, { id: 3, company_name: 'Kalinga Foods Inc.', verified_at: null }],
+        'POST /job-postings': () => [201, { ...job, status: 'draft' }],
+        'GET /employer/job-postings': () => [200, paged([])],
+      },
+    });
+
+    expect(await screen.findByText('Your company is not verified yet')).toBeInTheDocument();
+    await fillRequired(user);
+    expect(screen.queryByRole('button', { name: 'Publish job' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save as draft' }));
+
+    expect(await screen.findByText('“Data Encoder” was saved as a draft.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'POST /job-postings').data.submit).toBe(false);
   });
 
   test('editing loads the posting and shows a rejection reason', async () => {
@@ -340,7 +362,7 @@ describe('Employer trust score and dashboard', () => {
     expect(screen.getByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
   });
 
-  test('dashboard says when jobs wait for approval and links to the score breakdown', async () => {
+  test('dashboard shows the counts and links to the score breakdown', async () => {
     renderApp('/employer/dashboard', {
       as: 'employer',
       routes: {
@@ -348,7 +370,7 @@ describe('Employer trust score and dashboard', () => {
           200,
           {
             company: { exists: true, verified: true },
-            postings: { draft: 1, pending_approval: 2, open: 2 },
+            postings: { draft: 1, open: 2 },
             applications: { pending: 3, reviewed: 2, hired: 1 },
             trust_score: { published: true, score: 79, based_on: 3 },
           },
@@ -356,7 +378,8 @@ describe('Employer trust score and dashboard', () => {
       },
     });
 
-    expect(await screen.findByText('2 jobs are waiting for approval.')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
+    expect(screen.queryByText(/waiting for approval/)).not.toBeInTheDocument();
     const applications = screen.getByRole('region', { name: 'Applications received' });
     expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Submitted', '2Reviewed', '1Hired']);
     expect(within(applications).queryByRole('link')).not.toBeInTheDocument();
