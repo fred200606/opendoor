@@ -309,7 +309,9 @@ paths:
     get:
       tags: [M2 Candidate profile]
       summary: Own candidate profile including accommodation needs
-      description: A new candidate gets an empty profile (created on first access) – this endpoint never answers 404.
+      description: >-
+        A new candidate gets an empty profile (created on first access) – this endpoint never answers 404.
+        `profile_complete` / `profile_missing` say what is still needed before the dashboard and applying.
       responses:
         '200':
           description: Profile
@@ -321,7 +323,11 @@ paths:
     put:
       tags: [M2 Candidate profile]
       summary: Update own candidate profile
-      description: Partial update – omitted fields keep their value. Empty strings are stored as null. show_disability is forced to false when disability_type is null.
+      description: >-
+        Partial update – omitted fields keep their value. Empty strings are stored as null. show_disability is forced to false
+        when disability_type is null. Skills that match a name or other spelling in the skills list are stored under the list
+        name; duplicates (any spelling) are dropped. A changed location_psgc is looked up in the Insights Service for its centre
+        point (never blocks saving).
       requestBody:
         required: true
         content:
@@ -388,6 +394,35 @@ paths:
                 properties:
                   resume_url: { type: string, description: 'Signed gateway link, valid 30 minutes (see GET /resumes/{id})' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+  /candidate/resume/skill-suggestions:
+    get:
+      tags: [M2 Candidate profile]
+      summary: Skills from the skills list found in the uploaded résumé (Decision 2026-10-21)
+      description: >-
+        The text of the first 10 pages is read in Core and never stored. Returns list names (and other spellings of 4+
+        letters that are not common words) found as whole words, minus the skills already on the profile. Only suggestions:
+        the candidate adds the right ones with PUT /candidate/profile.
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [readable, skills]
+                    properties:
+                      readable: { type: boolean, description: false when no text could be read (for example a scanned PDF) }
+                      skills: { type: array, items: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No résumé uploaded yet ("Upload your résumé first.")
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /resumes/{id}:
     get:
       tags: [M2 Candidate profile]
@@ -588,12 +623,12 @@ paths:
   /job-postings:
     get:
       tags: [M5 Search and matching]
-      summary: Search open postings; "Matches my needs" mode for candidates with saved needs
+      summary: Search open postings; "Recommended for me" ranking for candidates
       description: >-
-        Only open, approved postings of employers that are not suspended. A logged-in candidate with saved needs gets `match` on every posting
-        (also with match=0); `meta.match_mode` is true only when match=1 is asked by such a candidate –
-        for guests, other roles and candidates without needs match=1 is ignored (not an error).
-        The disability type is never used.
+        Only open, approved postings of verified employers that are not suspended. A logged-in candidate with a profile gets
+        `match` (score from skills, location, qualifications, work preferences and accommodation needs – Decision 2026-10-21)
+        on every posting (also with match=0); `meta.match_mode` is true only when match=1 is asked by such a candidate –
+        for guests and other roles match=1 is ignored (not an error). The disability type is never used.
       security: [{}, { bearerAuth: [] }]
       parameters:
         - name: q
@@ -612,13 +647,29 @@ paths:
             type: array
             maxItems: 30
             items: { type: integer }
+        - name: work_setup[]
+          in: query
+          description: Only these work setups (any of them)
+          style: form
+          explode: true
+          schema:
+            type: array
+            maxItems: 3
+            items: { $ref: '#/components/schemas/WorkSetup' }
+        - name: distance
+          in: query
+          description: >-
+            Kilometres from the candidate's city centre (straight line, city centre to city centre); remote postings are
+            always kept and postings without a known point are left out. Ignored (meta.distance null) for guests, other
+            roles and candidates whose city has no known point yet.
+          schema: { type: integer, enum: [10, 25, 50, 100] }
         - name: match
           in: query
-          description: 1 = rank by the logged-in candidate's needs (full matches first, then by met desc, then by `sort`)
+          description: 1 = rank by the logged-in candidate's match score (highest first, then by `sort`)
           schema: { type: integer, enum: [0, 1] }
         - name: sort
           in: query
-          description: best = needs met (match mode), then newest; newest = created_at desc; closing = closes_at asc. Ties by id desc.
+          description: best = match score (match mode), then newest; newest = created_at desc; closing = closes_at asc. Ties by id desc.
           schema: { type: string, enum: [best, newest, closing], default: best }
         - $ref: '#/components/parameters/Page'
       responses:
@@ -638,11 +689,16 @@ paths:
                       - type: object
                         properties:
                           match_mode: { type: boolean }
+                          distance: { type: [integer, 'null'], description: The distance filter that was applied (km), or null }
         '422': { $ref: '#/components/responses/ValidationFailed' }
     post:
       tags: [M4 Job postings]
-      summary: Create a posting (draft, or submit for approval)
-      description: Requires the employer's company profile (otherwise 422 with `errors.company`). `submit` defaults to false (draft). Accommodation types must be active.
+      summary: Create a posting (draft, or publish)
+      description: >-
+        Requires the employer's company profile (otherwise 422 with `errors.company`). `submit` defaults to false (draft).
+        `submit: true` publishes at once (status open) – only for a verified company (otherwise 422 `errors.submit`) and
+        with at least one skill (422 `errors.skills`). There is no admin approval step (Decision 2026-10-21).
+        Skills that match a name or other spelling in the skills list are stored under the list name. Accommodation types must be active.
       requestBody:
         required: true
         content:
@@ -660,8 +716,8 @@ paths:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     get:
       tags: [M5 Search and matching]
-      summary: Posting details (+ `match` for candidates with needs)
-      description: Public for open, approved postings. Owners and admins also see their other statuses; for anyone else an unpublished posting is 404 (its existence is not revealed).
+      summary: Posting details (+ `match` for candidates)
+      description: Public for open, approved postings of verified employers. Owners and admins also see their other statuses; for anyone else an unpublished posting is 404 (its existence is not revealed).
       security: [{}, { bearerAuth: [] }]
       responses:
         '200':
@@ -673,7 +729,7 @@ paths:
     put:
       tags: [M4 Job postings]
       summary: Update own posting
-      description: "`submit: true` sends the posting (back) to `pending_approval` and clears `rejection_reason` – also for an open posting, so changed accommodation claims are re-approved. `submit: false` is only allowed while the posting is a draft (otherwise 422 `errors.submit`). An accommodation type retired after it was attached may stay."
+      description: "`submit: true` publishes the posting with the changes (status open, also for an open or closed one) and clears an old `rejection_reason`; only a verified company may publish (otherwise 422 `errors.submit`). `submit: false` is only allowed while the posting is a draft (otherwise 422 `errors.submit`). An accommodation type retired after it was attached may stay."
       requestBody:
         required: true
         content:
@@ -698,7 +754,7 @@ paths:
     patch:
       tags: [M4 Job postings]
       summary: Open or close own posting
-      description: open → closed at any time; closed → open only if approved and the closing date has not passed. Other changes → 422 `errors.status`. A daily job (`postings:close-expired`, 00:05 Asia/Manila) closes open postings after `closes_at`.
+      description: open → closed at any time; closed → open only for a published posting of a verified company and before the closing date has passed. Other changes → 422 `errors.status`. A daily job (`postings:close-expired`, 00:05 Asia/Manila) closes open postings after `closes_at`.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -720,15 +776,13 @@ paths:
   /admin/job-postings:
     get:
       tags: [M4 Job postings]
-      summary: Postings by status for approval (admin)
-      description: The pending queue is sorted oldest first.
+      summary: Every posting, or one status (admin)
+      description: Newest first. Postings are published without approval (Decision 2026-10-21); admins remove inappropriate ones.
       parameters:
         - name: status
           in: query
-          schema:
-            allOf:
-              - $ref: '#/components/schemas/JobPostingStatus'
-            default: pending_approval
+          description: Omit for every status
+          schema: { $ref: '#/components/schemas/JobPostingStatus' }
         - $ref: '#/components/parameters/Page'
       responses:
         '200':
@@ -742,29 +796,6 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/JobPosting' }
                   meta: { $ref: '#/components/schemas/PageMeta' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-  /admin/job-postings/{id}/approve:
-    patch:
-      tags: [M4 Job postings]
-      summary: Approve (pending_approval → open) or reject a posting
-      description: Only postings in `pending_approval` can be reviewed (otherwise 422 `errors.action`). `approve` → open + approved (not when `closes_at` has passed). `reject` needs a `reason` → back to `draft` with `rejection_reason`, which the employer sees; resubmitting clears it.
-      parameters: [{ $ref: '#/components/parameters/Id' }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [action]
-              properties:
-                action: { type: string, enum: [approve, reject] }
-                reason: { type: string }
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/JobPosting' }
         '403': { $ref: '#/components/responses/Forbidden' }
   /admin/job-postings/{id}:
     delete:
@@ -796,7 +827,7 @@ paths:
       tags: [M6 Applications]
       summary: Apply to an open posting
       description: >-
-        Candidates only. A draft or unapproved posting is 404; a closed posting, or an open one past its
+        Candidates only, with a complete profile (otherwise 422 PROFILE_INCOMPLETE – Decision 2026-10-21). A draft or unpublished posting is 404; a closed posting, or an open one past its
         `closes_at` day (Asia/Manila), is 422 POSTING_CLOSED; a second application to the same posting is
         409 ALREADY_APPLIED. A candidate without a profile gets an empty one. The employer is notified.
       parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -1274,6 +1305,28 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/Category' }
+  /skills:
+    get:
+      tags: [M11 Master data]
+      summary: The shared skills list with other spellings (Decision 2026-10-21)
+      description: Sorted by name, ignoring case. Candidates and employers pick from it or type their own skills.
+      security: []
+      responses:
+        '200':
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        name: { type: string, example: Microsoft Excel }
+                        aliases: { type: array, items: { type: string }, example: [Excel, MS Excel] }
   /accommodations:
     get:
       tags: [M11 Master data]
@@ -1518,6 +1571,52 @@ paths:
               schema: { $ref: '#/components/schemas/InternalPostingSummary' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /internal/places/{code}:
+    servers:
+      - url: http://localhost:8002
+        description: Insights Service directly (private network only)
+    get:
+      tags: [Internal]
+      summary: City or municipality with province/region codes and centre point, for Core (Decision 2026-10-21)
+      description: >-
+        Called by Core when a profile's or posting's location changes, and by `locations:resolve` every 15 minutes for
+        missing points. The point comes from the geocode cache, Nominatim ("City, Province") or the bundled city centroids;
+        lat/lon are null when none knows the place.
+      security: [{ serviceKey: [] }]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string, pattern: '^\d{10}$' }
+      responses:
+        '200':
+          description: Place
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: { type: string }
+                  city: { type: string }
+                  province: { type: [string, 'null'] }
+                  region: { type: string }
+                  province_code: { type: [string, 'null'], description: null in NCR }
+                  region_code: { type: string }
+                  lat: { type: [number, 'null'] }
+                  lon: { type: [number, 'null'] }
+                  precision: { type: [string, 'null'], enum: [city, null] }
+                  sources:
+                    type: object
+                    properties:
+                      psgc: { $ref: '#/components/schemas/SourceStatus' }
+                      geocode: { $ref: '#/components/schemas/SourceStatus' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503':
+          description: PSGC lists unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
 components:
   securitySchemes:
@@ -1618,7 +1717,14 @@ components:
     EmploymentType: { type: string, enum: [full_time, part_time, contract, internship] }
     WorkSetup: { type: string, enum: [onsite, hybrid, remote] }
     InterviewFormat: { type: string, enum: [online, onsite] }
-    JobPostingStatus: { type: string, enum: [draft, pending_approval, open, closed] }
+    JobPostingStatus:
+      type: string
+      enum: [draft, open, closed]
+      description: No approval step since Decision 2026-10-21 (`pending_approval` rows were migrated).
+    EducationLevel:
+      type: string
+      enum: [elementary, high_school, senior_high, vocational, college, postgraduate]
+      description: In order; a level meets every requirement at or below it.
     ApplicationStatus: { type: string, enum: [pending, reviewed, hired, rejected, withdrawn] }
     HireConfirmedBy: { type: string, enum: [employer, candidate] }
     FeedbackRating:
@@ -1640,6 +1746,7 @@ components:
         - VALIDATION_FAILED
         - INVALID_STATUS_TRANSITION
         - POSTING_CLOSED
+        - PROFILE_INCOMPLETE
         - FEEDBACK_NOT_OPEN
         - REGISTRY_INVALID_REQUEST
         - RATE_LIMITED
@@ -1727,6 +1834,9 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/Onboarding'
                 - type: 'null'
+            profile_complete:
+              type: [boolean, 'null']
+              description: Job seekers only (null for others) – false until the required profile fields are filled in (Decision 2026-10-21)
     Onboarding:
       type: object
       required: [tour_done, checklist_hidden]
@@ -1755,6 +1865,21 @@ components:
           maxItems: 30
           items: { type: string, maxLength: 50 }
         experience: { type: [string, 'null'], maxLength: 5000 }
+        education_level:
+          oneOf:
+            - $ref: '#/components/schemas/EducationLevel'
+            - type: 'null'
+        experience_years: { type: [integer, 'null'], minimum: 0, maximum: 60 }
+        preferred_work_setups:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/WorkSetup' }
+        preferred_employment_types:
+          type: array
+          maxItems: 4
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/EmploymentType' }
         location_psgc: { type: [string, 'null'], pattern: '^\d{9,10}$' }
         location_label: { type: [string, 'null'], maxLength: 255, description: 'Display label chosen with the PSGC picker, e.g. "Quezon City, National Capital Region (NCR)"; returned as location.label' }
         disability_type: { type: [string, 'null'], maxLength: 100, description: Optional; never used for matching }
@@ -1767,6 +1892,11 @@ components:
             id: { type: integer }
             location: { $ref: '#/components/schemas/Location' }
             resume_url: { type: [string, 'null'], description: 'Signed gateway link to GET /resumes/{id}, valid 30 minutes; null without a résumé' }
+            profile_complete: { type: boolean, description: 'Location, at least 3 skills, education level, at least one preferred work setup and employment type (Decision 2026-10-21)' }
+            profile_missing:
+              type: array
+              description: The required fields still empty, in this order
+              items: { type: string, enum: [location_psgc, skills, education_level, preferred_work_setups, preferred_employment_types] }
             accommodations:
               type: array
               items: { $ref: '#/components/schemas/Accommodation' }
@@ -1840,6 +1970,18 @@ components:
       properties:
         title: { type: string, maxLength: 255 }
         description: { type: string }
+        skills:
+          type: array
+          maxItems: 20
+          description: Skills the job needs; at least one to publish (submit true)
+          items: { type: string, maxLength: 50 }
+        education_level:
+          description: Minimum education, or null for none
+          oneOf:
+            - $ref: '#/components/schemas/EducationLevel'
+            - type: 'null'
+        experience_years: { type: [integer, 'null'], minimum: 0, maximum: 40, description: Minimum years of experience }
+        qualifications: { type: [string, 'null'], maxLength: 2000, description: 'Other qualifications in words (licences, certificates)' }
         category_id: { type: integer }
         address: { type: string }
         location_psgc: { type: [string, 'null'] }
@@ -1856,12 +1998,19 @@ components:
             properties:
               id: { type: integer }
               note: { type: [string, 'null'], maxLength: 255 }
-        submit: { type: boolean, description: 'true = send for admin approval; false = save as draft' }
+        submit: { type: boolean, description: 'true = publish now (verified company only); false = save as draft' }
     Match:
       type: object
+      description: >-
+        MatchingService (Decision 2026-10-21): score 0–100 from skills (weight 40), location (20: remote or same city 1, same
+        province 0.6, same region 0.3, else 0), qualifications (15), work preferences (10) and accommodation needs (15, only
+        with saved needs). Parts without data on either side are left out and the rest re-weighted. Labels: strong ≥ 80,
+        good ≥ 60, fair ≥ 40, else low.
       properties:
-        met: { type: integer }
-        total: { type: integer }
+        score: { type: [integer, 'null'], minimum: 0, maximum: 100 }
+        label: { type: [string, 'null'], enum: [strong, good, fair, low, null] }
+        met: { type: integer, description: Accommodation needs the posting offers }
+        total: { type: integer, description: The candidate's needs (0 without needs) }
         missing:
           type: array
           items:
@@ -1869,6 +2018,31 @@ components:
             properties:
               id: { type: integer }
               name: { type: string }
+        skills:
+          type: object
+          properties:
+            matched: { type: array, items: { type: string }, description: The posting's skills the candidate has }
+            missing: { type: array, items: { type: string } }
+        location:
+          type: object
+          properties:
+            tier: { type: string, enum: [remote, same_city, same_province, same_region, farther, unknown] }
+            distance_km: { type: [number, 'null'], description: City centre to city centre; one decimal below 10 km }
+        education:
+          type: object
+          properties:
+            required: { oneOf: [{ $ref: '#/components/schemas/EducationLevel' }, { type: 'null' }] }
+            met: { type: [boolean, 'null'], description: null when nothing is required }
+        experience:
+          type: object
+          properties:
+            required_years: { type: [integer, 'null'] }
+            met: { type: [boolean, 'null'] }
+        preferences:
+          type: object
+          properties:
+            work_setup: { type: [boolean, 'null'], description: null when the candidate chose none }
+            employment_type: { type: [boolean, 'null'] }
     TrustScoreSummary:
       type: object
       properties:
@@ -1897,6 +2071,10 @@ components:
         id: { type: integer }
         title: { type: string }
         description: { type: string }
+        skills: { type: array, items: { type: string } }
+        education_level: { oneOf: [{ $ref: '#/components/schemas/EducationLevel' }, { type: 'null' }] }
+        experience_years: { type: [integer, 'null'] }
+        qualifications: { type: [string, 'null'] }
         employer: { $ref: '#/components/schemas/EmployerSummary' }
         category: { $ref: '#/components/schemas/Category' }
         address: { type: string }
@@ -1910,7 +2088,7 @@ components:
           type: array
           items: { $ref: '#/components/schemas/Accommodation' }
         match:
-          description: Only for logged-in candidates with saved needs (search and details); null otherwise. `missing` lists the unmet needs by name.
+          description: Only for logged-in candidates with a profile (search, details, saved jobs); null otherwise. `missing` lists the unmet needs by name.
           oneOf:
             - $ref: '#/components/schemas/Match'
             - type: 'null'
@@ -1946,6 +2124,8 @@ components:
             headline: { type: [string, 'null'] }
             skills: { type: array, items: { type: string } }
             experience: { type: [string, 'null'] }
+            education_level: { oneOf: [{ $ref: '#/components/schemas/EducationLevel' }, { type: 'null' }] }
+            experience_years: { type: [integer, 'null'] }
             accommodations:
               type: array
               items: { $ref: '#/components/schemas/Accommodation' }
@@ -1976,7 +2156,7 @@ components:
           description: |
             application_received (to the employer), application_status_changed (to the party that did not act),
             employer_verification (admin approved/rejected the company; data.verified),
-            posting_review (admin approved/rejected a posting; data.job_posting_id, data.approved),
+            posting_review (admin removed a posting, with the reason; data.job_posting_id, data.removed true – no approvals since Decision 2026-10-21),
             feedback_reminder (to a hired candidate on the day the feedback form opens; data.application_id).
             Each one is also emailed when the user's email_notifications is on.
           example: application_status_changed
@@ -2061,7 +2241,6 @@ components:
       description: Number of postings per JobPostingStatus
       properties:
         draft: { type: integer }
-        pending_approval: { type: integer }
         open: { type: integer }
         closed: { type: integer }
     CandidateDashboard:
