@@ -11,9 +11,9 @@ import BackLink from './BackLink.jsx';
  * `back` ({ to, label }) adds a back link above the heading; `badge` sits on the heading's line
  * (outside the <h1>, so it is not part of its name); `subtitle` goes under the heading and
  * `actions` (e.g. Read aloud) sit to its right on wide screens. `illustration` (decoration, e.g. a
- * mascot) goes above the heading.
+ * mascot) goes above the heading; `headingClassName` sizes an exceptional <h1> (Home).
  */
-export default function Page({ title, heading, documentTitle, back, badge, subtitle, actions, illustration, children, className = '' }) {
+export default function Page({ title, heading, documentTitle, back, badge, subtitle, actions, illustration, headingClassName, children, className = '' }) {
   const headingRef = useRef(null);
   // The router's first entry has key 'default': leave the browser's normal start position on a
   // fresh page load (also safe under StrictMode's double effects).
@@ -32,7 +32,7 @@ export default function Page({ title, heading, documentTitle, back, badge, subti
   }, [pathname]);
 
   const h1 = (
-    <h1 ref={headingRef} tabIndex={-1}>
+    <h1 ref={headingRef} tabIndex={-1} className={headingClassName}>
       {heading ?? title}
     </h1>
   );
