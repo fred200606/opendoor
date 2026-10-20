@@ -1,0 +1,384 @@
+/* The IPT look for our shared component classes (Decision 2026-10-21b): the values of Francis
+   Ruzgal's opendoor-ipt components (Button, FormField, Notice, StatusBadge, Tag, Pagination,
+   FilterTabs, Modal, StatTile, ErrorSummary, PageHeading), applied to the class names our pages
+   already use. In the `components` layer, so they win over the same classes in `legacy`. */
+
+@layer components {
+  /* ---------- page heading (PageHeading/PageHeader: 20 px → 24 px, yellow bar under it) */
+  .page > h1,
+  .page__heading > h1,
+  .page__title-row > h1 {
+    @apply font-display text-title font-bold sm:text-title-lg;
+    margin: 0;
+  }
+
+  .page__subtitle {
+    @apply mt-2 max-w-prose text-base text-muted;
+  }
+
+  .page {
+    @apply animate-page-in;
+  }
+
+  /* ---------- buttons (Button / buttonLinkStyles: 8 px corners, Lexend SemiBold, 48 px, 44 px small) */
+  .button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-md border-2 border-primary bg-primary px-5 py-2 font-display text-base font-semibold text-on-primary no-underline;
+    line-height: 1.5rem;
+    box-shadow: none;
+    transition:
+      color 200ms var(--ease-soft),
+      background-color 200ms var(--ease-soft),
+      border-color 200ms var(--ease-soft),
+      scale 200ms var(--ease-soft);
+  }
+
+  .button:hover {
+    @apply border-primary-hover bg-primary-hover text-on-primary;
+  }
+
+  .button:active {
+    scale: 0.97;
+  }
+
+  .button--secondary {
+    @apply border-primary bg-surface text-primary;
+  }
+
+  .button--secondary:hover {
+    @apply border-primary bg-primary-soft text-primary;
+  }
+
+  .button--danger {
+    @apply border-danger bg-danger text-on-primary;
+  }
+
+  .button--danger:hover {
+    @apply border-text bg-text text-on-primary;
+  }
+
+  .button--danger-outline {
+    @apply border-danger bg-surface text-danger;
+  }
+
+  .button--danger-outline:hover {
+    @apply border-danger bg-danger-soft text-danger;
+  }
+
+  .button--small {
+    @apply min-h-11 px-4 py-1.5 text-sm;
+  }
+
+  .button--block {
+    @apply w-full;
+  }
+
+  .button[aria-disabled='true'] {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  /* A text link that looks like a link (TEXT_LINK): bold, underlined, violet. */
+  .button--link,
+  .button--link:hover {
+    @apply min-h-0 rounded-none border-0 bg-transparent p-0 font-sans text-base font-bold text-primary underline underline-offset-4;
+  }
+
+  .button--link:hover {
+    @apply text-primary-hover no-underline;
+  }
+
+  /* The orange arrow pill on main actions (decoration, gone in Quiet mode). */
+  .button__arrow {
+    @apply inline-grid size-7 place-items-center rounded-full bg-orange text-text;
+  }
+
+  .back-link {
+    @apply mb-3 inline-flex min-h-11 items-center gap-1.5 font-bold text-primary no-underline;
+  }
+
+  .back-link:hover {
+    @apply text-primary-hover underline underline-offset-4;
+  }
+
+  /* ---------- fields (FormField / fieldStyles: 48 px, 8 px corners, 3:1 border, bold labels) */
+  .field {
+    @apply mb-6;
+  }
+
+  .field__label {
+    @apply block font-bold text-text;
+  }
+
+  .field__required {
+    @apply font-normal text-muted;
+  }
+
+  .field__hint {
+    @apply mt-1 text-sm text-muted;
+  }
+
+  .field__error {
+    @apply mt-1 flex items-start gap-1.5 font-bold text-danger;
+  }
+
+  .field__input {
+    @apply mt-2 block min-h-12 w-full max-w-md rounded-md border-2 border-input bg-surface px-4 py-3 text-base text-text;
+    line-height: 1.5rem;
+  }
+
+  .field__input::placeholder {
+    @apply text-muted;
+  }
+
+  .field--invalid .field__input,
+  .field__input[aria-invalid='true'] {
+    @apply border-danger;
+  }
+
+  .field__textarea {
+    @apply max-w-2xl;
+    min-height: 8rem;
+  }
+
+  .field--short .field__input {
+    @apply max-w-40;
+  }
+
+  .fieldset > legend.field__label {
+    @apply mb-1;
+  }
+
+  /* 26 px boxes (CHECKBOX / RADIO). */
+  .checkbox input,
+  .radio input {
+    @apply size-6.5 rounded-[6px] border-2 border-input bg-surface;
+  }
+
+  .radio input {
+    @apply rounded-full;
+  }
+
+  .checkbox input:checked {
+    @apply border-primary bg-primary;
+  }
+
+  .radio input:checked {
+    @apply border-primary bg-surface;
+    border-width: 7px;
+    background-image: none;
+  }
+
+  .checkbox label,
+  .radio label {
+    @apply font-bold;
+  }
+
+  /* ---------- notices (Notice: 8 px → 12 px corners, tinted box, coloured title) */
+  .alert {
+    @apply flex max-w-3xl animate-reveal gap-3 rounded-lg border-2 p-4 text-base text-text;
+    line-height: 1.5rem;
+  }
+
+  .alert--success {
+    @apply border-success bg-success-soft;
+  }
+
+  .alert--info {
+    @apply border-accent bg-info-soft;
+  }
+
+  .alert--warning {
+    @apply border-warning bg-warning-soft;
+  }
+
+  .alert--error {
+    @apply border-danger bg-danger-soft;
+  }
+
+  .alert--success .alert__icon,
+  .alert--success .alert__title {
+    @apply text-success;
+  }
+
+  .alert--info .alert__icon,
+  .alert--info .alert__title {
+    @apply text-accent;
+  }
+
+  .alert--warning .alert__icon,
+  .alert--warning .alert__title {
+    @apply text-warning;
+  }
+
+  .alert--error .alert__icon,
+  .alert--error .alert__title {
+    @apply text-danger;
+  }
+
+  .alert__title {
+    @apply font-bold;
+  }
+
+  .error-summary {
+    @apply mb-8 max-w-3xl animate-reveal rounded-lg border-2 border-danger bg-danger-soft p-4;
+  }
+
+  .error-summary__title {
+    @apply flex items-center gap-2 text-xl font-bold text-danger;
+  }
+
+  .error-summary a {
+    @apply font-bold text-primary underline underline-offset-4;
+  }
+
+  .callout {
+    @apply rounded-lg border-2 border-border bg-surface;
+  }
+
+  /* ---------- badges and tags (StatusBadge: 13 px bold pills; Tag: tinted, accent text) */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold;
+  }
+
+  .badge--success {
+    @apply border-success bg-success-soft text-success;
+  }
+
+  .badge--danger {
+    @apply border-danger bg-danger-soft text-danger;
+  }
+
+  .badge--warning {
+    @apply border-warning bg-warning-soft text-warning;
+  }
+
+  .badge--info {
+    @apply border-accent bg-primary-soft text-accent;
+  }
+
+  .badge--neutral,
+  .badge--muted {
+    @apply border-muted bg-subtle text-muted;
+  }
+
+  .badge svg {
+    @apply size-3.5;
+  }
+
+  .tag {
+    @apply inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-sm text-accent;
+    line-height: 1.25rem;
+  }
+
+  .tag--more {
+    @apply bg-transparent text-muted;
+  }
+
+  /* ---------- cards (white on the violet-grey canvas, 12 px corners, subtle border) */
+  .card,
+  .job-card,
+  .review-card,
+  .form-card {
+    @apply rounded-lg border-2 border-border bg-surface;
+  }
+
+  .card--tint {
+    @apply bg-subtle;
+  }
+
+  .job-card__title a {
+    @apply font-display text-lg font-semibold text-accent no-underline;
+  }
+
+  .job-card__title a:hover {
+    @apply underline underline-offset-4;
+  }
+
+  .job-card__meta,
+  .job-card__footer {
+    @apply text-sm text-muted;
+  }
+
+  /* ---------- icon tiles (IconTile: 44 px, 8 px corners; 80 px, 12 px corners) */
+  .icon-tile {
+    @apply size-11 rounded-md text-text;
+  }
+
+  .icon-tile--lg {
+    @apply size-20 rounded-lg;
+  }
+
+  /* ---------- stat tiles (StatTile: Lexend 28 px number in accent) */
+  .stats__item {
+    @apply rounded-lg border-2 border-border bg-surface p-5;
+  }
+
+  .stats__value {
+    @apply font-display text-stat font-bold text-accent;
+  }
+
+  .stats__label {
+    @apply font-bold text-text;
+  }
+
+  .stats__link {
+    @apply text-sm font-bold text-primary underline underline-offset-4;
+  }
+
+  /* ---------- tabs (FilterTabs: 8 px corners, filled when current) */
+  .tabs__tab {
+    @apply inline-flex min-h-11 items-center rounded-md border-2 border-input bg-surface px-4 font-display text-base font-semibold text-text;
+  }
+
+  .tabs__tab:hover {
+    @apply bg-primary-soft;
+  }
+
+  .tabs__tab[aria-selected='true'] {
+    @apply border-primary bg-primary text-on-primary;
+  }
+
+  /* ---------- pagination (44 px items, the current page filled) */
+  .pagination {
+    @apply mt-8;
+  }
+
+  .pagination .button,
+  .pagination a {
+    @apply min-h-11 min-w-11 rounded-md;
+  }
+
+  /* ---------- dialogs (Modal: 12 px corners, deep shadow, violet backdrop, settles in) */
+  .dialog {
+    @apply animate-dialog-in rounded-lg border-0 bg-surface text-text;
+    box-shadow: 0 24px 48px rgb(36 27 58 / 0.35);
+  }
+
+  .dialog::backdrop {
+    background: rgb(59 36 102 / 0.7);
+  }
+
+  .dialog__title {
+    @apply font-display text-2xl font-semibold;
+  }
+
+  /* ---------- lists and details */
+  .details-list dt {
+    @apply font-bold text-text;
+  }
+
+  .details-list dd {
+    @apply text-text;
+  }
+
+  .result-count {
+    @apply font-bold text-muted;
+  }
+
+  .muted {
+    @apply text-muted;
+  }
+
+  .table th {
+    @apply bg-subtle font-display text-sm font-semibold text-text;
+  }
+}

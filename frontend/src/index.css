@@ -9,6 +9,7 @@
 @import 'tailwindcss';
 @import './styles/tokens.css';
 @import './styles/legacy.css' layer(legacy);
+@import './styles/kit.css';
 
 /* Tailwind names for the design tokens (from opendoor-ipt). */
 @theme inline {
