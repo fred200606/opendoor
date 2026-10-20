@@ -22,11 +22,30 @@ class CandidateProfileFactory extends Factory
             'headline' => fake()->jobTitle(),
             'skills' => fake()->randomElements(['Excel', 'Typing', 'Customer service', 'Filipino Sign Language', 'HTML', 'Bookkeeping'], 3),
             'experience' => fake()->sentence(12),
-            'location_psgc' => null,
+            // Complete for matching (Decision 2026-10-21); see incomplete().
+            'education_level' => 'college',
+            'experience_years' => 2,
+            'preferred_work_setups' => ['onsite', 'hybrid', 'remote'],
+            'preferred_employment_types' => ['full_time', 'part_time'],
+            'location_psgc' => '1381300000',
             'location_label' => 'Quezon City, Metro Manila',
             'disability_type' => null,
             'show_disability' => false,
         ];
+    }
+
+    /** Fresh from sign-up: nothing that matching needs is filled in. */
+    public function incomplete(): static
+    {
+        return $this->state(fn () => [
+            'skills' => null,
+            'education_level' => null,
+            'experience_years' => null,
+            'preferred_work_setups' => null,
+            'preferred_employment_types' => null,
+            'location_psgc' => null,
+            'location_label' => null,
+        ]);
     }
 
     /** Attaches the given accommodations as needs after creating the profile. */

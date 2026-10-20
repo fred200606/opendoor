@@ -25,6 +25,7 @@ class ApplyTest extends TestCase
         parent::setUp();
 
         $this->candidate = User::factory()->candidate()->create(['name' => 'Maria Santos']);
+        CandidateProfile::factory()->for($this->candidate)->create();
         $employer = Employer::factory()->verified()->create(['company_name' => 'Bright Path BPO']);
         $this->posting = JobPosting::factory()->open()->create(['employer_id' => $employer->id, 'title' => 'Data Encoder']);
         Sanctum::actingAs($this->candidate);
@@ -47,7 +48,6 @@ class ApplyTest extends TestCase
             ->assertJsonPath('job_posting.title', 'Data Encoder')
             ->assertJsonMissingPath('candidate');
 
-        // A candidate without a saved profile gets one on the first application.
         $application = Application::sole();
         $this->assertSame($this->candidate->id, $application->candidateProfile->user_id);
 
@@ -73,6 +73,21 @@ class ApplyTest extends TestCase
         $this->getJson("/api/job-postings/{$this->posting->id}")->assertJsonMissingPath('my_application');
         $this->app['auth']->forgetGuards();
         $this->getJson("/api/job-postings/{$this->posting->id}")->assertJsonMissingPath('my_application');
+    }
+
+    public function test_an_incomplete_profile_must_be_completed_first(): void
+    {
+        $this->candidate->candidateProfile->update(['skills' => ['Typing'], 'preferred_work_setups' => []]);
+
+        $this->apply()
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'PROFILE_INCOMPLETE')
+            ->assertJsonPath('error.message', 'Complete your profile before you apply: where you live, at least 3 skills, your education and your work preferences.');
+        $this->assertSame(0, Application::count());
+
+        // A brand-new candidate has no profile at all.
+        Sanctum::actingAs(User::factory()->candidate()->create());
+        $this->apply()->assertUnprocessable()->assertJsonPath('error.code', 'PROFILE_INCOMPLETE');
     }
 
     public function test_applying_twice_is_a_conflict(): void

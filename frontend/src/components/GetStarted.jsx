@@ -106,7 +106,8 @@ export default function GetStarted({ steps }) {
 export function FirstSignInTour() {
   const { user } = useAuth();
   const { onboarding, finishTour } = useOnboarding();
-  if (!user || onboarding?.tour_done !== false) return null;
+  // Job seekers first complete their profile (decision 2026-10-21); the tour waits for the dashboard.
+  if (!user || onboarding?.tour_done !== false || user.profile_complete === false) return null;
 
   return <WelcomeTour role={user.role} listHint={!onboarding.checklist_hidden} onClose={finishTour} />;
 }

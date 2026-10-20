@@ -87,11 +87,11 @@ export default function RegisterPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    // New employers start by describing their company; candidates by adding their needs.
+    // New employers start by describing their company; candidates by completing their profile.
     await form.submit(async (values) => {
       try {
         return await register(values, (user) => ({
-          pathname: user.role === 'employer' ? '/employer/company' : '/candidate/profile',
+          pathname: user.role === 'employer' ? '/employer/company' : '/candidate/setup',
           state: { welcome: true },
         }));
       } catch (error) {

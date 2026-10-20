@@ -1,7 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import { getCandidateProfile } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
+import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import GetStarted from '../../components/GetStarted.jsx';
 import Page from '../../components/Page.jsx';
@@ -15,10 +16,16 @@ import { APPLICATION_TILES } from '../../lib/statusTiles.js';
 /** GET /candidate/dashboard – shape documented in docs/openapi.yaml (CandidateDashboard). */
 export default function CandidateDashboardPage() {
   const { user } = useAuth();
+  const location = useLocation();
   const state = useAsync(() => getDashboard('candidate'), []);
 
   return (
     <Page title={`Welcome, ${user.name}`} subtitle={<p className="page__subtitle">Where your applications stand and what to do next.</p>}>
+      {location.state?.message && (
+        <Alert type="success" live="polite">
+          <p>{location.state.message}</p>
+        </Alert>
+      )}
       <AsyncContent state={state} label="Loading your summary">
         {(dashboard) => (
           <>

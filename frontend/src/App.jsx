@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import GuestRoute from './auth/GuestRoute.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
+import RequireCompleteProfile from './auth/RequireCompleteProfile.jsx';
 import AppLayout from './components/AppLayout.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
@@ -10,6 +11,7 @@ import HomePage from './pages/HomePage.jsx';
 import CandidateApplicationPage from './pages/candidate/CandidateApplicationPage.jsx';
 import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage.jsx';
 import CandidateProfilePage from './pages/candidate/CandidateProfilePage.jsx';
+import CandidateSetupPage from './pages/candidate/CandidateSetupPage.jsx';
 import FeedbackPage from './pages/candidate/FeedbackPage.jsx';
 import MyApplicationsPage from './pages/candidate/MyApplicationsPage.jsx';
 import SavedJobsPage from './pages/candidate/SavedJobsPage.jsx';
@@ -57,14 +59,18 @@ export default function App() {
         </Route>
 
         <Route path="candidate" element={<ProtectedRoute role="candidate" />}>
-          <Route path="dashboard" element={<CandidateDashboardPage />} />
-          <Route path="profile" element={<CandidateProfilePage />} />
-          <Route path="jobs" element={<JobSearchPage />} />
-          <Route path="jobs/:id" element={<JobDetailsPage />} />
-          <Route path="applications" element={<MyApplicationsPage />} />
-          <Route path="applications/:id" element={<CandidateApplicationPage />} />
-          <Route path="applications/:id/feedback" element={<FeedbackPage />} />
-          <Route path="saved-jobs" element={<SavedJobsPage />} />
+          {/* Sign up → complete the profile → dashboard (decision 2026-10-21). */}
+          <Route path="setup" element={<CandidateSetupPage />} />
+          <Route element={<RequireCompleteProfile />}>
+            <Route path="dashboard" element={<CandidateDashboardPage />} />
+            <Route path="profile" element={<CandidateProfilePage />} />
+            <Route path="jobs" element={<JobSearchPage />} />
+            <Route path="jobs/:id" element={<JobDetailsPage />} />
+            <Route path="applications" element={<MyApplicationsPage />} />
+            <Route path="applications/:id" element={<CandidateApplicationPage />} />
+            <Route path="applications/:id/feedback" element={<FeedbackPage />} />
+            <Route path="saved-jobs" element={<SavedJobsPage />} />
+          </Route>
         </Route>
         <Route path="employer" element={<ProtectedRoute role="employer" />}>
           <Route path="dashboard" element={<EmployerDashboardPage />} />

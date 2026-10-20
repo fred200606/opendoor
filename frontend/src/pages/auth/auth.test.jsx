@@ -125,16 +125,20 @@ describe('RegisterPage', () => {
     expect(calls.some((call) => call.key === 'POST /register')).toBe(false);
   });
 
-  test('sends the contract fields and opens the candidate profile', async () => {
+  test('sends the contract fields and opens the profile setup', async () => {
     const { user, calls, location } = renderApp('/register', {
-      routes: { 'POST /register': () => [201, { token: '9|t', user: { ...users.candidate, name: 'Juan Dela Cruz' } }] },
+      routes: {
+        'POST /register': () => [201, { token: '9|t', user: { ...users.candidate, name: 'Juan Dela Cruz', profile_complete: false } }],
+        'GET /candidate/profile': () => [404, { error: { code: 'NOT_FOUND', message: 'Not found', request_id: 'r' } }],
+        'GET /skills': () => [200, { data: [] }],
+      },
     });
 
     await fillIn(user);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     await screen.findByTestId('location');
-    await vi.waitFor(() => expect(location()).toBe('/candidate/profile'));
+    await vi.waitFor(() => expect(location()).toBe('/candidate/setup'));
     expect(calls.find((call) => call.key === 'POST /register').data).toEqual({
       name: 'Juan Dela Cruz',
       email: 'juan@example.com',

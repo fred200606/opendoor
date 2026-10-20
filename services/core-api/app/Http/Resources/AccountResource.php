@@ -34,6 +34,8 @@ class AccountResource extends UserResource
                 'tour_done' => (bool) $this->onboarding_tour_done,
                 'checklist_hidden' => (bool) $this->onboarding_checklist_hidden,
             ],
+            // Job seekers complete their profile before the dashboard (Decision 2026-10-21); null for others.
+            'profile_complete' => $this->role === UserRole::Candidate ? (bool) $this->candidateProfile?->isComplete() : null,
         ];
     }
 }

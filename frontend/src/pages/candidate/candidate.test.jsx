@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { accommodationGroups, application, skillsList } from '../../test/fixtures.js';
-import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
+import { apiError, paged, renderApp, users, validationError } from '../../test/render.jsx';
 
 const profile = {
   id: 3,
@@ -19,6 +19,77 @@ const profile = {
   resume_url: null,
   accommodations: [{ id: 2, name: 'Accessible restroom', group: 'physical_access' }],
 };
+
+describe('CandidateSetupPage', () => {
+  const incomplete = { ...users.candidate, profile_complete: false };
+  const routes = {
+    'GET /me': () => [200, incomplete],
+    'GET /candidate/profile': () => apiError(404, 'NOT_FOUND'),
+    'GET /skills': () => [200, { data: skillsList }],
+    'GET /insights/locations/regions': () => [200, []],
+  };
+
+  test('an incomplete profile is sent to the setup from any candidate page', async () => {
+    const { location } = renderApp('/candidate/jobs', { as: 'candidate', routes });
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Complete your profile' })).toBeInTheDocument();
+    expect(location()).toBe('/candidate/setup');
+    // The welcome tour waits for the dashboard.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  test('every missing answer is listed at once, nothing is sent', async () => {
+    const { user, calls } = renderApp('/candidate/setup', { as: 'candidate', routes });
+
+    await user.click(await screen.findByRole('button', { name: 'Save and continue' }));
+
+    const summary = screen.getByRole('alert', { name: 'There is a problem' });
+    expect(summary).toHaveFocus();
+    expect(within(summary).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Choose the city or municipality where you live.',
+      'Add at least 3 skills.',
+      'Choose your highest education.',
+      'Choose at least one work setup.',
+      'Choose at least one type of work.',
+    ]);
+    expect(calls.some((call) => call.key === 'PUT /candidate/profile')).toBe(false);
+  });
+
+  test('a complete answer is saved and opens the dashboard', async () => {
+    const saved = { ...profile, profile_complete: true, profile_missing: [] };
+    const { user, calls, location } = renderApp('/candidate/setup', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'GET /candidate/profile': () => [200, { ...profile, skills: ['Typing'], education_level: null, preferred_work_setups: [], preferred_employment_types: [] }],
+        'PUT /candidate/profile': () => [200, saved],
+        'GET /candidate/dashboard': () => [200, { applications: {}, matching_jobs: 0, feedback_due: [] }],
+        'GET /job-postings': () => [200, paged([])],
+      },
+    });
+
+    const skills = await screen.findByRole('combobox', { name: /Your skills/ });
+    await user.type(skills, 'excel{Enter}');
+    await user.type(skills, 'Data entry{Enter}');
+    await user.selectOptions(screen.getByLabelText(/Highest education/), 'Senior high school');
+    await user.click(within(screen.getByRole('group', { name: /Work setups you prefer/ })).getByLabelText('Hybrid'));
+    await user.click(within(screen.getByRole('group', { name: /Types of work you want/ })).getByLabelText('Part-time'));
+    await user.click(screen.getByRole('button', { name: 'Save and continue' }));
+
+    await vi.waitFor(() => expect(location()).toBe('/candidate/dashboard'));
+    expect(await screen.findByText('Your profile is complete. Here are the jobs we recommend for you.')).toBeInTheDocument();
+    expect(location()).toBe('/candidate/dashboard');
+    expect(calls.find((call) => call.key === 'PUT /candidate/profile').data).toEqual({
+      location_psgc: '1381300000',
+      location_label: 'Quezon City, NCR',
+      skills: ['Typing', 'Microsoft Excel', 'Data entry'],
+      education_level: 'senior_high',
+      experience_years: 3,
+      preferred_work_setups: ['hybrid'],
+      preferred_employment_types: ['part_time'],
+    });
+  });
+});
 
 describe('CandidateProfilePage', () => {
   const routes = {

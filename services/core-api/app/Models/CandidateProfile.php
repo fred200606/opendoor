@@ -25,6 +25,9 @@ class CandidateProfile extends Model
 
     public const RESUME_LINK_MINUTES = 30;
 
+    /** Skills a complete profile needs (Decision 2026-10-21). */
+    public const MIN_SKILLS = 3;
+
     /** @var array<string, mixed> */
     protected $attributes = [
         'show_disability' => false,
@@ -88,6 +91,28 @@ class CandidateProfile extends Model
         }
 
         return $user->candidateProfile;
+    }
+
+    /**
+     * Required fields that are still empty (Decision 2026-10-21): a candidate completes these after
+     * signing up, before the dashboard and before applying. They are what job matching uses.
+     *
+     * @return list<string> API field names
+     */
+    public function missingForMatching(): array
+    {
+        return array_keys(array_filter([
+            'location_psgc' => ! $this->location_psgc,
+            'skills' => count($this->skills ?? []) < self::MIN_SKILLS,
+            'education_level' => $this->education_level === null,
+            'preferred_work_setups' => empty($this->preferred_work_setups),
+            'preferred_employment_types' => empty($this->preferred_employment_types),
+        ]));
+    }
+
+    public function isComplete(): bool
+    {
+        return $this->missingForMatching() === [];
     }
 
     /**

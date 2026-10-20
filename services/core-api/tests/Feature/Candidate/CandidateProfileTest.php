@@ -42,6 +42,8 @@ class CandidateProfileTest extends TestCase
             ->assertJsonPath('skills', [])
             ->assertJsonPath('education_level', null)
             ->assertJsonPath('preferred_work_setups', [])
+            ->assertJsonPath('profile_complete', false)
+            ->assertJsonPath('profile_missing', ['location_psgc', 'skills', 'education_level', 'preferred_work_setups', 'preferred_employment_types'])
             ->assertJsonPath('location', ['psgc_code' => null, 'label' => null])
             ->assertJsonPath('show_disability', false)
             ->assertJsonPath('resume_url', null)
@@ -87,7 +89,10 @@ class CandidateProfileTest extends TestCase
             ->assertJsonPath('education_level', 'college')
             ->assertJsonPath('experience_years', 3)
             ->assertJsonPath('preferred_work_setups', ['remote', 'hybrid'])
-            ->assertJsonPath('preferred_employment_types', ['full_time']);
+            ->assertJsonPath('preferred_employment_types', ['full_time'])
+            // Still missing: where the candidate lives and a third skill.
+            ->assertJsonPath('profile_complete', false)
+            ->assertJsonPath('profile_missing', ['location_psgc', 'skills']);
 
         $this->putJson('/api/candidate/profile', [
             'education_level' => 'doctorate',

@@ -25,6 +25,7 @@ import { EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } fr
 const APPLY_ERRORS = {
   ALREADY_APPLIED: 'You have already applied to this job. You can follow it in My applications.',
   POSTING_CLOSED: 'This job is no longer accepting applications.',
+  PROFILE_INCOMPLETE: 'Complete your profile before you apply: where you live, at least 3 skills, your education and your work preferences. You can do this under Profile and needs.',
 };
 
 export default function JobDetailsPage() {

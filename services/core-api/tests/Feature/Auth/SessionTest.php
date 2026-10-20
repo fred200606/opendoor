@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\CandidateProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -45,7 +46,18 @@ class SessionTest extends TestCase
                 'display_prefs' => null,
                 'email_notifications' => true,
                 'onboarding' => ['tour_done' => false, 'checklist_hidden' => false],
+                'profile_complete' => null,
             ]);
+    }
+
+    public function test_me_tells_a_job_seeker_whether_the_profile_is_complete(): void
+    {
+        $user = User::factory()->candidate()->create();
+        $token = $this->loginToken($user);
+
+        $this->asToken($token, 'GET', '/api/me')->assertJsonPath('profile_complete', false);
+        CandidateProfile::factory()->for($user)->create();
+        $this->asToken($token, 'GET', '/api/me')->assertJsonPath('profile_complete', true);
     }
 
     public function test_logout_revokes_only_the_current_token(): void

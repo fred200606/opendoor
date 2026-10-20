@@ -33,6 +33,9 @@ class CandidateProfileResource extends JsonResource
             'disability_type' => $this->disability_type,
             'show_disability' => $this->show_disability,
             'resume_url' => $this->resumeUrl(),
+            // Required before the dashboard and applying (Decision 2026-10-21).
+            'profile_complete' => $this->isComplete(),
+            'profile_missing' => $this->missingForMatching(),
             'accommodations' => AccommodationResource::collection($this->whenLoaded('accommodations')),
         ];
     }

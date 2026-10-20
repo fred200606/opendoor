@@ -47,6 +47,10 @@ class ApplicationController extends Controller
         ]);
 
         $profile = CandidateProfile::for($request->user());
+        if (! $profile->isComplete()) {
+            throw new ApiException('PROFILE_INCOMPLETE', 'Complete your profile before you apply: where you live, at least 3 skills, your education and your work preferences.', 422);
+        }
+
         $application = new Application($data);
         $application->jobPosting()->associate($jobPosting);
         $application->candidateProfile()->associate($profile);
