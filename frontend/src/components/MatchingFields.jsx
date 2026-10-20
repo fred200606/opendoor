@@ -9,7 +9,7 @@ import { MAX_CANDIDATE_SKILLS } from '../lib/matchingProfile.js';
  * skills, education, experience and work preferences. Shared by the profile page and the
  * first-time setup. `errors` has list item errors already collapsed (collapseItemErrors).
  */
-export default function MatchingFields({ form, errors, skillOptions, currentLocationLabel }) {
+export default function MatchingFields({ form, errors, skillOptions, currentLocationLabel, afterSkills = null }) {
   const { values } = form;
 
   return (
@@ -33,6 +33,7 @@ export default function MatchingFields({ form, errors, skillOptions, currentLoca
         max={MAX_CANDIDATE_SKILLS}
         error={errors.skills}
       />
+      {afterSkills}
       <SelectField
         label="Highest education"
         name="education_level"

@@ -27,6 +27,12 @@ export async function uploadResume(file) {
   return data;
 }
 
+/** Skills from the shared list found in the uploaded résumé: { readable, skills } (decision 2026-10-21). */
+export async function getResumeSkillSuggestions() {
+  const { data } = await api.get('/candidate/resume/skill-suggestions');
+  return data.data;
+}
+
 // M3 Company
 
 export async function getCompany() {

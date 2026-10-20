@@ -81,6 +81,53 @@ describe('CandidateProfilePage', () => {
     });
   });
 
+  test('skills found in the résumé are added only after the candidate confirms them', async () => {
+    const { user, calls } = renderApp('/candidate/profile?tab=about', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'GET /candidate/profile': () => [200, { ...profile, resume_url: 'http://localhost:8080/api/resumes/3?signature=x' }],
+        'GET /candidate/resume/skill-suggestions': () => [200, { data: { readable: true, skills: ['Data entry', 'Filing and records management'] } }],
+        'PUT /candidate/profile': () => [200, profile],
+      },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Suggest skills from my résumé' }));
+    const found = await screen.findByRole('group', { name: 'Skills found in your résumé' });
+    expect(found).toHaveFocus();
+    expect(screen.getByText('We found 2 skills in your résumé. Untick any that are not right.')).toBeInTheDocument();
+    await user.click(within(found).getByLabelText('Filing and records management'));
+    await user.click(screen.getByRole('button', { name: 'Add selected skills' }));
+
+    expect(screen.getByRole('combobox', { name: /Your skills/ })).toHaveFocus();
+    expect(screen.getByText('Added 1 skill to your skills. Save your profile to keep them.')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Your skills: added' })).toHaveTextContent('Microsoft ExcelTypingData entry');
+    expect(calls.some((call) => call.key === 'PUT /candidate/profile')).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Save profile' }));
+    expect(calls.find((call) => call.key === 'PUT /candidate/profile').data.skills).toEqual(['Microsoft Excel', 'Typing', 'Data entry']);
+  });
+
+  test('a résumé without readable text is explained', async () => {
+    const { user } = renderApp('/candidate/profile?tab=about', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'GET /candidate/profile': () => [200, { ...profile, resume_url: 'http://localhost:8080/api/resumes/3?signature=x' }],
+        'GET /candidate/resume/skill-suggestions': () => [200, { data: { readable: false, skills: [] } }],
+      },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Suggest skills from my résumé' }));
+    expect(await screen.findByText(/A scanned résumé has no text/)).toBeInTheDocument();
+  });
+
+  test('no suggest button without a résumé', async () => {
+    renderApp('/candidate/profile?tab=about', { as: 'candidate', routes });
+
+    expect(await screen.findByRole('combobox', { name: /Your skills/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Suggest skills from my résumé' })).not.toBeInTheDocument();
+  });
+
   test('a new candidate without a profile gets an empty form and the welcome message', async () => {
     renderApp('/candidate/profile', {
       as: 'candidate',

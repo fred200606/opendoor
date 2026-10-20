@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Candidate;
 
+use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Candidate\ProfileRequest;
 use App\Http\Resources\AccommodationResource;
 use App\Http\Resources\CandidateProfileResource;
 use App\Models\CandidateProfile;
 use App\Rules\UsableAccommodation;
+use App\Services\ResumeSkillExtractor;
 use App\Services\SkillCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -70,6 +72,20 @@ class ProfileController extends Controller
         }
 
         return response()->json(['resume_url' => $profile->resumeUrl()]);
+    }
+
+    /**
+     * Skills from the shared list found in the uploaded résumé that the profile does not have yet
+     * (Decision 2026-10-21). Only suggestions: the candidate adds the ones that are right.
+     */
+    public function skillSuggestions(Request $request, ResumeSkillExtractor $extractor): JsonResponse
+    {
+        $profile = $this->profile($request);
+        if (! $profile->resume_path) {
+            throw new ApiException('NOT_FOUND', 'Upload your résumé first.', 404);
+        }
+
+        return response()->json(['data' => $extractor->suggest($profile)]);
     }
 
     private function profile(Request $request): CandidateProfile

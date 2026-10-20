@@ -9,12 +9,13 @@ import Button from '../../components/Button.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, TextArea, TextField } from '../../components/form/fields.jsx';
 import MatchingFields from '../../components/MatchingFields.jsx';
+import ResumeSkillSuggestions from '../../components/ResumeSkillSuggestions.jsx';
 import Page from '../../components/Page.jsx';
 import Tabs from '../../components/Tabs.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
-import { MATCHING_FIELD_IDS, matchingPayload, matchingValues } from '../../lib/matchingProfile.js';
-import { collapseItemErrors } from '../../lib/skills.js';
+import { MATCHING_FIELD_IDS, MAX_CANDIDATE_SKILLS, matchingPayload, matchingValues } from '../../lib/matchingProfile.js';
+import { collapseItemErrors, skillKey } from '../../lib/skills.js';
 
 const RESUME_MAX_MB = 5;
 
@@ -43,7 +44,6 @@ const TABS = [
 
 export default function CandidateProfilePage() {
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
   const state = useAsync(
     () =>
       Promise.all([
@@ -63,26 +63,34 @@ export default function CandidateProfilePage() {
         </Alert>
       )}
       <AsyncContent state={state} label="Loading your profile">
-        {([profile, groups, skills]) => (
-          <Tabs
-            label="Parts of your profile"
-            selected={params.get('tab') ?? 'needs'}
-            onSelect={(tab) => setParams(tab === 'needs' ? {} : { tab }, { replace: true })}
-            tabs={TABS.map((tab) => ({
-              ...tab,
-              content:
-                tab.id === 'needs' ? (
-                  <NeedsSection profile={profile} groups={groups} />
-                ) : tab.id === 'about' ? (
-                  <ProfileSection profile={profile} skillOptions={skills} />
-                ) : (
-                  <ResumeSection profile={profile} />
-                ),
-            }))}
-          />
-        )}
+        {([profile, groups, skills]) => <ProfileTabs profile={profile} groups={groups} skills={skills} />}
       </AsyncContent>
     </Page>
+  );
+}
+
+/** The résumé link is shared: an upload makes "Suggest skills from my résumé" appear under About you. */
+function ProfileTabs({ profile, groups, skills }) {
+  const [params, setParams] = useSearchParams();
+  const [resumeUrl, setResumeUrl] = useState(profile.resume_url);
+
+  return (
+    <Tabs
+      label="Parts of your profile"
+      selected={params.get('tab') ?? 'needs'}
+      onSelect={(tab) => setParams(tab === 'needs' ? {} : { tab }, { replace: true })}
+      tabs={TABS.map((tab) => ({
+        ...tab,
+        content:
+          tab.id === 'needs' ? (
+            <NeedsSection profile={profile} groups={groups} />
+          ) : tab.id === 'about' ? (
+            <ProfileSection profile={profile} skillOptions={skills} hasResume={Boolean(resumeUrl)} />
+          ) : (
+            <ResumeSection resumeUrl={resumeUrl} onUploaded={setResumeUrl} />
+          ),
+      }))}
+    />
   );
 }
 
@@ -138,7 +146,7 @@ const PROFILE_FIELDS = {
   disability_type: { id: 'disability_type' },
 };
 
-function ProfileSection({ profile, skillOptions }) {
+function ProfileSection({ profile, skillOptions, hasResume }) {
   const [saved, setSaved] = useState(false);
   const form = useApiForm({
     headline: profile.headline ?? '',
@@ -173,7 +181,25 @@ function ProfileSection({ profile, skillOptions }) {
       <ApiErrorAlert error={form.formError} title="Your profile was not saved" />
       <form onSubmit={handleSubmit} noValidate>
         <TextField label="Headline" hint="For example: Data encoder with 3 years of experience." maxLength={255} error={errors.headline} {...form.bind('headline')} />
-        <MatchingFields form={form} errors={errors} skillOptions={skillOptions} currentLocationLabel={profile.location?.label} />
+        <MatchingFields
+          form={form}
+          errors={errors}
+          skillOptions={skillOptions}
+          currentLocationLabel={profile.location?.label}
+          afterSkills={
+            hasResume && (
+              <ResumeSkillSuggestions
+                onAdd={(found) =>
+                  form.setValues((current) => {
+                    const have = new Set(current.skills.map(skillKey));
+                    const added = found.filter((skill) => !have.has(skillKey(skill)));
+                    return { ...current, skills: [...current.skills, ...added].slice(0, MAX_CANDIDATE_SKILLS) };
+                  })
+                }
+              />
+            )
+          }
+        />
         <TextArea label="Work experience" hint="Where you worked and what you did." voice error={errors.experience} {...form.bind('experience')} />
 
         <fieldset className="fieldset field fieldset--box">
@@ -199,8 +225,7 @@ function ProfileSection({ profile, skillOptions }) {
   );
 }
 
-function ResumeSection({ profile }) {
-  const [resumeUrl, setResumeUrl] = useState(profile.resume_url);
+function ResumeSection({ resumeUrl, onUploaded }) {
   const [file, setFile] = useState(null);
   const [clientError, setClientError] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -224,7 +249,7 @@ function ResumeSection({ profile }) {
     if (clientError) return;
     const result = await form.submit(() => uploadResume(file));
     if (result) {
-      setResumeUrl(result.resume_url);
+      onUploaded(result.resume_url);
       setSaved(true);
     }
   }
@@ -260,7 +285,7 @@ function ResumeSection({ profile }) {
           {form.submitting ? 'Uploading…' : 'Upload'}
         </Button>
         <p role="status" className="save-status">
-          {saved && 'Your résumé is uploaded.'}
+          {saved && 'Your résumé is uploaded. Under “About you” you can add skills we find in it.'}
         </p>
       </form>
     </section>

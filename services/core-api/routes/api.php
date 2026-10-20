@@ -71,6 +71,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::put('profile', [ProfileController::class, 'update']);
         Route::put('accommodations', [ProfileController::class, 'updateNeeds']);
         Route::post('resume', [ProfileController::class, 'uploadResume']);
+        Route::get('resume/skill-suggestions', [ProfileController::class, 'skillSuggestions']); // Decision 2026-10-21
         Route::get('dashboard', [DashboardController::class, 'candidate']);
         // M12 Saved jobs – own bookmarks of visible postings
         Route::get('saved-jobs', [SavedJobController::class, 'index']);
