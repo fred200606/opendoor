@@ -1,6 +1,7 @@
 // OpenDoor error envelope (same shape as Core and the gateway): { error: { code, message, request_id } }
 
 export const ERRORS = {
+  UNAUTHENTICATED: [401, 'A valid service key is required.'],
   NOT_FOUND: [404, 'The requested resource was not found.'],
   VALIDATION_FAILED: [422, 'The given data was invalid.'],
   SERVICE_UNAVAILABLE: [503, 'The service is temporarily unavailable. Please try again shortly.'],

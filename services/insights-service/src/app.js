@@ -5,6 +5,7 @@ import { accessLog } from './middleware/accessLog.js';
 import { requestId } from './middleware/requestId.js';
 import { healthRouter } from './routes/health.js';
 import { locationsRouter } from './routes/locations.js';
+import { placesRouter } from './routes/places.js';
 import { snapshotRouter } from './routes/snapshot.js';
 import { createGeocoder } from './services/geocoder.js';
 import { createLocationService } from './services/locations.js';
@@ -86,6 +87,7 @@ export function createApp(config, { store, psgcFallback, centroids = {}, log = c
 
   app.use(healthRouter(store));
   app.use(locationsRouter(locations));
+  app.use(placesRouter({ locations, geocode, serviceKey: config.serviceKey }));
   app.use(snapshotRouter(snapshot));
 
   app.use((req, res) => sendError(req, res, 'NOT_FOUND'));

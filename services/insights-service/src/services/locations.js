@@ -43,13 +43,15 @@ export function createLocationService({ psgc, cached, ttlMs, cooldownMs, fallbac
   }
 
   /**
-   * City/municipality code → { city, province, region, source } with display names (province null
-   * in NCR), or null when the code cannot be found or the lists are unavailable. Highly urbanized
-   * cities (Cebu 0730600000) do not share their province's code prefix, so the region's provinces
-   * are searched, the one with the matching prefix first.
+   * City/municipality code → { city, province, region, province_code, region_code, source } with
+   * display names (province null in NCR), or null when the code cannot be found. Throws
+   * SERVICE_UNAVAILABLE when it was not found but a list it needed could not be loaded. Highly
+   * urbanized cities (Cebu 0730600000) do not share their province's code prefix, so the region's
+   * provinces are searched, the one with the matching prefix first.
    */
   async function describe(code) {
     const sources = [];
+    let failed = false;
     const track = (loaded) => {
       sources.push(loaded.source);
       return loaded.value;
@@ -58,21 +60,34 @@ export function createLocationService({ psgc, cached, ttlMs, cooldownMs, fallbac
       try {
         return track(await load(key, fetch));
       } catch {
+        failed = true;
         return null;
       }
     };
+    const notFound = () => {
+      if (failed) throw new ApiError('SERVICE_UNAVAILABLE');
+      return null;
+    };
+    const found = (city, province, region) => ({
+      city: city.name,
+      province: province?.name ?? null,
+      region: region.name,
+      province_code: province?.code ?? null,
+      region_code: region.code,
+      source: combined(sources),
+    });
 
     const allRegions = await tryLoad('regions', psgc.regions);
     const region = allRegions?.find((item) => item.code === regionOf(code));
-    if (!region) return null;
+    if (!region) return notFound();
 
     const provinces = await tryLoad(`provinces:${region.code}`, () => psgc.provincesOfRegion(region.ref));
-    if (!provinces) return null;
+    if (!provinces) return notFound();
 
     if (provinces.length === 0) {
       const cities = await tryLoad(`cities:${region.code}`, () => psgc.citiesOfRegion(region.ref));
       const city = cities?.find((item) => item.code === code);
-      return city ? { city: city.name, province: null, region: region.name, source: combined(sources) } : null;
+      return city ? found(city, null, region) : notFound();
     }
 
     const prefix = code.slice(0, 5);
@@ -80,9 +95,9 @@ export function createLocationService({ psgc, cached, ttlMs, cooldownMs, fallbac
     for (const province of ordered) {
       const cities = await tryLoad(`cities:${province.code}`, () => psgc.citiesOfProvince(province.ref));
       const city = cities?.find((item) => item.code === code);
-      if (city) return { city: city.name, province: province.name, region: region.name, source: combined(sources) };
+      if (city) return found(city, province, region);
     }
-    return null;
+    return notFound();
   }
 
   return {
