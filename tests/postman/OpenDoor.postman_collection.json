@@ -202,6 +202,10 @@
     {
       "key": "secPostingId",
       "value": ""
+    },
+    {
+      "key": "anyPostingId",
+      "value": ""
     }
   ],
   "item": [
@@ -304,7 +308,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -320,6 +324,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -394,7 +399,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -410,6 +415,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -642,7 +648,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -658,6 +664,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -728,7 +735,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -744,6 +751,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -814,7 +822,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -830,6 +838,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -947,7 +956,7 @@
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -963,6 +972,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -2762,7 +2772,7 @@
     },
     {
       "name": "03 Employer & Postings",
-      "description": "M3 company + M4 postings: T02, T07, T08, approval workflow and visibility. Cleans up after itself.",
+      "description": "M3 company + M4 postings: T02, T07, T08, publishing by verified companies (no approval step, Decision 2026-10-21) and visibility. Cleans up after itself.",
       "item": [
         {
           "name": "Pick a category for the posting",
@@ -3036,7 +3046,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3065,7 +3075,9 @@
                 "exec": [
                   "pm.test('status 201', () => pm.response.to.have.status(201));",
                   "const p = pm.response.json();",
-                  "pm.test('status is pending_approval', () => pm.expect(p.status).to.eql('pending_approval'));",
+                  "pm.test('a verified company publishes at once: status open', () => pm.expect(p.status).to.eql('open'));",
+                  "pm.test('skills stored under their list names', () => pm.expect(p.skills).to.eql(['Data entry', 'Microsoft Excel']));",
+                  "pm.test('qualifications stored', () => { pm.expect(p.education_level).to.eql('senior_high'); pm.expect(p.experience_years).to.eql(1); });",
                   "pm.test('3 accommodations stored with notes', () => {",
                   "  pm.expect(p.accommodations).to.have.lengthOf(3);",
                   "  pm.expect(p.accommodations.map((a) => a.note)).to.include('Ramp at the main entrance');",
@@ -3084,7 +3096,7 @@
           ]
         },
         {
-          "name": "Guests cannot see an unapproved posting → 404",
+          "name": "Guests see the new posting right away",
           "request": {
             "method": "GET",
             "auth": {
@@ -3113,11 +3125,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "",
-                  "const body = pm.response.json();",
-                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
-                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                  "pm.test('matches the JobPosting shape', () => {",
+                  "  const p = pm.response.json();",
+                  "  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score');",
+                  "  pm.expect(p.employer).to.have.keys('id', 'company_name', 'verified');",
+                  "  pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');",
+                  "});"
                 ]
               }
             }
@@ -3211,7 +3226,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -3227,6 +3242,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -3285,7 +3301,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3323,9 +3339,9 @@
           ]
         },
         {
-          "name": "A submitted posting cannot go back to draft → 422 errors.submit",
+          "name": "A published job needs a skill → 422 errors.skills",
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -3347,18 +3363,91 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "raw": "{{baseUrl}}/job-postings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "job-postings",
-                "{{jobPostingId}}"
+                "job-postings"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": false\n}",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.skills is present', () => pm.expect(body.errors).to.have.property('skills'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "An unverified company cannot publish → 422 errors.submit",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employer2Token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman unverified\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3398,9 +3487,9 @@
           ]
         },
         {
-          "name": "An unapproved posting cannot be opened → 422 errors.status",
+          "name": "A published posting cannot go back to draft → 422 errors.submit",
           "request": {
-            "method": "PATCH",
+            "method": "PUT",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -3422,19 +3511,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}/status",
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "job-postings",
-                "{{jobPostingId}}",
-                "status"
+                "{{jobPostingId}}"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"open\"\n}",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3443,6 +3531,19 @@
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -3454,14 +3555,14 @@
                   "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
                   "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
                   "",
-                  "pm.test('errors.status is present', () => pm.expect(body.errors).to.have.property('status'));"
+                  "pm.test('errors.submit is present', () => pm.expect(body.errors).to.have.property('submit'));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Admin queue lists the new posting",
+          "name": "Admin list of every posting includes it",
           "request": {
             "method": "GET",
             "auth": {
@@ -3498,254 +3599,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('pending posting is in the queue', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));"
+                  "pm.test('the new posting is listed (newest first)', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Admin rejects without a reason → 422 errors.reason",
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/admin/job-postings/{{jobPostingId}}/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "job-postings",
-                "{{jobPostingId}}",
-                "approve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"reject\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 422', () => pm.response.to.have.status(422));",
-                  "",
-                  "const body = pm.response.json();",
-                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
-                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
-                  "",
-                  "pm.test('errors.reason is present', () => pm.expect(body.errors).to.have.property('reason'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin rejects with a reason → draft",
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/admin/job-postings/{{jobPostingId}}/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "job-postings",
-                "{{jobPostingId}}",
-                "approve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"reject\",\n  \"reason\": \"Please add the working hours.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('back to draft with the reason', () => {",
-                  "  pm.expect(pm.response.json().status).to.eql('draft');",
-                  "  pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner sees the rejection reason",
-          "request": {
-            "method": "GET",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{employerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "job-postings",
-                "{{jobPostingId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('reason visible to the owner', () => pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Owner resubmits → pending_approval, reason cleared",
-          "request": {
-            "method": "PUT",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{employerToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "job-postings",
-                "{{jobPostingId}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Monday to Friday, 9:00 to 17:00.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const body = JSON.parse(pm.request.body.raw);",
-                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
-                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
-                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
-                  "pm.request.body.raw = JSON.stringify(body);"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('waiting for approval again', () => { pm.expect(pm.response.json().status).to.eql('pending_approval'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin approves → open",
+          "name": "The approval endpoint is gone → 404",
           "request": {
             "method": "PATCH",
             "auth": {
@@ -3796,8 +3657,81 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is NOT_FOUND', () => pm.expect(body.error.code).to.eql('NOT_FOUND'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner edits the published posting → stays open",
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{jobPostingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{jobPostingId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Data Encoder\",\n  \"description\": \"Created by the Postman run. Monday to Friday, 9:00 to 17:00.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('posting is open', () => pm.expect(pm.response.json().status).to.eql('open'));"
+                  "pm.test('still open, no reason', () => { pm.expect(pm.response.json().status).to.eql('open'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });"
                 ]
               }
             }
@@ -3943,7 +3877,7 @@
           ]
         },
         {
-          "name": "Owner reopens the approved posting",
+          "name": "Owner reopens the published posting",
           "request": {
             "method": "PATCH",
             "auth": {
@@ -4133,7 +4067,7 @@
     },
     {
       "name": "04 Candidate & Matching",
-      "description": "M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and \"Matches my needs\" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.",
+      "description": "M2 profile (required fields, Decision 2026-10-21), needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and \"Recommended for me\" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.",
       "item": [
         {
           "name": "New candidate gets an empty profile (not 404)",
@@ -4179,7 +4113,149 @@
                   "  pm.expect(p.accommodations).to.eql([]);",
                   "  pm.expect(p.resume_url).to.eql(null);",
                   "  pm.expect(p.show_disability).to.eql(false);",
+                  "});",
+                  "pm.test('not complete yet: every required field is missing', () => {",
+                  "  pm.expect(p.profile_complete).to.eql(false);",
+                  "  pm.expect(p.profile_missing).to.eql(['location_psgc', 'skills', 'education_level', 'preferred_work_setups', 'preferred_employment_types']);",
                   "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "The skills list (public)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "skills"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const skills = pm.response.json().data;",
+                  "pm.test('names with other spellings', () => {",
+                  "  pm.expect(skills.length).to.be.above(10);",
+                  "  skills.forEach((s) => pm.expect(s).to.have.keys('id', 'name', 'aliases'));",
+                  "  pm.expect(skills.find((s) => s.name === 'Microsoft Excel').aliases).to.include('Excel');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find an open posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('anyPostingId', pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "An incomplete profile cannot apply → 422 PROFILE_INCOMPLETE",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateLoginToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings/{{anyPostingId}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings",
+                "{{anyPostingId}}",
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is PROFILE_INCOMPLETE', () => pm.expect(body.error.code).to.eql('PROFILE_INCOMPLETE'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));"
                 ]
               }
             }
@@ -4221,7 +4297,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"headline\": \"  Data encoder  \",\n  \"skills\": [\n    \"Excel\",\n    \" Typing \",\n    \"Excel\",\n    \"\"\n  ],\n  \"experience\": \"\",\n  \"location_psgc\": null,\n  \"location_label\": null,\n  \"disability_type\": null,\n  \"show_disability\": true\n}",
+              "raw": "{\n  \"headline\": \"  Data encoder  \",\n  \"skills\": [\n    \"Excel\",\n    \" Typing \",\n    \"MS  Excel\",\n    \"\",\n    \"data encoding\"\n  ],\n  \"experience\": \"\",\n  \"education_level\": \"college\",\n  \"experience_years\": 2,\n  \"preferred_work_setups\": [\n    \"onsite\",\n    \"remote\"\n  ],\n  \"preferred_employment_types\": [\n    \"full_time\"\n  ],\n  \"location_psgc\": \"1381300000\",\n  \"location_label\": \"Quezon City, National Capital Region (NCR)\",\n  \"disability_type\": null,\n  \"show_disability\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4237,8 +4313,9 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const p = pm.response.json();",
-                  "pm.test('trimmed and de-duplicated', () => { pm.expect(p.headline).to.eql('Data encoder'); pm.expect(p.skills).to.eql(['Excel', 'Typing']); pm.expect(p.experience).to.eql(null); });",
-                  "pm.test('show_disability is off without a disability type', () => pm.expect(p.show_disability).to.eql(false));"
+                  "pm.test('trimmed, list names, de-duplicated in any spelling', () => { pm.expect(p.headline).to.eql('Data encoder'); pm.expect(p.skills).to.eql(['Microsoft Excel', 'Typing', 'Data entry']); pm.expect(p.experience).to.eql(null); });",
+                  "pm.test('show_disability is off without a disability type', () => pm.expect(p.show_disability).to.eql(false));",
+                  "pm.test('the profile is complete now', () => { pm.expect(p.profile_complete).to.eql(true); pm.expect(p.profile_missing).to.eql([]); });"
                 ]
               }
             }
@@ -4640,6 +4717,53 @@
           ]
         },
         {
+          "name": "Skills suggested from the résumé (never stored)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{newCandidateLoginToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/candidate/resume/skill-suggestions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "candidate",
+                "resume",
+                "skill-suggestions"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('readable flag and a list of skill names', () => { pm.expect(d.readable).to.be.a('boolean'); pm.expect(d.skills).to.be.an('array'); });",
+                  "pm.test('no skill the profile already has', () => ['Microsoft Excel', 'Typing', 'Data entry'].forEach((s) => pm.expect(d.skills).to.not.include(s)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Signed résumé link opens without a token → PDF",
           "request": {
             "method": "GET",
@@ -4802,7 +4926,7 @@
           ]
         },
         {
-          "name": "T03 Demo candidate \"Matches my needs\" → ranked by needs met",
+          "name": "T03 Demo candidate \"Recommended for me\" → ranked by match score",
           "request": {
             "method": "GET",
             "auth": {
@@ -4853,11 +4977,12 @@
                   "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
                   "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
                   "",
-                  "pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));",
-                  "pm.test('ranked by needs met', () => {",
-                  "  const met = body.data.map((p) => p.match.met);",
-                  "  pm.expect(met).to.eql([...met].sort((a, b) => b - a));",
+                  "pm.test('every posting has the Match object', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences')));",
+                  "pm.test('ranked by match score', () => {",
+                  "  const scores = body.data.map((p) => p.match.score);",
+                  "  pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));",
                   "});",
+                  "pm.test('labels follow the score', () => body.data.forEach((p) => pm.expect(p.match.label).to.eql(p.match.score >= 80 ? 'strong' : p.match.score >= 60 ? 'good' : p.match.score >= 40 ? 'fair' : 'low')));",
                   "pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));"
                 ]
               }
@@ -4865,7 +4990,7 @@
           ]
         },
         {
-          "name": "Matches my needs + closing soon → still ranked by needs first",
+          "name": "Recommended for me + closing soon → still ranked by score first",
           "request": {
             "method": "GET",
             "auth": {
@@ -4920,18 +5045,230 @@
                   "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
                   "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
                   "",
-                  "pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));",
-                  "pm.test('ranked by needs met', () => {",
-                  "  const met = body.data.map((p) => p.match.met);",
-                  "  pm.expect(met).to.eql([...met].sort((a, b) => b - a));",
+                  "pm.test('every posting has the Match object', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences')));",
+                  "pm.test('ranked by match score', () => {",
+                  "  const scores = body.data.map((p) => p.match.score);",
+                  "  pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));",
                   "});",
+                  "pm.test('labels follow the score', () => body.data.forEach((p) => pm.expect(p.match.label).to.eql(p.match.score >= 80 ? 'strong' : p.match.score >= 60 ? 'good' : p.match.score >= 40 ? 'fair' : 'low')));",
                   "pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));",
-                  "pm.test('closing date ascending within the same number of needs met', () => {",
+                  "pm.test('closing date ascending within the same score', () => {",
                   "  for (let i = 1; i < body.data.length; i++) {",
                   "    const [a, b] = [body.data[i - 1], body.data[i]];",
-                  "    if (a.match.met === b.match.met) pm.expect(a.closes_at <= b.closes_at).to.eql(true);",
+                  "    if (a.match.score === b.match.score) pm.expect(a.closes_at <= b.closes_at).to.eql(true);",
                   "  }",
                   "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Work setup filter → only remote and hybrid",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?work_setup[]=remote&work_setup[]=hybrid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "work_setup[]",
+                  "value": "remote"
+                },
+                {
+                  "key": "work_setup[]",
+                  "value": "hybrid"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('only the chosen setups', () => body.data.forEach((p) => pm.expect(p.work_setup).to.be.oneOf(['remote', 'hybrid'])));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Distance filter for the demo candidate (Quezon City) → within 25 km or remote",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=25",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "25"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('the distance was applied', () => pm.expect(body.meta.distance).to.eql(25));",
+                  "pm.test('remote, or about 25 km or less', () => body.data.forEach((p) => {",
+                  "  if (p.work_setup !== 'remote') pm.expect(p.match.location.distance_km).to.be.at.most(25.5);",
+                  "}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guests cannot filter by distance (ignored)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('not applied', () => pm.expect(body.meta.distance).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid distance → 422 errors.distance",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "30"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.distance is present', () => pm.expect(body.errors).to.have.property('distance'));"
                 ]
               }
             }
@@ -5033,8 +5370,10 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const m = pm.response.json().match;",
-                  "pm.test('match with named missing needs', () => {",
-                  "  pm.expect(m).to.have.keys('met', 'total', 'missing');",
+                  "pm.test('match with score, parts and named missing needs', () => {",
+                  "  pm.expect(m).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences');",
+                  "  pm.expect(m.score).to.be.within(0, 100);",
+                  "  pm.expect(m.location.tier).to.be.oneOf(['remote', 'same_city', 'same_province', 'same_region', 'farther', 'unknown']);",
                   "  m.missing.forEach((need) => pm.expect(need).to.have.keys('id', 'name'));",
                   "});"
                 ]
@@ -5618,10 +5957,10 @@
     },
     {
       "name": "05 Applications & Status",
-      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.",
+      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.",
       "item": [
         {
-          "name": "Employer submits a posting for this run",
+          "name": "Employer publishes a posting for this run",
           "request": {
             "method": "POST",
             "auth": {
@@ -5655,7 +5994,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Applications Test\",\n  \"description\": \"Created by the Postman run for folder 05. Deleted at the end.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "raw": "{\n  \"title\": \"Postman Applications Test\",\n  \"description\": \"Created by the Postman run for folder 05. Deleted at the end.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5683,66 +6022,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('open', () => pm.expect(pm.response.json().status).to.eql('open'));",
                   "pm.collectionVariables.set('appPostingId', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin approves it → open",
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/admin/job-postings/{{appPostingId}}/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "job-postings",
-                "{{appPostingId}}",
-                "approve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"approve\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('open', () => pm.expect(pm.response.json().status).to.eql('open'));"
                 ]
               }
             }
@@ -6793,7 +7074,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -6809,6 +7090,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -9461,7 +9743,7 @@
           ]
         },
         {
-          "name": "Throwaway employer submits a posting → 201",
+          "name": "The unverified throwaway employer cannot publish → 422 errors.submit",
           "request": {
             "method": "POST",
             "auth": {
@@ -9495,7 +9777,140 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman Suspension Test\",\n  \"description\": \"Created by the Postman run for folder 09. Deleted at the end.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "raw": "{\n  \"title\": \"Postman Suspension Test\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = JSON.parse(pm.request.body.raw);",
+                  "['category_id'].forEach((k) => { body[k] = Number(pm.variables.replaceIn(body[k])); });",
+                  "body.accommodations = body.accommodations.map((a) => ({ ...a, id: Number(pm.variables.replaceIn(a.id)) }));",
+                  "body.closes_at = pm.variables.replaceIn(body.closes_at);",
+                  "pm.request.body.raw = JSON.stringify(body);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.submit is present', () => pm.expect(body.errors).to.have.property('submit'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin verifies the throwaway employer (Postman run)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/{{pmEmployerId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "employers",
+                "{{pmEmployerId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('verified', () => pm.expect(pm.response.json().verified_at).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Throwaway employer publishes a posting → 201 open",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{pmEmployerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Suspension Test\",\n  \"description\": \"Created by the Postman run for folder 09. Deleted at the end.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9523,66 +9938,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));",
                   "pm.collectionVariables.set('secPostingId', pm.response.json().id);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Admin approves it → open",
-          "request": {
-            "method": "PATCH",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/admin/job-postings/{{secPostingId}}/approve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "job-postings",
-                "{{secPostingId}}",
-                "approve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"approve\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));"
                 ]
               }
             }
@@ -9839,7 +10196,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
+              "raw": "{\n  \"title\": \"Hijacked\",\n  \"description\": \"Created by the Postman run. Encode records.\",\n  \"skills\": [\n    \"data encoding\",\n    \"MS Excel\"\n  ],\n  \"education_level\": \"senior_high\",\n  \"experience_years\": 1,\n  \"qualifications\": null,\n  \"category_id\": \"{{postingCategoryId}}\",\n  \"address\": \"25 Scout Tobias St.\",\n  \"location_psgc\": null,\n  \"location_label\": \"Quezon City, Metro Manila\",\n  \"employment_type\": \"full_time\",\n  \"work_setup\": \"onsite\",\n  \"interview_format\": \"online\",\n  \"closes_at\": \"{{postingClosesAt}}\",\n  \"accommodations\": [\n    {\n      \"id\": \"{{accA}}\",\n      \"note\": \"Ramp at the main entrance\"\n    },\n    {\n      \"id\": \"{{accB}}\",\n      \"note\": \"Ground floor\"\n    },\n    {\n      \"id\": \"{{accC}}\",\n      \"note\": null\n    }\n  ],\n  \"submit\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"

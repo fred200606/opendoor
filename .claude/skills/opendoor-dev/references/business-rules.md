@@ -6,7 +6,7 @@ These are enforced on the server and covered by feature tests.
 
 | From | To | Who | Condition |
 |---|---|---|---|
-| (none) | pending | Candidate | posting is open + approved, not past `closes_at`, candidate has not applied before |
+| (none) | pending | Candidate | profile complete (else 422 `PROFILE_INCOMPLETE`), posting is open + published by a verified company, not past `closes_at`, candidate has not applied before |
 | pending | reviewed | Employer | happens automatically when the employer opens the application |
 | pending / reviewed | withdrawn | Candidate | final |
 | reviewed | rejected | Employer | final |
@@ -19,16 +19,20 @@ These are enforced on the server and covered by feature tests.
 
 ## Posting lifecycle
 
-`draft → pending_approval → open → closed` (admin approval moves pending_approval → open; reject keeps it out with a reason). Only `open` + approved + not soft-deleted postings appear in search, matching and the Insights snapshot. Postings auto-close after `closes_at` (`postings:close-expired`, daily 00:05 Manila). An employer needs a company profile to post. `submit:true` (create or edit) → `pending_approval` and `is_approved=false` – editing an open posting sends it back for approval; `submit:false` only while still a draft. Owner may close an open posting and reopen a closed one if approved and before `closes_at`. Unpublished postings are 404 for everyone except the owner and admins. Closed postings stop accepting applications. An employer manages only its own postings (JobPostingPolicy).
+`draft → open → closed` (Decision 2026-10-21: no admin approval step). Only `open` + approved + not soft-deleted postings **of a verified, active employer** appear in search, matching and the Insights snapshot (a company that loses its verification hides its postings until it is verified again). Postings auto-close after `closes_at` (`postings:close-expired`, daily 00:05 Manila). An employer needs a company profile to post. `submit:true` (create or edit) publishes at once (`open`, `is_approved=true`) – only for a verified company (else 422 `errors.submit`; drafts stay allowed) and with at least one skill (422 `errors.skills`); `submit:false` only while still a draft. Owner may close an open posting and reopen a closed one if the company is verified and before `closes_at`. Admins list every posting and remove inappropriate ones (`DELETE /admin/job-postings/{id}` with a reason). Unpublished postings are 404 for everyone except the owner and admins. Closed postings stop accepting applications. An employer manages only its own postings (JobPostingPolicy).
 
-## Matching ("Matches my needs")
+## Required profile (Decision 2026-10-21)
 
-1. Load the candidate's needs.
-2. For each open, approved posting, `met` = number of those needs in the posting's accommodations (Eloquent `withCount` on the pivot filtered by the need IDs).
-3. Order: full matches first, then by `met` desc, then the requested sort (`best`/`newest` = newest first, `closing` = closing date first).
-4. Apply keyword (title, description, company name; case-insensitive, `%`/`_` literal), category and extra accommodation filters on top (the posting must offer every selected accommodation).
-5. Guests and candidates with no saved needs see all open postings (`match_mode: false`).
-6. `missing` lists the unmet needs by name. Disability type is never used.
+Complete = `location_psgc` + at least 3 skills + `education_level` + at least one preferred work setup + at least one preferred employment type (`CandidateProfile::missingForMatching()`). Sign up → `/candidate/setup` → dashboard; the frontend sends incomplete candidates to the setup page; Core refuses applying with 422 `PROFILE_INCOMPLETE`.
+
+## Matching ("Recommended for me", Decision 2026-10-21 – `MatchingService`)
+
+1. Every candidate with a profile gets `match` on postings (search, details, saved jobs). Score 0–100 = weighted share met of: **skills 40** (the posting's skills the candidate has; names compared through the skills list and aliases, case-insensitive), **location 20** (remote or same city 1, same province 0.6, same region 0.3, else 0; province from the Insights lookup, else the PSGC code prefix; NCR has no province), **qualifications 15** (minimum education – `EducationLevel` order – and minimum years of experience), **preferences 10** (work setup and employment type), **needs 15** (accommodation needs offered; only with saved needs).
+2. A part without data on either side is left out and the others re-weighted. Labels: strong ≥ 80, good ≥ 60, fair ≥ 40, else low.
+3. `match=1` ranks by score desc, then the requested sort (`best`/`newest` = newest first, `closing` = closing date first), then id desc – scored in PHP over the filtered postings (score columns only), paginated by hand.
+4. Filters: keyword (title, description, company name; case-insensitive, `%`/`_` literal), category, accommodations (must offer all), `work_setup[]`, `distance` (10/25/50/100 km from the candidate's city centre; remote postings always kept; equirectangular formula with the numbers written into the SQL).
+5. `missing` lists the unmet needs by name. Disability type is never used.
+6. City centre points come from the Insights Service (`GET /internal/places/{code}`) when a location changes; `locations:resolve` (every 15 min) fills missing ones.
 
 ## Feedback and trust score
 

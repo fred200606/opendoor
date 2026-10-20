@@ -202,6 +202,10 @@
     {
       "key": "secPostingId",
       "value": ""
+    },
+    {
+      "key": "anyPostingId",
+      "value": ""
     }
   ],
   "item": [
@@ -403,7 +407,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -419,6 +423,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -489,7 +494,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -505,6 +510,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -575,7 +581,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -591,6 +597,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -652,7 +659,7 @@
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "pm.test('matches the account schema exactly', () => pm.expect(pm.response.json()).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -668,6 +675,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -1160,7 +1168,7 @@
     },
     {
       "name": "03 Employer & Postings",
-      "description": "M3 company + M4 postings: T02, T07, T08, approval workflow and visibility. Cleans up after itself.",
+      "description": "M3 company + M4 postings: T02, T07, T08, publishing by verified companies (no approval step, Decision 2026-10-21) and visibility. Cleans up after itself.",
       "item": [
         {
           "name": "Pick a category for the posting",
@@ -1487,7 +1495,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -1503,6 +1511,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",
@@ -1575,8 +1584,85 @@
     },
     {
       "name": "04 Candidate & Matching",
-      "description": "M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and \"Matches my needs\" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.",
+      "description": "M2 profile (required fields, Decision 2026-10-21), needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and \"Recommended for me\" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.",
       "item": [
+        {
+          "name": "The skills list (public)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "skills"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const skills = pm.response.json().data;",
+                  "pm.test('names with other spellings', () => {",
+                  "  pm.expect(skills.length).to.be.above(10);",
+                  "  skills.forEach((s) => pm.expect(s).to.have.keys('id', 'name', 'aliases'));",
+                  "  pm.expect(skills.find((s) => s.name === 'Microsoft Excel').aliases).to.include('Excel');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find an open posting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('anyPostingId', pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Employer cannot read a candidate profile → 403",
           "request": {
@@ -1762,7 +1848,7 @@
           ]
         },
         {
-          "name": "T03 Demo candidate \"Matches my needs\" → ranked by needs met",
+          "name": "T03 Demo candidate \"Recommended for me\" → ranked by match score",
           "request": {
             "method": "GET",
             "auth": {
@@ -1813,11 +1899,12 @@
                   "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
                   "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
                   "",
-                  "pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));",
-                  "pm.test('ranked by needs met', () => {",
-                  "  const met = body.data.map((p) => p.match.met);",
-                  "  pm.expect(met).to.eql([...met].sort((a, b) => b - a));",
+                  "pm.test('every posting has the Match object', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences')));",
+                  "pm.test('ranked by match score', () => {",
+                  "  const scores = body.data.map((p) => p.match.score);",
+                  "  pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));",
                   "});",
+                  "pm.test('labels follow the score', () => body.data.forEach((p) => pm.expect(p.match.label).to.eql(p.match.score >= 80 ? 'strong' : p.match.score >= 60 ? 'good' : p.match.score >= 40 ? 'fair' : 'low')));",
                   "pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));"
                 ]
               }
@@ -1825,7 +1912,7 @@
           ]
         },
         {
-          "name": "Matches my needs + closing soon → still ranked by needs first",
+          "name": "Recommended for me + closing soon → still ranked by score first",
           "request": {
             "method": "GET",
             "auth": {
@@ -1880,18 +1967,230 @@
                   "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
                   "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
                   "",
-                  "pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));",
-                  "pm.test('ranked by needs met', () => {",
-                  "  const met = body.data.map((p) => p.match.met);",
-                  "  pm.expect(met).to.eql([...met].sort((a, b) => b - a));",
+                  "pm.test('every posting has the Match object', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences')));",
+                  "pm.test('ranked by match score', () => {",
+                  "  const scores = body.data.map((p) => p.match.score);",
+                  "  pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));",
                   "});",
+                  "pm.test('labels follow the score', () => body.data.forEach((p) => pm.expect(p.match.label).to.eql(p.match.score >= 80 ? 'strong' : p.match.score >= 60 ? 'good' : p.match.score >= 40 ? 'fair' : 'low')));",
                   "pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));",
-                  "pm.test('closing date ascending within the same number of needs met', () => {",
+                  "pm.test('closing date ascending within the same score', () => {",
                   "  for (let i = 1; i < body.data.length; i++) {",
                   "    const [a, b] = [body.data[i - 1], body.data[i]];",
-                  "    if (a.match.met === b.match.met) pm.expect(a.closes_at <= b.closes_at).to.eql(true);",
+                  "    if (a.match.score === b.match.score) pm.expect(a.closes_at <= b.closes_at).to.eql(true);",
                   "  }",
                   "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Work setup filter → only remote and hybrid",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?work_setup[]=remote&work_setup[]=hybrid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "work_setup[]",
+                  "value": "remote"
+                },
+                {
+                  "key": "work_setup[]",
+                  "value": "hybrid"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('only the chosen setups', () => body.data.forEach((p) => pm.expect(p.work_setup).to.be.oneOf(['remote', 'hybrid'])));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Distance filter for the demo candidate (Quezon City) → within 25 km or remote",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidateToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=25",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "25"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('the distance was applied', () => pm.expect(body.meta.distance).to.eql(25));",
+                  "pm.test('remote, or about 25 km or less', () => body.data.forEach((p) => {",
+                  "  if (p.work_setup !== 'remote') pm.expect(p.match.location.distance_km).to.be.at.most(25.5);",
+                  "}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guests cannot filter by distance (ignored)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('meta: 12 per page, match_mode false', () => {",
+                  "  pm.expect(body.meta).to.include.keys('current_page', 'last_page', 'total', 'match_mode');",
+                  "  pm.expect(body.meta.per_page).to.eql(12);",
+                  "  pm.expect(body.meta.match_mode).to.eql(false);",
+                  "});",
+                  "pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));",
+                  "pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));",
+                  "pm.test('not applied', () => pm.expect(body.meta.distance).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid distance → 422 errors.distance",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/job-postings?distance=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "job-postings"
+              ],
+              "query": [
+                {
+                  "key": "distance",
+                  "value": "30"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 422', () => pm.response.to.have.status(422));",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('error.code is VALIDATION_FAILED', () => pm.expect(body.error.code).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('error.request_id matches the header', () => pm.expect(body.error.request_id).to.eql(pm.response.headers.get('X-Request-ID')));",
+                  "",
+                  "pm.test('errors.distance is present', () => pm.expect(body.errors).to.have.property('distance'));"
                 ]
               }
             }
@@ -1936,8 +2235,10 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const m = pm.response.json().match;",
-                  "pm.test('match with named missing needs', () => {",
-                  "  pm.expect(m).to.have.keys('met', 'total', 'missing');",
+                  "pm.test('match with score, parts and named missing needs', () => {",
+                  "  pm.expect(m).to.have.keys('score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences');",
+                  "  pm.expect(m.score).to.be.within(0, 100);",
+                  "  pm.expect(m.location.tier).to.be.oneOf(['remote', 'same_city', 'same_province', 'same_region', 'farther', 'unknown']);",
                   "  m.missing.forEach((need) => pm.expect(need).to.have.keys('id', 'name'));",
                   "});"
                 ]
@@ -2198,7 +2499,7 @@
     },
     {
       "name": "05 Applications & Status",
-      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.",
+      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.",
       "item": [
         {
           "name": "Admins have no access to applications → 403",
@@ -2300,7 +2601,7 @@
                   "  pm.expect(body.token).to.be.a('string').and.not.empty;",
                   "  pm.expect(body.user).to.be.jsonSchema({",
                   "  type: 'object',",
-                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],",
+                  "  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],",
                   "  properties: {",
                   "    id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },",
                   "    role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },",
@@ -2316,6 +2617,7 @@
                   "      ]",
                   "    },",
                   "    email_notifications: { type: 'boolean' },",
+                  "    profile_complete: { type: ['boolean', 'null'] },",
                   "    onboarding: {",
                   "      oneOf: [",
                   "        { type: 'null' },",

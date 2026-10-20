@@ -44,7 +44,7 @@ const userSchema = `{
 /** The signed-in user's own account (register, login, /me): User + M13 display settings, email switch and onboarding. */
 const accountSchema = `{
   type: 'object',
-  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding'],
+  required: ['id', 'name', 'email', 'role', 'is_active', 'display_prefs', 'email_notifications', 'onboarding', 'profile_complete'],
   properties: {
     id: { type: 'integer' }, name: { type: 'string' }, email: { type: 'string' },
     role: { enum: ['candidate', 'employer', 'admin'] }, is_active: { type: 'boolean' },
@@ -60,6 +60,7 @@ const accountSchema = `{
       ]
     },
     email_notifications: { type: 'boolean' },
+    profile_complete: { type: ['boolean', 'null'] },
     onboarding: {
       oneOf: [
         { type: 'null' },
@@ -494,6 +495,10 @@ pm.test('new accommodation is listed', () => pm.expect(pm.response.json().data.m
 const postingBody = (overrides = {}) => ({
   title: 'Postman Data Encoder',
   description: 'Created by the Postman run. Encode records.',
+  skills: ['data encoding', 'MS Excel'],
+  education_level: 'senior_high',
+  experience_years: 1,
+  qualifications: null,
   category_id: '{{postingCategoryId}}',
   address: '25 Scout Tobias St.',
   location_psgc: null,
@@ -527,7 +532,7 @@ pm.test('matches the JobPosting shape', () => {
   pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');
 });`;
 
-const employerPostings = folder('03 Employer & Postings', 'M3 company + M4 postings: T02, T07, T08, approval workflow and visibility. Cleans up after itself.', [
+const employerPostings = folder('03 Employer & Postings', 'M3 company + M4 postings: T02, T07, T08, publishing by verified companies (no approval step, Decision 2026-10-21) and visibility. Cleans up after itself.', [
   request('Pick a category for the posting', {
     path: '/categories',
     tests: `${status(200)}\npm.collectionVariables.set('postingCategoryId', pm.response.json().data[0].id);`,
@@ -584,7 +589,9 @@ pm.test('trust score is published only from 3 responses', () => {
     tests: `
 ${status(201)}
 const p = pm.response.json();
-pm.test('status is pending_approval', () => pm.expect(p.status).to.eql('pending_approval'));
+pm.test('a verified company publishes at once: status open', () => pm.expect(p.status).to.eql('open'));
+pm.test('skills stored under their list names', () => pm.expect(p.skills).to.eql(['Data entry', 'Microsoft Excel']));
+pm.test('qualifications stored', () => { pm.expect(p.education_level).to.eql('senior_high'); pm.expect(p.experience_years).to.eql(1); });
 pm.test('3 accommodations stored with notes', () => {
   pm.expect(p.accommodations).to.have.lengthOf(3);
   pm.expect(p.accommodations.map((a) => a.note)).to.include('Ramp at the main entrance');
@@ -592,9 +599,9 @@ pm.test('3 accommodations stored with notes', () => {
 ${postingShape}
 pm.collectionVariables.set('jobPostingId', p.id);`,
   }),
-  request('Guests cannot see an unapproved posting → 404', {
+  request('Guests see the new posting right away', {
     path: '/job-postings/{{jobPostingId}}',
-    tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
+    tests: `${status(200)}\n${postingShape}`,
   }),
   request('T07 Unknown posting id → 404 with request_id', {
     path: '/job-postings/999999',
@@ -614,7 +621,23 @@ pm.collectionVariables.set('jobPostingId', p.id);`,
     body: postingBody({ title: 'Hijacked' }),
     tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
   }),
-  request('A submitted posting cannot go back to draft → 422 errors.submit', {
+  request('A published job needs a skill → 422 errors.skills', {
+    method: 'POST',
+    path: '/job-postings',
+    auth: bearer('employerToken'),
+    prerequest: INT_IDS,
+    body: postingBody({ skills: [] }),
+    tests: fieldError('skills'),
+  }),
+  request('An unverified company cannot publish → 422 errors.submit', {
+    method: 'POST',
+    path: '/job-postings',
+    auth: bearer('employer2Token'),
+    prerequest: INT_IDS,
+    body: postingBody({ title: 'Postman unverified' }),
+    tests: fieldError('submit'),
+  }),
+  request('A published posting cannot go back to draft → 422 errors.submit', {
     method: 'PUT',
     path: '/job-postings/{{jobPostingId}}',
     auth: bearer('employerToken'),
@@ -622,45 +645,21 @@ pm.collectionVariables.set('jobPostingId', p.id);`,
     body: postingBody({ submit: false }),
     tests: fieldError('submit'),
   }),
-  request('An unapproved posting cannot be opened → 422 errors.status', {
-    method: 'PATCH',
-    path: '/job-postings/{{jobPostingId}}/status',
-    auth: bearer('employerToken'),
-    body: { status: 'open' },
-    tests: fieldError('status'),
-  }),
-  request('Admin queue lists the new posting', {
+  request('Admin list of every posting includes it', {
     path: '/admin/job-postings',
     auth: bearer('adminToken'),
     tests: `
 ${status(200)}
-pm.test('pending posting is in the queue', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));`,
+pm.test('the new posting is listed (newest first)', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.include(pm.collectionVariables.get('jobPostingId')));`,
   }),
-  request('Admin rejects without a reason → 422 errors.reason', {
+  request('The approval endpoint is gone → 404', {
     method: 'PATCH',
     path: '/admin/job-postings/{{jobPostingId}}/approve',
     auth: bearer('adminToken'),
-    body: { action: 'reject' },
-    tests: fieldError('reason'),
+    body: { action: 'approve' },
+    tests: `${status(404)}\n${envelope('NOT_FOUND')}`,
   }),
-  request('Admin rejects with a reason → draft', {
-    method: 'PATCH',
-    path: '/admin/job-postings/{{jobPostingId}}/approve',
-    auth: bearer('adminToken'),
-    body: { action: 'reject', reason: 'Please add the working hours.' },
-    tests: `
-${status(200)}
-pm.test('back to draft with the reason', () => {
-  pm.expect(pm.response.json().status).to.eql('draft');
-  pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.');
-});`,
-  }),
-  request('Owner sees the rejection reason', {
-    path: '/job-postings/{{jobPostingId}}',
-    auth: bearer('employerToken'),
-    tests: `${status(200)}\npm.test('reason visible to the owner', () => pm.expect(pm.response.json().rejection_reason).to.eql('Please add the working hours.'));`,
-  }),
-  request('Owner resubmits → pending_approval, reason cleared', {
+  request('Owner edits the published posting → stays open', {
     method: 'PUT',
     path: '/job-postings/{{jobPostingId}}',
     auth: bearer('employerToken'),
@@ -668,14 +667,7 @@ pm.test('back to draft with the reason', () => {
     body: postingBody({ description: 'Created by the Postman run. Monday to Friday, 9:00 to 17:00.' }),
     tests: `
 ${status(200)}
-pm.test('waiting for approval again', () => { pm.expect(pm.response.json().status).to.eql('pending_approval'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });`,
-  }),
-  request('Admin approves → open', {
-    method: 'PATCH',
-    path: '/admin/job-postings/{{jobPostingId}}/approve',
-    auth: bearer('adminToken'),
-    body: { action: 'approve' },
-    tests: `${status(200)}\npm.test('posting is open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+pm.test('still open, no reason', () => { pm.expect(pm.response.json().status).to.eql('open'); pm.expect(pm.response.json().rejection_reason).to.eql(null); });`,
   }),
   request('Guests now see the open posting (no rejection_reason)', {
     path: '/job-postings/{{jobPostingId}}',
@@ -697,7 +689,7 @@ pm.test('posting is listed', () => pm.expect(pm.response.json().open_postings.ma
     body: { status: 'closed' },
     tests: `${status(200)}\npm.test('closed', () => pm.expect(pm.response.json().status).to.eql('closed'));`,
   }),
-  request('Owner reopens the approved posting', {
+  request('Owner reopens the published posting', {
     method: 'PATCH',
     path: '/job-postings/{{jobPostingId}}/status',
     auth: bearer('employerToken'),
@@ -745,18 +737,21 @@ pm.test('meta: 12 per page, match_mode ${matchMode}', () => {
 pm.test('only open postings', () => body.data.forEach((p) => pm.expect(p.status).to.eql('open')));
 pm.test('postings have the JobPosting shape', () => body.data.forEach((p) => pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'accommodations', 'match', 'trust_score')));`;
 
-/** match.met never increases down the list (full matches first). */
-const rankedByNeeds = `
-pm.test('every posting has match {met,total,missing}', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys('met', 'total', 'missing')));
-pm.test('ranked by needs met', () => {
-  const met = body.data.map((p) => p.match.met);
-  pm.expect(met).to.eql([...met].sort((a, b) => b - a));
+const MATCH_KEYS = "'score', 'label', 'met', 'total', 'missing', 'skills', 'location', 'education', 'experience', 'preferences'";
+
+/** match.score never increases down the list (Decision 2026-10-21: skills, place, qualifications, preferences, needs). */
+const rankedByScore = `
+pm.test('every posting has the Match object', () => body.data.forEach((p) => pm.expect(p.match).to.have.keys(${MATCH_KEYS})));
+pm.test('ranked by match score', () => {
+  const scores = body.data.map((p) => p.match.score);
+  pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));
 });
+pm.test('labels follow the score', () => body.data.forEach((p) => pm.expect(p.match.label).to.eql(p.match.score >= 80 ? 'strong' : p.match.score >= 60 ? 'good' : p.match.score >= 40 ? 'fair' : 'low')));
 pm.test('missing = total - met', () => body.data.forEach((p) => pm.expect(p.match.missing).to.have.lengthOf(p.match.total - p.match.met)));`;
 
 const candidateSearch = folder(
   '04 Candidate & Matching',
-  'M2 profile, needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and "Matches my needs" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.',
+  'M2 profile (required fields, Decision 2026-10-21), needs and résumé (throwaway candidate from 01, demo data untouched) + M5 search and "Recommended for me" (T03–T05). Uploads tests/postman/fixtures/*.pdf – run Newman from the repo root.',
   [
     request('New candidate gets an empty profile (not 404)', {
       path: '/candidate/profile',
@@ -769,18 +764,57 @@ pm.test('empty profile', () => {
   pm.expect(p.accommodations).to.eql([]);
   pm.expect(p.resume_url).to.eql(null);
   pm.expect(p.show_disability).to.eql(false);
+});
+pm.test('not complete yet: every required field is missing', () => {
+  pm.expect(p.profile_complete).to.eql(false);
+  pm.expect(p.profile_missing).to.eql(['location_psgc', 'skills', 'education_level', 'preferred_work_setups', 'preferred_employment_types']);
 });`,
+    }),
+    request('The skills list (public)', {
+      path: '/skills',
+      tests: `
+${status(200)}
+const skills = pm.response.json().data;
+pm.test('names with other spellings', () => {
+  pm.expect(skills.length).to.be.above(10);
+  skills.forEach((s) => pm.expect(s).to.have.keys('id', 'name', 'aliases'));
+  pm.expect(skills.find((s) => s.name === 'Microsoft Excel').aliases).to.include('Excel');
+});`,
+    }),
+    request('Find an open posting', {
+      path: '/job-postings',
+      tests: `${status(200)}\npm.collectionVariables.set('anyPostingId', pm.response.json().data[0].id);`,
+    }),
+    request('An incomplete profile cannot apply → 422 PROFILE_INCOMPLETE', {
+      method: 'POST',
+      path: '/job-postings/{{anyPostingId}}/applications',
+      auth: bearer('newCandidateLoginToken'),
+      body: {},
+      tests: `${status(422)}\n${envelope('PROFILE_INCOMPLETE')}`,
     }),
     request('Candidate saves the profile', {
       method: 'PUT',
       path: '/candidate/profile',
       auth: bearer('newCandidateLoginToken'),
-      body: { headline: '  Data encoder  ', skills: ['Excel', ' Typing ', 'Excel', ''], experience: '', location_psgc: null, location_label: null, disability_type: null, show_disability: true },
+      body: {
+        headline: '  Data encoder  ',
+        skills: ['Excel', ' Typing ', 'MS  Excel', '', 'data encoding'],
+        experience: '',
+        education_level: 'college',
+        experience_years: 2,
+        preferred_work_setups: ['onsite', 'remote'],
+        preferred_employment_types: ['full_time'],
+        location_psgc: '1381300000',
+        location_label: 'Quezon City, National Capital Region (NCR)',
+        disability_type: null,
+        show_disability: true,
+      },
       tests: `
 ${status(200)}
 const p = pm.response.json();
-pm.test('trimmed and de-duplicated', () => { pm.expect(p.headline).to.eql('Data encoder'); pm.expect(p.skills).to.eql(['Excel', 'Typing']); pm.expect(p.experience).to.eql(null); });
-pm.test('show_disability is off without a disability type', () => pm.expect(p.show_disability).to.eql(false));`,
+pm.test('trimmed, list names, de-duplicated in any spelling', () => { pm.expect(p.headline).to.eql('Data encoder'); pm.expect(p.skills).to.eql(['Microsoft Excel', 'Typing', 'Data entry']); pm.expect(p.experience).to.eql(null); });
+pm.test('show_disability is off without a disability type', () => pm.expect(p.show_disability).to.eql(false));
+pm.test('the profile is complete now', () => { pm.expect(p.profile_complete).to.eql(true); pm.expect(p.profile_missing).to.eql([]); });`,
     }),
     request('Invalid location code → 422 errors.location_psgc', {
       method: 'PUT',
@@ -840,6 +874,15 @@ pm.test('link goes through the gateway and is signed', () => {
 });
 pm.collectionVariables.set('resumeUrl', url);`,
     }),
+    request('Skills suggested from the résumé (never stored)', {
+      path: '/candidate/resume/skill-suggestions',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+const d = pm.response.json().data;
+pm.test('readable flag and a list of skill names', () => { pm.expect(d.readable).to.be.a('boolean'); pm.expect(d.skills).to.be.an('array'); });
+pm.test('no skill the profile already has', () => ['Microsoft Excel', 'Typing', 'Data entry'].forEach((s) => pm.expect(d.skills).to.not.include(s)));`,
+    }),
     request('Signed résumé link opens without a token → PDF', {
       url: '{{resumeUrl}}',
       tests: `
@@ -870,23 +913,47 @@ pm.collectionVariables.set('filterAccB', first.accommodations[1].id);`,
       path: '/job-postings?match=1',
       tests: searchList(false),
     }),
-    request('T03 Demo candidate "Matches my needs" → ranked by needs met', {
+    request('T03 Demo candidate "Recommended for me" → ranked by match score', {
       path: '/job-postings?match=1',
       auth: bearer('candidateToken'),
-      tests: `${searchList(true)}\n${rankedByNeeds}`,
+      tests: `${searchList(true)}\n${rankedByScore}`,
     }),
-    request('Matches my needs + closing soon → still ranked by needs first', {
+    request('Recommended for me + closing soon → still ranked by score first', {
       path: '/job-postings?match=1&sort=closing',
       auth: bearer('candidateToken'),
       tests: `
 ${searchList(true)}
-${rankedByNeeds}
-pm.test('closing date ascending within the same number of needs met', () => {
+${rankedByScore}
+pm.test('closing date ascending within the same score', () => {
   for (let i = 1; i < body.data.length; i++) {
     const [a, b] = [body.data[i - 1], body.data[i]];
-    if (a.match.met === b.match.met) pm.expect(a.closes_at <= b.closes_at).to.eql(true);
+    if (a.match.score === b.match.score) pm.expect(a.closes_at <= b.closes_at).to.eql(true);
   }
 });`,
+    }),
+    request('Work setup filter → only remote and hybrid', {
+      path: '/job-postings?work_setup[]=remote&work_setup[]=hybrid',
+      tests: `
+${searchList(false)}
+pm.test('only the chosen setups', () => body.data.forEach((p) => pm.expect(p.work_setup).to.be.oneOf(['remote', 'hybrid'])));`,
+    }),
+    request('Distance filter for the demo candidate (Quezon City) → within 25 km or remote', {
+      path: '/job-postings?distance=25',
+      auth: bearer('candidateToken'),
+      tests: `
+${searchList(false)}
+pm.test('the distance was applied', () => pm.expect(body.meta.distance).to.eql(25));
+pm.test('remote, or about 25 km or less', () => body.data.forEach((p) => {
+  if (p.work_setup !== 'remote') pm.expect(p.match.location.distance_km).to.be.at.most(25.5);
+}));`,
+    }),
+    request('Guests cannot filter by distance (ignored)', {
+      path: '/job-postings?distance=10',
+      tests: `${searchList(false)}\npm.test('not applied', () => pm.expect(body.meta.distance).to.eql(null));`,
+    }),
+    request('Invalid distance → 422 errors.distance', {
+      path: '/job-postings?distance=30',
+      tests: fieldError('distance'),
     }),
     request('New candidate with two needs → match total 2', {
       path: '/job-postings?match=1',
@@ -901,8 +968,10 @@ pm.test('total = 2 needs', () => body.data.forEach((p) => pm.expect(p.match.tota
       tests: `
 ${status(200)}
 const m = pm.response.json().match;
-pm.test('match with named missing needs', () => {
-  pm.expect(m).to.have.keys('met', 'total', 'missing');
+pm.test('match with score, parts and named missing needs', () => {
+  pm.expect(m).to.have.keys(${MATCH_KEYS});
+  pm.expect(m.score).to.be.within(0, 100);
+  pm.expect(m.location.tier).to.be.oneOf(['remote', 'same_city', 'same_province', 'same_region', 'farther', 'unknown']);
   m.missing.forEach((need) => pm.expect(need).to.have.keys('id', 'name'));
 });`,
     }),
@@ -1001,22 +1070,15 @@ pm.test('matches the Application shape', () => {
 
 const applications = folder(
   '05 Applications & Status',
-  'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (approved, then soft-deleted) and the throwaway candidate from 01/04.',
+  'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.',
   [
-    request('Employer submits a posting for this run', {
+    request('Employer publishes a posting for this run', {
       method: 'POST',
       path: '/job-postings',
       auth: bearer('employerToken'),
       prerequest: INT_IDS,
       body: postingBody({ title: 'Postman Applications Test', description: 'Created by the Postman run for folder 05. Deleted at the end.' }),
-      tests: `${status(201)}\npm.collectionVariables.set('appPostingId', pm.response.json().id);`,
-    }),
-    request('Admin approves it → open', {
-      method: 'PATCH',
-      path: '/admin/job-postings/{{appPostingId}}/approve',
-      auth: bearer('adminToken'),
-      body: { action: 'approve' },
-      tests: `${status(200)}\npm.test('open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+      tests: `${status(201)}\npm.test('open', () => pm.expect(pm.response.json().status).to.eql('open'));\npm.collectionVariables.set('appPostingId', pm.response.json().id);`,
     }),
     request('Employer cannot apply → 403', {
       method: 'POST',
@@ -1739,20 +1801,28 @@ const negativeSecurity = folder(
       auth: bearer('pmEmployerToken'),
       tests: `${status(200)}\npm.collectionVariables.set('pmUserId', pm.response.json().id);`,
     }),
-    request('Throwaway employer submits a posting → 201', {
+    request('The unverified throwaway employer cannot publish → 422 errors.submit', {
+      method: 'POST',
+      path: '/job-postings',
+      auth: bearer('pmEmployerToken'),
+      prerequest: INT_IDS,
+      body: postingBody({ title: 'Postman Suspension Test' }),
+      tests: fieldError('submit'),
+    }),
+    request('Admin verifies the throwaway employer (Postman run)', {
+      method: 'PATCH',
+      path: '/admin/employers/{{pmEmployerId}}/verify',
+      auth: bearer('adminToken'),
+      body: { action: 'approve' },
+      tests: `${status(200)}\npm.test('verified', () => pm.expect(pm.response.json().verified_at).to.be.a('string'));`,
+    }),
+    request('Throwaway employer publishes a posting → 201 open', {
       method: 'POST',
       path: '/job-postings',
       auth: bearer('pmEmployerToken'),
       prerequest: INT_IDS,
       body: postingBody({ title: 'Postman Suspension Test', description: 'Created by the Postman run for folder 09. Deleted at the end.' }),
-      tests: `${status(201)}\npm.collectionVariables.set('secPostingId', pm.response.json().id);`,
-    }),
-    request('Admin approves it → open', {
-      method: 'PATCH',
-      path: '/admin/job-postings/{{secPostingId}}/approve',
-      auth: bearer('adminToken'),
-      body: { action: 'approve' },
-      tests: `${status(200)}\npm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));`,
+      tests: `${status(201)}\npm.test('status is open', () => pm.expect(pm.response.json().status).to.eql('open'));\npm.collectionVariables.set('secPostingId', pm.response.json().id);`,
     }),
     request('Guest sees the open posting', {
       path: '/job-postings/{{secPostingId}}',
@@ -1967,7 +2037,7 @@ const collection = {
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   event: [{ listen: 'test', script: { type: 'text/javascript', exec: COLLECTION_TESTS.trim().split('\n') } }],
-  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId', 'insightsPostingId', 'insightsPsgcCode', 'gatewayRoot', 'adminUserId', 'pmUserId', 'secPostingId'].map(
+  variable: ['newCandidateEmail', 'newCandidateToken', 'newCandidateLoginToken', 'adminToken', 'employerToken', 'candidateToken', 'categoryName', 'categoryId', 'accommodationName', 'accommodationId', 'employer2Token', 'employerId', 'postingCategoryId', 'postingClosesAt', 'accA', 'accB', 'accC', 'jobPostingId', 'needA', 'needB', 'resumeUrl', 'searchPostingId', 'searchCategoryId', 'filterAccA', 'filterAccB', 'appPostingId', 'applicationId', 'candidate2Token', 'feedbackApplicationId', 'feedbackEmployerId', 'feedbackGiven', 'feedbackItems', 'feedbackPayload', 'feedbackPartialPayload', 'kalingaId', 'kalingaCompany', 'pmEmployerEmail', 'pmRegNo', 'pmEmployerToken', 'pmEmployerId', 'insightsPostingId', 'insightsPsgcCode', 'gatewayRoot', 'adminUserId', 'pmUserId', 'secPostingId', 'anyPostingId'].map(
     (key) => ({ key, value: '' }),
   ),
   item: [auth, masterData, employerPostings, candidateSearch, applications, feedback, insights, adminRegistry, negativeSecurity],
