@@ -1,8 +1,9 @@
 import { ChevronDown, Contrast, Leaf, PanelLeft, Pin, Type } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useDisplayPrefs } from '../hooks/useDisplayPrefs.js';
-import { changeDisplayPrefs, TEXT_SIZE_LABELS, TEXT_SIZES } from '../lib/displayPrefs.js';
+import { changeDisplayPrefs, TEXT_SIZE_LABELS } from '../lib/displayPrefs.js';
+import TextSizeSlider from './TextSizeSlider.jsx';
 
 const BUTTON =
   'inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-xs font-bold text-accent transition-colors duration-200 ease-soft hover:bg-primary-soft aria-pressed:bg-selected sm:px-3';
@@ -11,7 +12,7 @@ const ICON = 'size-4 shrink-0';
 /**
  * The strip above the header on every page, in the IPT look (Francis Ruzgal's opendoor-ipt,
  * decision 2026-10-21b): the skip link first, then the display settings one click away. Text size
- * steps through 100 → 125 → 150 %; the others are toggle buttons that say their state. Text size
+ * opens a panel with a slider and quick picks; the others are toggle buttons that say their state. Text size
  * and contrast are also saved to the account when signed in; Quiet mode, the compact menu and
  * "Keep open" stay in this browser. Each change is announced without moving focus.
  *
@@ -29,7 +30,6 @@ export default function UtilityBar() {
     setAnnouncement(message);
   }
 
-  const nextSize = TEXT_SIZES[(TEXT_SIZES.indexOf(prefs.textSize) + 1) % TEXT_SIZES.length];
   const highContrast = prefs.contrast === 'high';
   const quiet = prefs.quiet === 'on';
   const compact = prefs.menu === 'compact';
@@ -42,7 +42,8 @@ export default function UtilityBar() {
           <ChevronDown className="size-3.5" focusable="false" />
           Text size, contrast and more
         </p>
-        <div className="od-utility-row mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 px-4 sm:px-6">
+        {/* The text size panel is placed against this row, so it stays on screen on phones. */}
+        <div className="od-utility-row relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 px-4 sm:px-6">
           {/* On phones the skip link shows only when focused, so the bar stays one line. */}
           <a
             href="#main"
@@ -51,10 +52,7 @@ export default function UtilityBar() {
             Skip to main content
           </a>
           <div role="group" aria-label="Display settings" className="-mx-2 flex flex-wrap items-center justify-end sm:mx-0">
-            <button type="button" className={BUTTON} onClick={() => change({ textSize: nextSize }, `Text size: ${TEXT_SIZE_LABELS[nextSize]}.`)}>
-              <Type className={ICON} aria-hidden="true" focusable="false" />
-              Text size <span className="sr-only">(now {TEXT_SIZE_LABELS[prefs.textSize]})</span>
-            </button>
+            <TextSizeMenu value={prefs.textSize} onChange={(textSize) => change({ textSize }, `Text size: ${TEXT_SIZE_LABELS[textSize]}.`)} />
             <button
               type="button"
               className={BUTTON}
@@ -96,6 +94,63 @@ export default function UtilityBar() {
         <p className="sr-only" aria-live="polite">
           {announcement}
         </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Text size" opens a small panel with the slider (a disclosure, not a modal). Escape or a click
+ * outside closes it, and Escape puts focus back on the button. The page itself is the preview.
+ */
+function TextSizeMenu({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const wrapperRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function onPointerDown(event) {
+      if (!wrapperRef.current?.contains(event.target)) setOpen(false);
+    }
+    function onKeyDown(event) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    buttonRef.current?.focus();
+  }
+
+  return (
+    <div ref={wrapperRef}>
+      <button ref={buttonRef} type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(!open)} className={`${BUTTON} aria-expanded:bg-selected`}>
+        <Type className={ICON} aria-hidden="true" focusable="false" />
+        Text size<span className="sr-only">: {value}%</span>
+        <ChevronDown className={`size-3.5 transition-transform duration-300 ease-soft ${open ? 'rotate-180' : ''}`} aria-hidden="true" focusable="false" />
+      </button>
+      <div
+        id={panelId}
+        data-open={open}
+        inert={!open}
+        aria-hidden={!open}
+        className="od-pop absolute top-full right-4 z-40 mt-2 w-[min(24rem,calc(100vw-2rem))] rounded-lg border-2 border-accent bg-surface p-5 shadow-[0_18px_40px_rgba(36,27,58,0.22)] sm:right-6"
+      >
+        <TextSizeSlider id={`${panelId}-slider`} value={value} onChange={onChange} />
+        <button type="button" onClick={close} className="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-primary underline underline-offset-4 hover:no-underline">
+          Done
+        </button>
       </div>
     </div>
   );

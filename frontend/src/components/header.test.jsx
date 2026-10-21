@@ -15,9 +15,24 @@ describe('Utility bar (Figma design)', () => {
     const links = screen.getAllByRole('link');
     expect(links[0]).toHaveAccessibleName('Skip to main content');
 
-    await user.click(screen.getByRole('button', { name: /^Text size/ }));
+    // Text size opens a panel: quick picks, a slider and Smaller/Larger buttons; Escape closes it.
+    const textSize = screen.getByRole('button', { name: /^Text size/ });
+    expect(textSize).toHaveAccessibleName('Text size: 100%');
+    await user.click(textSize);
+    expect(textSize).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByRole('button', { name: 'Large (125%)' }));
     expect(document.documentElement.dataset.textSize).toBe('125');
-    expect(screen.getByRole('button', { name: /^Text size/ })).toHaveAccessibleName('Text size (now Large (125%))');
+    expect(screen.getByRole('button', { name: 'Large (125%)' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('slider', { name: 'Text size' })).toHaveValue('125');
+    await user.click(screen.getByRole('button', { name: 'Larger text' }));
+    expect(document.documentElement.dataset.textSize).toBe('150');
+    expect(screen.getByRole('button', { name: 'Larger text' })).toHaveAttribute('aria-disabled', 'true');
+    await user.click(screen.getByRole('button', { name: 'Smaller text' }));
+    expect(document.documentElement.dataset.textSize).toBe('125');
+    await user.keyboard('{Escape}');
+    expect(textSize).toHaveAttribute('aria-expanded', 'false');
+    expect(textSize).toHaveFocus();
+    expect(textSize).toHaveAccessibleName('Text size: 125%');
 
     const contrast = screen.getByRole('button', { name: 'High contrast' });
     await user.click(contrast);
