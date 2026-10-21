@@ -13,7 +13,7 @@
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- –
+- 2026-10-21 (11.9 a11y check): the scripted axe run (`tests/a11y`, `npm run axe`) needs the full stack + a built frontend + `DEMO_PASSWORD` for the seeded demo accounts (empty locally). Options: (a) user frees memory (0.7 GB free; Packet Tracer ~740 MB) and Claude runs it on the local test DB `opendoor_core_test` seeded with a throwaway `DEMO_PASSWORD`, as for PDF 1 (main DB untouched); (b) user runs it with their own `DEMO_PASSWORD`; (c) leave it to CI's axe job when the branch is pushed.
 
 ## Decisions (final – do not re-ask)
 
