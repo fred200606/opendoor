@@ -82,7 +82,13 @@ export default function PostingsPage() {
       <AsyncContent state={state} label="Loading your postings">
         {({ data, meta }) =>
           data.length === 0 ? (
-            <EmptyState title={status ? 'No postings with this status' : 'You have not posted any jobs yet'} />
+            <EmptyState title={status ? 'No postings with this status' : 'You have not posted any jobs yet'} mascot>
+              {!status && (
+                <p>
+                  <Link to="/employer/jobs/new">Post your first job</Link>
+                </p>
+              )}
+            </EmptyState>
           ) : (
             <>
               <div className="table-wrap">

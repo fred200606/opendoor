@@ -170,6 +170,19 @@
     @apply mb-1;
   }
 
+  /* Filter bars: the label sits beside the select ("Show [All postings]"). */
+  .field--inline {
+    @apply mb-0;
+  }
+
+  .field--inline .field__input {
+    @apply mt-0 w-auto;
+  }
+
+  .filter-bar .button {
+    @apply mb-0;
+  }
+
   /* 26 px boxes (CHECKBOX / RADIO). */
   .checkbox input,
   .radio input {
@@ -192,7 +205,7 @@
 
   .checkbox label,
   .radio label {
-    @apply font-bold;
+    @apply text-base font-bold;
   }
 
   /* ---------- notices (Notice: 8 px → 12 px corners, tinted box, coloured title) */
@@ -304,6 +317,16 @@
     @apply rounded-lg border-2 border-border bg-surface;
   }
 
+  /* Forms sit on a white card on the canvas (IPT). */
+  .posting-wizard > form,
+  .card--form {
+    @apply rounded-lg border-2 border-border bg-surface p-5 sm:p-6;
+  }
+
+  .card--form > :last-child {
+    @apply mb-0;
+  }
+
   .card--tint {
     @apply bg-subtle;
   }
@@ -353,6 +376,11 @@
 
   .stats__link {
     @apply text-sm font-bold text-primary underline underline-offset-4;
+  }
+
+  /* Employer dashboard: the three posting tiles share one row (IPT). */
+  .dashboard-layout--employer > .stats .stats__list {
+    @apply sm:grid-cols-3;
   }
 
   /* ---------- tabs (FilterTabs: 8 px corners, filled when current) */

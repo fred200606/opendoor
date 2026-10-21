@@ -113,7 +113,7 @@ function CompanyForm({ company, onSaved }) {
       <ErrorSummary errors={{ ...form.fieldErrors, ...(logoError ? { logo: logoError } : {}) }} fields={FIELDS} />
       <ApiErrorAlert error={form.formError} title="Your company profile was not saved" />
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form className="card card--form" onSubmit={handleSubmit} noValidate>
         {/* Two columns on wide screens, read row by row (same order as the tab order). */}
         <div className="form-grid">
           <TextField label="Company name" required autoComplete="organization" hint="As registered with the DTI or SEC." error={form.fieldErrors.company_name} {...form.bind('company_name')} />

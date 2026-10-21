@@ -223,6 +223,13 @@
     overflow-wrap: anywhere;
   }
 
+  /* Plain links in text keep their underline (WCAG 1.4.1); Tailwind's reset removes it.
+     Links with a class are styled by that class. */
+  a:not([class]) {
+    text-decoration-line: underline;
+    text-underline-offset: 0.15em;
+  }
+
   /* Headings receive focus on route change; no ring needed for that. */
   h1:focus {
     outline: none;
