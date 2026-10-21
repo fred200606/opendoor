@@ -216,28 +216,6 @@ main:focus {
   font-weight: 700;
 }
 
-/* Figma "Logo" */
-.logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.logo__mark {
-  flex: none;
-  width: 2.25rem; /* Figma mascot slot 36 × 50, image contained */
-  height: 3.125rem;
-  object-fit: contain;
-}
-
-.logo__text {
-  font-family: var(--font-heading);
-  font-size: 1.625rem;
-  font-weight: 600;
-  line-height: 2rem;
-  letter-spacing: -0.02rem;
-  color: var(--od-text-accent);
-}
 
 .lead {
   font-size: 1.25rem;
