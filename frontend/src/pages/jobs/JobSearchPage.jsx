@@ -77,7 +77,7 @@ export default function JobSearchPage() {
       <p className="page__subtitle">
         {isCandidate ? 'The jobs that fit your skills, place, preferences and needs best come first.' : 'Search open jobs and filter by the support you need.'}
       </p>
-      <form role="search" aria-label="Search jobs" className="mt-6 max-w-2xl" onSubmit={(event) => event.preventDefault()}>
+      <form role="search" aria-label="Search jobs" data-tour="job-search" className="mt-6 max-w-2xl" onSubmit={(event) => event.preventDefault()}>
         <TextField
           label="Search jobs"
           voice

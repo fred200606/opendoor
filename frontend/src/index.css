@@ -472,4 +472,93 @@
     }
   }
 
+
+  /* The welcome tour (components/tour, after opendoor-ipt): the card floats over the page, and the
+     page is dimmed and blurred around the part the step is about. The dim layer's clip-path leaves a
+     rounded hole over that part (set by TourGuide), so the part stays sharp and can be clicked; the
+     rest of the page cannot be clicked while a step points at something. */
+  .od-tour-card {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 100;
+    width: min(22rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    animation: od-tour-card-in 200ms var(--ease-soft) both;
+    transition:
+      top 240ms var(--ease-soft),
+      left 240ms var(--ease-soft);
+  }
+  @media (max-width: 639px) {
+    .od-tour-card {
+      max-height: 50dvh;
+    }
+  }
+  .od-tour-dim {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgb(12 8 25 / 0.55);
+    backdrop-filter: blur(3px);
+    animation: od-tour-dim-in 200ms var(--ease-soft) both;
+    transition: clip-path 240ms var(--ease-soft);
+  }
+  .od-tour-ring {
+    position: fixed;
+    z-index: 91;
+    border-radius: 10px;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 3px var(--od-accent-yellow),
+      0 0 0 6px rgb(12 8 25 / 0.35);
+    transition:
+      top 240ms var(--ease-soft),
+      left 240ms var(--ease-soft),
+      width 240ms var(--ease-soft),
+      height 240ms var(--ease-soft);
+  }
+  .od-tour-mascot {
+    aspect-ratio: 1;
+  }
+  @keyframes od-tour-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes od-tour-dim-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* A step about the display settings opens the folded bar while it is pointed at. */
+  @media (hover: hover) and (pointer: fine) {
+    :root:not([data-bar='pinned']) .od-utility:has(.od-tour-target) .od-utility-hint {
+      opacity: 0;
+    }
+    :root:not([data-bar='pinned']) .od-utility:has(.od-tour-target) .od-utility-row {
+      max-height: 12rem;
+      overflow: visible;
+      opacity: 1;
+      transition: none;
+    }
+  }
+  /* Forced colours drop the dim layer's colour and blur: outline the part with the system colour. */
+  @media (forced-colors: active) {
+    .od-tour-dim {
+      display: none;
+    }
+    .od-tour-ring {
+      box-shadow: none;
+      outline: 3px solid Highlight;
+      outline-offset: 2px;
+    }
+  }
+  @media print {
+    .od-tour-dim,
+    .od-tour-ring {
+      display: none;
+    }
+  }
 }

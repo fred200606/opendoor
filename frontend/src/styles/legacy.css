@@ -2796,43 +2796,7 @@ input[type='file']::file-selector-button {
   font-size: 0.9375rem;
 }
 
-/* ---------- Onboarding (decision 2026-10-14): welcome tour dialog and the dashboard's "Get started" list */
-
-.tour .icon-tile {
-  margin-bottom: 1rem;
-}
-
-.tour__title {
-  font-size: 1.25rem;
-}
-
-.tour__title:focus {
-  outline: none; /* focused programmatically when the step changes */
-}
-
-.tour__count {
-  display: block;
-  margin-bottom: 0.25rem;
-  color: var(--od-text-accent);
-  font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.tour__progress {
-  margin-bottom: 1.25rem;
-}
-
-.tour__tip {
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--divider);
-  border-radius: var(--legacy-radius-sm);
-  background: var(--surface);
-}
-
-.tour__skip {
-  align-self: center;
-}
+/* ---------- Onboarding (decision 2026-10-14): the dashboard's "Get started" list (the welcome tour is components/tour) */
 
 .get-started {
   container-type: inline-size;

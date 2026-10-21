@@ -10,7 +10,7 @@ import ErrorSummary from '../../components/form/ErrorSummary.jsx';
 import { CheckboxField, RadioGroup, TextField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Tabs from '../../components/Tabs.jsx';
-import WelcomeTour from '../../components/WelcomeTour.jsx';
+import { useTour } from '../../components/tour/tourContext.js';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useDisplayPrefs } from '../../hooks/useDisplayPrefs.js';
 import { useOnboarding } from '../../hooks/useOnboarding.js';
@@ -183,11 +183,10 @@ function EmailSettings() {
 
 /** Onboarding: the welcome tour again, and the dashboard's "Get started" list on or off. */
 function OnboardingSettings() {
-  const { user } = useAuth();
   const { onboarding, save } = useOnboarding();
+  const tour = useTour();
   const [shown, setShown] = useState(!onboarding.checklist_hidden);
   const [message, setMessage] = useState(null); // { type, text }
-  const [tour, setTour] = useState(false);
   // Same as the email switch: saves run in order and only the last one reports.
   const saving = useRef(Promise.resolve());
   const latest = useRef(0);
@@ -227,11 +226,10 @@ function OnboardingSettings() {
         {message && <Alert type={message.type} title={message.text} />}
       </div>
 
-      <p className="muted">The welcome tour explains in three short steps how OpenDoor works.</p>
-      <Button className="button button--secondary" onClick={() => setTour(true)}>
-        Show the welcome tour
+      <p className="muted">The welcome tour shows you, page by page, where everything is.</p>
+      <Button className="button button--secondary" onClick={tour.start}>
+        {tour.canResume ? 'Continue the welcome tour' : 'Show the welcome tour'}
       </Button>
-      {tour && <WelcomeTour role={user.role} onClose={() => setTour(false)} />}
     </section>
   );
 }

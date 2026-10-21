@@ -51,7 +51,7 @@ export default function UtilityBar() {
           >
             Skip to main content
           </a>
-          <div role="group" aria-label="Display settings" className="-mx-2 flex flex-wrap items-center justify-end sm:mx-0">
+          <div role="group" aria-label="Display settings" data-tour="display-settings" className="-mx-2 flex flex-wrap items-center justify-end sm:mx-0">
             <TextSizeMenu value={prefs.textSize} onChange={(textSize) => change({ textSize }, `Text size: ${TEXT_SIZE_LABELS[textSize]}.`)} />
             <button
               type="button"

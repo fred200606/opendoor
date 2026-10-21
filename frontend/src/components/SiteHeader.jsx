@@ -82,7 +82,7 @@ export default function SiteHeader() {
   const accountSide = user ? (
     <>
       {showNotifications && (
-        <li>
+        <li data-tour="notifications">
           <NotificationsLink className={`${NAV_ITEM} ${currentOf({ to: '/notifications' }, pathname) ? NAV_CURRENT : NAV_IDLE}`} icon={<NOTIFICATIONS_ICON className={ICON} aria-hidden="true" focusable="false" />} />
         </li>
       )}
@@ -247,7 +247,7 @@ function AccountMenu({ user, items, onLogout }) {
 
   return (
     <div ref={wrapperRef} className="relative">
-      <button ref={buttonRef} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle} className={`${NAV_ITEM} ${current ? NAV_CURRENT : NAV_IDLE}`}>
+      <button ref={buttonRef} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle} data-tour="account-menu" className={`${NAV_ITEM} ${current ? NAV_CURRENT : NAV_IDLE}`}>
         <Avatar name={user.name} />
         <span>Account</span>
         <ChevronDown className={`size-4 transition-transform duration-200 ease-soft ${open ? 'rotate-180' : ''}`} aria-hidden="true" focusable="false" />
@@ -303,7 +303,7 @@ function CompactRow({ home, links, user, role, showNotifications, onLogout }) {
     <div className="flex animate-fade-in items-center justify-between gap-4">
       <BrandLink to={home} />
       <nav aria-label="Main" ref={wrapperRef} className="relative">
-        <button ref={buttonRef} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle} className={SECONDARY_SMALL}>
+        <button ref={buttonRef} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle} data-tour="compact-menu" className={SECONDARY_SMALL}>
           <span aria-hidden="true" className="relative size-5">
             <Menu className={`absolute inset-0 size-5 transition-[opacity,rotate] duration-300 ease-soft ${open ? 'rotate-90 opacity-0' : 'opacity-100'}`} focusable="false" />
             <X className={`absolute inset-0 size-5 transition-[opacity,rotate] duration-300 ease-soft ${open ? 'opacity-100' : '-rotate-90 opacity-0'}`} focusable="false" />

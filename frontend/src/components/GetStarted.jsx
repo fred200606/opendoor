@@ -1,12 +1,11 @@
 import { Check } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext.jsx';
 import { useAction } from '../hooks/useAction.js';
 import { showsGetStarted, useOnboarding } from '../hooks/useOnboarding.js';
 import Alert from './Alert.jsx';
 import Button from './Button.jsx';
-import WelcomeTour from './WelcomeTour.jsx';
+import { useTour } from './tour/tourContext.js';
 
 /**
  * Onboarding "Get started" list on the dashboard (decision 2026-10-14). The steps come from the
@@ -15,11 +14,10 @@ import WelcomeTour from './WelcomeTour.jsx';
  * settings can show it again).
  */
 export default function GetStarted({ steps }) {
-  const { user } = useAuth();
   const { onboarding, save } = useOnboarding();
+  const tour = useTour();
   const hiding = useAction();
   const [justHidden, setJustHidden] = useState(false);
-  const [tour, setTour] = useState(false);
   const message = useRef(null);
   const focusMessage = useRef(false);
 
@@ -88,26 +86,14 @@ export default function GetStarted({ steps }) {
       </ol>
 
       <div className="get-started__actions">
-        <Button className="button button--link" onClick={() => setTour(true)}>
-          Show the welcome tour
+        <Button className="button button--link" onClick={tour.start}>
+          {tour.canResume ? 'Continue the welcome tour' : 'Show the welcome tour'}
         </Button>
         <Button className="button button--link" disabled={hiding.busy} onClick={hide}>
           Hide this list
         </Button>
       </div>
       <div role="status">{hiding.error && <Alert type="error" title="The list was not hidden. Please try again." />}</div>
-
-      {tour && <WelcomeTour role={user.role} listHint={false} onClose={() => setTour(false)} />}
     </section>
   );
-}
-
-/** The welcome tour on the first page after the first sign-in (AppLayout). */
-export function FirstSignInTour() {
-  const { user } = useAuth();
-  const { onboarding, finishTour } = useOnboarding();
-  // Job seekers first complete their profile (decision 2026-10-21); the tour waits for the dashboard.
-  if (!user || onboarding?.tour_done !== false || user.profile_complete === false) return null;
-
-  return <WelcomeTour role={user.role} listHint={!onboarding.checklist_hidden} onClose={finishTour} />;
 }

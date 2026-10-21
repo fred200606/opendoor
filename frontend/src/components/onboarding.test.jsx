@@ -1,5 +1,5 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderApp, users } from '../test/render.jsx';
 
 // Onboarding for first-time users (decision 2026-10-14): welcome tour + "Get started" list.
@@ -25,31 +25,44 @@ function candidateRoutes(onboarding, extra = {}) {
 
 const patches = (calls) => calls.filter((call) => call.key === 'PATCH /me/onboarding').map((call) => call.data);
 
+// jsdom has no layout: every part counts as on screen, so each step finds its part at once.
+beforeEach(() => {
+  vi.spyOn(Element.prototype, 'getClientRects').mockReturnValue([{ width: 1, height: 1 }]);
+});
+afterEach(() => vi.restoreAllMocks());
+
+const tourStep = (number, title) => ({ level: 2, name: `Quick introduction, step ${number} of 6: ${title}` });
+
 describe('Welcome tour', () => {
-  test('opens after the first sign-in; Next and Back move focus to the step heading; Skip saves it', async () => {
+  test('starts on the dashboard after the first sign-in; Next and Back move focus to the step heading; Close saves it', async () => {
     const { user, calls } = renderApp('/candidate/dashboard', {
       as: 'candidate',
       routes: candidateRoutes(fresh, { 'PATCH /me/onboarding': () => [200, toured] }),
     });
 
-    const dialog = await screen.findByRole('dialog', { name: 'Welcome to OpenDoor' });
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Step 1 of 3: Jobs that fit what you need' })).toHaveFocus();
-    expect(within(dialog).getByText(/never on a disability/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/bar at the very top of every page/)).toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    const guide = await screen.findByRole('complementary', { name: 'Welcome tour' });
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(1, 'Make OpenDoor comfortable'))).toHaveFocus());
+    expect(within(guide).getByText(/bar at the very top of every page/)).toBeInTheDocument();
+    expect(within(guide).queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    // The part the step is about is outlined, the rest of the page dimmed.
+    expect(document.querySelector('[data-tour="display-settings"]')).toHaveClass('od-tour-target');
+    expect(document.querySelector('.od-tour-dim')).toBeInTheDocument();
 
-    await user.click(within(dialog).getByRole('button', { name: 'Next' }));
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Step 2 of 3: Your needs and your profile' })).toHaveFocus();
-    await user.click(within(dialog).getByRole('button', { name: 'Back' }));
-    expect(within(dialog).getByRole('heading', { level: 3, name: /Step 1 of 3/ })).toHaveFocus();
+    await user.click(within(guide).getByRole('button', { name: 'Next' }));
+    expect(within(guide).getByRole('heading', tourStep(2, 'Your starting point'))).toHaveFocus();
+    await waitFor(() => expect(document.getElementById('main')).toHaveClass('od-tour-target'));
+    expect(document.querySelector('[data-tour="display-settings"]')).not.toHaveClass('od-tour-target');
+    await user.click(within(guide).getByRole('button', { name: 'Back' }));
+    expect(within(guide).getByRole('heading', tourStep(1, 'Make OpenDoor comfortable'))).toHaveFocus();
 
-    await user.click(within(dialog).getByRole('button', { name: 'Skip the tour' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(within(guide).getByRole('button', { name: 'Close the tour' }));
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
+    expect(document.querySelector('.od-tour-dim')).not.toBeInTheDocument();
     await waitFor(() => expect(patches(calls)).toEqual([{ tour_done: true }]));
   });
 
-  test('the last step points to the Get started list; Get started closes it; Escape counts as done too', async () => {
-    const { user, calls } = renderApp('/employer/dashboard', {
+  test('steps open their own page; the arrow keys move too; Escape stops it and saves it', async () => {
+    const { user, calls, location } = renderApp('/employer/dashboard', {
       as: 'employer',
       routes: {
         'GET /me': () => [200, { ...users.employer, onboarding: fresh }],
@@ -58,38 +71,36 @@ describe('Welcome tour', () => {
       },
     });
 
-    const dialog = await screen.findByRole('dialog', { name: 'Welcome to OpenDoor' });
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Step 1 of 3: Reach job seekers with disabilities' })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Next' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Next' }));
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Step 3 of 3: Post jobs and earn trust' })).toHaveFocus();
-    expect(within(dialog).getByText(/list on your dashboard shows what to do next/)).toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: 'Skip the tour' })).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Get started' }));
+    const guide = await screen.findByRole('complementary', { name: 'Welcome tour' });
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(1, 'Make OpenDoor comfortable'))).toHaveFocus());
+    await user.keyboard('{ArrowRight}');
+    expect(within(guide).getByRole('heading', tourStep(2, 'Your starting point'))).toHaveFocus();
+    await user.click(within(guide).getByRole('button', { name: 'Next' }));
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(location()).toBe('/employer/company'));
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(3, 'Set up your company and get verified'))).toHaveFocus());
+    expect(within(guide).getByText(/DTI or SEC registration number/)).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
     await waitFor(() => expect(patches(calls)).toEqual([{ tour_done: true }]));
   });
 
-  test('Escape closes it and saves it as done', async () => {
-    const { calls } = renderApp('/candidate/dashboard', {
-      as: 'candidate',
-      routes: candidateRoutes(fresh, { 'PATCH /me/onboarding': () => [200, toured] }),
-    });
+  test('going to another page yourself stops it without saving', async () => {
+    const { user, calls } = renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(fresh) });
 
-    const dialog = await screen.findByRole('dialog', { name: 'Welcome to OpenDoor' });
-    act(() => {
-      dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
-    });
+    await screen.findByRole('complementary', { name: 'Welcome tour' });
+    await user.click(screen.getByRole('link', { name: 'Saved jobs' }));
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await waitFor(() => expect(patches(calls)).toEqual([{ tour_done: true }]));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Saved jobs' })).toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
+    expect(patches(calls)).toEqual([]);
   });
 
   test('not shown once done', async () => {
     renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(toured) });
     expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
   });
 });
 
@@ -141,16 +152,43 @@ describe('Get started list', () => {
     expect(patches(calls)).toEqual([{ checklist_hidden: true }]);
   });
 
-  test('the welcome tour can be opened from the list without saving anything', async () => {
+  test('the welcome tour opens from the list without saving anything; Finish later keeps the step for "Continue"', async () => {
     const { user, calls } = renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(toured) });
 
     const list = await screen.findByRole('region', { name: 'Get started' });
-    const open = within(list).getByRole('button', { name: 'Show the welcome tour' });
-    await user.click(open);
-    const dialog = screen.getByRole('dialog', { name: 'Welcome to OpenDoor' });
-    await user.click(within(dialog).getByRole('button', { name: 'Skip the tour' }));
+    await user.click(within(list).getByRole('button', { name: 'Show the welcome tour' }));
+    const guide = screen.getByRole('complementary', { name: 'Welcome tour' });
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(1, 'Make OpenDoor comfortable'))).toHaveFocus());
+    await user.click(within(guide).getByRole('button', { name: 'Next' }));
+    await user.click(within(guide).getByRole('button', { name: 'Finish later' }));
 
-    expect(open).toHaveFocus();
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
+    const again = within(list).getByRole('button', { name: 'Continue the welcome tour' });
+    await waitFor(() => expect(again).toHaveFocus());
+    await user.click(again);
+    await waitFor(() => expect(screen.getByRole('heading', tourStep(2, 'Your starting point'))).toHaveFocus());
+    expect(patches(calls)).toEqual([]);
+  });
+
+  test('the last step ends with a next step to take; a replay saves nothing', async () => {
+    localStorage.setItem('opendoor.tour.2', '5');
+    const { user, calls, location } = renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(toured) });
+
+    const list = await screen.findByRole('region', { name: 'Get started' });
+    await user.click(within(list).getByRole('button', { name: 'Continue the welcome tour' }));
+    await waitFor(() => expect(location()).toBe('/candidate/applications'));
+    const guide = screen.getByRole('complementary', { name: 'Welcome tour' });
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(6, 'Updates and ratings'))).toHaveFocus());
+    await waitFor(() => expect(document.querySelector('[data-tour="notifications"]')).toHaveClass('od-tour-target'));
+
+    await user.click(within(guide).getByRole('button', { name: 'Finish' }));
+    expect(within(guide).getByRole('heading', { level: 2, name: 'That’s the quick tour!' })).toHaveFocus();
+    expect(document.querySelector('.od-tour-dim')).not.toBeInTheDocument();
+    expect(within(guide).getByRole('link', { name: 'Go to my profile' })).toHaveAttribute('href', '/candidate/profile');
+    await user.click(within(guide).getByRole('button', { name: 'Done' }));
+
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
+    expect(localStorage.getItem('opendoor.tour.2')).toBeNull();
     expect(patches(calls)).toEqual([]);
   });
 
@@ -214,7 +252,7 @@ describe('Get started list', () => {
 
 describe('Account settings: Getting started', () => {
   test('shows the list again and replays the tour without saving it', async () => {
-    const { user, calls } = renderApp('/account?tab=onboarding', {
+    const { user, calls, location } = renderApp('/account?tab=onboarding', {
       as: 'employer',
       routes: {
         'GET /me': () => [200, { ...users.employer, onboarding: done }],
@@ -229,12 +267,12 @@ describe('Account settings: Getting started', () => {
     expect(checkbox).toBeChecked();
     expect(patches(calls)).toEqual([{ checklist_hidden: false }]);
 
-    const open = screen.getByRole('button', { name: 'Show the welcome tour' });
-    await user.click(open);
-    const dialog = screen.getByRole('dialog', { name: 'Welcome to OpenDoor' });
-    expect(within(dialog).getByRole('heading', { level: 3, name: 'Step 1 of 3: Reach job seekers with disabilities' })).toHaveFocus();
-    await user.click(within(dialog).getByRole('button', { name: 'Skip the tour' }));
-    expect(open).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Show the welcome tour' }));
+    await waitFor(() => expect(location()).toBe('/employer/dashboard'));
+    const guide = screen.getByRole('complementary', { name: 'Welcome tour' });
+    await waitFor(() => expect(within(guide).getByRole('heading', tourStep(1, 'Make OpenDoor comfortable'))).toHaveFocus());
+    await user.click(within(guide).getByRole('button', { name: 'Close the tour' }));
+    expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
     expect(patches(calls)).toEqual([{ checklist_hidden: false }]);
   });
 

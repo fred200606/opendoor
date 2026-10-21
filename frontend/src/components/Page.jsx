@@ -4,7 +4,8 @@ import BackLink from './BackLink.jsx';
 
 /**
  * Every screen starts with <Page title="…">. It sets the document title and, after client-side
- * navigation, moves focus to the <h1> so keyboard and screen-reader users start at the new content.
+ * navigation, moves focus to the <h1> so keyboard and screen-reader users start at the new content
+ * (not when the welcome tour opened the page: its card keeps focus, navigation state `{ tour: true }`).
  * `documentTitle` replaces the heading in the document title where the heading alone would
  * match another page the same user can open (WCAG 2.4.2). `heading` (optional) is a styled
  * version of the same words for the <h1>; `title` stays the plain text.
@@ -17,7 +18,7 @@ export default function Page({ title, heading, documentTitle, back, badge, subti
   const headingRef = useRef(null);
   // The router's first entry has key 'default': leave the browser's normal start position on a
   // fresh page load (also safe under StrictMode's double effects).
-  const { key, pathname } = useLocation();
+  const { key, pathname, state } = useLocation();
 
   useEffect(() => {
     document.title = `${documentTitle ?? title} – OpenDoor`;
@@ -26,8 +27,8 @@ export default function Page({ title, heading, documentTitle, back, badge, subti
   // Only a new page (path) moves focus. Filters, tabs and paging change just the query string and
   // must leave focus where the user is, e.g. in the search field they are typing in.
   useEffect(() => {
-    if (key !== 'default') headingRef.current?.focus();
-    // `key` is read but must not re-run this: it changes with every query-string update too.
+    if (key !== 'default' && !state?.tour) headingRef.current?.focus();
+    // `key` and `state` are read but must not re-run this: it changes with every query-string update too.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 

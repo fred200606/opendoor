@@ -17,6 +17,8 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-21f – Welcome tour as coachmarks (user, with an opendoor-ipt screenshot: "For onboarding, can you do this one? Also when subject are being highlight or featured, its background should be blur or maybe darken"): the welcome tour dialog is replaced by opendoor-ipt's "Quick introduction" – 6 steps per role that open their page and point at one part of it; the rest of the page is dimmed **and** blurred (clip-path hole, so the part stays sharp and clickable). Only the intro chapter (not his chapter hub). Same saved flag `tour_done` (no API change): after the first sign-in it starts on the dashboard; Close / Finish later / Escape / Finish save it as done; Finish later keeps the step in this browser for "Continue the welcome tour"; navigating away yourself stops it without saving.
+
 - 2026-10-21e – Merge (user: "fix the CVE first, then merge to main"): CVE fixed on `feat/ipt-look`, then local `main` fast-forwarded to it (includes `feat/matching-v2`). No push until the user says so.
 
 - 2026-10-21d – Logo mark (user): use the IPT SVG (`src/assets/logo-mascot.svg`, copied from opendoor-ipt `public/opendoor-logo.svg`, cropped to the mascot) instead of the team's Figma PNG (removed).
@@ -237,8 +239,11 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - [x] 11.10 Text size panel (user request with an opendoor-ipt screenshot) – 2026-10-21 (`506c574`, on `main`): "Text size" in the display bar opens a panel like opendoor-ipt – `TextSizeSlider` (slider, Smaller/Larger A buttons, preview line, Standard/Large/Extra large quick picks, Done), limited to the sizes the account saves (100/125/150 %, no API change); Escape/click outside close it and return focus; `.od-range` styles; header test updated. Vitest 179/179, oxlint clean
 - [x] 11.11 Footer (user: "reference only, don't bombard with too many text") – 2026-10-21: one line like opendoor-ipt – Privacy, Accessibility statement, © year; the attribution paragraph is gone (the OpenStreetMap credit stays on the Accessibility Snapshot; Francis is credited in the README and goes into the SIA doc)
 - [x] 11.12 Home: the "How trust scores work" link moved into the Step 3 card (it explains that step); it sat loose under the three cards before
+- [x] 11.13 Welcome tour as IPT coachmarks (Decision 2026-10-21f) – 2026-10-21: `components/tour/` (steps per role, geometry from opendoor-ipt, provider + guide card with the mascot), `data-tour` targets (display bar, account menu, compact Menu, notifications, job search, main), dim + blur backdrop with a yellow ring (forced colours: outline only; print hidden), the folded display bar opens while pointed at, the page keeps focus on the card when the tour opens it (`Page` skips its h1 focus for navigation state `{ tour: true }`), WelcomeTour dialog + its CSS removed; Get started list and Account settings start/continue it. 16 onboarding tests (180 total; two known 5 s timeouts under load passed alone), oxlint clean; checked in the browser as visual-candidate@ (desktop every step + finish, 390 px Menu step)
 
 ## Known issues / TODO later
+
+- 2026-10-21: Vitest "candidate filters go into the URL and the API query" (jobs) and "each step is checked before the next" (employer) sometimes pass the 5 s test timeout when the machine is busy (dev stack + browser running); they pass alone. Raise their timeout if it keeps happening.
 
 - 2026-10-21 (pre-merge audit): gateway `npm audit --omit=dev` – 3 high advisories, one root cause: `braces` (GHSA-vfj7-8cjw-p6xm, stack exhaustion from deeply nested brace **patterns**) via `micromatch` ← `http-proxy-middleware`. Our patterns are fixed route config, not user input, so low practical risk; npm's "fix" downgrades http-proxy-middleware to 0.2.0 (breaking) – wait for an upstream release instead. Core: CVE-2026-108082 fixed (entry below).
 
@@ -279,6 +284,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-21 – 11.13 welcome tour rebuilt as opendoor-ipt coachmarks with a dimmed and blurred background (user request), committed on `main`, not pushed. Local stack left running for the user to try.
 - 2026-10-21 – Home: "How trust scores work" link moved into the Step 3 card (user asked about its position), committed on `main`.
 - 2026-10-21 – Text size panel from the IPT design added to the display bar (user request), committed on `main` (`506c574`); found Phase 10 + 11 already merged into local `main` by the parallel session, nothing pushed.
 - 2026-10-21 – CVE-2026-108082 fixed (http-foundation 7.4.21 via a composer conflict rule; audit clean, Core 399/399, Newman 204/1002 with only the external Overpass-timeout check failing, validator 14/14); `main` fast-forwarded to `feat/ipt-look` (local, not pushed). Stack stopped.
