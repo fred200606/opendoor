@@ -13,9 +13,11 @@
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- 2026-10-21 (11.9 a11y check): the scripted axe run (`tests/a11y`, `npm run axe`) needs the full stack + a built frontend + `DEMO_PASSWORD` for the seeded demo accounts (empty locally). Options: (a) user frees memory (0.7 GB free; Packet Tracer ~740 MB) and Claude runs it on the local test DB `opendoor_core_test` seeded with a throwaway `DEMO_PASSWORD`, as for PDF 1 (main DB untouched); (b) user runs it with their own `DEMO_PASSWORD`; (c) leave it to CI's axe job when the branch is pushed.
+- –
 
 ## Decisions (final – do not re-ask)
+
+- 2026-10-21c – 11.9 a11y check (user chose the local test DB): Claude seeds `opendoor_core_test` with a throwaway `DEMO_PASSWORD` (main dev DB untouched, as for PDF 1), runs the scripted axe check and the screenshot comparison against it once memory is free (user closes Packet Tracer etc.), then stops the stack.
 
 - 2026-10-21b – IPT look (user: "Start the IPT UI restyle" after Phase 10): copy the look of Francis Ruzgal's `opendoor-ipt` (github.com/ryujiinnn08/opendoor-ipt, live opendoor-ipt.ruzgal.org; Francis agreed) onto **our** routes, API calls, features and tests – no new pages from his app. Tailwind CSS 4 (`@tailwindcss/vite`) is added next to the current CSS: the current stylesheet moves into a CSS layer `legacy` below Tailwind's utilities, so converted components use his classes and untouched pages keep working; legacy rules are deleted as pages are converted. Our accessibility behaviour wins where his differs (report it). Credit Francis in README + SIA doc. Branch `feat/ipt-look` (from `feat/matching-v2`), local only, no push/deploy.
 
