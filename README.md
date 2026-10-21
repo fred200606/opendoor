@@ -96,3 +96,11 @@ Production URLs and demo accounts: _to be added after deployment_.
 - Branches: `main` (deployed), `develop`, `feature/<module>-<desc>`, `fix/<desc>`
 - Conventional Commits with the component as scope, e.g. `feat(core): add match ranking`
 - Progress is tracked in [`PROGRESS.md`](PROGRESS.md)
+
+## Credits
+
+- The look of the React client (layout, colours, type scale, components) and the briefcase mascot
+  are adapted, with his permission, from **Francis Ruzgal**'s
+  [opendoor-ipt](https://github.com/ryujiinnn08/opendoor-ipt) ([live](https://opendoor-ipt.ruzgal.org)).
+  Routes, API calls, features and tests are OpenDoor's own.
+- Map data © OpenStreetMap contributors; location lists from the Philippine Standard Geographic Code (PSGC).
