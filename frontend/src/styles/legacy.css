@@ -185,117 +185,7 @@ main:focus {
   outline: none;
 }
 
-/* ---------- Figma "Utility bar" */
-
-.utility-bar {
-  border-bottom: 1px solid var(--divider);
-  background: var(--surface);
-}
-
-.utility-bar__inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 1.75rem;
-  max-width: 90rem;
-  margin: 0 auto;
-  padding: 0.375rem 3rem;
-}
-
-.utility-bar__skip {
-  flex: 1 1 auto;
-  color: var(--text-muted);
-  text-decoration: none;
-  line-height: 1.375rem;
-}
-
-.utility-bar__skip:hover,
-.utility-bar__skip:focus-visible {
-  text-decoration: underline;
-}
-
-.utility-bar__button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: 2.25rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--od-text-accent);
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  line-height: 1.25rem;
-  cursor: pointer;
-}
-
-.utility-bar__button svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.utility-bar__button:hover {
-  text-decoration: underline;
-}
-
-/* Pressed toggles (High contrast, Quiet mode) look pressed, not only sound pressed. */
-.utility-bar__button[aria-pressed='true'] {
-  padding: 0 0.5rem;
-  border-radius: var(--pill);
-  background: var(--od-surface-current);
-}
-
 /* ---------- Figma "Header": links left and right of the centred logo */
-
-.site-header {
-  border-bottom: 2px solid var(--divider);
-  background: var(--bg);
-}
-
-.site-nav {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 90rem;
-  margin: 0 auto;
-  padding: 0.75rem 3rem;
-}
-
-.site-nav__side {
-  flex: 1 1 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.site-nav__side--right {
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.site-nav__logo {
-  flex: none;
-  color: inherit;
-  text-decoration: none;
-}
-
-.site-nav__compact-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-left: auto;
-}
-
-.site-nav--compact {
-  position: relative;
-  flex-wrap: wrap; /* at large text sizes the buttons go under the logo instead of off-screen */
-  row-gap: 0.5rem;
-}
 
 /* Figma "Nav item": pill; the current page is filled and outlined (aria-current="page"). */
 .nav-item {
@@ -326,19 +216,6 @@ main:focus {
   font-weight: 700;
 }
 
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.875rem;
-  height: 1.875rem;
-  border-radius: var(--pill);
-  background: var(--od-surface-tint);
-  color: var(--od-text-accent);
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
 /* Figma "Logo" */
 .logo {
   display: inline-flex;
@@ -360,143 +237,6 @@ main:focus {
   line-height: 2rem;
   letter-spacing: -0.02rem;
   color: var(--od-text-accent);
-}
-
-/* Compact menu panel ("Menu open" frame): two columns of links with icons. */
-.menu-panel {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 3rem;
-  z-index: 20;
-  width: min(25rem, calc(100vw - 2rem));
-  padding: 1rem;
-  border: 2px solid var(--primary-dark);
-  border-radius: var(--legacy-radius-lg);
-  background: var(--bg);
-  box-shadow: 0 0.5rem 1.5rem rgb(36 27 58 / 0.15);
-}
-
-.menu-panel[hidden] {
-  display: none;
-}
-
-.menu-panel__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
-  gap: 0.25rem 0.5rem;
-  margin: 0 0 0.75rem;
-  padding: 0;
-  list-style: none;
-}
-
-.menu-panel__link {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid transparent;
-  border-radius: var(--legacy-radius-sm);
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.menu-panel__link svg {
-  flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.menu-panel__link:hover {
-  background: var(--surface);
-}
-
-.menu-panel__link[aria-current='page'] {
-  border-color: var(--primary-dark);
-  background: var(--od-surface-current);
-  color: var(--od-text-accent);
-  font-weight: 700;
-}
-
-.menu-panel__hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.9375rem;
-}
-
-@media (max-width: 40rem) {
-  .utility-bar__inner,
-  .site-nav {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .menu-panel {
-    right: 1rem;
-  }
-
-  .site-nav__compact-actions .nav-item {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-  }
-}
-
-/* Phones: the avatar alone stands for Account (its name is still "Account"). */
-@media (max-width: 30rem) {
-  .site-nav--compact .logo__text {
-    font-size: 1.375rem;
-  }
-
-  .site-nav--compact .logo__mark {
-    width: 1.875rem;
-    height: 2.625rem;
-  }
-
-  .site-nav__compact-actions {
-    gap: 0.5rem;
-  }
-
-  .site-nav__compact-actions .nav-item__text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-  }
-}
-
-/* ---------- Figma "Footer" */
-
-.site-footer {
-  border-top: 2px solid var(--divider);
-  background: var(--bg);
-  color: var(--text-muted);
-  padding: 1.75rem 0 1.25rem;
-  text-align: center;
-}
-
-.site-footer p {
-  max-width: none;
-}
-
-.site-footer__links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem 2rem;
-  margin: 0 0 0.625rem;
-  padding: 0;
-  list-style: none;
-}
-
-.site-footer__links a {
-  color: var(--text);
 }
 
 .lead {
@@ -619,21 +359,6 @@ main:focus {
 }
 
 /* Decorative orange arrow on call-to-action buttons; hidden in Quiet mode. */
-.button__arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: var(--pill);
-  background: var(--od-accent-orange);
-  color: var(--od-text-default);
-}
-
-.button__arrow svg {
-  width: 1rem;
-  height: 1rem;
-}
 
 .button:disabled,
 .button[aria-disabled='true'] {
@@ -1057,10 +782,6 @@ input[type='file'].field__input {
 .icon-tile--sky { background: var(--od-accent-sky); }
 .icon-tile--lilac { background: var(--od-accent-lilac); }
 
-.tag--more {
-  color: var(--text-muted);
-}
-
 .field--short .field__input {
   max-width: 10rem;
 }
@@ -1132,21 +853,6 @@ input[type='file'].field__input {
   container-type: inline-size;
 }
 
-.job-card__inner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.job-card__content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
 .job-card__title {
   font-size: 1.375rem;
   line-height: 1.875rem;
@@ -1173,34 +879,15 @@ input[type='file'].field__input {
   font-weight: 700;
 }
 
-.job-card__meta,
-.job-card__footer {
+.job-card__meta {
   margin: 0;
   color: var(--text-muted);
   line-height: 1.375rem;
 }
 
-.job-card__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.5rem;
-}
-
-.job-card__action {
-  flex: none;
-}
-
 /* Long badges ("Meets all 3 of your needs") wrap inside the card instead of sticking out (1.4.10). */
-.job-card__content .badge {
-  white-space: normal;
-}
 
 /* Narrow card (phones, 200 % text): the text gets the full width, icon tile above, action below. */
-@container (max-width: 30rem) {
-  .job-card__content {
-    flex-basis: 100%;
-  }
-}
 
 .result-list {
   margin: 0;
@@ -1368,10 +1055,6 @@ input[type='file'].field__input {
 .trust-card__score {
   margin-bottom: 0.5rem;
   font-size: 1.125rem;
-}
-
-.trust-card__basis {
-  color: var(--text-muted);
 }
 
 .match {
@@ -1553,39 +1236,6 @@ input[type='file'].field__input {
 }
 
 /* ---------- search and details */
-
-.search-layout {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 56rem) {
-  .search-layout {
-    /* minmax: at 200 % text the cards wrap instead of widening the page (1.4.4) */
-    grid-template-columns: 20rem minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
-.search-filters {
-  padding: 1.5rem;
-  border: 2px solid var(--divider);
-  border-radius: var(--legacy-radius-lg);
-  background: var(--surface);
-}
-
-.search-filters__title {
-  margin-bottom: 1.25rem;
-  font-size: 1.125rem;
-}
-
-.search-filters .field__input {
-  max-width: none;
-}
-
-.search-filters__hint {
-  margin: 0.75rem 0 0;
-}
 
 /* Figma "Accordion: accommodations": a bordered box with a chevron that turns when open. */
 .filter-details {
@@ -1804,7 +1454,6 @@ input[type='file'].field__input {
   margin: 0;
 }
 
-
 .employer-logo {
   width: 5rem;
   height: 5rem;
@@ -1924,10 +1573,6 @@ input[type='file'].field__input {
   color: var(--success);
 }
 
-.filter-inline {
-  max-width: 20rem;
-}
-
 .card > h2 {
   font-size: 1.375rem;
 }
@@ -1950,16 +1595,6 @@ td.table-actions > * {
   vertical-align: middle;
 }
 
-.needs-list__ok {
-  color: var(--success);
-  font-weight: 600;
-}
-
-.needs-list__missing {
-  color: var(--warning);
-  font-weight: 600;
-}
-
 /* ---------- admin */
 
 .filter-bar {
@@ -1976,37 +1611,6 @@ td.table-actions > * {
 
 .filter-bar .button {
   margin-bottom: 1.25rem;
-}
-
-.inline-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0 1rem;
-  margin-top: 1rem;
-}
-
-.inline-form .field {
-  flex: 1 1 16rem;
-}
-
-.inline-form .button {
-  margin-bottom: 1.25rem;
-}
-
-.admin-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.admin-list li {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--divider);
 }
 
 .quote {
@@ -2137,14 +1741,13 @@ td.table-actions > * {
 }
 
 /* Quiet mode (Figma "Quiet mode · Home"): one calm accent instead of orange / pink / sky, and no
-   decorations (arrows, sparkles). Browser-only setting from the utility bar. */
+   decorations (sparkles). Browser-only setting from the utility bar. */
 :root[data-quiet='on'] {
   --od-accent-orange: #d4c4ef;
   --od-accent-pink: #d4c4ef;
   --od-accent-sky: #d4c4ef;
 }
 
-:root[data-quiet='on'] .button__arrow,
 :root[data-quiet='on'] .decoration {
   display: none;
 }
@@ -2164,184 +1767,6 @@ td.table-actions > * {
   font-size: clamp(2.25rem, 1.25rem + 3.5vw, 3.75rem); /* Display: Lexend Bold 60/68 */
   line-height: 1.13;
   letter-spacing: -0.06rem;
-}
-
-.home__line {
-  display: block;
-}
-
-.home__line + .home__line {
-  margin-top: 0.75rem;
-}
-
-.home__sparkle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6em;
-  height: 0.87em;
-  margin-left: 0.27em;
-  border-radius: var(--pill);
-  background: var(--od-accent-orange);
-  vertical-align: middle;
-}
-
-.home__sparkle svg {
-  width: 0.47em;
-  height: 0.47em;
-  fill: #ffffff; /* white sparkle, as in the design (decorative) */
-  stroke: #ffffff;
-}
-
-.home__highlight {
-  padding: 0 0.3em;
-  border-radius: var(--radius);
-  background: var(--od-accent-orange);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
-.home__lead {
-  margin: -1rem auto 0;
-  color: var(--text-muted);
-  font-size: 1.125rem;
-  max-width: 48rem;
-}
-
-.home__actions {
-  justify-content: center;
-  margin: -1rem 0 0;
-}
-
-.home__support {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem 4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home__support li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.home__how {
-  width: 100%;
-}
-
-.home__how-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin: 0 0 1.5rem;
-  color: var(--od-text-accent);
-  font-family: var(--font-body);
-  font-size: 1.0625rem;
-  font-weight: 700;
-}
-
-.home__how-title svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.home__steps {
-  display: grid;
-  gap: 1.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-@media (min-width: 56rem) {
-  .home__steps {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.home__step {
-  padding: 1.5rem;
-  border: 2px solid var(--divider);
-  border-radius: var(--legacy-radius-lg);
-  background: var(--bg);
-}
-
-.home__step h3 {
-  margin-bottom: 0.625rem;
-  font-size: 1.375rem;
-}
-
-.home__step p {
-  margin-bottom: 0.625rem;
-  color: var(--text-muted);
-  font-size: 1.125rem;
-}
-
-.home__step-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-height: 2.75rem;
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.home__step-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--pill);
-  background: var(--od-accent-orange);
-  color: var(--od-text-default);
-}
-
-.home__step-arrow svg {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.home__step--featured {
-  border-color: var(--primary);
-  background: var(--primary);
-}
-
-.home__step--featured h3,
-.home__step--featured p,
-.home__step--featured .home__step-link {
-  color: var(--od-text-on-primary);
-}
-
-/* Quiet mode (Figma "Quiet mode · Home"): no orange highlight or filled card. */
-:root[data-quiet='on'] .home__highlight {
-  background: var(--od-surface-tint);
-}
-
-:root[data-quiet='on'] .home__step--featured {
-  border-color: var(--od-border-focus);
-  background: var(--surface);
-}
-
-:root[data-quiet='on'] .home__step--featured h3,
-:root[data-quiet='on'] .home__step--featured p {
-  color: var(--text);
-}
-
-:root[data-quiet='on'] .home__step--featured .home__step-link {
-  color: var(--primary);
-}
-
-:root[data-quiet='on'] .home__step-arrow {
-  display: none;
 }
 
 /* ---------- Figma "3.3 Job details" */
@@ -2395,21 +1820,6 @@ td.table-actions > * {
   font-weight: 700;
 }
 
-.job-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr); /* wide tables scroll in their own box instead of widening the page */
-  gap: 1.5rem;
-}
-
-@media (min-width: 64rem) {
-  .job-layout {
-    grid-template-columns: minmax(0, 1fr) 23.75rem;
-    align-items: start;
-  }
-}
-
-.job-layout__main,
-.job-layout__side,
 .job-actions-group {
   display: flex;
   flex-direction: column;
@@ -2417,24 +1827,8 @@ td.table-actions > * {
   min-width: 0;
 }
 
-.job-layout .card,
-.job-layout .trust-card,
-.job-layout .match,
 .job-actions-group .alert {
   margin: 0;
-}
-
-.job-layout .card > h2 {
-  margin-bottom: 1rem;
-}
-
-.job-layout .details-list,
-.job-layout .prose {
-  margin: 0;
-}
-
-.job-layout .prose {
-  font-size: 1.125rem;
 }
 
 .job-notes {
@@ -2450,7 +1844,6 @@ td.table-actions > * {
   gap: 1rem;
 }
 
-.job-layout .job-actions > h2,
 .job-actions > p {
   margin: 0;
 }
@@ -2502,26 +1895,6 @@ td.table-actions > * {
 
 .page__title-row h1 {
   margin: 0;
-}
-
-.employer-intro {
-  margin-bottom: 1.5rem;
-}
-
-.employer-intro .employer-logo {
-  margin-bottom: 0.75rem;
-}
-
-.employer-intro__meta {
-  margin-bottom: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.employer-intro .prose {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 1.125rem;
 }
 
 .employer-layout {
@@ -2700,16 +2073,6 @@ td.table-actions > * {
   color: var(--text-muted);
 }
 
-.plain-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.plain-list li + li {
-  margin-top: 0.5rem;
-}
-
 .card--tint {
   background: var(--surface);
 }
@@ -2827,7 +2190,6 @@ td.table-actions > * {
   border: 2px solid var(--divider);
   border-radius: var(--radius);
 }
-
 
 /* File input: a bordered box with a pill "Choose file" button. */
 input[type='file'].field__input {
