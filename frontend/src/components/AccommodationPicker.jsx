@@ -73,13 +73,16 @@ export default function AccommodationPicker({
                     <label htmlFor={`${inputId}-note`} className="field__label">
                       Details for “{item.name}” <span className="field__required">(optional)</span>
                     </label>
+                    <p id={`${inputId}-note-hint`} className="field__hint">
+                      For example, where it is or how to ask for it.
+                    </p>
                     <input
                       id={`${inputId}-note`}
                       className="field__input"
                       maxLength={255}
+                      aria-describedby={`${inputId}-note-hint`}
                       value={notes[item.id] ?? ''}
                       onChange={(event) => onNoteChange(item.id, event.target.value)}
-                      placeholder="For example: ramp at the main entrance"
                     />
                   </div>
                 )}

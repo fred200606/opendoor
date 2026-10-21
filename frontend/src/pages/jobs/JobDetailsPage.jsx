@@ -68,7 +68,7 @@ function JobDetails({ job }) {
       </h2>
       <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
         {facts.map((fact) => (
-          <div key={fact.label} className="grid grid-cols-[1.25rem_1fr] gap-x-2">
+          <div key={fact.label} className="grid grid-cols-[1.25rem_1fr] content-start gap-x-2">
             <fact.icon className="mt-0.5 size-5 text-accent" aria-hidden="true" focusable="false" />
             <dt className="font-bold">{fact.label}</dt>
             <dd className="col-start-2">{fact.value}</dd>
@@ -167,7 +167,7 @@ function Requirements({ job }) {
           ))}
         </ul>
       )}
-      <dl className="details-list">
+      <dl className="details-list mt-4 mb-0">
         <dt>Minimum education</dt>
         <dd>{EDUCATION_LEVELS[job.education_level] ?? 'No minimum'}</dd>
         <dt>Minimum experience</dt>

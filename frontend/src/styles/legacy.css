@@ -89,8 +89,9 @@ body {
 }
 
 /* Element spacing of the pre-IPT pages. Components converted to the IPT look carry the class
-   `od` and space their own elements with utilities (Decision 2026-10-21b). */
-:is(h1, h2, h3, h4):not(.od *) {
+   `od` and space their own elements with utilities (Decision 2026-10-21b). :where() keeps the
+   element specificity, so class rules (e.g. .field__hint) still win. */
+:is(h1, h2, h3, h4):where(:not(.od *)) {
   margin: 0 0 0.75rem;
 }
 
@@ -126,7 +127,7 @@ h1:focus {
   outline: none; /* focused programmatically on navigation, not by the user */
 }
 
-p:not(.od *) {
+p:where(:not(.od *)) {
   margin: 0 0 1rem;
   max-width: 70ch;
 }
