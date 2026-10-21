@@ -197,7 +197,14 @@
     @apply mb-1;
   }
 
-  /* Filter bars: the label sits beside the select ("Show [All postings]"). */
+  /* Room for the chevron drawn on the right of selects. */
+  select.field__input {
+    @apply pr-11;
+  }
+
+  /* Filter bars space themselves; their fields have no bottom gap, so buttons line up.
+     Inline fields put the label beside the select ("Show [All postings]"). */
+  .filter-bar .field,
   .field--inline {
     @apply mb-0;
   }

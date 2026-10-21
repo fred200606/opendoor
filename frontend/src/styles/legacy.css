@@ -3332,7 +3332,7 @@ input[type='file']::file-selector-button {
 }
 
 .review-layout__side > p,
-.review-layout__side .alert {
+.review-layout__side > .alert {
   max-width: none;
   margin: 0;
 }
