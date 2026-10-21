@@ -13,9 +13,11 @@
 
 ## Pending decisions (ask the user once; record the answer in "Decisions" and remove it here)
 
-- 2026-10-21 (11.9): logo mark – the IPT uses `public/opendoor-logo.svg` (mascot cropped tight, fills its 28×36 box); ours is the team's Figma PNG `src/assets/logo-mascot.png` (padding, looks smaller). Swap to the IPT SVG or keep the Figma PNG? (Brand asset – not changed without asking.)
+- –
 
 ## Decisions (final – do not re-ask)
+
+- 2026-10-21d – Logo mark (user): use the IPT SVG (`src/assets/logo-mascot.svg`, copied from opendoor-ipt `public/opendoor-logo.svg`, cropped to the mascot) instead of the team's Figma PNG (removed).
 
 - 2026-10-21c – 11.9 a11y check (user chose the local test DB): Claude seeds `opendoor_core_test` with a throwaway `DEMO_PASSWORD` (main dev DB untouched, as for PDF 1), runs the scripted axe check and the screenshot comparison against it once memory is free (user closes Packet Tracer etc.), then stops the stack.
 
@@ -270,7 +272,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
-- 2026-10-21 – 11.9 done, Phase 11 complete on `feat/ipt-look` (local): legacy CSS clean-up, README credit, axe 33/33 pages clean on the test DB, IPT screenshot comparison (logo text size fixed). Stack stopped. Open: logo mark question (Pending decisions), user review of `feat/matching-v2` + `feat/ipt-look`, SIA doc update.
+- 2026-10-21 – 11.9 done, Phase 11 complete on `feat/ipt-look` (local): legacy CSS clean-up, README credit, axe 33/33 pages clean on the test DB, IPT screenshot comparison (logo text size fixed). Stack stopped. Logo mark: IPT SVG (Decision 2026-10-21d). Open: user review of `feat/matching-v2` + `feat/ipt-look`, SIA doc update.
 - 2026-10-21 – Phase 11 IPT look: 11.7 employer pages and 11.8 admin/account/notifications checked in the browser and fixed (form cards, inline filter bars, select chevron padding, radio alignment, link underlines, a legacy specificity regression from 11.5); throwaway data for the check in the local dev DB (Known issues). Vitest 179/179, lint clean. Local stack stopped afterwards (Claude Code ended the background servers because memory ran low) – start it again for 11.9. Next: 11.9 clean-up.
 - 2026-10-21 – Requirements v2 (team document; user answered every question at once, then slept): Phase 10 built on local branch `feat/matching-v2` (not pushed): R2 verified employers publish directly, R3 skills list + qualifications + résumé skill suggestions, city centre points via a new Insights internal endpoint, R1 required profile setup, R4 match score + recommended ranking + distance/work-setup filters, OpenAPI/Postman/reference sync. All suites green; local Newman 204 requests / 1000 assertions with 1 external timeout. Dev DB migrated (backup in the scratchpad).
 - 2026-10-20 – Local stack started at the user's request ("run"): registry 8003, Core 8001 (`opendoor_core`), Insights 8002, gateway 8080, Vite 5173; validator 14/14 (first run timed out at 2 s while Core was cold), /jobs page loads with 4 jobs. Left running – stop only when the user asks.

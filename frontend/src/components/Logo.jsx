@@ -1,8 +1,9 @@
-import mascot from '../assets/logo-mascot.png';
+import mascot from '../assets/logo-mascot.svg';
 
 /**
- * The OpenDoor logo: the mascot mark and "OpenDoor" in Lexend SemiBold (IPT look, decision
- * 2026-10-21b). The image is decorative (alt=""): the wordmark names the logo.
+ * The OpenDoor logo: the mascot mark (opendoor-ipt's SVG, cropped to the mascot) and "OpenDoor" in
+ * Lexend SemiBold (IPT look, decision 2026-10-21b). The image is decorative (alt=""): the wordmark
+ * names the logo.
  */
 export default function Logo() {
   return (
