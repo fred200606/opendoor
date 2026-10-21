@@ -32,6 +32,7 @@ const STEPS = [
   {
     title: 'Know which employers keep their word',
     text: 'People who were hired confirm whether each promised accommodation was delivered. Their answers stay anonymous.',
+    link: { to: '/trust-scores', label: 'How trust scores work' },
   },
 ];
 
@@ -202,18 +203,21 @@ export default function HomePage() {
         </h2>
         <ol className="mt-4 grid gap-4 md:grid-cols-3">
           {STEPS.map((item, index) => (
-            <li key={item.title} className="rounded-lg border border-border bg-surface p-5">
+            <li key={item.title} className="flex flex-col rounded-lg border border-border bg-surface p-5">
               <p className="font-bold text-primary">Step {index + 1}</p>
               <h3 className="mt-1 text-xl font-bold">{item.title}</h3>
               <p className="mt-2">{item.text}</p>
+              {/* Pinned to the card's foot so it lines up whatever the text length. */}
+              {item.link && (
+                <p className="mt-auto pt-3">
+                  <Link to={item.link.to} className="inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-4 hover:no-underline">
+                    {item.link.label}
+                  </Link>
+                </p>
+              )}
             </li>
           ))}
         </ol>
-        <p className="mt-4">
-          <Link to="/trust-scores" className="inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-4 hover:no-underline">
-            How trust scores work
-          </Link>
-        </p>
       </section>
     </Page>
   );
