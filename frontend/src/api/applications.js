@@ -25,7 +25,7 @@ export async function getApplication(id) {
   return data;
 }
 
-/** status: 'reviewed' | 'hired' | 'rejected' | 'withdrawn' */
+/** status: 'reviewed' | 'shortlisted' | 'contacted' | 'rejected' | 'withdrawn' */
 export async function setApplicationStatus(id, status) {
   const { data } = await api.patch(`/applications/${id}/status`, { status });
   return data;

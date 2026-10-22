@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           an optional disability type and an optional résumé (PDF).
         </li>
         <li>Employers: company details, the business registration number, office address, an optional logo and job postings.</li>
-        <li>Applications, the in-app notices about them, and – after a hire – your ratings of the promised accommodations.</li>
+        <li>Applications, the in-app notices about them, and – after an employer contacts you – your ratings of the promised accommodations.</li>
         <li>Your display settings (text size, contrast, motion) and your choice about notification emails.</li>
       </ul>
 

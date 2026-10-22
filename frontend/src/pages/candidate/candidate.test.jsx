@@ -268,7 +268,7 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     });
 
     await user.click(await screen.findByRole('button', { name: 'Withdraw application' }));
-    expect(screen.queryByRole('button', { name: 'I was hired' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'The employer contacted me' })).not.toBeInTheDocument();
     const dialog = screen.getByRole('dialog', { name: 'Withdraw this application?' });
     await user.click(within(dialog).getByRole('button', { name: 'Withdraw application' }));
 
@@ -277,17 +277,27 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     expect(screen.queryByRole('button', { name: 'Withdraw application' })).not.toBeInTheDocument();
   });
 
-  test('a reviewed application offers "I was hired"', async () => {
-    renderApp('/candidate/applications/11', {
+  test('a shortlisted application can be confirmed as contacted or withdrawn', async () => {
+    const { user, calls } = renderApp('/candidate/applications/11', {
       as: 'candidate',
-      routes: { 'GET /applications/11': () => [200, { ...application, status: 'reviewed' }] },
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'shortlisted' }],
+        'PATCH /applications/11/status': () => [200, { ...application, status: 'contacted', contacted_at: '2026-10-22T09:00:00+08:00', feedback_opens_on: '2099-11-21' }],
+      },
     });
 
-    expect(await screen.findByRole('button', { name: 'I was hired' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Withdraw application' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'The employer contacted me' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirm that the employer contacted you?' });
+    await user.click(within(dialog).getByRole('button', { name: 'The employer contacted me' }));
+
+    expect(await screen.findByText('Recorded: the employer contacted you.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'PATCH /applications/11/status').data).toEqual({ status: 'contacted' });
+    expect(screen.getByText(/30 days after the employer contacted you/)).toBeInTheDocument();
   });
 
-  test('hired: feedback link once the 30-day window is open, a date before that', async () => {
-    const hired = { ...application, status: 'hired', hired_at: '2026-01-02T09:00:00+08:00' };
+  test('contacted: feedback link once the 30-day window is open, a date before that', async () => {
+    const hired = { ...application, status: 'contacted', contacted_at: '2026-01-02T09:00:00+08:00' };
     const { unmount } = renderApp('/candidate/applications/11', {
       as: 'candidate',
       routes: { 'GET /applications/11': () => [200, { ...hired, feedback_opens_on: '2026-02-01' }] },
@@ -302,11 +312,11 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     expect(await screen.findByText(/You can rate the accommodations from February 1, 2099/)).toBeInTheDocument();
   });
 
-  test('hired and already rated: no feedback link', async () => {
+  test('contacted and already rated: no feedback link', async () => {
     renderApp('/candidate/applications/11', {
       as: 'candidate',
       routes: {
-        'GET /applications/11': () => [200, { ...application, status: 'hired', feedback_opens_on: '2026-02-01', feedback_submitted: true }],
+        'GET /applications/11': () => [200, { ...application, status: 'contacted', feedback_opens_on: '2026-02-01', feedback_submitted: true }],
       },
     });
 
@@ -414,30 +424,60 @@ describe('FeedbackPage', () => {
 });
 
 describe('CandidateDashboardPage and SavedJobsPage', () => {
-  test('dashboard shows counts, the needs prompt and due ratings', async () => {
+  test('My applications: See all, Feedback due, the grouped counts and the latest applications', async () => {
+    const mine = [
+      { ...application, id: 21, status: 'shortlisted', job_posting: { ...job, title: 'Office Clerk' } },
+      { ...application, id: 22, status: 'contacted', job_posting: { ...job, title: 'Data Encoder' } },
+    ];
     renderApp('/candidate/dashboard', {
       as: 'candidate',
       routes: {
         'GET /candidate/dashboard': () => [
           200,
           {
-            applications: { pending: 2, reviewed: 1, hired: 1, rejected: 0, withdrawn: 0 },
+            applications: { pending: 2, reviewed: 1, shortlisted: 1, contacted: 1, rejected: 1, withdrawn: 1 },
             needs_count: 0,
             matching_jobs: 4,
-            feedback_due: [{ application_id: 11, job_title: 'Data Encoder', company_name: 'Bayanihan Tech', opens_on: '2026-02-01', is_open: true }],
+            feedback_due: [
+              { application_id: 22, job_title: 'Data Encoder', company_name: 'Bayanihan Tech', opens_on: '2026-02-01', is_open: true },
+              { application_id: 23, job_title: 'Cashier', company_name: 'Sari Store', opens_on: '2099-02-01', is_open: false },
+            ],
           },
         ],
+        'GET /applications': () => [200, paged(mine)],
         'GET /job-postings': () => [200, paged([])],
       },
     });
 
-    expect(await screen.findByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'View Submitted (2)' })).toHaveAttribute('href', '/candidate/applications?status=pending');
-    expect(screen.getByRole('link', { name: 'Rate the accommodations now for Data Encoder' })).toHaveAttribute('href', '/candidate/applications/11/feedback');
-    // A rating that is due now comes before the recommendations.
-    const headings = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
-    expect(headings.indexOf('Ratings to give')).toBeLessThan(headings.indexOf('Recommended for you'));
-    expect(await within(screen.getByRole('region', { name: 'Recommended for you' })).findByText('No open jobs yet. We will show the best fits here.')).toBeInTheDocument();
+    const section = await screen.findByRole('region', { name: 'My applications' });
+    expect(within(section).getByRole('link', { name: 'See all 7 applications' })).toHaveAttribute('href', '/candidate/applications');
+    expect(within(section).getByText('Rate how Bayanihan Tech delivered the accommodations for Data Encoder.')).toBeInTheDocument();
+    expect(within(section).getByRole('link', { name: 'Rate the accommodations for Data Encoder' })).toHaveAttribute('href', '/candidate/applications/22/feedback');
+    const tiles = within(section).getAllByRole('list')[0];
+    expect(within(tiles).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Waiting for a reply', '1Shortlisted', '1Contacted', '2Closed']);
+    expect(await within(section).findByRole('link', { name: 'Office Clerk' })).toHaveAttribute('href', '/candidate/applications/21');
+    const latest = within(section).getAllByRole('list')[1];
+    expect(within(latest).getAllByRole('listitem').map((item) => item.querySelector('.badge').textContent)).toEqual(['Shortlisted', 'Contacted']);
+
+    // The rating that is not open yet stays in "Ratings to give"; the open one is only in My applications.
+    const ratings = screen.getByRole('region', { name: 'Ratings to give' });
+    expect(within(ratings).getByText('Cashier at Sari Store')).toBeInTheDocument();
+    expect(within(ratings).queryByText(/Data Encoder/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add my needs' })).toBeInTheDocument();
+    expect(await within(screen.getByRole('region', { name: 'Your best matches' })).findByText('No open jobs yet. We will show the best fits here.')).toBeInTheDocument();
+  });
+
+  test('My applications before the first application', async () => {
+    const { calls } = renderApp('/candidate/dashboard', {
+      as: 'candidate',
+      routes: { 'GET /candidate/dashboard': () => [200, { applications: {}, needs_count: 0, matching_jobs: 0, feedback_due: [] }], 'GET /job-postings': () => [200, paged([])] },
+    });
+
+    const section = await screen.findByRole('region', { name: 'My applications' });
+    expect(within(section).getByText(/You have not applied yet/)).toBeInTheDocument();
+    expect(within(section).getByRole('link', { name: 'Find jobs that fit you' })).toHaveAttribute('href', '/candidate/jobs');
+    expect(within(section).queryByRole('link', { name: /See all/ })).not.toBeInTheDocument();
+    expect(calls.some((call) => call.key === 'GET /applications')).toBe(false);
   });
 
   test('the three best recommended jobs are shown with their match', async () => {
@@ -451,11 +491,11 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
       },
     });
 
-    const recommended = await screen.findByRole('region', { name: 'Recommended for you' });
+    const recommended = await screen.findByRole('region', { name: 'Your best matches' });
     expect(await within(recommended).findByRole('link', { name: 'Job 1' })).toHaveAttribute('href', '/candidate/jobs/1');
     expect(within(recommended).getAllByText('Good match, 74%')).toHaveLength(3);
     expect(within(recommended).queryByRole('link', { name: 'Job 4' })).not.toBeInTheDocument();
-    expect(within(recommended).getByRole('link', { name: 'See all recommended jobs' })).toHaveAttribute('href', '/candidate/jobs');
+    expect(within(recommended).getByRole('link', { name: 'See all your matches' })).toHaveAttribute('href', '/candidate/jobs');
     expect(calls.find((call) => call.key === 'GET /job-postings').config.params.get('match')).toBe('1');
     // Your needs lists the saved needs from the profile; nothing is due for rating yet.
     const needs = screen.getByRole('region', { name: 'Your needs' });

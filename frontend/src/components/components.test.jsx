@@ -54,7 +54,7 @@ describe('TrustScoreCard', () => {
     const row = screen.getByRole('row', { name: /Sign language interpreter/ });
     expect(row).toHaveTextContent('1 of 3 delivered');
     // Scrolls sideways on narrow screens, so keyboard users can focus it.
-    expect(screen.getByRole('region', { name: 'Each accommodation, as rated by hired employees' })).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('region', { name: 'Each accommodation, as rated by contacted applicants' })).toHaveAttribute('tabindex', '0');
   });
 });
 
@@ -708,26 +708,52 @@ describe('Pagination and ConfirmDialog', () => {
 });
 
 describe('StatusTimeline', () => {
-  const base = { created_at: '2026-10-09T09:00:00+08:00', reviewed_at: null, hired_at: null, updated_at: '2026-10-12T10:00:00+08:00' };
+  const base = { created_at: '2026-10-09T09:00:00+08:00', reviewed_at: null, shortlisted_at: null, contacted_at: null, updated_at: '2026-10-12T10:00:00+08:00' };
   const steps = () => screen.getAllByRole('listitem').map((item) => item.textContent);
+  const SENT = 'SubmittedOctober 9, 2026Application successfully sent.';
+  const current = () => screen.getAllByRole('listitem').findIndex((item) => item.getAttribute('aria-current') === 'step');
 
-  test('pending waits for the review, reviewed waits for the decision', () => {
+  test('the four stages (Decision 2026-10-22a), each waiting on the one before', () => {
     const { rerender } = render(<StatusTimeline application={{ ...base, status: 'pending' }} />);
-    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedWaiting for employer', 'DecisionAfter the review']);
-    expect(screen.getAllByRole('listitem')[1]).toHaveAttribute('aria-current', 'step');
+    expect(steps()).toEqual([
+      SENT,
+      'Under reviewWaiting for employerThe employer is reviewing your profile.',
+      'ShortlistedAfter the reviewThe employer selected you for further consideration.',
+      'ContactedAfter the shortlistThe employer reached out about the next steps.',
+    ]);
+    expect(current()).toBe(1);
 
     rerender(<StatusTimeline application={{ ...base, status: 'reviewed', reviewed_at: '2026-10-12T10:00:00+08:00' }} />);
-    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedOctober 12, 2026', 'DecisionWaiting for employer']);
-    expect(screen.getAllByRole('listitem')[2]).toHaveAttribute('aria-current', 'step');
+    expect(steps().slice(1, 3)).toEqual([
+      'Under reviewOctober 12, 2026The employer is reviewing your profile.',
+      'ShortlistedWaiting for employerThe employer selected you for further consideration.',
+    ]);
+    expect(current()).toBe(2);
+
+    rerender(<StatusTimeline application={{ ...base, status: 'shortlisted', reviewed_at: '2026-10-12T10:00:00+08:00', shortlisted_at: '2026-10-14T10:00:00+08:00' }} />);
+    expect(steps().slice(2)).toEqual([
+      'ShortlistedOctober 14, 2026The employer selected you for further consideration.',
+      'ContactedWaiting for employerThe employer reached out about the next steps.',
+    ]);
+    expect(current()).toBe(3);
   });
 
-  test('final statuses name the decision and its date; a withdrawal before review says so', () => {
-    const { rerender } = render(<StatusTimeline application={{ ...base, status: 'hired', hired_at: '2026-10-20T10:00:00+08:00' }} />);
-    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedDone', 'HiredOctober 20, 2026']);
+  test('contacted without a shortlist says "Skipped"; closed applications end with the decision', () => {
+    const { rerender } = render(<StatusTimeline application={{ ...base, status: 'contacted', contacted_at: '2026-10-20T10:00:00+08:00' }} />);
+    expect(steps()).toEqual([
+      SENT,
+      'Under reviewDoneThe employer is reviewing your profile.',
+      'ShortlistedSkipped',
+      'ContactedOctober 20, 2026The employer reached out about the next steps.',
+    ]);
+    expect(current()).toBe(-1);
+
+    rerender(<StatusTimeline application={{ ...base, status: 'rejected', reviewed_at: '2026-10-10T10:00:00+08:00' }} />);
+    expect(steps().slice(2)).toEqual(['ShortlistedNot shortlisted', 'Not selectedOctober 12, 2026']);
 
     rerender(<StatusTimeline application={{ ...base, status: 'withdrawn' }} />);
-    expect(steps()).toEqual(['SubmittedOctober 9, 2026', 'ReviewedNot reviewed', 'WithdrawnOctober 12, 2026']);
-    expect(screen.queryByRole('listitem', { current: 'step' })).not.toBeInTheDocument();
+    expect(steps()).toEqual([SENT, 'Under reviewNot reviewed', 'ShortlistedNot shortlisted', 'WithdrawnOctober 12, 2026']);
+    expect(current()).toBe(-1);
   });
 });
 

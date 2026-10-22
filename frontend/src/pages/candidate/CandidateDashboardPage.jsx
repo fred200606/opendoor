@@ -1,19 +1,20 @@
+import { Check, Clock, Minus, Star } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
+import { getApplications } from '../../api/applications.js';
 import { searchJobs } from '../../api/jobs.js';
 import { getCandidateProfile } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import Alert from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import GetStarted from '../../components/GetStarted.jsx';
+import IconTile from '../../components/IconTile.jsx';
 import MatchBadge from '../../components/MatchBadge.jsx';
 import Page from '../../components/Page.jsx';
-import StatCards from '../../components/StatCards.jsx';
+import StatusBadge from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useOnboarding } from '../../hooks/useOnboarding.js';
 import { formatDate, plural } from '../../lib/format.js';
-import { APPLICATION_STATUSES } from '../../lib/labels.js';
-import { APPLICATION_TILES } from '../../lib/statusTiles.js';
 
 /** GET /candidate/dashboard – shape documented in docs/openapi.yaml (CandidateDashboard). */
 export default function CandidateDashboardPage() {
@@ -33,31 +34,13 @@ export default function CandidateDashboardPage() {
           <>
             <CandidateGetStarted dashboard={dashboard} />
             <div className="dashboard-layout">
-              <StatCards
-                title="Your applications"
-                items={Object.entries(APPLICATION_STATUSES).map(([status, label]) => ({
-                  label,
-                  value: dashboard.applications?.[status] ?? 0,
-                  to: `/candidate/applications?status=${status}`,
-                  ...APPLICATION_TILES[status],
-                }))}
-              />
+              <MyApplications dashboard={dashboard} />
 
-              {/* A rating that can be given now comes first (Figma 15:5668). */}
+              {/* A rating that can be given now is in "My applications" (Feedback due); later ones are listed here. */}
               <div className="dashboard-side">
-                {dashboard.feedback_due?.some((item) => item.is_open) ? (
-                  <>
-                    <RatingsToGive due={dashboard.feedback_due} />
-                    <JobsForYou />
-                    <YourNeeds count={dashboard.needs_count ?? 0} />
-                  </>
-                ) : (
-                  <>
-                    <JobsForYou />
-                    <YourNeeds count={dashboard.needs_count ?? 0} />
-                    <RatingsToGive due={dashboard.feedback_due ?? []} />
-                  </>
-                )}
+                <BestMatches />
+                <YourNeeds count={dashboard.needs_count ?? 0} />
+                <RatingsToGive due={dashboard.feedback_due ?? []} />
               </div>
             </div>
           </>
@@ -109,16 +92,100 @@ function CandidateGetStarted({ dashboard }) {
   );
 }
 
+// The dashboard's application tiles (Decision 2026-10-22a, after opendoor-ipt): the stages grouped.
+const GROUPS = [
+  { label: 'Waiting for a reply', statuses: ['pending', 'reviewed'], icon: Clock, tone: 'sky' },
+  { label: 'Shortlisted', statuses: ['shortlisted'], icon: Star, tone: 'orange' },
+  { label: 'Contacted', statuses: ['contacted'], icon: Check, tone: 'lilac' },
+  { label: 'Closed', statuses: ['rejected', 'withdrawn'], icon: Minus, tone: 'pink' },
+];
+const RECENT = 5;
+
+/**
+ * "My applications" in the IPT layout: See all N, a "Feedback due" callout for each rating that
+ * can be given now, the counts per group, then the newest applications with their status.
+ */
+function MyApplications({ dashboard }) {
+  const counts = dashboard.applications ?? {};
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const recent = useAsync(() => (total > 0 ? getApplications() : Promise.resolve({ data: [] })), [total]);
+  const due = (dashboard.feedback_due ?? []).filter((item) => item.is_open);
+
+  return (
+    <section aria-labelledby="my-applications-title" className="od rounded-lg border-2 border-border bg-surface p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="my-applications-title" className="text-2xl font-bold">
+          My applications
+        </h2>
+        {total > 0 && (
+          <Link to="/candidate/applications" className="inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-4 hover:no-underline">
+            See all {total} <span className="sr-only">applications</span>
+          </Link>
+        )}
+      </div>
+
+      {due.map((item) => (
+        <div key={item.application_id} className="mt-4 rounded-lg border-2 border-warning bg-warning-soft p-4">
+          <h3 className="text-lg font-bold text-warning">Feedback due</h3>
+          <p className="mt-1">
+            Rate how {item.company_name} delivered the accommodations for {item.job_title}.
+          </p>
+          <Link className="button mt-3" to={`/candidate/applications/${item.application_id}/feedback`}>
+            Rate the accommodations <span className="sr-only">for {item.job_title}</span>
+          </Link>
+        </div>
+      ))}
+
+      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {GROUPS.map((group) => (
+          <li key={group.label} className="flex flex-col items-start gap-1 rounded-lg border-2 border-border p-4">
+            <IconTile icon={group.icon} tone={group.tone} />
+            <span className="mt-1 font-display text-2xl font-bold text-accent">{group.statuses.reduce((sum, status) => sum + (counts[status] ?? 0), 0)}</span>
+            <span className="font-bold">{group.label}</span>
+          </li>
+        ))}
+      </ul>
+
+      <h3 className="mt-6 text-lg font-bold">Your latest applications</h3>
+      {total === 0 ? (
+        <p className="mt-2">
+          You have not applied yet. <Link to="/candidate/jobs">Find jobs that fit you</Link>
+        </p>
+      ) : (
+        <AsyncContent state={recent} label="Loading your applications">
+          {({ data }) => (
+            <ul className="mt-2 divide-y divide-border">
+              {data.slice(0, RECENT).map((application) => (
+                <li key={application.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+                  <div className="min-w-0">
+                    <Link to={`/candidate/applications/${application.id}`} className="font-bold">
+                      {application.job_posting?.title}
+                    </Link>
+                    <p className="text-sm text-muted">
+                      {application.job_posting?.employer?.company_name} · Applied {formatDate(application.created_at)}
+                    </p>
+                  </div>
+                  <StatusBadge kind="application" status={application.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </AsyncContent>
+      )}
+    </section>
+  );
+}
+
 const RECOMMENDED = 3;
 
 /** The best fits right away (decision 2026-10-21): the first "Recommended for me" results. */
-function JobsForYou() {
+function BestMatches() {
   const state = useAsync(() => searchJobs({ match: 1 }), []);
   const jobs = (state.data?.data ?? []).slice(0, RECOMMENDED);
 
   return (
     <section aria-labelledby="matches-title">
-      <h2 id="matches-title">Recommended for you</h2>
+      <h2 id="matches-title">Your best matches</h2>
       <div className="card card--tint">
         <AsyncContent state={state} label="Finding jobs for you">
           {() =>
@@ -140,39 +207,33 @@ function JobsForYou() {
           }
         </AsyncContent>
         <p className="dashboard-side__link">
-          <Link to="/candidate/jobs">See all recommended jobs</Link>
+          <Link to="/candidate/jobs">See all your matches</Link>
         </p>
       </div>
     </section>
   );
 }
 
-/** One card per hire that can be rated (now, or from its date). */
+/** Ratings not open yet, with their date ("My applications" shows the open ones). Nothing due → how rating works. */
 function RatingsToGive({ due }) {
+  const later = due.filter((item) => !item.is_open);
+  if (due.length > 0 && later.length === 0) return null;
+
   return (
     <section aria-labelledby="feedback-due-title">
       <h2 id="feedback-due-title">Ratings to give</h2>
       <div className="dashboard-side__cards">
-        {due.length === 0 ? (
+        {later.length === 0 ? (
           <div className="card">
-            <p className="muted">Nothing to rate yet. You can rate 30 days after being hired.</p>
+            <p className="muted">Nothing to rate yet. You can rate the accommodations 30 days after an employer contacts you.</p>
           </div>
         ) : (
-          due.map((item) => (
-            <div key={item.application_id} className={item.is_open ? 'card card--tint' : 'card'}>
+          later.map((item) => (
+            <div key={item.application_id} className="card">
               <h3 className="dashboard-side__title">
                 {item.job_title} at {item.company_name}
               </h3>
-              {item.is_open ? (
-                <>
-                  <p className="muted">Tell other job seekers whether the promised accommodations were provided. Your answers are anonymous.</p>
-                  <Link className="button" to={`/candidate/applications/${item.application_id}/feedback`}>
-                    Rate the accommodations now <span className="visually-hidden">for {item.job_title}</span>
-                  </Link>
-                </>
-              ) : (
-                <p className="muted">You can rate the accommodations from {formatDate(item.opens_on)}.</p>
-              )}
+              <p className="muted">You can rate the accommodations from {formatDate(item.opens_on)}.</p>
             </div>
           ))
         )}

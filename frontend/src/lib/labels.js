@@ -27,10 +27,12 @@ export const POSTING_STATUSES = {
   closed: 'Closed',
 };
 
+// The stages a candidate sees (Decision 2026-10-22a); Contacted replaced Hired.
 export const APPLICATION_STATUSES = {
   pending: 'Submitted',
-  reviewed: 'Reviewed',
-  hired: 'Hired',
+  reviewed: 'Under review',
+  shortlisted: 'Shortlisted',
+  contacted: 'Contacted',
   rejected: 'Not selected',
   withdrawn: 'Withdrawn',
 };

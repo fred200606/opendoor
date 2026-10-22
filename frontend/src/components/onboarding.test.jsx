@@ -99,7 +99,7 @@ describe('Welcome tour', () => {
 
   test('not shown once done', async () => {
     renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(toured) });
-    expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My applications' })).toBeInTheDocument();
     expect(screen.queryByRole('complementary', { name: 'Welcome tour' })).not.toBeInTheDocument();
   });
 });
@@ -206,7 +206,7 @@ describe('Get started list', () => {
 
   test('not shown when hidden', async () => {
     const { calls } = renderApp('/candidate/dashboard', { as: 'candidate', routes: candidateRoutes(done) });
-    expect(await screen.findByRole('heading', { name: 'Your applications' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My applications' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Get started' })).not.toBeInTheDocument();
     // The profile is not loaded for a hidden list.
     expect(calls.some((call) => call.key === 'GET /candidate/profile')).toBe(false);

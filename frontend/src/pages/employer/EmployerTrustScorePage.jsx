@@ -25,7 +25,7 @@ export default function EmployerTrustScorePage() {
               <TrustScoreCard trustScore={trustScore} title="Your trust score" />
               <Alert type="info" title="How it works">
                 <p>
-                  Hired employees rate each promised accommodation 30 days after their hire. Partly delivered counts as half. Answers are
+                  Applicants you contacted rate each promised accommodation 30 days after the contact. Partly delivered counts as half. Answers are
                   anonymous. A score is shown from 3 responses.
                 </p>
               </Alert>

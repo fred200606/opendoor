@@ -2276,10 +2276,10 @@ input[type='file']::file-selector-button {
   margin-bottom: 1rem;
 }
 
-/* Three steps in a row joined by short lines; stacked on narrow screens. */
+/* Four stages in a row joined by short lines; stacked on narrow screens. */
 .timeline {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
@@ -2344,7 +2344,12 @@ input[type='file']::file-selector-button {
   font-size: 0.9375rem;
 }
 
-@media (max-width: 30rem) {
+.timeline__note {
+  max-width: 14rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 40rem) {
   .timeline {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2358,6 +2363,12 @@ input[type='file']::file-selector-button {
 
   .timeline__mark {
     margin: 0;
+  }
+
+  .timeline__note {
+    flex-basis: 100%;
+    max-width: none;
+    padding-left: 2.25rem;
   }
 
   .timeline__step + .timeline__step::before {

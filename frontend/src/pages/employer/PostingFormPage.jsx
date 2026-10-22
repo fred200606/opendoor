@@ -393,7 +393,7 @@ function PostingForm({ categories, groups, skillOptions, job, verified }) {
           {step === ACCOMMODATIONS_STEP && (
             <>
               <Alert type="warning" title="List only what you really provide">
-                <p>Hired employees will rate each one.</p>
+                <p>Applicants you contact will rate each one.</p>
               </Alert>
               <AccommodationPicker
                 legend="Accommodations you provide"

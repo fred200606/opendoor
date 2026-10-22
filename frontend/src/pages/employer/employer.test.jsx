@@ -286,7 +286,7 @@ describe('PostingsPage', () => {
 });
 
 describe('EmployerApplicationPage', () => {
-  test('shows needs against the posting and the interview request; hires after confirmation', async () => {
+  test('shows needs against the posting and the interview request; shortlists, then marks as contacted', async () => {
     const { user, calls } = renderApp('/employer/applications/11', {
       as: 'employer',
       routes: {
@@ -294,7 +294,7 @@ describe('EmployerApplicationPage', () => {
           200,
           { ...application, status: 'reviewed', candidate: { ...application.candidate, accommodations: [job.accommodations[0], { id: 2, name: 'Accessible restroom', group: 'physical_access' }] } },
         ],
-        'PATCH /applications/11/status': () => [200, { ...application, status: 'hired' }],
+        'PATCH /applications/11/status': (config) => [200, { ...application, status: JSON.parse(config.data).status }],
       },
     });
 
@@ -302,12 +302,20 @@ describe('EmployerApplicationPage', () => {
     expect(screen.getByText('Wheelchair-accessible entrance', { exact: false }).closest('li')).toHaveTextContent('offered in your posting');
     expect(screen.getByText('Accessible restroom', { exact: false }).closest('li')).toHaveTextContent('not listed in your posting');
 
-    await user.click(screen.getByRole('button', { name: 'Mark as hired' }));
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mark as hired' }));
+    // Reviewed: Shortlist, Mark as contacted and Not selected, in that order.
+    const actions = () => screen.queryAllByRole('button', { name: /^(Shortlist|Mark as contacted|Not selected)$/ }).map((button) => button.textContent);
+    expect(actions()).toEqual(['Shortlist', 'Mark as contacted', 'Not selected']);
 
-    expect(await screen.findByText('The applicant is marked as hired.')).toBeInTheDocument();
-    expect(calls.find((call) => call.key === 'PATCH /applications/11/status').data).toEqual({ status: 'hired' });
-    expect(screen.queryByRole('button', { name: 'Not selected' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Shortlist' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Add this applicant to your shortlist?' })).getByRole('button', { name: 'Shortlist' }));
+    expect(await screen.findByText('The applicant is on your shortlist.')).toBeInTheDocument();
+    expect(actions()).toEqual(['Mark as contacted', 'Not selected']);
+
+    await user.click(screen.getByRole('button', { name: 'Mark as contacted' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Mark this applicant as contacted?' })).getByRole('button', { name: 'Mark as contacted' }));
+    expect(await screen.findByText('The applicant is marked as contacted.')).toBeInTheDocument();
+    expect(calls.filter((call) => call.key === 'PATCH /applications/11/status').map((call) => call.data)).toEqual([{ status: 'shortlisted' }, { status: 'contacted' }]);
+    expect(actions()).toEqual([]);
   });
 
   test('shows skills, experience, a shared disability and the résumé link', async () => {
@@ -343,7 +351,7 @@ describe('EmployerApplicationPage', () => {
     renderApp('/employer/applications/11', { as: 'employer', routes: { 'GET /applications/11': () => [200, { ...application, status: 'withdrawn' }] } });
 
     expect(await screen.findByText('Withdrawn')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Mark as hired' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mark as contacted' })).not.toBeInTheDocument();
   });
 });
 
@@ -384,7 +392,7 @@ describe('Employer trust score and dashboard', () => {
           {
             company: { exists: true, verified: true },
             postings: { draft: 1, open: 2 },
-            applications: { pending: 3, reviewed: 2, hired: 1 },
+            applications: { pending: 3, reviewed: 2, shortlisted: 1, contacted: 1 },
             trust_score: { published: true, score: 79, based_on: 3 },
           },
         ],
@@ -394,7 +402,7 @@ describe('Employer trust score and dashboard', () => {
     expect(await screen.findByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
     expect(screen.queryByText(/waiting for approval/)).not.toBeInTheDocument();
     const applications = screen.getByRole('region', { name: 'Applications received' });
-    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Submitted', '2Reviewed', '1Hired']);
+    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Submitted', '2Under review', '1Shortlisted', '1Contacted']);
     expect(within(applications).queryByRole('link')).not.toBeInTheDocument();
     const trust = screen.getByRole('region', { name: 'Trust score' });
     expect(within(trust).getByText('79%')).toBeInTheDocument();

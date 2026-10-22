@@ -1,38 +1,61 @@
 import { Check, Minus, X } from 'lucide-react';
 import { formatDate } from '../lib/format.js';
 
-const DECISIONS = {
-  hired: { label: 'Hired', icon: Check, tone: 'done' },
-  rejected: { label: 'Not selected', icon: X, tone: 'stopped' },
-  withdrawn: { label: 'Withdrawn', icon: Minus, tone: 'stopped' },
+// What each stage means (Decision 2026-10-22a).
+const NOTES = {
+  submitted: 'Application successfully sent.',
+  review: 'The employer is reviewing your profile.',
+  shortlisted: 'The employer selected you for further consideration.',
+  contacted: 'The employer reached out about the next steps.',
 };
 
+const CLOSED = {
+  rejected: { label: 'Not selected', icon: X },
+  withdrawn: { label: 'Withdrawn', icon: Minus },
+};
+
+const REVIEWED = ['reviewed', 'shortlisted', 'contacted', 'rejected'];
+
 /**
- * Figma "Where it stands": Submitted → Reviewed → Decision, each with its date. A step still to
- * come has a dashed circle; the one the application is waiting on is marked aria-current="step".
- * Applications reviewed before `reviewed_at` existed show the step without a date.
+ * "Where it stands": Submitted → Under review → Shortlisted → Contacted, each with its date and
+ * what it means. A step still to come has a dashed circle; the one the application is waiting on is
+ * marked aria-current="step". The employer may contact without shortlisting first (that step then
+ * says "Skipped"). A closed application (not selected or withdrawn) ends with that instead of
+ * Contacted. Applications reviewed before `reviewed_at` existed show the step without a date.
  */
 export default function StatusTimeline({ application, waitingFor = 'Waiting for employer' }) {
   const { status } = application;
-  const decision = DECISIONS[status];
-  // Hired and Not selected always come after a review; a withdrawal may come before one.
-  const reviewed = status === 'reviewed' || status === 'hired' || status === 'rejected' || Boolean(application.reviewed_at);
+  const closed = CLOSED[status];
+  const reviewed = REVIEWED.includes(status) || Boolean(application.reviewed_at);
+  const shortlisted = status === 'shortlisted' || Boolean(application.shortlisted_at);
+
+  const review = reviewed
+    ? { state: 'done', detail: application.reviewed_at ? formatDate(application.reviewed_at) : 'Done' }
+    : status === 'withdrawn'
+      ? { state: 'skipped', detail: 'Not reviewed' }
+      : { state: 'current', detail: waitingFor };
+
+  const shortlist = shortlisted
+    ? { state: 'done', detail: application.shortlisted_at ? formatDate(application.shortlisted_at) : 'Done' }
+    : status === 'reviewed'
+      ? { state: 'current', detail: waitingFor }
+      : status === 'pending'
+        ? { state: 'upcoming', detail: 'After the review' }
+        : { state: 'skipped', detail: status === 'contacted' ? 'Skipped' : 'Not shortlisted' };
+
+  const last = closed
+    ? { label: closed.label, state: 'stopped', icon: closed.icon, detail: formatDate(application.updated_at) }
+    : status === 'contacted'
+      ? { label: 'Contacted', state: 'done', detail: formatDate(application.contacted_at ?? application.updated_at), note: NOTES.contacted }
+      : status === 'shortlisted'
+        ? { label: 'Contacted', state: 'current', detail: waitingFor, note: NOTES.contacted }
+        : { label: 'Contacted', state: 'upcoming', detail: 'After the shortlist', note: NOTES.contacted };
 
   const steps = [
-    { label: 'Submitted', detail: formatDate(application.created_at), state: 'done' },
-    reviewed
-      ? { label: 'Reviewed', detail: application.reviewed_at ? formatDate(application.reviewed_at) : 'Done', state: 'done' }
-      : status === 'withdrawn'
-        ? { label: 'Reviewed', detail: 'Not reviewed', state: 'skipped' }
-        : { label: 'Reviewed', detail: waitingFor, state: 'current' },
-    decision
-      ? {
-          label: decision.label,
-          detail: formatDate(status === 'hired' ? (application.hired_at ?? application.updated_at) : application.updated_at),
-          state: decision.tone,
-          icon: decision.icon,
-        }
-      : { label: 'Decision', detail: status === 'reviewed' ? waitingFor : 'After the review', state: status === 'reviewed' ? 'current' : 'upcoming' },
+    { label: 'Submitted', state: 'done', detail: formatDate(application.created_at), note: NOTES.submitted },
+    { label: 'Under review', ...review, note: NOTES.review },
+    { label: 'Shortlisted', ...shortlist, note: NOTES.shortlisted },
+    last,
   ];
 
   return (
@@ -48,6 +71,7 @@ export default function StatusTimeline({ application, waitingFor = 'Waiting for 
               </span>
               <span className="timeline__label">{step.label}</span>
               <span className="timeline__detail">{step.detail}</span>
+              {step.note && step.state !== 'skipped' && <span className="timeline__note">{step.note}</span>}
             </li>
           );
         })}

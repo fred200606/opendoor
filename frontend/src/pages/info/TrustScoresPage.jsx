@@ -6,15 +6,15 @@ export default function TrustScoresPage() {
   return (
     <Page title="How trust scores work" className="page--reading">
       <p className="lead">
-        Every job lists the workplace support it offers. The trust score shows how much of that support employees hired
-        through OpenDoor really received.
+        Every job lists the workplace support it offers. The trust score shows how much of that support the applicants an
+        employer contacted through OpenDoor really received.
       </p>
 
-      <h2>1 · Employees rate what was promised</h2>
+      <h2>1 · Applicants rate what was promised</h2>
       <p>
-        From day 30 after a hire, the employee can rate each accommodation the job posting promised: <strong>delivered</strong>,{' '}
-        <strong>partly delivered</strong> or <strong>not delivered</strong>. We send a reminder on that day. Each hire is rated
-        once.
+        From day 30 after the employer contacted them about the next steps, the applicant can rate each accommodation the job
+        posting promised: <strong>delivered</strong>, <strong>partly delivered</strong> or <strong>not delivered</strong>. We send
+        a reminder on that day. Each job is rated once.
       </p>
 
       <h2>2 · We add up the answers</h2>
@@ -25,7 +25,7 @@ export default function TrustScoresPage() {
 
       <h2>3 · The score appears from 3 responses</h2>
       <p>
-        A score is published only after at least 3 hired employees have rated the employer, so no single answer can be
+        A score is published only after at least 3 contacted applicants have rated the employer, so no single answer can be
         traced back to a person. Until then you see "Not published yet".
       </p>
 

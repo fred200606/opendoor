@@ -5,7 +5,7 @@ import { APPLICATION_STATUSES, POSTING_STATUSES, REGISTRY_STATUSES, REPORT_STATU
 const KINDS = {
   application: {
     labels: APPLICATION_STATUSES,
-    tone: { pending: 'neutral', reviewed: 'info', hired: 'success', rejected: 'neutral', withdrawn: 'neutral' },
+    tone: { pending: 'neutral', reviewed: 'info', shortlisted: 'info', contacted: 'success', rejected: 'neutral', withdrawn: 'neutral' },
   },
   posting: {
     labels: POSTING_STATUSES,

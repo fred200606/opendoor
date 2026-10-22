@@ -31,7 +31,7 @@ const STEPS = [
   },
   {
     title: 'Know which employers keep their word',
-    text: 'People who were hired confirm whether each promised accommodation was delivered. Their answers stay anonymous.',
+    text: 'People an employer contacted confirm whether each promised accommodation was delivered. Their answers stay anonymous.',
     link: { to: '/trust-scores', label: 'How trust scores work' },
   },
 ];
@@ -90,7 +90,7 @@ export default function HomePage() {
         <div className="max-w-2xl">
           <p className="mt-6 max-w-[46ch] animate-hero-text text-lg text-muted" style={step(2)}>
             A job platform for persons with disabilities in the Philippines. Every job shows the skills it needs and the workplace support it offers, and people
-            who were hired confirm it was really provided.
+            an employer contacted confirm it was really provided.
           </p>
 
           <div className="mt-8 flex animate-hero-text flex-wrap gap-3" style={step(3)}>

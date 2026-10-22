@@ -10,19 +10,34 @@ import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
 import { EDUCATION_LEVELS } from '../../lib/labels.js';
 
-// Employer decisions allowed by the status workflow (pending → reviewed happens on opening).
+// Employer steps allowed by the status workflow (pending → reviewed happens on opening), in the
+// order shown (Decision 2026-10-22a). Each asks to confirm: none can be undone.
 const DECISIONS = {
-  hired: {
-    label: 'Mark as hired',
-    title: 'Mark this applicant as hired?',
-    text: 'This is final. After 30 days the employee can rate whether you provided the promised accommodations.',
+  shortlisted: {
+    from: ['reviewed'],
+    label: 'Shortlist',
+    title: 'Add this applicant to your shortlist?',
+    text: 'The applicant is told that you selected them for further consideration. You cannot move them back to “Under review”.',
+  },
+  contacted: {
+    from: ['reviewed', 'shortlisted'],
+    label: 'Mark as contacted',
+    title: 'Mark this applicant as contacted?',
+    text: 'Use this once you have reached out about the next steps. This is final. After 30 days the applicant can rate whether you provided the promised accommodations.',
   },
   rejected: {
+    from: ['reviewed', 'shortlisted'],
     label: 'Not selected',
     title: 'Mark this application as not selected?',
     text: 'This is final. The applicant is notified.',
     danger: true,
   },
+};
+
+const DONE = {
+  shortlisted: 'The applicant is on your shortlist.',
+  contacted: 'The applicant is marked as contacted.',
+  rejected: 'The applicant is marked as not selected.',
 };
 
 export default function EmployerApplicationPage() {
@@ -50,7 +65,7 @@ function ApplicationReview({ application, onChange }) {
     setError(null);
     try {
       onChange(await setApplicationStatus(application.id, pending));
-      setMessage(pending === 'hired' ? 'The applicant is marked as hired.' : 'The applicant is marked as not selected.');
+      setMessage(DONE[pending]);
     } catch (apiError) {
       setError(apiError);
     } finally {
@@ -60,6 +75,7 @@ function ApplicationReview({ application, onChange }) {
   }
 
   const decision = pending && DECISIONS[pending];
+  const available = Object.entries(DECISIONS).filter(([, item]) => item.from.includes(application.status));
 
   return (
     <Page
@@ -142,16 +158,16 @@ function ApplicationReview({ application, onChange }) {
         </section>
       </div>
 
-      {application.status === 'reviewed' && (
+      {available.length > 0 && (
         <>
           <div className="actions application-page__actions">
-            {Object.entries(DECISIONS).map(([status, item]) => (
+            {available.map(([status, item]) => (
               <button key={status} type="button" className={`button ${item.danger ? 'button--danger-outline' : ''}`} onClick={() => setPending(status)}>
                 {item.label}
               </button>
             ))}
           </div>
-          <p className="field__hint">“Mark as hired” and “Not selected” are final and ask you to confirm. The applicant is notified.</p>
+          <p className="field__hint">Each step asks you to confirm and cannot be undone; “Mark as contacted” and “Not selected” are final. The applicant is notified.</p>
         </>
       )}
 

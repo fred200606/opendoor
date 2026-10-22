@@ -12,8 +12,8 @@ import { showsGetStarted, useOnboarding } from '../../hooks/useOnboarding.js';
 import { APPLICATION_STATUSES, POSTING_STATUSES } from '../../lib/labels.js';
 import { APPLICATION_TILES, POSTING_TILES } from '../../lib/statusTiles.js';
 
-// The three counts the design shows; there is no employer-wide applications list (decision 2026-10-13).
-const RECEIVED = ['pending', 'reviewed', 'hired'];
+// The stages in progress (Decision 2026-10-22a); there is no employer-wide applications list (decision 2026-10-13).
+const RECEIVED = ['pending', 'reviewed', 'shortlisted', 'contacted'];
 
 /** GET /employer/dashboard – shape documented in docs/openapi.yaml (EmployerDashboard). */
 export default function EmployerDashboardPage() {

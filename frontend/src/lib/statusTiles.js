@@ -1,4 +1,4 @@
-import { Briefcase, Check, FileText, Minus, Search, X } from 'lucide-react';
+import { Briefcase, Check, FileText, Minus, Search, Star, X } from 'lucide-react';
 
 // Figma "Stat tile": the icon and colour of each status, the same on every dashboard.
 
@@ -11,7 +11,8 @@ export const POSTING_TILES = {
 export const APPLICATION_TILES = {
   pending: { icon: FileText, tone: 'pink' },
   reviewed: { icon: Search, tone: 'lilac' },
-  hired: { icon: Check, tone: 'sky' },
-  rejected: { icon: X, tone: 'orange' },
+  shortlisted: { icon: Star, tone: 'orange' },
+  contacted: { icon: Check, tone: 'sky' },
+  rejected: { icon: X, tone: 'pink' },
   withdrawn: { icon: Minus, tone: 'pink' },
 };

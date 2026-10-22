@@ -13,15 +13,15 @@ import { formatDate, todayInManila } from '../../lib/format.js';
 
 // Candidate actions allowed by the status workflow (business-rules.md), in the order shown.
 const ACTIONS = {
-  hired: {
-    from: ['reviewed'],
-    label: 'I was hired',
-    title: 'Confirm that you were hired?',
-    text: '30 days after today you will be asked to rate whether the promised accommodations were provided.',
+  contacted: {
+    from: ['reviewed', 'shortlisted'],
+    label: 'The employer contacted me',
+    title: 'Confirm that the employer contacted you?',
+    text: 'Use this when the employer reached out about the next steps but OpenDoor does not show it yet. 30 days after today you will be asked to rate whether the promised accommodations were provided.',
     danger: false,
   },
   withdrawn: {
-    from: ['pending', 'reviewed'],
+    from: ['pending', 'reviewed', 'shortlisted'],
     label: 'Withdraw application',
     title: 'Withdraw this application?',
     text: 'The employer will no longer consider you for this job. You cannot undo this.',
@@ -54,7 +54,7 @@ function ApplicationDetails({ application, onChange }) {
     try {
       const updated = await setApplicationStatus(application.id, pending);
       onChange(updated);
-      setMessage(pending === 'hired' ? 'Congratulations! Your hire is recorded.' : 'Your application was withdrawn.');
+      setMessage(pending === 'contacted' ? 'Recorded: the employer contacted you.' : 'Your application was withdrawn.');
       setPending(null);
     } catch (apiError) {
       setError(apiError);
@@ -97,10 +97,10 @@ function ApplicationDetails({ application, onChange }) {
         <dl className="card details-list">
           <dt>Applied</dt>
           <dd>{formatDate(application.created_at)}</dd>
-          {application.hired_at && (
+          {application.contacted_at && (
             <>
-              <dt>Hired</dt>
-              <dd>{formatDate(application.hired_at)}</dd>
+              <dt>Contacted</dt>
+              <dd>{formatDate(application.contacted_at)}</dd>
             </>
           )}
           <dt>Cover note</dt>
@@ -109,7 +109,7 @@ function ApplicationDetails({ application, onChange }) {
           <dd className="prose">{application.interview_request || 'None'}</dd>
         </dl>
 
-        {application.status === 'hired' && <FeedbackPrompt application={application} />}
+        {application.status === 'contacted' && <FeedbackPrompt application={application} />}
       </div>
 
       {available.length > 0 && (
@@ -121,8 +121,8 @@ function ApplicationDetails({ application, onChange }) {
           ))}
         </div>
       )}
-      {application.status === 'reviewed' && (
-        <p className="field__hint">After you confirm a hire, you can rate the accommodations 30 days later.</p>
+      {['reviewed', 'shortlisted'].includes(application.status) && (
+        <p className="field__hint">30 days after the employer contacts you, you can rate the accommodations.</p>
       )}
 
       {action && (
@@ -158,7 +158,7 @@ function FeedbackPrompt({ application }) {
           </Link>
         </>
       ) : (
-        <p>You can rate the accommodations from {formatDate(opensOn)} (30 days after your hire date).</p>
+        <p>You can rate the accommodations from {formatDate(opensOn)} (30 days after the employer contacted you).</p>
       )}
     </section>
   );
