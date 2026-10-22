@@ -512,37 +512,129 @@ describe('Employer trust score and dashboard', () => {
           200,
           { company: { exists: false, verified: false }, postings: { open: 2 }, applications: { pending: 5 }, trust_score: { published: false, based_on: 0 } },
         ],
+        'GET /employer/job-postings': () => [200, paged([])],
       },
     });
 
     expect(await screen.findByRole('link', { name: 'Set up company' })).toHaveAttribute('href', '/employer/company');
-    expect(screen.getByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
+    expect(screen.getByRole('link', { name: 'View Open jobs (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
+    expect(await screen.findByText('No open jobs.')).toBeInTheDocument();
+    expect(screen.getByText('You’re all caught up.')).toBeInTheDocument();
   });
 
-  test('dashboard shows the counts and links to the score breakdown', async () => {
+  // Decision 2026-10-22f: the layout of the user's reference plus the weekly chart.
+  const weeks = Array.from({ length: 12 }, (_, index) => ({
+    week_start: new Date(Date.UTC(2026, 7, 3 + index * 7)).toISOString().slice(0, 10),
+    applications: index === 11 ? 3 : 1,
+    hires: index === 10 ? 1 : 0,
+  }));
+  const dashboard = {
+    company: { exists: true, verified: true },
+    postings: { draft: 1, open: 3, closed: 2 },
+    applications: { pending: 8, reviewed: 3, shortlisted: 2, contacted: 2, hired: 4, rejected: 1, withdrawn: 0 },
+    pipeline: { submitted: 8, under_review: 3, shortlisted: 2, contacted: 2, hiring_pending: 1, hired: 4, closed: 2 },
+    trust_score: { published: true, score: 79, based_on: 3 },
+    attention: {
+      new_applications: [
+        { job_posting_id: 42, title: 'Data Encoder', count: 5 },
+        { job_posting_id: 43, title: 'Office Clerk', count: 3 },
+      ],
+      hiring_reports: [{ application_id: 11, hiring_report_id: 2, job_title: 'Customer Support Associate', candidate_name: 'Maria Santos', start_date: '2026-11-02' }],
+    },
+    recent_activity: [
+      { type: 'hiring_reported', by: 'candidate', application_id: 11, job_title: 'Customer Support Associate', candidate_name: 'Maria Santos', at: '2026-10-22T15:00:00+08:00' },
+      { type: 'application_received', by: 'candidate', application_id: 12, job_title: 'Office Clerk', candidate_name: 'Juan Dela Cruz', at: '2026-10-22T09:00:00+08:00' },
+      { type: 'hiring_confirmed', by: 'employer', application_id: 9, job_title: 'Data Encoder', candidate_name: 'Ana Reyes', at: '2026-10-15T09:00:00+08:00' },
+    ],
+    weeks,
+  };
+  const postingsByStatus = (config) => {
+    const { status } = config.params;
+    const rows = status === 'open' ? [{ ...job, applicants_count: 5, closes_at: '2026-11-05', work_setup: 'hybrid' }] : [];
+    return [200, paged(rows)];
+  };
+
+  test('dashboard: tiles, postings by tab, needs attention, overview, trust score, chart and activity', async () => {
+    const { user, calls } = renderApp('/employer/dashboard', {
+      as: 'employer',
+      routes: { 'GET /employer/dashboard': () => [200, dashboard], 'GET /employer/job-postings': postingsByStatus },
+    });
+
+    expect(await screen.findByRole('link', { name: 'Post a job' })).toHaveAttribute('href', '/employer/jobs/new');
+    const tiles = await screen.findByRole('region', { name: 'At a glance' });
+    expect(within(tiles).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '3Open jobsView Open jobs (3)',
+      '8New applications',
+      '1Pending hire confirmations',
+      '4Confirmed hires',
+    ]);
+
+    const postings = screen.getByRole('region', { name: 'Your job postings' });
+    expect(within(postings).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Open (3)', 'Draft (1)', 'Closed (2)']);
+    const row = await within(postings).findByRole('row', { name: /Data Encoder/ });
+    expect(row).toHaveTextContent('Hybrid · Full-time');
+    expect(within(row).getByRole('link', { name: '5 applicants for Data Encoder' })).toHaveAttribute('href', '/employer/jobs/42/applicants');
+    expect(row).toHaveTextContent('Nov 5');
+    expect(within(row).getByRole('link', { name: 'Manage Data Encoder' })).toHaveAttribute('href', '/employer/jobs/42/edit');
+    await user.click(within(postings).getByRole('tab', { name: 'Draft (1)' }));
+    expect(await within(postings).findByText('No draft jobs.')).toBeInTheDocument();
+    expect(within(postings).getByRole('link', { name: 'View all draft job postings' })).toHaveAttribute('href', '/employer/jobs?status=draft');
+    expect(calls.filter((call) => call.key === 'GET /employer/job-postings').map((call) => call.config.params.status)).toEqual(['open', 'draft']);
+
+    const attention = screen.getByRole('region', { name: 'Needs attention' });
+    expect(within(attention).getByRole('heading', { name: '8 new applications' })).toBeInTheDocument();
+    expect(within(attention).getByRole('link', { name: 'Review applicants for Office Clerk' })).toHaveAttribute('href', '/employer/jobs/43/applicants');
+    expect(attention).toHaveTextContent('Maria Santos reported being hired as Customer Support Associate, starting November 2, 2026.');
+    expect(within(attention).getByRole('link', { name: 'Review confirmation from Maria Santos' })).toHaveAttribute('href', '/employer/applications/11');
+
+    const overview = screen.getByRole('figure', { name: 'Application overview' });
+    expect(overview).toHaveTextContent('Where your 21 applications stand now.');
+    expect([...overview.querySelectorAll('.bar-row__label')].map((label) => label.textContent)).toEqual([
+      'Submitted', 'Under review', 'Shortlisted', 'Contacted', 'Hired', 'Not selected', 'Withdrawn', 'Job closed',
+    ]);
+    expect([...overview.querySelectorAll('.bar-row__value')].map((value) => value.textContent)).toEqual([
+      '8 · 38%', '3 · 14%', '2 · 10%', '2 · 10%', '4 · 19%', '1 · 5%', '0 · 0%', '1 · 5%',
+    ]);
+
+    const trust = screen.getByRole('region', { name: 'Accommodation trust score' });
+    expect(within(trust).getByText('79%')).toBeInTheDocument();
+    expect(within(trust).getByRole('link', { name: 'See each accommodation' })).toHaveAttribute('href', '/employer/trust-score');
+
+    const chart = screen.getByRole('figure', { name: 'Applications, last 12 weeks' });
+    expect(chart).toHaveTextContent('14 applications received and 1 confirmed hire.');
+    expect(within(chart).getByRole('slider')).toHaveAttribute('aria-valuetext', 'Week of October 19, 2026. Use the arrow keys to read each week.');
+
+    const activity = screen.getByRole('region', { name: 'Recent activity' });
+    expect(within(activity).getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['Maria Santos reported being hired as Customer Support Associate', '/employer/applications/11'],
+      ['Juan Dela Cruz applied for Office Clerk', '/employer/applications/12'],
+      ['You confirmed Ana Reyes’s hire for Data Encoder', '/employer/applications/9'],
+    ]);
+    expect(within(activity).getAllByRole('row')[1]).toHaveTextContent('Oct 22');
+  });
+
+  test('a new employer sees empty states instead of charts', async () => {
     renderApp('/employer/dashboard', {
       as: 'employer',
       routes: {
         'GET /employer/dashboard': () => [
           200,
           {
-            company: { exists: true, verified: true },
-            postings: { draft: 1, open: 2 },
-            applications: { pending: 3, reviewed: 2, shortlisted: 1, contacted: 1, hired: 2 },
-            pipeline: { submitted: 3, under_review: 2, shortlisted: 1, contacted: 1, hiring_pending: 1, hired: 2, closed: 4 },
-            trust_score: { published: true, score: 79, based_on: 3 },
+            ...dashboard,
+            applications: {},
+            pipeline: {},
+            attention: { new_applications: [], hiring_reports: [] },
+            recent_activity: [],
+            weeks: weeks.map((week) => ({ ...week, applications: 0, hires: 0 })),
           },
         ],
+        'GET /employer/job-postings': () => [200, paged([])],
       },
     });
 
-    expect(await screen.findByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
-    expect(screen.queryByText(/waiting for approval/)).not.toBeInTheDocument();
-    const applications = screen.getByRole('region', { name: 'Applications received' });
-    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['5New or under review', '1Shortlisted', '1Contacted', '1Hiring confirmations pending', '2Confirmed hires', '4Closed']);
-    expect(within(applications).queryByRole('link')).not.toBeInTheDocument();
-    const trust = screen.getByRole('region', { name: 'Trust score' });
-    expect(within(trust).getByText('79%')).toBeInTheDocument();
-    expect(within(trust).getByRole('link', { name: 'See each accommodation' })).toHaveAttribute('href', '/employer/trust-score');
+    expect(await screen.findByText('No applications yet.')).toBeInTheDocument();
+    expect(screen.getByText('No applications in the last 12 weeks yet.')).toBeInTheDocument();
+    expect(screen.getByText(/No activity yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 });
