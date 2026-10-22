@@ -35,9 +35,15 @@ export function plural(count, one, many = `${one}s`) {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-/** Today's date in Manila as 'YYYY-MM-DD' (for date inputs' min). */
-export function todayInManila() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(new Date());
+/** Today's date in Manila as 'YYYY-MM-DD' (for date inputs' min and max), optionally days ahead. */
+export function todayInManila(daysAhead = 0) {
+  return dateInManila(new Date(), daysAhead);
+}
+
+/** The Manila calendar day of a timestamp (ISO string or Date) as 'YYYY-MM-DD'; days ahead are added first. */
+export function dateInManila(value, daysAhead = 0) {
+  const date = new Date(new Date(value).getTime() + daysAhead * 86400000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE }).format(date);
 }
 
 /** Up to two initials of a company name ("Bayanihan Tech Solutions" → "BT"), for logo stand-ins. */

@@ -277,27 +277,165 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     expect(screen.queryByRole('button', { name: 'Withdraw application' })).not.toBeInTheDocument();
   });
 
-  test('a shortlisted application can be confirmed as contacted or withdrawn', async () => {
+  test('the candidate reports being hired with a start date; nothing changes until the employer confirms', async () => {
+    const reported = {
+      ...application,
+      status: 'shortlisted',
+      hiring_reports: [
+        {
+          id: 4,
+          reported_by: 'candidate',
+          start_date: '2026-11-03',
+          status: 'pending',
+          can_respond: false,
+          created_at: '2026-10-22T09:00:00+08:00',
+          responded_at: null,
+          events: [{ actor_role: 'candidate', action: 'reported', start_date: '2026-11-03', created_at: '2026-10-22T09:00:00+08:00' }],
+        },
+      ],
+    };
     const { user, calls } = renderApp('/candidate/applications/11', {
       as: 'candidate',
       routes: {
         'GET /applications/11': () => [200, { ...application, status: 'shortlisted' }],
-        'PATCH /applications/11/status': () => [200, { ...application, status: 'contacted', contacted_at: '2026-10-22T09:00:00+08:00', feedback_opens_on: '2099-11-21' }],
+        'POST /applications/11/hiring-reports': () => [201, reported],
       },
     });
 
     expect(await screen.findByRole('button', { name: 'Withdraw application' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'The employer contacted me' }));
-    const dialog = screen.getByRole('dialog', { name: 'Confirm that the employer contacted you?' });
-    await user.click(within(dialog).getByRole('button', { name: 'The employer contacted me' }));
+    expect(screen.queryByRole('button', { name: 'The employer contacted me' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Report that I was hired' }));
+    const dialog = screen.getByRole('dialog', { name: 'Report that I was hired' });
+    await user.click(within(dialog).getByRole('button', { name: 'Send report' }));
+    expect(within(dialog).getByText('Enter the start date.')).toBeInTheDocument();
+    expect(calls.some((call) => call.key === 'POST /applications/11/hiring-reports')).toBe(false);
 
-    expect(await screen.findByText('Recorded: the employer contacted you.')).toBeInTheDocument();
-    expect(calls.find((call) => call.key === 'PATCH /applications/11/status').data).toEqual({ status: 'contacted' });
-    expect(screen.getByText(/30 days after the employer contacted you/)).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Start date/), { target: { value: '2026-11-03' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Send report' }));
+
+    expect(await screen.findByText('Reported. We asked the employer to confirm it.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'POST /applications/11/hiring-reports').data).toEqual({ start_date: '2026-11-03' });
+    expect(screen.getByText(/You reported the hire, starting November 3, 2026. Waiting for the employer to confirm it/)).toBeInTheDocument();
+    expect(screen.getAllByText('Hiring to confirm').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Report that I was hired' })).not.toBeInTheDocument();
   });
 
-  test('contacted: feedback link once the 30-day window is open, a date before that', async () => {
-    const hired = { ...application, status: 'contacted', contacted_at: '2026-01-02T09:00:00+08:00' };
+  test('the report of the employer: Not yet with a new start date, then Confirm makes it hired', async () => {
+    const report = {
+      id: 4,
+      reported_by: 'employer',
+      start_date: '2026-11-03',
+      status: 'pending',
+      can_respond: true,
+      created_at: '2026-10-22T09:00:00+08:00',
+      responded_at: null,
+      events: [{ actor_role: 'employer', action: 'reported', start_date: '2026-11-03', created_at: '2026-10-22T09:00:00+08:00' }],
+    };
+    const notYet = {
+      ...report,
+      start_date: '2026-11-10',
+      events: [...report.events, { actor_role: 'candidate', action: 'not_yet', start_date: '2026-11-10', created_at: '2026-10-23T09:00:00+08:00' }],
+    };
+    const confirmed = {
+      ...notYet,
+      status: 'confirmed',
+      can_respond: false,
+      events: [...notYet.events, { actor_role: 'candidate', action: 'confirmed', start_date: null, created_at: '2026-10-24T09:00:00+08:00' }],
+    };
+    let answers = 0;
+    const { user, calls } = renderApp('/candidate/applications/11', {
+      as: 'candidate',
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'contacted', hiring_reports: [report] }],
+        'POST /applications/11/hiring-reports/4/response': () => {
+          answers += 1;
+          return answers === 1
+            ? [200, { ...application, status: 'contacted', hiring_reports: [notYet] }]
+            : [200, { ...application, status: 'hired', hired_at: '2026-10-24T09:00:00+08:00', hire_start_date: '2026-11-10', feedback_opens_on: '2026-12-10', hiring_reports: [confirmed] }];
+        },
+      },
+    });
+
+    expect(await screen.findByText('The employer reported that you were hired, starting November 3, 2026. Is that right?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report that I was hired' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Not yet' }));
+    const notYetDialog = screen.getByRole('dialog', { name: 'Not yet' });
+    fireEvent.change(within(notYetDialog).getByLabelText(/New start date/), { target: { value: '2026-11-10' } });
+    await user.click(within(notYetDialog).getByRole('button', { name: 'Send “Not yet”' }));
+    expect(await screen.findByText('Your answer was sent: not yet.')).toBeInTheDocument();
+    const answered = () => calls.filter((call) => call.key === 'POST /applications/11/hiring-reports/4/response');
+    expect(answered()[0].data).toEqual({ answer: 'not_yet', start_date: '2026-11-10' });
+    expect(screen.getByText('The employer reported that you were hired, starting November 10, 2026. Is that right?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    const confirmDialog = screen.getByRole('dialog', { name: 'Confirm the hire?' });
+    expect(confirmDialog).toHaveTextContent('Your application becomes Hired, starting November 10, 2026.');
+    await user.click(within(confirmDialog).getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('The hire is confirmed.')).toBeInTheDocument();
+    expect(screen.getByText('Hired — confirmed.')).toBeInTheDocument();
+    expect(answered()[1].data).toEqual({ answer: 'confirm' });
+    expect(screen.getByText(/Start date: November 10, 2026/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Withdraw application' })).not.toBeInTheDocument();
+    const history = screen.getByRole('heading', { name: 'History' }).nextElementSibling;
+    expect([...history.querySelectorAll('li')].map((item) => item.textContent)).toEqual([
+      'October 22, 2026 The employer reported the hire, starting November 3, 2026.',
+      'October 23, 2026 You answered “Not yet”, new start date November 10, 2026.',
+      'October 24, 2026 You confirmed the hire.',
+    ]);
+    expect(screen.getByText(/You can rate the accommodations from December 10, 2026 \(30 days after your start date\)/)).toBeInTheDocument();
+  });
+
+  test('Incorrect asks first, then the stage stays and a new report can be made', async () => {
+    const report = {
+      id: 4,
+      reported_by: 'employer',
+      start_date: '2026-11-03',
+      status: 'pending',
+      can_respond: true,
+      created_at: '2026-10-22T09:00:00+08:00',
+      responded_at: null,
+      events: [{ actor_role: 'employer', action: 'reported', start_date: '2026-11-03', created_at: '2026-10-22T09:00:00+08:00' }],
+    };
+    const disputed = {
+      ...report,
+      status: 'disputed',
+      can_respond: false,
+      events: [...report.events, { actor_role: 'candidate', action: 'disputed', start_date: null, created_at: '2026-10-23T09:00:00+08:00' }],
+    };
+    const { user, calls } = renderApp('/candidate/applications/11', {
+      as: 'candidate',
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'contacted', hiring_reports: [report] }],
+        'POST /applications/11/hiring-reports/4/response': () => [200, { ...application, status: 'contacted', hiring_reports: [disputed] }],
+      },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Incorrect' }));
+    const dialog = screen.getByRole('dialog', { name: 'Say the report is not correct?' });
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    await user.click(within(dialog).getByRole('button', { name: 'Incorrect' }));
+
+    expect(await screen.findByText('Your answer was sent: the report is not correct.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'POST /applications/11/hiring-reports/4/response').data).toEqual({ answer: 'incorrect' });
+    expect(screen.getByText(/You said the report is not correct/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Report that I was hired' })).toBeInTheDocument();
+  });
+
+  test('a closed job keeps the stage and says a hire can still be reported', async () => {
+    renderApp('/candidate/applications/11', {
+      as: 'candidate',
+      routes: { 'GET /applications/11': () => [200, { ...application, status: 'contacted', job_closed: true }] },
+    });
+
+    expect(await screen.findByText('The employer closed this job. Your application stays at its stage, and a hire can still be reported.')).toBeInTheDocument();
+    expect(screen.getAllByText('Job closed').length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: 'Report that I was hired' })).toBeInTheDocument();
+  });
+
+  test('hired: feedback link once the 30-day window is open, a date before that', async () => {
+    const hired = { ...application, status: 'hired', hired_at: '2026-01-02T09:00:00+08:00', hire_start_date: '2026-01-02' };
     const { unmount } = renderApp('/candidate/applications/11', {
       as: 'candidate',
       routes: { 'GET /applications/11': () => [200, { ...hired, feedback_opens_on: '2026-02-01' }] },
@@ -312,11 +450,11 @@ describe('MyApplicationsPage and CandidateApplicationPage', () => {
     expect(await screen.findByText(/You can rate the accommodations from February 1, 2099/)).toBeInTheDocument();
   });
 
-  test('contacted and already rated: no feedback link', async () => {
+  test('hired and already rated: no feedback link', async () => {
     renderApp('/candidate/applications/11', {
       as: 'candidate',
       routes: {
-        'GET /applications/11': () => [200, { ...application, status: 'contacted', feedback_opens_on: '2026-02-01', feedback_submitted: true }],
+        'GET /applications/11': () => [200, { ...application, status: 'hired', feedback_opens_on: '2026-02-01', feedback_submitted: true }],
       },
     });
 
@@ -427,7 +565,8 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
   test('My applications: See all, Feedback due, the grouped counts and the latest applications', async () => {
     const mine = [
       { ...application, id: 21, status: 'shortlisted', job_posting: { ...job, title: 'Office Clerk' } },
-      { ...application, id: 22, status: 'contacted', job_posting: { ...job, title: 'Data Encoder' } },
+      { ...application, id: 22, status: 'hired', job_posting: { ...job, title: 'Data Encoder' } },
+      { ...application, id: 24, status: 'contacted', job_closed: true, job_posting: { ...job, title: 'Cashier' } },
     ];
     renderApp('/candidate/dashboard', {
       as: 'candidate',
@@ -435,7 +574,8 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
         'GET /candidate/dashboard': () => [
           200,
           {
-            applications: { pending: 2, reviewed: 1, shortlisted: 1, contacted: 1, rejected: 1, withdrawn: 1 },
+            applications: { pending: 2, reviewed: 1, shortlisted: 1, contacted: 1, hired: 1, rejected: 1, withdrawn: 1 },
+            pipeline: { submitted: 2, under_review: 1, shortlisted: 1, contacted: 0, hiring_pending: 1, hired: 1, closed: 3 },
             needs_count: 0,
             matching_jobs: 4,
             feedback_due: [
@@ -450,14 +590,14 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
     });
 
     const section = await screen.findByRole('region', { name: 'My applications' });
-    expect(within(section).getByRole('link', { name: 'See all 7 applications' })).toHaveAttribute('href', '/candidate/applications');
+    expect(within(section).getByRole('link', { name: 'See all 8 applications' })).toHaveAttribute('href', '/candidate/applications');
     expect(within(section).getByText('Rate how Bayanihan Tech delivered the accommodations for Data Encoder.')).toBeInTheDocument();
     expect(within(section).getByRole('link', { name: 'Rate the accommodations for Data Encoder' })).toHaveAttribute('href', '/candidate/applications/22/feedback');
     const tiles = within(section).getAllByRole('list')[0];
-    expect(within(tiles).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Waiting for a reply', '1Shortlisted', '1Contacted', '2Closed']);
+    expect(within(tiles).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Under review', '1Shortlisted', '0Contacted', '1Hiring confirmations pending', '1Confirmed hires', '3Closed']);
     expect(await within(section).findByRole('link', { name: 'Office Clerk' })).toHaveAttribute('href', '/candidate/applications/21');
     const latest = within(section).getAllByRole('list')[1];
-    expect(within(latest).getAllByRole('listitem').map((item) => item.querySelector('.badge').textContent)).toEqual(['Shortlisted', 'Contacted']);
+    expect(within(latest).getAllByRole('listitem').map((item) => item.querySelector('.badge').textContent)).toEqual(['Shortlisted', 'Hired', 'Job closed']);
 
     // The rating that is not open yet stays in "Ratings to give"; the open one is only in My applications.
     const ratings = screen.getByRole('region', { name: 'Ratings to give' });

@@ -27,14 +27,25 @@ export const POSTING_STATUSES = {
   closed: 'Closed',
 };
 
-// The stages a candidate sees (Decision 2026-10-22a); Contacted replaced Hired.
+// The stages (Decision 2026-10-22b); Hired only after both parties confirm a hiring report.
 export const APPLICATION_STATUSES = {
   pending: 'Submitted',
   reviewed: 'Under review',
   shortlisted: 'Shortlisted',
   contacted: 'Contacted',
+  hired: 'Hired',
   rejected: 'Not selected',
   withdrawn: 'Withdrawn',
+};
+
+// Shown instead of the stage while the application is in progress and its job closed (`job_closed`).
+export const JOB_CLOSED = 'Job closed';
+
+export const HIRING_REPORT_STATUSES = {
+  pending: 'Waiting for an answer',
+  confirmed: 'Hired — confirmed',
+  disputed: 'Said to be incorrect',
+  cancelled: 'Cancelled',
 };
 
 export const REGISTRY_TYPES = { DTI: 'DTI (sole proprietorship)', SEC: 'SEC (corporation or partnership)' };

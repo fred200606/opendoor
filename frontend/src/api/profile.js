@@ -19,6 +19,9 @@ export async function updateNeeds(accommodationIds) {
   return data.data;
 }
 
+/** Core's limit for résumé uploads (opendoor.resume_max_kb). */
+export const RESUME_MAX_MB = 5;
+
 /** file: a PDF File → { resume_url } */
 export async function uploadResume(file) {
   const body = new FormData();

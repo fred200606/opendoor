@@ -116,14 +116,14 @@ function SnapshotBody({ snapshot }) {
         ))
       )}
 
-      <h3>What contacted applicants say</h3>
+      <h3>What hired employees say</h3>
       {community ? (
         <p>
           <strong>{community.trust_score}%</strong> of promised accommodations were delivered, based on{' '}
           {plural(community.based_on, 'response')}.
         </p>
       ) : (
-        <p>Not enough contacted applicants have rated this employer yet.</p>
+        <p>Not enough hired employees have rated this employer yet.</p>
       )}
 
       <h3>Accessible places nearby</h3>

@@ -15,8 +15,8 @@ import { FEEDBACK_RATINGS, toOptions } from '../../lib/labels.js';
 const RATING_OPTIONS = toOptions(FEEDBACK_RATINGS);
 
 const SUBMIT_ERRORS = {
-  FEEDBACK_EXISTS: 'You have already rated this job. Each job can be rated once.',
-  FEEDBACK_NOT_OPEN: 'Rating opens 30 days after the employer contacted you.',
+  FEEDBACK_EXISTS: 'You have already rated this job. Each hire can be rated once.',
+  FEEDBACK_NOT_OPEN: 'Rating opens 30 days after your confirmed start date.',
 };
 
 export default function FeedbackPage() {
@@ -39,7 +39,7 @@ export default function FeedbackPage() {
           if (form.submitted) {
             return (
               <Alert type="info" title="Already rated">
-                <p>You have already rated the accommodations for this job. Each job can be rated once. Thank you.</p>
+                <p>You have already rated the accommodations for this job. Each hire can be rated once. Thank you.</p>
                 <p>
                   <Link to="/candidate/applications">Back to my applications</Link>
                 </p>
@@ -49,14 +49,14 @@ export default function FeedbackPage() {
           if (!form.is_open) {
             return (
               <Alert type="info" title="Not open yet">
-                <p>You can rate the accommodations from {formatDate(form.opens_on)}, 30 days after the employer contacted you.</p>
+                <p>You can rate the accommodations from {formatDate(form.opens_on)}, 30 days after your confirmed start date.</p>
               </Alert>
             );
           }
           if (form.items.length === 0) {
             return (
               <Alert type="info" title="Nothing to rate">
-                <p>The job posting listed no accommodations when the employer contacted you, so there is nothing to rate.</p>
+                <p>The job posting listed no accommodations when you were hired, so there is nothing to rate.</p>
               </Alert>
             );
           }

@@ -2276,10 +2276,10 @@ input[type='file']::file-selector-button {
   margin-bottom: 1rem;
 }
 
-/* Four stages in a row joined by short lines; stacked on narrow screens. */
+/* Five stages in a row joined by short lines; stacked on narrow screens. */
 .timeline {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1rem;
   margin: 0;
   padding: 0;
@@ -2349,7 +2349,7 @@ input[type='file']::file-selector-button {
   font-size: 0.875rem;
 }
 
-@media (max-width: 40rem) {
+@media (max-width: 48rem) {
   .timeline {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2378,6 +2378,30 @@ input[type='file']::file-selector-button {
 
 .application-page .alert {
   max-width: 36rem;
+}
+
+/* Hiring confirmation (Decision 2026-10-22b): the answer buttons, then the history. */
+.hiring-card .actions {
+  margin-top: 0.75rem;
+}
+
+.hiring-card h3 {
+  margin-top: 1.25rem;
+  font-size: 1.125rem;
+}
+
+.hiring-history {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hiring-history li + li {
+  margin-top: 0.375rem;
+}
+
+.hiring-history__date {
+  font-weight: 700;
 }
 
 /* ---------- Figma "4.6 Rate your accommodations": one card per accommodation, options in a row */

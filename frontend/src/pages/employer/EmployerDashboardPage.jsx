@@ -9,11 +9,8 @@ import StatCards from '../../components/StatCards.jsx';
 import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { showsGetStarted, useOnboarding } from '../../hooks/useOnboarding.js';
-import { APPLICATION_STATUSES, POSTING_STATUSES } from '../../lib/labels.js';
-import { APPLICATION_TILES, POSTING_TILES } from '../../lib/statusTiles.js';
-
-// The stages in progress (Decision 2026-10-22a); there is no employer-wide applications list (decision 2026-10-13).
-const RECEIVED = ['pending', 'reviewed', 'shortlisted', 'contacted'];
+import { POSTING_STATUSES } from '../../lib/labels.js';
+import { POSTING_TILES, pipelineTiles } from '../../lib/statusTiles.js';
 
 /** GET /employer/dashboard – shape documented in docs/openapi.yaml (EmployerDashboard). */
 export default function EmployerDashboardPage() {
@@ -66,14 +63,11 @@ export default function EmployerDashboardPage() {
                   }))}
                 />
                 <div className="dashboard-side">
+                  {/* The stage tiles from `pipeline` (Decision 2026-10-22b); there is no employer-wide applications list (decision 2026-10-13). */}
                   <StatCards
                     title="Applications received"
                     className="stats--compact"
-                    items={RECEIVED.map((status) => ({
-                      label: APPLICATION_STATUSES[status],
-                      value: dashboard.applications?.[status] ?? 0,
-                      ...APPLICATION_TILES[status],
-                    }))}
+                    items={pipelineTiles(dashboard.pipeline, 'employer')}
                   />
                   <section aria-labelledby="trust-title">
                     <h2 id="trust-title">Trust score</h2>

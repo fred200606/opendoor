@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { getAccommodationGroups, getSkills } from '../../api/masterData.js';
-import { getCandidateProfile, updateCandidateProfile, updateNeeds, uploadResume } from '../../api/profile.js';
+import { RESUME_MAX_MB, getCandidateProfile, updateCandidateProfile, updateNeeds, uploadResume } from '../../api/profile.js';
 import AccommodationPicker from '../../components/AccommodationPicker.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
@@ -17,7 +17,6 @@ import { useAsync } from '../../hooks/useAsync.js';
 import { MATCHING_FIELD_IDS, MAX_CANDIDATE_SKILLS, matchingPayload, matchingValues } from '../../lib/matchingProfile.js';
 import { collapseItemErrors, skillKey } from '../../lib/skills.js';
 
-const RESUME_MAX_MB = 5;
 
 const EMPTY_PROFILE = {
   headline: '',

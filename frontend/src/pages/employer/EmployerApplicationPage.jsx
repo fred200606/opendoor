@@ -5,31 +5,33 @@ import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
 import AsyncContent from '../../components/AsyncContent.jsx';
 import { ConfirmDialog } from '../../components/Dialog.jsx';
 import Page from '../../components/Page.jsx';
-import StatusBadge, { BadgeIcon } from '../../components/StatusBadge.jsx';
+import HiringSection from '../../components/HiringSection.jsx';
+import { ApplicationStatusBadge, BadgeIcon } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
 import { EDUCATION_LEVELS } from '../../lib/labels.js';
 
 // Employer steps allowed by the status workflow (pending → reviewed happens on opening), in the
-// order shown (Decision 2026-10-22a). Each asks to confirm: none can be undone.
+// order shown (Decision 2026-10-22b): stages may be skipped forward, never moved back. Each asks
+// to confirm. Hired is reported in HiringSection and needs the applicant's confirmation.
 const DECISIONS = {
   shortlisted: {
-    from: ['reviewed'],
+    from: ['pending', 'reviewed'],
     label: 'Shortlist',
     title: 'Add this applicant to your shortlist?',
     text: 'The applicant is told that you selected them for further consideration. You cannot move them back to “Under review”.',
   },
   contacted: {
-    from: ['reviewed', 'shortlisted'],
+    from: ['pending', 'reviewed', 'shortlisted'],
     label: 'Mark as contacted',
     title: 'Mark this applicant as contacted?',
-    text: 'Use this once you have reached out about the next steps. This is final. After 30 days the applicant can rate whether you provided the promised accommodations.',
+    text: 'Use this once you have reached out about the next steps. You cannot move them back to an earlier stage. When you hire them, use “Report hiring”.',
   },
   rejected: {
-    from: ['reviewed', 'shortlisted'],
+    from: ['reviewed', 'shortlisted', 'contacted'],
     label: 'Not selected',
     title: 'Mark this application as not selected?',
-    text: 'This is final. The applicant is notified.',
+    text: 'This is final, and an open hiring report is cancelled. The applicant is notified.',
     danger: true,
   },
 };
@@ -83,7 +85,7 @@ function ApplicationReview({ application, onChange }) {
       back={{ to: `/employer/jobs/${job.id}/applicants`, label: 'Back to applicants' }}
       subtitle={
         <p className="applicant-line">
-          <StatusBadge kind="application" status={application.status} />
+          <ApplicationStatusBadge application={application} />
           <span>
             Applied for <Link to={`/employer/jobs/${job.id}/applicants`}>{job.title}</Link> on {formatDate(application.created_at)}
             {candidate.headline && ` · ${candidate.headline}`}
@@ -94,6 +96,11 @@ function ApplicationReview({ application, onChange }) {
       <div className="application-page__body">
         {message && <Alert type="success" live="polite" title={message} />}
         <ApiErrorAlert error={error} title="The status was not changed" />
+        {application.job_closed && (
+          <Alert type="info" title="Job closed">
+            <p>This job is closed. The application keeps its stage, and you can still report a hire.</p>
+          </Alert>
+        )}
 
         {application.interview_request && (
           <Alert type="warning" title="Interview accommodation requested">
@@ -156,6 +163,7 @@ function ApplicationReview({ application, onChange }) {
             </dd>
           </dl>
         </section>
+        <HiringSection application={application} party="employer" onChange={onChange} />
       </div>
 
       {available.length > 0 && (
@@ -167,7 +175,7 @@ function ApplicationReview({ application, onChange }) {
               </button>
             ))}
           </div>
-          <p className="field__hint">Each step asks you to confirm and cannot be undone; “Mark as contacted” and “Not selected” are final. The applicant is notified.</p>
+          <p className="field__hint">Each step asks you to confirm and cannot be undone; “Not selected” is final. The applicant is notified.</p>
         </>
       )}
 

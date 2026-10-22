@@ -7,7 +7,7 @@ import { SelectField } from '../../components/form/fields.jsx';
 import Page from '../../components/Page.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import ResultCount from '../../components/ResultCount.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
+import { ApplicationStatusBadge } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate } from '../../lib/format.js';
 import { APPLICATION_STATUSES, toOptions } from '../../lib/labels.js';
@@ -65,7 +65,7 @@ export default function ApplicantsPage() {
                         <td>{application.candidate?.headline}</td>
                         <td>{formatDate(application.created_at)}</td>
                         <td>
-                          <StatusBadge kind="application" status={application.status} />
+                          <ApplicationStatusBadge application={application} />
                         </td>
                       </tr>
                     ))}

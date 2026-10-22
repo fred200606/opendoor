@@ -1,4 +1,3 @@
-import { Check, Clock, Minus, Star } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { getDashboard } from '../../api/account.js';
 import { getApplications } from '../../api/applications.js';
@@ -11,10 +10,11 @@ import GetStarted from '../../components/GetStarted.jsx';
 import IconTile from '../../components/IconTile.jsx';
 import MatchBadge from '../../components/MatchBadge.jsx';
 import Page from '../../components/Page.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
+import { ApplicationStatusBadge } from '../../components/StatusBadge.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { useOnboarding } from '../../hooks/useOnboarding.js';
 import { formatDate, plural } from '../../lib/format.js';
+import { pipelineTiles } from '../../lib/statusTiles.js';
 
 /** GET /candidate/dashboard – shape documented in docs/openapi.yaml (CandidateDashboard). */
 export default function CandidateDashboardPage() {
@@ -92,13 +92,6 @@ function CandidateGetStarted({ dashboard }) {
   );
 }
 
-// The dashboard's application tiles (Decision 2026-10-22a, after opendoor-ipt): the stages grouped.
-const GROUPS = [
-  { label: 'Waiting for a reply', statuses: ['pending', 'reviewed'], icon: Clock, tone: 'sky' },
-  { label: 'Shortlisted', statuses: ['shortlisted'], icon: Star, tone: 'orange' },
-  { label: 'Contacted', statuses: ['contacted'], icon: Check, tone: 'lilac' },
-  { label: 'Closed', statuses: ['rejected', 'withdrawn'], icon: Minus, tone: 'pink' },
-];
 const RECENT = 5;
 
 /**
@@ -136,12 +129,13 @@ function MyApplications({ dashboard }) {
         </div>
       ))}
 
-      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {GROUPS.map((group) => (
-          <li key={group.label} className="flex flex-col items-start gap-1 rounded-lg border-2 border-border p-4">
-            <IconTile icon={group.icon} tone={group.tone} />
-            <span className="mt-1 font-display text-2xl font-bold text-accent">{group.statuses.reduce((sum, status) => sum + (counts[status] ?? 0), 0)}</span>
-            <span className="font-bold">{group.label}</span>
+      {/* The stage tiles from `pipeline` (Decision 2026-10-22b, after opendoor-ipt). */}
+      <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {pipelineTiles(dashboard.pipeline, 'candidate').map((tile) => (
+          <li key={tile.label} className="flex flex-col items-start gap-1 rounded-lg border-2 border-border p-4">
+            <IconTile icon={tile.icon} tone={tile.tone} />
+            <span className="mt-1 font-display text-2xl font-bold text-accent">{tile.value}</span>
+            <span className="font-bold">{tile.label}</span>
           </li>
         ))}
       </ul>
@@ -165,7 +159,7 @@ function MyApplications({ dashboard }) {
                       {application.job_posting?.employer?.company_name} · Applied {formatDate(application.created_at)}
                     </p>
                   </div>
-                  <StatusBadge kind="application" status={application.status} />
+                  <ApplicationStatusBadge application={application} />
                 </li>
               ))}
             </ul>

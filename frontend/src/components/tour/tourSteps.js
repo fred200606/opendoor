@@ -53,12 +53,12 @@ export const TOUR_STEPS = {
     step(
       'updates',
       'Updates and ratings',
-      '“Notifications” tells you when an application changes. 30 days after an employer contacts you, you can rate whether each promised accommodation was provided. Ratings are anonymous.',
+      '“Notifications” tells you when an application changes. 30 days after the start date of a hire you confirmed, you can rate whether each promised accommodation was provided. Ratings are anonymous.',
       '/candidate/applications',
       ['notifications', 'compact-menu'],
       {
         compactText:
-          '“Menu” has “Notifications”, which tells you when an application changes. 30 days after an employer contacts you, you can rate whether each promised accommodation was provided. Ratings are anonymous.',
+          '“Menu” has “Notifications”, which tells you when an application changes. 30 days after the start date of a hire you confirmed, you can rate whether each promised accommodation was provided. Ratings are anonymous.',
       },
     ),
   ],
@@ -88,7 +88,7 @@ export const TOUR_STEPS = {
     step(
       'trust',
       'Earn a trust score',
-      '30 days after you mark an applicant as contacted, they can rate whether each promised accommodation was provided. After 3 ratings, your trust score appears on your jobs.',
+      '30 days after the start date of a confirmed hire, the employee rates whether each promised accommodation was provided. After 3 ratings, your trust score appears on your jobs.',
       '/employer/trust-score',
       'page',
     ),

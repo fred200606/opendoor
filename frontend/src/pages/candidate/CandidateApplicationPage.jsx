@@ -6,25 +6,19 @@ import AsyncContent from '../../components/AsyncContent.jsx';
 import { ConfirmDialog } from '../../components/Dialog.jsx';
 import Page from '../../components/Page.jsx';
 import ReadAloud from '../../components/ReadAloud.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
+import HiringSection from '../../components/HiringSection.jsx';
+import { ApplicationStatusBadge } from '../../components/StatusBadge.jsx';
 import StatusTimeline from '../../components/StatusTimeline.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, todayInManila } from '../../lib/format.js';
 
-// Candidate actions allowed by the status workflow (business-rules.md), in the order shown.
+// Candidate status actions allowed by the workflow (business-rules.md); a hire is reported in HiringSection.
 const ACTIONS = {
-  contacted: {
-    from: ['reviewed', 'shortlisted'],
-    label: 'The employer contacted me',
-    title: 'Confirm that the employer contacted you?',
-    text: 'Use this when the employer reached out about the next steps but OpenDoor does not show it yet. 30 days after today you will be asked to rate whether the promised accommodations were provided.',
-    danger: false,
-  },
   withdrawn: {
-    from: ['pending', 'reviewed', 'shortlisted'],
+    from: ['pending', 'reviewed', 'shortlisted', 'contacted'],
     label: 'Withdraw application',
     title: 'Withdraw this application?',
-    text: 'The employer will no longer consider you for this job. You cannot undo this.',
+    text: 'The employer will no longer consider you for this job, and an open hiring report is cancelled. You cannot undo this.',
     danger: true,
   },
 };
@@ -54,7 +48,7 @@ function ApplicationDetails({ application, onChange }) {
     try {
       const updated = await setApplicationStatus(application.id, pending);
       onChange(updated);
-      setMessage(pending === 'contacted' ? 'Recorded: the employer contacted you.' : 'Your application was withdrawn.');
+      setMessage('Your application was withdrawn.');
       setPending(null);
     } catch (apiError) {
       setError(apiError);
@@ -77,7 +71,7 @@ function ApplicationDetails({ application, onChange }) {
           <Link to={`/candidate/jobs/${job.id}`}>
             View the job{job.employer?.company_name && ` · ${job.employer.company_name}`}
           </Link>{' '}
-          <StatusBadge kind="application" status={application.status} />
+          <ApplicationStatusBadge application={application} />
         </p>
       }
       actions={
@@ -92,6 +86,11 @@ function ApplicationDetails({ application, onChange }) {
       <ApiErrorAlert error={error} title="The status was not changed" />
 
       <div ref={readRef} className="application-page__body">
+        {application.job_closed && (
+          <Alert type="info" title="Job closed">
+            <p>The employer closed this job. Your application stays at its stage, and a hire can still be reported.</p>
+          </Alert>
+        )}
         <StatusTimeline application={application} />
 
         <dl className="card details-list">
@@ -103,13 +102,20 @@ function ApplicationDetails({ application, onChange }) {
               <dd>{formatDate(application.contacted_at)}</dd>
             </>
           )}
+          {application.hire_start_date && (
+            <>
+              <dt>Start date</dt>
+              <dd>{formatDate(application.hire_start_date)}</dd>
+            </>
+          )}
           <dt>Cover note</dt>
           <dd className="prose">{application.cover_note || 'None'}</dd>
           <dt>Interview request</dt>
           <dd className="prose">{application.interview_request || 'None'}</dd>
         </dl>
 
-        {application.status === 'contacted' && <FeedbackPrompt application={application} />}
+        <HiringSection application={application} party="candidate" onChange={onChange} />
+        {application.status === 'hired' && <FeedbackPrompt application={application} />}
       </div>
 
       {available.length > 0 && (
@@ -121,8 +127,8 @@ function ApplicationDetails({ application, onChange }) {
           ))}
         </div>
       )}
-      {['reviewed', 'shortlisted'].includes(application.status) && (
-        <p className="field__hint">30 days after the employer contacts you, you can rate the accommodations.</p>
+      {['pending', 'reviewed', 'shortlisted', 'contacted'].includes(application.status) && (
+        <p className="field__hint">Once you and the employer confirm a hire, you can rate the accommodations 30 days after your start date.</p>
       )}
 
       {action && (
@@ -158,7 +164,7 @@ function FeedbackPrompt({ application }) {
           </Link>
         </>
       ) : (
-        <p>You can rate the accommodations from {formatDate(opensOn)} (30 days after the employer contacted you).</p>
+        <p>You can rate the accommodations from {formatDate(opensOn)} (30 days after your start date).</p>
       )}
     </section>
   );

@@ -25,9 +25,24 @@ export async function getApplication(id) {
   return data;
 }
 
-/** status: 'reviewed' | 'shortlisted' | 'contacted' | 'rejected' | 'withdrawn' */
+/** status: 'reviewed' | 'shortlisted' | 'contacted' | 'rejected' | 'withdrawn' (hired only through a hiring report) */
 export async function setApplicationStatus(id, status) {
   const { data } = await api.patch(`/applications/${id}/status`, { status });
+  return data;
+}
+
+/** Either party reports the hire (Decision 2026-10-22b); startDate 'YYYY-MM-DD'. → the Application */
+export async function reportHiring(applicationId, startDate) {
+  const { data } = await api.post(`/applications/${applicationId}/hiring-reports`, { start_date: startDate });
+  return data;
+}
+
+/** The other party answers: 'confirm' | 'not_yet' | 'incorrect'; only not_yet takes a new startDate. → the Application */
+export async function answerHiringReport(applicationId, reportId, answer, startDate) {
+  const { data } = await api.post(`/applications/${applicationId}/hiring-reports/${reportId}/response`, {
+    answer,
+    start_date: startDate || undefined,
+  });
   return data;
 }
 

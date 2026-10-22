@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
               items={Object.entries(APPLICATION_STATUSES).map(([status, label]) => ({ label, value: dashboard.applications?.[status] ?? 0, ...APPLICATION_TILES[status] }))}
             />
             <StatCards
-              title="Verification after contact"
+              title="Verification after hire"
               className="stats--fit"
               items={[
                 { label: 'Feedback responses', value: dashboard.feedback?.responses ?? 0, to: '/admin/feedback', icon: MessageSquare, tone: 'lilac' },

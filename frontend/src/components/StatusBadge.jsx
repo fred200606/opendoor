@@ -1,11 +1,11 @@
 import { Check, Circle, Minus, TriangleAlert, X } from 'lucide-react';
-import { APPLICATION_STATUSES, POSTING_STATUSES, REGISTRY_STATUSES, REPORT_STATUSES } from '../lib/labels.js';
+import { APPLICATION_STATUSES, JOB_CLOSED, POSTING_STATUSES, REGISTRY_STATUSES, REPORT_STATUSES } from '../lib/labels.js';
 
 // Status = text + icon + colour; colour is never the only signal (Figma "Status badge" tones).
 const KINDS = {
   application: {
-    labels: APPLICATION_STATUSES,
-    tone: { pending: 'neutral', reviewed: 'info', shortlisted: 'info', contacted: 'success', rejected: 'neutral', withdrawn: 'neutral' },
+    labels: { ...APPLICATION_STATUSES, job_closed: JOB_CLOSED },
+    tone: { pending: 'neutral', reviewed: 'info', shortlisted: 'info', contacted: 'info', hired: 'success', rejected: 'neutral', withdrawn: 'neutral', job_closed: 'neutral' },
   },
   posting: {
     labels: POSTING_STATUSES,
@@ -38,6 +38,29 @@ export default function StatusBadge({ kind, status }) {
       <BadgeIcon tone={tone} />
       {config.labels[status] ?? status}
     </span>
+  );
+}
+
+/**
+ * An application's badge: its stage, or "Job closed" while it is in progress and the job closed
+ * (the stage is kept – the timeline shows it), plus "Hiring to confirm" while a hiring report waits
+ * for an answer (Decision 2026-10-22b).
+ */
+export function ApplicationStatusBadge({ application }) {
+  const waiting = (application.hiring_reports ?? []).some((report) => report.status === 'pending');
+  return (
+    <>
+      <StatusBadge kind="application" status={application.job_closed ? 'job_closed' : application.status} />
+      {waiting && (
+        <>
+          {' '}
+          <span className="badge badge--warning">
+            <BadgeIcon tone="warning" />
+            Hiring to confirm
+          </span>
+        </>
+      )}
+    </>
   );
 }
 

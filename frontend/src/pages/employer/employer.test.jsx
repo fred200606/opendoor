@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { accommodationGroups, application, categories, job, skillsList } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
@@ -286,7 +286,7 @@ describe('PostingsPage', () => {
 });
 
 describe('EmployerApplicationPage', () => {
-  test('shows needs against the posting and the interview request; shortlists, then marks as contacted', async () => {
+  test('shows needs against the posting and the interview request; shortlists, then marks as contacted (still open)', async () => {
     const { user, calls } = renderApp('/employer/applications/11', {
       as: 'employer',
       routes: {
@@ -315,7 +315,82 @@ describe('EmployerApplicationPage', () => {
     await user.click(within(screen.getByRole('dialog', { name: 'Mark this applicant as contacted?' })).getByRole('button', { name: 'Mark as contacted' }));
     expect(await screen.findByText('The applicant is marked as contacted.')).toBeInTheDocument();
     expect(calls.filter((call) => call.key === 'PATCH /applications/11/status').map((call) => call.data)).toEqual([{ status: 'shortlisted' }, { status: 'contacted' }]);
-    expect(actions()).toEqual([]);
+    // Contacted is only a stage (Decision 2026-10-22b): the hire is reported separately.
+    expect(actions()).toEqual(['Not selected']);
+    expect(screen.getByRole('button', { name: 'Report hiring' })).toBeInTheDocument();
+  });
+
+  test('a pending application can be shortlisted or marked contacted straight away (skip forward)', async () => {
+    renderApp('/employer/applications/11', { as: 'employer', routes: { 'GET /applications/11': () => [200, { ...application, status: 'pending' }] } });
+
+    expect(await screen.findByRole('button', { name: 'Shortlist' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mark as contacted' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Not selected' })).not.toBeInTheDocument();
+  });
+
+  test('the employer reports hiring; the applicant has to confirm it', async () => {
+    const pending = {
+      id: 7,
+      reported_by: 'employer',
+      start_date: '2026-11-03',
+      status: 'pending',
+      can_respond: false,
+      created_at: '2026-10-22T09:00:00+08:00',
+      responded_at: null,
+      events: [{ actor_role: 'employer', action: 'reported', start_date: '2026-11-03', created_at: '2026-10-22T09:00:00+08:00' }],
+    };
+    const { user, calls } = renderApp('/employer/applications/11', {
+      as: 'employer',
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'contacted' }],
+        'POST /applications/11/hiring-reports': () => [201, { ...application, status: 'contacted', hiring_reports: [pending] }],
+      },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Report hiring' }));
+    const dialog = screen.getByRole('dialog', { name: 'Report hiring' });
+    fireEvent.change(within(dialog).getByLabelText(/Start date/), { target: { value: '2026-11-03' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Send report' }));
+
+    expect(await screen.findByText('Reported. We asked the applicant to confirm it.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'POST /applications/11/hiring-reports').data).toEqual({ start_date: '2026-11-03' });
+    expect(screen.getByText(/Waiting for the applicant to confirm it/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'History' }).nextElementSibling).toHaveTextContent('October 22, 2026 You reported the hire, starting November 3, 2026.');
+  });
+
+  test('the applicant reported being hired: the employer confirms', async () => {
+    const report = {
+      id: 8,
+      reported_by: 'candidate',
+      start_date: '2026-10-26',
+      status: 'pending',
+      can_respond: true,
+      created_at: '2026-10-22T09:00:00+08:00',
+      responded_at: null,
+      events: [{ actor_role: 'candidate', action: 'reported', start_date: '2026-10-26', created_at: '2026-10-22T09:00:00+08:00' }],
+    };
+    const { user, calls } = renderApp('/employer/applications/11', {
+      as: 'employer',
+      routes: {
+        'GET /applications/11': () => [200, { ...application, status: 'shortlisted', hiring_reports: [report] }],
+        'POST /applications/11/hiring-reports/8/response': () => [
+          200,
+          { ...application, status: 'hired', hire_start_date: '2026-10-26', hiring_reports: [{ ...report, status: 'confirmed', can_respond: false }] },
+        ],
+      },
+    });
+
+    expect(await screen.findByText('The applicant reported being hired, starting October 26, 2026. Is that right?')).toBeInTheDocument();
+    expect(screen.getAllByText('Hiring to confirm').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirm the hire?' });
+    expect(dialog).toHaveTextContent('the applicant can rate whether you provided the promised accommodations');
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+
+    expect(await screen.findByText('The hire is confirmed.')).toBeInTheDocument();
+    expect(calls.find((call) => call.key === 'POST /applications/11/hiring-reports/8/response').data).toEqual({ answer: 'confirm' });
+    expect(screen.queryByRole('button', { name: /^(Shortlist|Mark as contacted|Not selected|Report hiring)$/ })).not.toBeInTheDocument();
   });
 
   test('shows skills, experience, a shared disability and the résumé link', async () => {
@@ -392,7 +467,8 @@ describe('Employer trust score and dashboard', () => {
           {
             company: { exists: true, verified: true },
             postings: { draft: 1, open: 2 },
-            applications: { pending: 3, reviewed: 2, shortlisted: 1, contacted: 1 },
+            applications: { pending: 3, reviewed: 2, shortlisted: 1, contacted: 1, hired: 2 },
+            pipeline: { submitted: 3, under_review: 2, shortlisted: 1, contacted: 1, hiring_pending: 1, hired: 2, closed: 4 },
             trust_score: { published: true, score: 79, based_on: 3 },
           },
         ],
@@ -402,7 +478,7 @@ describe('Employer trust score and dashboard', () => {
     expect(await screen.findByRole('link', { name: 'View Open (2)' })).toHaveAttribute('href', '/employer/jobs?status=open');
     expect(screen.queryByText(/waiting for approval/)).not.toBeInTheDocument();
     const applications = screen.getByRole('region', { name: 'Applications received' });
-    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['3Submitted', '2Under review', '1Shortlisted', '1Contacted']);
+    expect(within(applications).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['5New or under review', '1Shortlisted', '1Contacted', '1Hiring confirmations pending', '2Confirmed hires', '4Closed']);
     expect(within(applications).queryByRole('link')).not.toBeInTheDocument();
     const trust = screen.getByRole('region', { name: 'Trust score' });
     expect(within(trust).getByText('79%')).toBeInTheDocument();

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
 import { getJob, reportPosting } from '../../api/jobs.js';
+import { getCandidateProfile, RESUME_MAX_MB, uploadResume } from '../../api/profile.js';
 import { useAuth } from '../../auth/AuthContext.jsx';
 import AccessibilitySnapshot from '../../components/AccessibilitySnapshot.jsx';
 import Alert, { ApiErrorAlert } from '../../components/Alert.jsx';
@@ -10,7 +11,7 @@ import AsyncContent from '../../components/AsyncContent.jsx';
 import Button from '../../components/Button.jsx';
 import Dialog from '../../components/Dialog.jsx';
 import ErrorSummary from '../../components/form/ErrorSummary.jsx';
-import { TextArea } from '../../components/form/fields.jsx';
+import { TextArea, TextField } from '../../components/form/fields.jsx';
 import MatchDetails from '../../components/MatchDetails.jsx';
 import Page from '../../components/Page.jsx';
 import ReadAloud from '../../components/ReadAloud.jsx';
@@ -32,6 +33,7 @@ const APPLY_ERRORS = {
   ALREADY_APPLIED: 'You have already applied to this job. You can follow it in My applications.',
   POSTING_CLOSED: 'This job is no longer accepting applications.',
   PROFILE_INCOMPLETE: 'Complete your profile before you apply: where you live, at least 3 skills, your education and your work preferences. You can do this under Profile and needs.',
+  RESUME_REQUIRED: 'Add your résumé (PDF) to apply. We save it to your profile.',
 };
 
 export default function JobDetailsPage() {
@@ -291,13 +293,40 @@ function JobActions({ job }) {
   );
 }
 
+/**
+ * Applying needs a résumé (Decision 2026-10-22b): without one on the profile the form asks for a
+ * PDF, uploads it to the profile first and then sends the application.
+ */
 function ApplyForm({ job, onApplied }) {
   const form = useApiForm({ coverNote: '', interviewRequest: '' });
+  const profile = useAsync(() => getCandidateProfile().catch((error) => (error.status === 404 ? null : Promise.reject(error))), []);
+  const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState(null);
+  const needsResume = !profile.loading && !profile.data?.resume_url;
   const knownError = form.formError && APPLY_ERRORS[form.formError.code];
+
+  function chooseResume(event) {
+    const chosen = event.target.files?.[0] ?? null;
+    setFileError(null);
+    if (chosen && chosen.type !== 'application/pdf') setFileError('Choose a PDF file.');
+    else if (chosen && chosen.size > RESUME_MAX_MB * 1024 * 1024) setFileError(`The file is larger than ${RESUME_MAX_MB} MB.`);
+    setFile(chosen);
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const result = await form.submit((values) => applyToJob(job.id, values));
+    if (needsResume && (!file || fileError)) {
+      if (!file) setFileError('Choose your résumé (PDF) to apply.');
+      document.getElementById('apply_resume')?.focus();
+      return;
+    }
+    const result = await form.submit(async (values) => {
+      if (needsResume) {
+        const { resume_url: resumeUrl } = await uploadResume(file);
+        profile.setData({ ...profile.data, resume_url: resumeUrl });
+      }
+      return applyToJob(job.id, values);
+    });
     if (result) onApplied(result);
   }
 
@@ -305,7 +334,7 @@ function ApplyForm({ job, onApplied }) {
     <>
       <ErrorSummary
         errors={form.fieldErrors}
-        fields={{ cover_note: { id: 'cover_note' }, interview_request: { id: 'interview_request' } }}
+        fields={{ resume: { id: 'apply_resume' }, cover_note: { id: 'cover_note' }, interview_request: { id: 'interview_request' } }}
       />
       {knownError ? (
         <Alert type="error" live="assertive">
@@ -315,6 +344,19 @@ function ApplyForm({ job, onApplied }) {
         <ApiErrorAlert error={form.formError} title="Your application was not sent" />
       )}
       <form onSubmit={handleSubmit} noValidate>
+        {needsResume && (
+          <TextField
+            label="Your résumé"
+            id="apply_resume"
+            name="resume"
+            type="file"
+            accept="application/pdf"
+            required
+            hint={`Employers need it to consider you. PDF only, up to ${RESUME_MAX_MB} MB. We also save it to your profile.`}
+            error={fileError ?? form.fieldErrors.resume}
+            onChange={chooseResume}
+          />
+        )}
         <TextArea
           label="Cover note"
           voice

@@ -5,7 +5,7 @@ import { plural } from '../lib/format.js';
 const MIN_RESPONSES = 3;
 
 /**
- * Employer trust score: share of advertised accommodations that contacted applicants confirmed as
+ * Employer trust score: share of advertised accommodations that hired employees confirmed as
  * delivered. Published only from 3 responses. `breakdown` (optional) lists each accommodation;
  * `explain` adds the "How trust scores work" link, `link` ({ to, label }) another one (shown only
  * with a published score). `showTitle={false}` when the page already has a "Trust score" heading.
@@ -27,7 +27,7 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
       <Wrapper className={`trust-card ${compact ? 'trust-card--compact' : ''}`} aria-label={label}>
         {withTitle && <Heading className="trust-card__title">{title}</Heading>}
         <p>
-          <strong>Not published yet.</strong> A score appears after {MIN_RESPONSES} contacted applicants have rated this employer
+          <strong>Not published yet.</strong> A score appears after {MIN_RESPONSES} hired employees have rated this employer
           ({basedOn} of {MIN_RESPONSES} so far).
         </p>
         {explainLink}
@@ -55,7 +55,7 @@ export default function TrustScoreCard({ trustScore, breakdown, headingLevel = 2
 }
 
 /**
- * Each accommodation as rated by contacted applicants. Wider than a 320 px screen, the table scrolls in its
+ * Each accommodation as rated by hired employees. Wider than a 320 px screen, the table scrolls in its
  * own box (WCAG 1.4.10 allows it for data tables), which takes keyboard focus because the table has
  * nothing focusable.
  */
@@ -66,7 +66,7 @@ export function TrustBreakdownTable({ breakdown }) {
     <div className="table-wrap" role="region" aria-labelledby={captionId} tabIndex={0}>
       <table className="table trust-card__table">
         <caption id={captionId} className="visually-hidden">
-          Each accommodation, as rated by contacted applicants
+          Each accommodation, as rated by hired employees
         </caption>
         <thead>
           <tr>

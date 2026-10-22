@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { accommodationGroups, categories, job, snapshot } from '../../test/fixtures.js';
 import { apiError, paged, renderApp, validationError } from '../../test/render.jsx';
@@ -111,6 +111,8 @@ describe('JobDetailsPage', () => {
   const routes = {
     'GET /job-postings/42': () => [200, job],
     'GET /insights/job-postings/42': () => [200, snapshot],
+    // Applying needs a résumé on the profile (Decision 2026-10-22b).
+    'GET /candidate/profile': () => [200, { resume_url: 'http://localhost:8080/api/resumes/3?expires=1&signature=abc' }],
   };
 
   const openSnapshot = async (user) => {
@@ -199,6 +201,45 @@ describe('JobDetailsPage', () => {
     expect(screen.getByRole('heading', { name: 'Your application' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View your application' })).toHaveAttribute('href', '/candidate/applications/11');
     expect(calls.find((call) => call.key === 'POST /job-postings/42/applications').data).toEqual({ interview_request: 'Captions, please.' });
+  });
+
+  test('without a résumé the form asks for a PDF, uploads it to the profile, then applies', async () => {
+    const { user, calls } = renderApp('/candidate/jobs/42', {
+      as: 'candidate',
+      routes: {
+        ...routes,
+        'GET /candidate/profile': () => [200, { resume_url: null }],
+        'POST /candidate/resume': () => [200, { resume_url: 'http://localhost:8080/api/resumes/3?expires=1&signature=abc' }],
+        'POST /job-postings/42/applications': () => [201, { id: 11, job_posting_id: 42, status: 'pending' }],
+      },
+    });
+
+    const field = await screen.findByLabelText(/Your résumé/);
+    await user.click(screen.getByRole('button', { name: 'Send application' }));
+    expect(await screen.findByText('Choose your résumé (PDF) to apply.')).toBeInTheDocument();
+    expect(field).toHaveFocus();
+
+    fireEvent.change(field, { target: { files: [new File(['notes'], 'notes.txt', { type: 'text/plain' })] } });
+    expect(await screen.findByText('Choose a PDF file.')).toBeInTheDocument();
+
+    fireEvent.change(field, { target: { files: [new File(['%PDF-1.4'], 'cv.pdf', { type: 'application/pdf' })] } });
+    await user.click(screen.getByRole('button', { name: 'Send application' }));
+
+    expect(await screen.findByText('Application sent')).toBeInTheDocument();
+    const keys = calls.map((call) => call.key);
+    expect(keys.indexOf('POST /candidate/resume')).toBeGreaterThan(-1);
+    expect(keys.indexOf('POST /candidate/resume')).toBeLessThan(keys.indexOf('POST /job-postings/42/applications'));
+  });
+
+  test('RESUME_REQUIRED from the server is explained', async () => {
+    const { user } = renderApp('/candidate/jobs/42', {
+      as: 'candidate',
+      routes: { ...routes, 'POST /job-postings/42/applications': () => apiError(422, 'RESUME_REQUIRED') },
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'Send application' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Add your résumé (PDF) to apply. We save it to your profile.');
   });
 
   test('a second application gets the ALREADY_APPLIED explanation', async () => {
