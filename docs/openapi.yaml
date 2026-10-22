@@ -2431,6 +2431,53 @@ components:
         applications: { $ref: '#/components/schemas/ApplicationCounts' }
         pipeline: { $ref: '#/components/schemas/ApplicationPipeline' }
         trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
+        attention:
+          type: object
+          description: What waits for the employer (Decision 2026-10-22f)
+          properties:
+            new_applications:
+              type: array
+              description: Per job, the applications not opened yet (pending) while the job is still open; most first
+              items:
+                type: object
+                properties:
+                  job_posting_id: { type: integer }
+                  title: { type: string }
+                  count: { type: integer }
+            hiring_reports:
+              type: array
+              description: Pending hiring reports by candidates that the employer has to answer, oldest first
+              items:
+                type: object
+                properties:
+                  application_id: { type: integer }
+                  hiring_report_id: { type: integer }
+                  job_title: { type: string }
+                  candidate_name: { type: [string, 'null'] }
+                  start_date: { type: string, format: date }
+        recent_activity:
+          type: array
+          description: The latest 8 events on the employer's applications, newest first. Candidate names only – never needs or disability.
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [application_received, hiring_reported, hiring_confirmed, hiring_not_yet, hiring_disputed, hiring_cancelled]
+              by: { $ref: '#/components/schemas/HiringParty' }
+              application_id: { type: integer }
+              job_title: { type: string }
+              candidate_name: { type: [string, 'null'] }
+              at: { type: string, format: date-time }
+        weeks:
+          type: array
+          description: The last 12 weeks in Asia/Manila (Monday start), oldest first – applications received and hires confirmed
+          items:
+            type: object
+            properties:
+              week_start: { type: string, format: date }
+              applications: { type: integer }
+              hires: { type: integer }
     AdminDashboard:
       type: object
       properties:

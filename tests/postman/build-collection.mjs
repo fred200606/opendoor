@@ -1144,6 +1144,29 @@ pm.test('newest notice is application_received for this application', () => {
 });
 pm.test('unread_count counts it', () => pm.expect(body.meta.unread_count).to.be.at.least(1));`,
     }),
+    request('Employer dashboard: the new application needs attention and is the latest activity', {
+      path: '/employer/dashboard',
+      auth: bearer('employerToken'),
+      tests: `
+${status(200)}
+const d = pm.response.json();
+const id = pm.collectionVariables.get('applicationId');
+pm.test('attention, recent activity and 12 weeks (Decision 2026-10-22f)', () => {
+  pm.expect(d).to.include.keys('company', 'postings', 'pipeline', 'trust_score', 'attention', 'recent_activity', 'weeks');
+  pm.expect(d.weeks).to.have.lengthOf(12);
+  pm.expect(d.weeks[11].applications).to.be.at.least(1);
+});
+pm.test('this job has 1 new application', () => {
+  const job = d.attention.new_applications.find((item) => item.job_posting_id === pm.collectionVariables.get('appPostingId'));
+  pm.expect(job.count).to.eql(1);
+});
+pm.test('newest activity: this application received, by name only', () => {
+  const a = d.recent_activity[0];
+  pm.expect(a.type).to.eql('application_received');
+  pm.expect(a.application_id).to.eql(id);
+  pm.expect(a).to.have.keys('type', 'by', 'application_id', 'job_title', 'candidate_name', 'at');
+});`,
+    }),
     request('T05 Applying again → 409 ALREADY_APPLIED', {
       method: 'POST',
       path: '/job-postings/{{appPostingId}}/applications',
