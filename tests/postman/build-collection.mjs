@@ -499,6 +499,13 @@ const postingBody = (overrides = {}) => ({
   education_level: 'senior_high',
   experience_years: 1,
   qualifications: null,
+  responsibilities: 'Encode records\nCheck records',
+  salary_min: 18000,
+  salary_max: 22000,
+  salary_period: 'month',
+  benefits: 'HMO from the first month',
+  schedule: 'Monday to Friday, 9:00 AM to 5:00 PM',
+  application_requirements: null,
   category_id: '{{postingCategoryId}}',
   address: '25 Scout Tobias St.',
   location_psgc: null,
@@ -527,7 +534,7 @@ pm.request.body.raw = JSON.stringify(body);`;
 const postingShape = `
 pm.test('matches the JobPosting shape', () => {
   const p = pm.response.json();
-  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score');
+  pm.expect(p).to.include.keys('id', 'title', 'employer', 'category', 'location', 'status', 'closes_at', 'accommodations', 'match', 'trust_score', 'salary', 'responsibilities');
   pm.expect(p.employer).to.have.keys('id', 'company_name', 'verified');
   pm.expect(p.trust_score).to.have.keys('published', 'score', 'based_on');
 });`;
@@ -592,6 +599,11 @@ const p = pm.response.json();
 pm.test('a verified company publishes at once: status open', () => pm.expect(p.status).to.eql('open'));
 pm.test('skills stored under their list names', () => pm.expect(p.skills).to.eql(['Data entry', 'Microsoft Excel']));
 pm.test('qualifications stored', () => { pm.expect(p.education_level).to.eql('senior_high'); pm.expect(p.experience_years).to.eql(1); });
+pm.test('job details stored: salary range per month, responsibilities, schedule', () => {
+  pm.expect(p.salary).to.eql({ min: 18000, max: 22000, period: 'month', currency: 'PHP' });
+  pm.expect(p.responsibilities).to.eql('Encode records\\nCheck records');
+  pm.expect(p.schedule).to.eql('Monday to Friday, 9:00 AM to 5:00 PM');
+});
 pm.test('3 accommodations stored with notes', () => {
   pm.expect(p.accommodations).to.have.lengthOf(3);
   pm.expect(p.accommodations.map((a) => a.note)).to.include('Ramp at the main entrance');

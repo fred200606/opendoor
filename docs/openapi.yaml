@@ -1792,6 +1792,10 @@ components:
     RegistryStatus: { type: string, enum: [ACTIVE, EXPIRED, CANCELLED, NOT_FOUND, ERROR] }
     AccommodationGroup: { type: string, enum: [physical_access, communication, work_arrangement, assistive_technology, support] }
     EmploymentType: { type: string, enum: [full_time, part_time, contract, internship] }
+    SalaryPeriod:
+      type: string
+      enum: [hour, day, month, year]
+      description: What a posting's salary is paid per (Decision 2026-10-22e)
     WorkSetup: { type: string, enum: [onsite, hybrid, remote] }
     InterviewFormat: { type: string, enum: [online, onsite] }
     JobPostingStatus:
@@ -2075,7 +2079,8 @@ components:
       required: [title, description, category_id, address, employment_type, work_setup, interview_format, closes_at, accommodations]
       properties:
         title: { type: string, maxLength: 255 }
-        description: { type: string }
+        description: { type: string, description: 'Job overview; job cards show its first two lines as the summary' }
+        responsibilities: { type: [string, 'null'], maxLength: 4000, description: 'Main responsibilities, one per line (Decision 2026-10-22e)' }
         skills:
           type: array
           maxItems: 20
@@ -2088,6 +2093,16 @@ components:
             - type: 'null'
         experience_years: { type: [integer, 'null'], minimum: 0, maximum: 40, description: Minimum years of experience }
         qualifications: { type: [string, 'null'], maxLength: 2000, description: 'Other qualifications in words (licences, certificates)' }
+        salary_min: { type: [integer, 'null'], minimum: 1, maximum: 10000000, description: 'Lowest salary in whole Philippine pesos; required with salary_max. Alone it is a single amount. Null = not disclosed' }
+        salary_max: { type: [integer, 'null'], maximum: 10000000, description: 'Highest salary in whole pesos, at least salary_min (422 errors.salary_max otherwise)' }
+        salary_period:
+          description: What the salary is paid per; required with salary_min. Ignored (stored as null) without salary_min
+          oneOf:
+            - $ref: '#/components/schemas/SalaryPeriod'
+            - type: 'null'
+        benefits: { type: [string, 'null'], maxLength: 2000, description: 'Benefits, one per line' }
+        schedule: { type: [string, 'null'], maxLength: 255, description: 'Working days and hours in words' }
+        application_requirements: { type: [string, 'null'], maxLength: 2000, description: 'What the employer asks for beyond the résumé and a complete profile (applying always needs both)' }
         category_id: { type: integer }
         address: { type: string }
         location_psgc: { type: [string, 'null'] }
@@ -2177,10 +2192,25 @@ components:
         id: { type: integer }
         title: { type: string }
         description: { type: string }
+        responsibilities: { type: [string, 'null'], description: One per line }
         skills: { type: array, items: { type: string } }
         education_level: { oneOf: [{ $ref: '#/components/schemas/EducationLevel' }, { type: 'null' }] }
         experience_years: { type: [integer, 'null'] }
         qualifications: { type: [string, 'null'] }
+        salary:
+          description: Null when the employer did not disclose a salary (cards show "Salary not disclosed"). `max` null = a single amount
+          oneOf:
+            - type: object
+              required: [min, max, period, currency]
+              properties:
+                min: { type: integer }
+                max: { type: [integer, 'null'] }
+                period: { $ref: '#/components/schemas/SalaryPeriod' }
+                currency: { type: string, enum: [PHP] }
+            - type: 'null'
+        benefits: { type: [string, 'null'], description: One per line }
+        schedule: { type: [string, 'null'] }
+        application_requirements: { type: [string, 'null'] }
         employer: { $ref: '#/components/schemas/EmployerSummary' }
         category: { $ref: '#/components/schemas/Category' }
         address: { type: string }

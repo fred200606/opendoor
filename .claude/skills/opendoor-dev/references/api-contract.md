@@ -27,7 +27,7 @@ When an endpoint here and `docs/openapi.yaml` disagree, the OpenAPI file wins (i
 | M3 Company | GET | /employers/{id}/logo | P | logo image (PNG/JPG/WebP ≤ 2 MB); `logo_url` built from `PUBLIC_API_URL` |
 | M3 Company | PATCH | /admin/employers/{id}/verify | A | `{action:'check'|'approve'|'reject', reason?}` → `{registry:{status,registered_name,name_match,checked_at}, verified_at}` |
 | M4 Postings | GET | /employer/job-postings | E | own postings (`?status=`) with `applicants_count` |
-| M4 Postings | POST | /job-postings | E | `{title,description,skills[],education_level?,experience_years?,qualifications?,category_id,address,location_psgc,employment_type,work_setup,interview_format,closes_at,accommodations:[{id,note?}],submit:bool}` → 201; `submit:true` publishes at once (open) – verified company only (else 422 `errors.submit`), ≥1 skill (422 `errors.skills`) |
+| M4 Postings | POST | /job-postings | E | `{title,description,responsibilities?,skills[],education_level?,experience_years?,qualifications?,salary_min?,salary_max?,salary_period?,benefits?,schedule?,application_requirements?,category_id,address,location_psgc,employment_type,work_setup,interview_format,closes_at,accommodations:[{id,note?}],submit:bool}` → 201; `submit:true` publishes at once (open) – verified company only (else 422 `errors.submit`), ≥1 skill (422 `errors.skills`) |
 | M4 Postings | PUT, DELETE | /job-postings/{id} | E owner | update / soft-delete |
 | M4 Postings | PATCH | /job-postings/{id}/status | E owner | `{status:'open'|'closed'}` |
 | M4 Postings | DELETE | /admin/job-postings/{id} | A | `{reason}` required → 204; any status; soft delete (applications kept); employer gets `posting_review` notice with `removed:true`; already removed → 404 |
@@ -76,6 +76,8 @@ Posting in lists/details:
   "closes_at": "2026-11-30",
   "accommodations": [ { "id": 1, "name": "Wheelchair-accessible entrance", "group": "physical_access", "note": "Ramp at main entrance" } ],
   "skills": [ "Data entry", "Microsoft Excel" ], "education_level": "senior_high", "experience_years": 1, "qualifications": null,
+  "responsibilities": "Encode customer records\nCheck records for errors", "salary": { "min": 18000, "max": 22000, "period": "month", "currency": "PHP" },
+  "benefits": "HMO from the first month", "schedule": "Monday to Friday, 9:00 AM to 5:00 PM", "application_requirements": null,
   "match": { "score": 74, "label": "good", "met": 4, "total": 5, "missing": [ { "id": 6, "name": "Sign language interpreter" } ],
              "skills": { "matched": [ "Data entry" ], "missing": [ "Microsoft Excel" ] },
              "location": { "tier": "same_city", "distance_km": 2.4 },
@@ -83,7 +85,7 @@ Posting in lists/details:
              "preferences": { "work_setup": true, "employment_type": true } },
   "trust_score": { "published": true, "score": 86, "based_on": 5 } }
 ```
-`match` for logged-in candidates with a profile (on every posting, also with `match=0`; MatchingService, see business-rules.md); `match=1` from anyone else is ignored (`match_mode:false`). `sort=best` = match score (match mode) then newest; `newest`; `closing` = `closes_at` asc; ties by id desc. `accommodations[]` = posting must offer all. Page links (`meta.path`, `links`) point at the gateway. `trust_score.score` is `null` and `published:false` below 3 responses. List `meta` includes `match_mode: true|false`.
+Job details (Decision 2026-10-22e) are optional: `salary` is null when not disclosed (`max` null = a single amount; whole pesos; `salary_min` needs `salary_period`, `salary_max` ≥ `salary_min`), `responsibilities`/`benefits` are one item per line. `match` for logged-in candidates with a profile (on every posting, also with `match=0`; MatchingService, see business-rules.md); `match=1` from anyone else is ignored (`match_mode:false`). `sort=best` = match score (match mode) then newest; `newest`; `closing` = `closes_at` asc; ties by id desc. `accommodations[]` = posting must offer all. Page links (`meta.path`, `links`) point at the gateway. `trust_score.score` is `null` and `published:false` below 3 responses. List `meta` includes `match_mode: true|false`.
 
 Internal summary (Core → Insights):
 ```json
