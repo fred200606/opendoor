@@ -1118,8 +1118,10 @@ paths:
   /admin/dashboard:
     get:
       tags: [M8 Dashboards]
-      summary: Admin analytics (users, postings, verification queue, reports)
-      description: Postings deleted by their employer, and applications to them, are left out. `verification_queue` uses the same rule as `GET /admin/employers?status=pending`.
+      summary: Admin analytics (users, postings, verification queue, reports, charts)
+      description: >-
+        Postings deleted by their employer, and applications to them, are left out. `verification_queue` uses the same rule as
+        `GET /admin/employers?status=pending`. `analytics` feeds the dashboard charts (Decision 2026-10-22d): aggregates only.
       responses:
         '200':
           description: Summary
@@ -2419,6 +2421,51 @@ components:
             responses: { type: integer }
             hidden: { type: integer }
         published_trust_scores: { type: integer, description: Employers with at least 3 responses }
+        analytics: { $ref: '#/components/schemas/AdminAnalytics' }
+    AdminAnalytics:
+      type: object
+      properties:
+        weeks:
+          type: array
+          description: The last 12 weeks in Asia/Manila (Monday start), oldest first; the current week is last
+          items:
+            type: object
+            properties:
+              week_start: { type: string, format: date }
+              applications: { type: integer, description: Applications made that week }
+              hires: { type: integer, description: Hires confirmed that week (hired_at) }
+              new_accounts: { type: integer, description: Job seeker and employer accounts created that week }
+        funnel:
+          type: object
+          description: Applications that reached each stage; a stage the employer skipped counts as passed, so the numbers never grow stage to stage
+          properties:
+            submitted: { type: integer }
+            reviewed: { type: integer }
+            shortlisted: { type: integer }
+            contacted: { type: integer }
+            hired: { type: integer }
+        needs:
+          type: object
+          description: The most needed accommodations (up to 6) against how many open (visible) jobs offer them
+          properties:
+            job_seekers: { type: integer, description: All candidate profiles (the base for a share) }
+            open_jobs: { type: integer, description: All visible postings (the base for a share) }
+            top:
+              type: array
+              items:
+                type: object
+                properties:
+                  accommodation_id: { type: integer }
+                  name: { type: string }
+                  job_seekers: { type: integer, description: Job seekers who need it }
+                  open_jobs: { type: integer, description: Open jobs that offer it }
+        delivery:
+          type: object
+          description: Rated items of the non-hidden feedback responses (the items the trust scores use)
+          properties:
+            delivered: { type: integer }
+            partial: { type: integer }
+            not_delivered: { type: integer }
 
     # ---------- insights
     NearbyPlace:

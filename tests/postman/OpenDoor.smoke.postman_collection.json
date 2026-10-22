@@ -3640,6 +3640,69 @@
       "description": "M3 verification through the legacy SOAP Business Registry (the registry service must be running). T14 checks the seeded ACTIVE SEC number of employer2@ (Kalinga Foods); the admin then approves and removes the verification, and employer2@ re-saves the company so it is back in the queue (re-runnable). T15 uses a throwaway employer with a random number (NOT_FOUND). A wrong SOAP password (502 REGISTRY_AUTH_FAILED) cannot be caused from Postman – it is covered by the Core PHPUnit tests (tests/Feature/Registry).",
       "item": [
         {
+          "name": "Admin dashboard with the chart analytics",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('counts and analytics (Decision 2026-10-22d)', () => {",
+                  "  pm.expect(d).to.include.keys('users', 'postings', 'applications', 'verification_queue', 'open_reports', 'feedback', 'published_trust_scores', 'analytics');",
+                  "  pm.expect(d.analytics).to.have.keys('weeks', 'funnel', 'needs', 'delivery');",
+                  "});",
+                  "pm.test('12 weeks, oldest first, each starting on a Monday', () => {",
+                  "  pm.expect(d.analytics.weeks).to.have.lengthOf(12);",
+                  "  d.analytics.weeks.forEach((w) => pm.expect(new Date(w.week_start + 'T00:00:00Z').getUTCDay()).to.eql(1));",
+                  "  pm.expect(d.analytics.weeks[0].week_start < d.analytics.weeks[11].week_start).to.eql(true);",
+                  "});",
+                  "pm.test('the funnel never grows from one stage to the next', () => {",
+                  "  const f = d.analytics.funnel;",
+                  "  const steps = [f.submitted, f.reviewed, f.shortlisted, f.contacted, f.hired];",
+                  "  steps.slice(1).forEach((n, i) => pm.expect(n).to.be.at.most(steps[i]));",
+                  "});",
+                  "pm.test('needs: at most 6, never more than all job seekers', () => {",
+                  "  pm.expect(d.analytics.needs.top.length).to.be.at.most(6);",
+                  "  d.analytics.needs.top.forEach((n) => { pm.expect(n.job_seekers).to.be.at.most(d.analytics.needs.job_seekers); pm.expect(n.open_jobs).to.be.at.most(d.analytics.needs.open_jobs); });",
+                  "});",
+                  "pm.test('delivery has the three ratings', () => pm.expect(d.analytics.delivery).to.have.keys('delivered', 'partial', 'not_delivered'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Admin finds Kalinga Foods in the verification queue",
           "request": {
             "method": "GET",

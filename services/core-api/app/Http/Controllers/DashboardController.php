@@ -12,6 +12,7 @@ use App\Models\Feedback;
 use App\Models\JobPosting;
 use App\Models\Report;
 use App\Models\User;
+use App\Services\AdminAnalytics;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -96,7 +97,7 @@ class DashboardController extends Controller
     }
 
     /** Platform analytics; postings deleted by their employer (and their applications) are left out. */
-    public function admin(): JsonResponse
+    public function admin(AdminAnalytics $analytics): JsonResponse
     {
         $users = User::query()->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
@@ -121,6 +122,8 @@ class DashboardController extends Controller
                 ->where('feedback_count', '>=', Employer::TRUST_SCORE_MIN_RESPONSES)
                 ->whereNotNull('trust_score')
                 ->count(),
+            // The dashboard charts (Decision 2026-10-22d).
+            'analytics' => $analytics->summary(),
         ]);
     }
 

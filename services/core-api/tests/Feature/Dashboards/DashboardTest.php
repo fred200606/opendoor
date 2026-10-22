@@ -14,6 +14,7 @@ use App\Models\JobPosting;
 use App\Models\Report;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -183,9 +184,11 @@ class DashboardTest extends TestCase
         Report::factory()->create([...$report, 'status' => ReportStatus::Dismissed, 'resolved_by' => $admin->id, 'resolved_at' => now()]);
 
         Sanctum::actingAs($admin);
-        $this->getJson('/api/admin/dashboard')
-            ->assertOk()
-            ->assertExactJson([
+        $response = $this->getJson('/api/admin/dashboard')->assertOk();
+        // The charts' `analytics` are covered by AdminAnalyticsTest.
+        $this->assertEqualsCanonicalizing(['delivery', 'funnel', 'needs', 'weeks'], array_keys($response->json('analytics')));
+        $this->assertEquals(
+            [
                 'users' => ['candidate' => 3, 'employer' => 6, 'admin' => 1, 'suspended' => 1],
                 'postings' => ['draft' => 1, 'open' => 1, 'closed' => 1],
                 'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 0, 'hired' => 2, 'rejected' => 0, 'withdrawn' => 0],
@@ -193,7 +196,9 @@ class DashboardTest extends TestCase
                 'open_reports' => 2,
                 'feedback' => ['responses' => 2, 'hidden' => 1],
                 'published_trust_scores' => 1,
-            ]);
+            ],
+            Arr::except($response->json(), 'analytics'),
+        );
     }
 
     public function test_each_dashboard_belongs_to_its_role(): void
