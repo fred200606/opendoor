@@ -188,7 +188,7 @@ function PostingsTable({ status, label }) {
 
   return (
     // Wider than a phone, the table scrolls in its own box, which takes focus (WCAG 1.4.10).
-    <div className="overflow-x-auto" role="region" aria-label={`${label} job postings`} tabIndex={0}>
+    <div className="relative overflow-x-auto" role="region" aria-label={`${label} job postings`} tabIndex={0}>
       <table className="w-full min-w-[30rem] border-collapse text-left">
         <thead className="bg-subtle text-sm">
           <tr>
