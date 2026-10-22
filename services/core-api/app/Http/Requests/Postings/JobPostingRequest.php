@@ -5,6 +5,7 @@ namespace App\Http\Requests\Postings;
 use App\Enums\EducationLevel;
 use App\Enums\EmploymentType;
 use App\Enums\InterviewFormat;
+use App\Enums\SalaryPeriod;
 use App\Enums\WorkSetup;
 use App\Models\JobPosting;
 use App\Rules\UsableAccommodation;
@@ -17,7 +18,7 @@ class JobPostingRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        foreach (['title', 'address', 'location_label', 'qualifications'] as $field) {
+        foreach (['title', 'address', 'location_label', 'qualifications', 'responsibilities', 'benefits', 'schedule', 'application_requirements'] as $field) {
             if (is_string($this->input($field))) {
                 $this->merge([$field => trim($this->input($field))]);
             }
@@ -46,6 +47,15 @@ class JobPostingRequest extends FormRequest
             'education_level' => ['nullable', Rule::enum(EducationLevel::class)],
             'experience_years' => ['nullable', 'integer', 'min:0', 'max:40'],
             'qualifications' => ['nullable', 'string', 'max:2000'],
+            // Optional job details (Decision 2026-10-22e). A salary is whole pesos per period;
+            // a single amount is a minimum without a maximum.
+            'responsibilities' => ['nullable', 'string', 'max:4000'],
+            'salary_min' => ['nullable', 'required_with:salary_max', 'integer', 'min:1', 'max:10000000'],
+            'salary_max' => ['nullable', 'integer', 'max:10000000', 'gte:salary_min'],
+            'salary_period' => ['nullable', 'required_with:salary_min', Rule::enum(SalaryPeriod::class)],
+            'benefits' => ['nullable', 'string', 'max:2000'],
+            'schedule' => ['nullable', 'string', 'max:255'],
+            'application_requirements' => ['nullable', 'string', 'max:2000'],
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')],
             'address' => ['required', 'string', 'max:255'],
             'location_psgc' => ['nullable', 'string', 'regex:/^\d{9,10}$/'],
@@ -79,6 +89,9 @@ class JobPostingRequest extends FormRequest
             'location_psgc.regex' => 'Choose the city or municipality from the list.',
             'skills.required' => 'List at least one skill this job needs.',
             'experience_years.max' => 'Ask for at most 40 years of experience.',
+            'salary_min.required_with' => 'Enter the lowest salary too, or leave both amounts empty.',
+            'salary_max.gte' => 'The highest salary cannot be lower than the lowest.',
+            'salary_period.required_with' => 'Choose what the salary is paid per.',
         ];
     }
 
@@ -92,6 +105,10 @@ class JobPostingRequest extends FormRequest
         $data = $this->safe()->except(['accommodations', 'submit']);
         if (isset($data['skills'])) {
             $data['skills'] = $catalog->normalize($data['skills']);
+        }
+        // A period without an amount means nothing: no salary disclosed (Decision 2026-10-22e).
+        if (array_key_exists('salary_min', $data) && $data['salary_min'] === null) {
+            $data['salary_period'] = null;
         }
 
         return $data;

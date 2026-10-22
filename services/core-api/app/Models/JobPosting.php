@@ -6,6 +6,7 @@ use App\Enums\EducationLevel;
 use App\Enums\EmploymentType;
 use App\Enums\InterviewFormat;
 use App\Enums\JobPostingStatus;
+use App\Enums\SalaryPeriod;
 use App\Enums\WorkSetup;
 use App\Models\Concerns\HasLocationPoint;
 use Database\Factories\JobPostingFactory;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * submit flag and the open/close endpoint. is_approved is true once a verified employer published
  * the posting (kept for older rows; there is no admin approval step any more).
  */
-#[Fillable(['category_id', 'title', 'description', 'skills', 'education_level', 'experience_years', 'qualifications', 'address', 'location_psgc', 'location_label', 'employment_type', 'work_setup', 'interview_format', 'closes_at'])]
+#[Fillable(['category_id', 'title', 'description', 'responsibilities', 'skills', 'education_level', 'experience_years', 'qualifications', 'salary_min', 'salary_max', 'salary_period', 'benefits', 'schedule', 'address', 'location_psgc', 'location_label', 'employment_type', 'work_setup', 'interview_format', 'application_requirements', 'closes_at'])]
 class JobPosting extends Model
 {
     /** @use HasFactory<JobPostingFactory> */
@@ -51,6 +52,9 @@ class JobPosting extends Model
             'skills' => 'array',
             'education_level' => EducationLevel::class,
             'experience_years' => 'integer',
+            'salary_min' => 'integer',
+            'salary_max' => 'integer',
+            'salary_period' => SalaryPeriod::class,
             'location_lat' => 'float',
             'location_lon' => 'float',
             'location_checked_at' => 'datetime',

@@ -139,6 +139,63 @@ class JobPostingTest extends TestCase
             ->assertJsonPath('qualifications', 'TESDA NC II in bookkeeping is a plus.');
     }
 
+    public function test_job_details_salary_benefits_and_schedule_are_saved_and_shown(): void
+    {
+        $this->actingAsOwner();
+
+        $id = $this->postJson('/api/job-postings', $this->payload([
+            'responsibilities' => '  Encode records
+Check records  ',
+            'salary_min' => 18000,
+            'salary_max' => 22000,
+            'salary_period' => 'month',
+            'benefits' => 'HMO from the first month',
+            'schedule' => ' Monday to Friday, 9:00 AM to 5:00 PM ',
+            'application_requirements' => 'A portfolio link.',
+        ]))
+            ->assertCreated()
+            ->assertJsonPath('responsibilities', 'Encode records
+Check records')
+            ->assertJsonPath('salary', ['min' => 18000, 'max' => 22000, 'period' => 'month', 'currency' => 'PHP'])
+            ->assertJsonPath('benefits', 'HMO from the first month')
+            ->assertJsonPath('schedule', 'Monday to Friday, 9:00 AM to 5:00 PM')
+            ->assertJsonPath('application_requirements', 'A portfolio link.')
+            ->json('id');
+
+        // One amount is a minimum; removing the amounts removes the salary (and its period).
+        $this->putJson("/api/job-postings/{$id}", $this->payload(['salary_min' => 645, 'salary_max' => null, 'salary_period' => 'day']))
+            ->assertOk()
+            ->assertJsonPath('salary', ['min' => 645, 'max' => null, 'period' => 'day', 'currency' => 'PHP']);
+        $this->putJson("/api/job-postings/{$id}", $this->payload(['salary_min' => null, 'salary_max' => null, 'salary_period' => 'day']))
+            ->assertOk()
+            ->assertJsonPath('salary', null);
+        $this->assertNull(JobPosting::find($id)->salary_period);
+
+        // Optional: a posting without any of them is fine (the card says "Salary not disclosed").
+        $this->postJson('/api/job-postings', $this->payload())
+            ->assertCreated()
+            ->assertJsonPath('salary', null)
+            ->assertJsonPath('responsibilities', null);
+    }
+
+    public function test_a_salary_needs_a_lowest_amount_a_period_and_an_ordered_range(): void
+    {
+        $this->actingAsOwner();
+
+        $this->postJson('/api/job-postings', $this->payload(['salary_min' => 30000, 'salary_max' => 20000]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'salary_max' => 'The highest salary cannot be lower than the lowest.',
+                'salary_period' => 'Choose what the salary is paid per.',
+            ]);
+        $this->postJson('/api/job-postings', $this->payload(['salary_max' => 20000, 'salary_period' => 'week']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['salary_min' => 'Enter the lowest salary too, or leave both amounts empty.', 'salary_period']);
+        $this->postJson('/api/job-postings', $this->payload(['salary_min' => 0, 'salary_period' => 'month', 'schedule' => str_repeat('x', 256), 'responsibilities' => str_repeat('x', 4001)]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['salary_min', 'schedule', 'responsibilities']);
+    }
+
     public function test_a_published_job_needs_a_skill_but_a_draft_does_not(): void
     {
         $this->actingAsOwner();

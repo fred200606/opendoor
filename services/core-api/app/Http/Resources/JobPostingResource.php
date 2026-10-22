@@ -27,10 +27,20 @@ class JobPostingResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
+            'responsibilities' => $this->responsibilities,
             'skills' => $this->skills ?? [],
             'education_level' => $this->education_level,
             'experience_years' => $this->experience_years,
             'qualifications' => $this->qualifications,
+            // Whole pesos; null when the employer did not disclose it (Decision 2026-10-22e).
+            'salary' => $this->salary_min === null ? null : [
+                'min' => $this->salary_min,
+                'max' => $this->salary_max,
+                'period' => $this->salary_period,
+                'currency' => 'PHP',
+            ],
+            'benefits' => $this->benefits,
+            'schedule' => $this->schedule,
             'employer' => [
                 'id' => $this->employer->id,
                 'company_name' => $this->employer->company_name,
@@ -42,6 +52,7 @@ class JobPostingResource extends JsonResource
             'employment_type' => $this->employment_type,
             'work_setup' => $this->work_setup,
             'interview_format' => $this->interview_format,
+            'application_requirements' => $this->application_requirements,
             'status' => $this->status,
             'closes_at' => $this->closes_at->toDateString(),
             'accommodations' => AccommodationResource::collection($this->whenLoaded('accommodations')),
