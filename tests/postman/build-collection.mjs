@@ -853,6 +853,14 @@ pm.collectionVariables.set('needB', ids[1]);`,
 ${status(200)}
 pm.test('both needs saved', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.have.members([Number(pm.collectionVariables.get('needA')), Number(pm.collectionVariables.get('needB'))]));`,
     }),
+    request('A complete profile without a résumé cannot apply → 422 RESUME_REQUIRED', {
+      method: 'POST',
+      path: '/job-postings/{{anyPostingId}}/applications',
+      auth: bearer('newCandidateLoginToken'),
+      body: {},
+      tests: `${status(422)}\n${envelope('RESUME_REQUIRED')}`,
+      description: 'Decision 2026-10-22b: applying needs a résumé on file (the Apply form offers the upload).',
+    }),
     request('Résumé that is not a PDF → 422 errors.resume', {
       method: 'POST',
       path: '/candidate/resume',
@@ -1065,12 +1073,16 @@ pm.test('one saved posting, marked saved, with match', () => {
 const applicationShape = `
 pm.test('matches the Application shape', () => {
   const a = pm.response.json();
-  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'shortlisted_at', 'contacted_at', 'contact_confirmed_by', 'feedback_opens_on', 'created_at');
+  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'shortlisted_at', 'contacted_at', 'hired_at', 'hire_start_date', 'job_closed', 'hiring_reports', 'feedback_opens_on', 'created_at');
+  pm.expect(a).to.not.have.property('hire_confirmed_by');
 });`;
+
+/** Today in Asia/Manila (yyyy-mm-dd) as {{today}} – the start date the run reports. */
+const SET_TODAY = `pm.collectionVariables.set('today', new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10));`;
 
 const applications = folder(
   '05 Applications & Status',
-  'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.',
+  'M6: apply, duplicate, closed posting, the status workflow (T06 refused transition), the hiring confirmation (Decision 2026-10-22b: the employer reports the hire, the candidate answers Not yet, then Confirm) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.',
   [
     request('Employer publishes a posting for this run', {
       method: 'POST',
@@ -1096,9 +1108,11 @@ const applications = folder(
 ${status(201)}
 ${applicationShape}
 const a = pm.response.json();
-pm.test('pending, not contacted, no candidate block for the candidate', () => {
+pm.test('pending, not hired, no candidate block for the candidate', () => {
   pm.expect(a.status).to.eql('pending');
-  pm.expect(a.contacted_at).to.eql(null);
+  pm.expect(a.hired_at).to.eql(null);
+  pm.expect(a.job_closed).to.eql(false);
+  pm.expect(a.hiring_reports).to.eql([]);
   pm.expect(a).to.not.have.property('candidate');
 });
 pm.collectionVariables.set('applicationId', a.id);`,
@@ -1143,13 +1157,13 @@ pm.test('my_application is the pending application', () => {
       body: { status: 'reviewed' },
       tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
     }),
-    request('T06 Employer contacts without reviewing → 422 INVALID_STATUS_TRANSITION', {
+    request('T06 Employer sets hired directly → 422 INVALID_STATUS_TRANSITION', {
       method: 'PATCH',
       path: '/applications/{{applicationId}}/status',
       auth: bearer('employerToken'),
-      body: { status: 'contacted' },
+      body: { status: 'hired' },
       tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
-      description: 'pending → contacted skips the review step. (Opening the application as the employer moves it to reviewed.)',
+      description: 'Hired only by mutual confirmation of a hiring report (Decision 2026-10-22b), never through the status endpoint.',
     }),
     request('Another employer cannot open the application → 403', {
       path: '/applications/{{applicationId}}',
@@ -1194,7 +1208,15 @@ ${status(200)}
 const a = pm.response.json();
 pm.test('shortlisted, not contacted yet', () => { pm.expect(a.status).to.eql('shortlisted'); pm.expect(a.shortlisted_at).to.be.a('string'); pm.expect(a.contacted_at).to.eql(null); pm.expect(a.feedback_opens_on).to.eql(null); });`,
     }),
-    request('Employer marks the candidate contacted → contacted_at and feedback date', {
+    request('Candidate cannot shortlist or mark contacted → 422', {
+      method: 'PATCH',
+      path: '/applications/{{applicationId}}/status',
+      auth: bearer('newCandidateLoginToken'),
+      body: { status: 'contacted' },
+      tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
+      description: 'Contacted is an employer stage; the candidate reports a hire instead (Decision 2026-10-22c).',
+    }),
+    request('Employer marks the candidate contacted → contacted_at, still no feedback date', {
       method: 'PATCH',
       path: '/applications/{{applicationId}}/status',
       auth: bearer('employerToken'),
@@ -1202,26 +1224,103 @@ pm.test('shortlisted, not contacted yet', () => { pm.expect(a.status).to.eql('sh
       tests: `
 ${status(200)}
 const a = pm.response.json();
-pm.test('contacted by the employer', () => { pm.expect(a.status).to.eql('contacted'); pm.expect(a.contact_confirmed_by).to.eql('employer'); pm.expect(a.contacted_at).to.be.a('string'); });
-pm.test('feedback opens 30 days after the contact (Manila)', () => {
-  const opens = new Date(a.feedback_opens_on + 'T00:00:00+08:00');
-  const contactedManila = new Date(new Date(a.contacted_at).getTime() + 8 * 3600000).toISOString().slice(0, 10);
-  pm.expect((opens - new Date(contactedManila + 'T00:00:00+08:00')) / 86400000).to.eql(30);
+pm.test('contacted, not hired', () => { pm.expect(a.status).to.eql('contacted'); pm.expect(a.contacted_at).to.be.a('string'); pm.expect(a.hired_at).to.eql(null); pm.expect(a.feedback_opens_on).to.eql(null); });`,
+    }),
+    request('Employer reports the hire (start date today) → 201, waiting for the candidate', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports',
+      auth: bearer('employerToken'),
+      prerequest: SET_TODAY,
+      body: { start_date: '{{today}}' },
+      tests: `
+${status(201)}
+const a = pm.response.json();
+const r = a.hiring_reports[0];
+pm.test('the stage is unchanged', () => pm.expect(a.status).to.eql('contacted'));
+pm.test('one pending report by the employer that the employer cannot answer', () => {
+  pm.expect(a.hiring_reports).to.have.lengthOf(1);
+  pm.expect(r).to.include({ reported_by: 'employer', status: 'pending', can_respond: false, start_date: pm.collectionVariables.get('today') });
+  pm.expect(r.events.map((e) => e.action)).to.eql(['reported']);
+});
+pm.collectionVariables.set('hiringReportId', r.id);`,
+    }),
+    request('A second report while one is pending → 409 HIRING_REPORT_PENDING', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports',
+      auth: bearer('newCandidateLoginToken'),
+      body: { start_date: '{{today}}' },
+      tests: `${status(409)}\n${envelope('HIRING_REPORT_PENDING')}`,
+    }),
+    request('The reporter cannot answer the own report → 403', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports/{{hiringReportId}}/response',
+      auth: bearer('employerToken'),
+      body: { answer: 'confirm' },
+      tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
+    }),
+    request('The candidate is notified of the hiring report', {
+      path: '/notifications',
+      auth: bearer('newCandidateLoginToken'),
+      tests: `
+${status(200)}
+pm.test('newest notice is hiring_report and opens the application', () => {
+  const n = pm.response.json().data[0];
+  pm.expect(n.type).to.eql('hiring_report');
+  pm.expect(n.data.action).to.eql('reported');
+  pm.expect(n.data.url).to.eql('/candidate/applications/' + pm.collectionVariables.get('applicationId'));
 });`,
     }),
-    request('Contacted is final → reject is refused (422)', {
+    request('Candidate answers Not yet → still pending', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports/{{hiringReportId}}/response',
+      auth: bearer('newCandidateLoginToken'),
+      body: { answer: 'not_yet' },
+      tests: `
+${status(200)}
+const a = pm.response.json();
+pm.test('not hired, report still pending', () => { pm.expect(a.status).to.eql('contacted'); pm.expect(a.hiring_reports[0].status).to.eql('pending'); pm.expect(a.hiring_reports[0].can_respond).to.eql(true); });`,
+    }),
+    request('Candidate confirms → hired, feedback date 30 days after the start date', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports/{{hiringReportId}}/response',
+      auth: bearer('newCandidateLoginToken'),
+      body: { answer: 'confirm' },
+      tests: `
+${status(200)}
+${applicationShape}
+const a = pm.response.json();
+pm.test('hired — confirmed', () => {
+  pm.expect(a.status).to.eql('hired');
+  pm.expect(a.hired_at).to.be.a('string');
+  pm.expect(a.hire_start_date).to.eql(pm.collectionVariables.get('today'));
+  pm.expect(a.hiring_reports[0].status).to.eql('confirmed');
+  pm.expect(a.hiring_reports[0].events.map((e) => e.action)).to.eql(['reported', 'not_yet', 'confirmed']);
+});
+pm.test('feedback opens 30 days after the start date (Manila)', () => {
+  const opens = new Date(a.feedback_opens_on + 'T00:00:00+08:00');
+  pm.expect((opens - new Date(a.hire_start_date + 'T00:00:00+08:00')) / 86400000).to.eql(30);
+});`,
+    }),
+    request('An answered report cannot be answered again → 409 HIRING_REPORT_CLOSED', {
+      method: 'POST',
+      path: '/applications/{{applicationId}}/hiring-reports/{{hiringReportId}}/response',
+      auth: bearer('newCandidateLoginToken'),
+      body: { answer: 'incorrect' },
+      tests: `${status(409)}\n${envelope('HIRING_REPORT_CLOSED')}`,
+    }),
+    request('Hired is final → reject is refused (422)', {
       method: 'PATCH',
       path: '/applications/{{applicationId}}/status',
       auth: bearer('employerToken'),
       body: { status: 'rejected' },
       tests: `${status(422)}\n${envelope('INVALID_STATUS_TRANSITION')}`,
     }),
-    request('Candidate sees the contacted application in My applications', {
-      path: '/applications?status=contacted',
+    request('Candidate sees the hire in My applications', {
+      path: '/applications?status=hired',
       auth: bearer('newCandidateLoginToken'),
       tests: `
 ${status(200)}
-pm.test('the contacted application is listed', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.include(pm.collectionVariables.get('applicationId')));`,
+pm.test('the hired application is listed', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.include(pm.collectionVariables.get('applicationId')));`,
     }),
     request('Owner closes the posting', {
       method: 'PATCH',
@@ -1246,14 +1345,14 @@ pm.test('the contacted application is listed', () => pm.expect(pm.response.json(
     request('The application survives the deleted posting', {
       path: '/applications/{{applicationId}}',
       auth: bearer('newCandidateLoginToken'),
-      tests: `${status(200)}\npm.test('still contacted', () => pm.expect(pm.response.json().status).to.eql('contacted'));`,
+      tests: `${status(200)}\npm.test('still hired (final, so not "job closed")', () => { pm.expect(pm.response.json().status).to.eql('hired'); pm.expect(pm.response.json().job_closed).to.eql(false); });`,
     }),
   ],
 );
 
 // ---------------------------------------------------------------- 06 Feedback & Trust Score
 
-/** True when an earlier run already rated candidate2's contacted application (409 instead of 201 / 422 validation). */
+/** True when an earlier run already rated candidate2's hire (409 instead of 201 / 422 validation). */
 const FEEDBACK_GIVEN = `const given = pm.collectionVariables.get('feedbackGiven') === 'true';`;
 
 /** T10 body from the stored form: captioned meetings partly delivered, the rest delivered (score 78). */
@@ -1274,7 +1373,7 @@ pm.test('matches the TrustScore shape', () => {
 
 const feedback = folder(
   '06 Feedback & Trust Score',
-  'M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded contacted application of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the application contacted in folder 05.',
+  'M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded hire of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the hire confirmed in folder 05.',
   [
     request('Log in the second demo candidate → candidate2Token', {
       method: 'POST',
@@ -1282,18 +1381,19 @@ const feedback = folder(
       body: { email: '{{candidate2Email}}', password: '{{demoPassword}}' },
       tests: authResponse('candidate', 'candidate2Token'),
     }),
-    request('Candidate finds the contacted application whose feedback window is open', {
-      path: '/applications?status=contacted',
+    request('Candidate finds the hire whose feedback window is open', {
+      path: '/applications?status=hired',
       auth: bearer('candidate2Token'),
       tests: `
 ${status(200)}
 const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-const contacted = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);
-pm.test('a contacted application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(contacted).to.be.an('object'));
-pm.test('feedback_submitted is shown to the candidate', () => pm.expect(contacted.feedback_submitted).to.be.a('boolean'));
-pm.collectionVariables.set('feedbackApplicationId', contacted.id);
-pm.collectionVariables.set('feedbackEmployerId', contacted.job_posting.employer.id);
-pm.collectionVariables.set('feedbackGiven', String(contacted.feedback_submitted));`,
+const hire = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);
+pm.test('a hired application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(hire).to.be.an('object'));
+pm.test('confirmed through a hiring report', () => pm.expect(hire.hiring_reports.map((r) => r.status)).to.include('confirmed'));
+pm.test('feedback_submitted is shown to the candidate', () => pm.expect(hire.feedback_submitted).to.be.a('boolean'));
+pm.collectionVariables.set('feedbackApplicationId', hire.id);
+pm.collectionVariables.set('feedbackEmployerId', hire.job_posting.employer.id);
+pm.collectionVariables.set('feedbackGiven', String(hire.feedback_submitted));`,
     }),
     request('Trust score before the run: hidden below 3 responses', {
       path: '/employers/{{feedbackEmployerId}}/trust-score',
@@ -1307,7 +1407,7 @@ pm.test(given ? 'already published by an earlier run' : 'not published: 2 respon
   else pm.expect(t).to.eql({ published: false, score: null, based_on: 2, breakdown: [] });
 });`,
     }),
-    request('Feedback form lists the accommodations promised at contact', {
+    request('Feedback form lists the accommodations at hire', {
       path: '/applications/{{feedbackApplicationId}}/feedback-form',
       auth: bearer('candidate2Token'),
       tests: `
@@ -1326,7 +1426,7 @@ pm.collectionVariables.set('feedbackItems', JSON.stringify(f.items));`,
       auth: bearer('employer2Token'),
       tests: `${status(403)}\n${envelope('FORBIDDEN')}`,
     }),
-    request('Another candidate cannot rate this application → 403', {
+    request('Another candidate cannot rate the hire → 403', {
       method: 'POST',
       path: '/applications/{{feedbackApplicationId}}/feedback',
       auth: bearer('candidateToken'),
@@ -1357,7 +1457,7 @@ if (given) {
   pm.test('VALIDATION_FAILED with errors.items', () => { pm.expect(body.error.code).to.eql('VALIDATION_FAILED'); pm.expect(body.errors).to.have.property('items'); });
 }`,
     }),
-    request('T10 Contacted candidate rates after 30 days → 201 (3rd response)', {
+    request('T10 Hired candidate rates after 30 days → 201 (3rd response)', {
       method: 'POST',
       path: '/applications/{{feedbackApplicationId}}/feedback',
       auth: bearer('candidate2Token'),
@@ -1412,15 +1512,15 @@ pm.test('breakdown: 3 ratings per accommodation', () => {
 ${status(200)}
 pm.test('trust_score summary without breakdown', () => pm.expect(pm.response.json().trust_score).to.eql({ published: true, score: 78, based_on: 3 }));`,
     }),
-    request('T11 Feedback before 30 days after the contact → 422 FEEDBACK_NOT_OPEN', {
+    request('T11 Feedback before 30 days after the start date → 422 FEEDBACK_NOT_OPEN', {
       method: 'POST',
       path: '/applications/{{applicationId}}/feedback',
       auth: bearer('newCandidateLoginToken'),
       body: { items: [{ accommodation_id: 1, rating: 'delivered' }] },
       tests: `${status(422)}\n${envelope('FEEDBACK_NOT_OPEN')}`,
-      description: 'The application was contacted today in folder 05; the form opens on calendar day 30 (Asia/Manila).',
+      description: 'The hire was confirmed in folder 05 with today as the start date; the form opens on calendar day 30 (Asia/Manila).',
     }),
-    request('The fresh contact\'s form is not open yet and shows the date', {
+    request('The fresh hire\'s form is not open yet and shows the date', {
       path: '/applications/{{applicationId}}/feedback-form',
       auth: bearer('newCandidateLoginToken'),
       tests: `

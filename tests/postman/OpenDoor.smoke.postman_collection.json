@@ -2499,7 +2499,7 @@
     },
     {
       "name": "05 Applications & Status",
-      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.",
+      "description": "M6: apply, duplicate, closed posting, the status workflow (T06 refused transition), the hiring confirmation (Decision 2026-10-22b: the employer reports the hire, the candidate answers Not yet, then Confirm) and who may see an application. Uses its own posting (published, then soft-deleted) and the throwaway candidate from 01/04.",
       "item": [
         {
           "name": "Admins have no access to applications → 403",
@@ -2551,7 +2551,7 @@
     },
     {
       "name": "06 Feedback & Trust Score",
-      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded contacted application of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the application contacted in folder 05.",
+      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded hire of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the hire confirmed in folder 05.",
       "item": [
         {
           "name": "Log in the second demo candidate → candidate2Token",
@@ -2641,7 +2641,7 @@
           ]
         },
         {
-          "name": "Candidate finds the contacted application whose feedback window is open",
+          "name": "Candidate finds the hire whose feedback window is open",
           "request": {
             "method": "GET",
             "auth": {
@@ -2661,7 +2661,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications?status=contacted",
+              "raw": "{{baseUrl}}/applications?status=hired",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2671,7 +2671,7 @@
               "query": [
                 {
                   "key": "status",
-                  "value": "contacted"
+                  "value": "hired"
                 }
               ]
             }
@@ -2684,12 +2684,13 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);",
-                  "const contacted = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
-                  "pm.test('a contacted application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(contacted).to.be.an('object'));",
-                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(contacted.feedback_submitted).to.be.a('boolean'));",
-                  "pm.collectionVariables.set('feedbackApplicationId', contacted.id);",
-                  "pm.collectionVariables.set('feedbackEmployerId', contacted.job_posting.employer.id);",
-                  "pm.collectionVariables.set('feedbackGiven', String(contacted.feedback_submitted));"
+                  "const hire = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
+                  "pm.test('a hired application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(hire).to.be.an('object'));",
+                  "pm.test('confirmed through a hiring report', () => pm.expect(hire.hiring_reports.map((r) => r.status)).to.include('confirmed'));",
+                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(hire.feedback_submitted).to.be.a('boolean'));",
+                  "pm.collectionVariables.set('feedbackApplicationId', hire.id);",
+                  "pm.collectionVariables.set('feedbackEmployerId', hire.job_posting.employer.id);",
+                  "pm.collectionVariables.set('feedbackGiven', String(hire.feedback_submitted));"
                 ]
               }
             }
@@ -2745,7 +2746,7 @@
           ]
         },
         {
-          "name": "Feedback form lists the accommodations promised at contact",
+          "name": "Feedback form lists the accommodations at hire",
           "request": {
             "method": "GET",
             "auth": {
@@ -2845,7 +2846,7 @@
           ]
         },
         {
-          "name": "Another candidate cannot rate this application → 403",
+          "name": "Another candidate cannot rate the hire → 403",
           "request": {
             "method": "POST",
             "auth": {

@@ -827,7 +827,8 @@ paths:
       tags: [M6 Applications]
       summary: Apply to an open posting
       description: >-
-        Candidates only, with a complete profile (otherwise 422 PROFILE_INCOMPLETE – Decision 2026-10-21). A draft or unpublished posting is 404; a closed posting, or an open one past its
+        Candidates only, with a complete profile (otherwise 422 PROFILE_INCOMPLETE – Decision 2026-10-21) and a résumé
+        on file (otherwise 422 RESUME_REQUIRED – Decision 2026-10-22b; upload it first with POST /candidate/resume). A draft or unpublished posting is 404; a closed posting, or an open one past its
         `closes_at` day (Asia/Manila), is 422 POSTING_CLOSED; a second application to the same posting is
         409 ALREADY_APPLIED. A candidate without a profile gets an empty one. The employer is notified.
       parameters: [{ $ref: '#/components/parameters/Id' }]
@@ -895,12 +896,14 @@ paths:
       tags: [M6 Applications]
       summary: Change application status (see the status workflow)
       description: |
-        Stages the candidate sees (Decision 2026-10-22a): Submitted (pending) → Under review (reviewed) →
-        Shortlisted → Contacted. Allowed: pending→reviewed (employer), reviewed→shortlisted (employer),
-        reviewed/shortlisted→contacted (employer or candidate), reviewed/shortlisted→rejected (employer),
-        pending/reviewed/shortlisted→withdrawn (candidate). Anything else → 422 INVALID_STATUS_TRANSITION.
-        shortlisted sets `shortlisted_at`; contacted (replaces "hired") sets `contacted_at` and
-        `contact_confirmed_by` and opens the accommodation rating 30 days later. Every change notifies the other party.
+        Stages (Decision 2026-10-22b): Submitted (pending) → Under review (reviewed) → Shortlisted →
+        Contacted → Hired. The employer may skip stages forward: pending→reviewed (also automatic when
+        the employer opens it), pending/reviewed→shortlisted, pending/reviewed/shortlisted→contacted;
+        reviewed/shortlisted/contacted→rejected (employer); pending/reviewed/shortlisted/contacted→withdrawn
+        (candidate). Each stage sets its date (`reviewed_at`, `shortlisted_at`, `contacted_at`); a skipped
+        stage keeps none. `hired` is never set here (422 INVALID_STATUS_TRANSITION): only a confirmed
+        hiring report makes an application hired. Anything else → 422 INVALID_STATUS_TRANSITION.
+        A withdrawal or rejection cancels a pending hiring report. Every change notifies the other party.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -919,16 +922,85 @@ paths:
               schema: { $ref: '#/components/schemas/Application' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '422': { $ref: '#/components/responses/ValidationFailed' }
+  /applications/{id}/hiring-reports:
+    post:
+      tags: [M6 Applications]
+      summary: Report a hire (employer "Report hiring", candidate "Report that I was hired")
+      description: |
+        Decision 2026-10-22b: hired only by mutual confirmation. Either party reports the hire with a
+        proposed start date; the other party is notified and answers with POST …/response. Never
+        confirmed automatically. Only while the application is in progress (pending, reviewed,
+        shortlisted, contacted – also when the job closed), otherwise 422 INVALID_STATUS_TRANSITION;
+        one pending report per application (409 HIRING_REPORT_PENDING). `start_date`: from the
+        application date up to 365 days ahead.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_date]
+              properties:
+                start_date: { type: string, format: date, example: '2026-11-03' }
+      responses:
+        '201':
+          description: Reported (the application with its hiring_reports; the stage is unchanged)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /applications/{id}/hiring-reports/{reportId}/response:
+    post:
+      tags: [M6 Applications]
+      summary: Answer the other party's hiring report (Confirm, Not yet, Incorrect)
+      description: |
+        Only the party that did not report (the reporter → 403 FORBIDDEN). `confirm`: the report is
+        confirmed and the application becomes hired ("Hired — confirmed"): `hired_at` = now,
+        `hire_start_date` = the report's start date, the promised accommodations are recorded and the
+        rating opens 30 days after the start date. `not_yet`: the report stays pending; an optional
+        `start_date` replaces the proposed one. `incorrect`: the report is disputed and the stage stays
+        as it is (a new report can be made). An answered or cancelled report → 409 HIRING_REPORT_CLOSED.
+        The reporter is notified. A report of another application → 404.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: reportId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: { type: string, enum: [confirm, not_yet, incorrect] }
+                start_date: { type: string, format: date, description: Only with not_yet (otherwise 422) }
+      responses:
+        '200':
+          description: Answered (the application with its hiring_reports)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Application' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
 
   # ---------------------------------------------------------------- M7 Feedback
   /applications/{id}/feedback-form:
     get:
       tags: [M7 Feedback and trust score]
-      summary: Accommodations to rate (those advertised when the employer reached out)
+      summary: Accommodations to rate (those advertised when the hire was confirmed)
       description: >-
-        Only the candidate of a contacted application. The items are the accommodations the posting
-        advertised when the application became contacted (recorded then; later posting edits do not
-        change them), sorted by name. An application that is not contacted → 422 FEEDBACK_NOT_OPEN.
+        Only the candidate of a hired application. The items are the accommodations the posting
+        advertised when the hire was confirmed (recorded then; later posting edits do not
+        change them), sorted by name. An application that is not hired → 422 FEEDBACK_NOT_OPEN.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
         '200':
@@ -938,7 +1010,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  opens_on: { type: string, format: date, description: Calendar day 30 after the contact date (Asia/Manila) }
+                  opens_on: { type: string, format: date, description: Calendar day 30 after the confirmed start date (Asia/Manila) }
                   is_open: { type: boolean }
                   submitted: { type: boolean, description: The candidate has already rated this job }
                   items:
@@ -954,9 +1026,9 @@ paths:
   /applications/{id}/feedback:
     post:
       tags: [M7 Feedback and trust score]
-      summary: Submit feedback once, from calendar day 30 after the contact (Asia/Manila)
+      summary: Submit feedback once, from calendar day 30 after the confirmed start date (Asia/Manila)
       description: >-
-        Only the candidate of a contacted application. Not contacted or before `opens_on` → 422
+        Only the candidate of a hired application. Not hired or before `opens_on` → 422
         FEEDBACK_NOT_OPEN; a second response → 409 FEEDBACK_EXISTS. Every item of the feedback form
         needs exactly one rating (`errors.items` when one is missing; an accommodation that is not on
         the form → `errors["items.N.accommodation_id"]`). Recomputes the employer's trust score.
@@ -1018,8 +1090,8 @@ paths:
       tags: [M8 Dashboards]
       summary: Candidate summary (applications by status, matches, pending feedback)
       description: |
-        Counts are zero-filled for every status. `matching_jobs` = visible postings offering every saved need (0 without needs).
-        `feedback_due` = contacted applications not rated yet, earliest contact first (also those whose window is not open yet).
+        Counts are zero-filled for every status; `pipeline` is what the stage tiles show. `matching_jobs` = visible postings offering every saved need (0 without needs).
+        `feedback_due` = hired applications not rated yet, earliest start date first (also those whose window is not open yet).
       responses:
         '200':
           description: Summary
@@ -1683,7 +1755,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     Conflict:
-      description: ALREADY_APPLIED or FEEDBACK_EXISTS
+      description: ALREADY_APPLIED, FEEDBACK_EXISTS, HIRING_REPORT_PENDING or HIRING_REPORT_CLOSED
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1730,9 +1802,32 @@ components:
       description: In order; a level meets every requirement at or below it.
     ApplicationStatus:
       type: string
-      enum: [pending, reviewed, shortlisted, contacted, rejected, withdrawn]
-      description: Shown to candidates as Submitted, Under review, Shortlisted, Contacted, Not selected, Withdrawn (Decision 2026-10-22a)
-    ContactConfirmedBy: { type: string, enum: [employer, candidate] }
+      enum: [pending, reviewed, shortlisted, contacted, hired, rejected, withdrawn]
+      description: >-
+        Shown as Submitted, Under review, Shortlisted, Contacted, Hired, Not selected, Withdrawn (Decision 2026-10-22b).
+        "Job closed" is not a status: see Application.job_closed.
+    HiringParty: { type: string, enum: [employer, candidate] }
+    HiringReport:
+      type: object
+      description: One hiring report and its answers (Decision 2026-10-22b); only roles, never who at the company answered
+      properties:
+        id: { type: integer }
+        reported_by: { $ref: '#/components/schemas/HiringParty' }
+        start_date: { type: string, format: date, description: The proposed start date (a "Not yet" answer may have changed it) }
+        status: { type: string, enum: [pending, confirmed, disputed, cancelled] }
+        can_respond: { type: boolean, description: 'True for the party that has to answer while it is pending' }
+        created_at: { type: string, format: date-time }
+        responded_at: { type: [string, 'null'], format: date-time, description: When it was confirmed, disputed or cancelled }
+        events:
+          type: array
+          description: Oldest first
+          items:
+            type: object
+            properties:
+              actor_role: { $ref: '#/components/schemas/HiringParty' }
+              action: { type: string, enum: [reported, confirmed, not_yet, disputed, cancelled] }
+              start_date: { type: [string, 'null'], format: date, description: 'reported: the proposed date; not_yet: the new date, if one was given' }
+              created_at: { type: string, format: date-time }
     FeedbackRating:
       type: string
       enum: [delivered, partial, not_delivered]
@@ -1753,6 +1848,9 @@ components:
         - INVALID_STATUS_TRANSITION
         - POSTING_CLOSED
         - PROFILE_INCOMPLETE
+        - RESUME_REQUIRED
+        - HIRING_REPORT_PENDING
+        - HIRING_REPORT_CLOSED
         - FEEDBACK_NOT_OPEN
         - REGISTRY_INVALID_REQUEST
         - RATE_LIMITED
@@ -2141,13 +2239,16 @@ components:
         cover_note: { type: [string, 'null'] }
         interview_request: { type: [string, 'null'] }
         reviewed_at: { type: [string, 'null'], format: date-time, description: 'When the employer first reviewed it (set by pending → reviewed); null before, and for applications reviewed before 2026-10-13 that have moved on' }
-        shortlisted_at: { type: [string, 'null'], format: date-time, description: When the employer shortlisted it }
-        contacted_at: { type: [string, 'null'], format: date-time, description: When the employer reached out (or the candidate confirmed it) }
-        contact_confirmed_by:
-          oneOf:
-            - $ref: '#/components/schemas/ContactConfirmedBy'
-            - type: 'null'
-        feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after contacted_at (Asia/Manila); null until contacted' }
+        shortlisted_at: { type: [string, 'null'], format: date-time, description: When the employer shortlisted it (null if skipped) }
+        contacted_at: { type: [string, 'null'], format: date-time, description: When the employer marked that they reached out (null if skipped) }
+        hired_at: { type: [string, 'null'], format: date-time, description: When the hire was confirmed }
+        hire_start_date: { type: [string, 'null'], format: date, description: The confirmed start date }
+        job_closed: { type: boolean, description: 'Still in progress while the posting is closed or deleted ("Job closed"); the stage is kept and a hire can still be reported' }
+        hiring_reports:
+          type: array
+          description: Hiring confirmation history, oldest first
+          items: { $ref: '#/components/schemas/HiringReport' }
+        feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after hire_start_date (Asia/Manila); null until the hire is confirmed' }
         feedback_submitted: { type: boolean, description: 'Only for the candidate (feedback is anonymous to employers): the candidate has rated this job' }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -2159,12 +2260,14 @@ components:
         id: { type: string, format: uuid }
         type:
           type: string
-          enum: [application_received, application_status_changed, employer_verification, posting_review, feedback_reminder]
+          enum: [application_received, application_status_changed, hiring_report, employer_verification, posting_review, feedback_reminder]
           description: |
             application_received (to the employer), application_status_changed (to the party that did not act),
+            hiring_report (a new report to the party that has to answer, each answer to the reporter; data.application_id,
+            data.hiring_report_id, data.action – a cancelled report sends none),
             employer_verification (admin approved/rejected the company; data.verified),
             posting_review (admin removed a posting, with the reason; data.job_posting_id, data.removed true – no approvals since Decision 2026-10-21),
-            feedback_reminder (to a contacted candidate on the day the feedback form opens; data.application_id).
+            feedback_reminder (to a hired candidate on the day the feedback form opens; data.application_id).
             Each one is also emailed when the user's email_notifications is on.
           example: application_status_changed
         data:
@@ -2242,8 +2345,23 @@ components:
         reviewed: { type: integer }
         shortlisted: { type: integer }
         contacted: { type: integer }
+        hired: { type: integer }
         rejected: { type: integer }
         withdrawn: { type: integer }
+    ApplicationPipeline:
+      type: object
+      description: >-
+        The stage tiles (Decision 2026-10-22b). An application in progress whose job closed counts under
+        closed, not under its stage; hiring_pending (a report waiting for an answer) overlaps the stages;
+        hired = confirmed hires.
+      properties:
+        submitted: { type: integer }
+        under_review: { type: integer }
+        shortlisted: { type: integer }
+        contacted: { type: integer }
+        hiring_pending: { type: integer }
+        hired: { type: integer }
+        closed: { type: integer, description: Not selected + withdrawn + job closed }
     PostingCounts:
       type: object
       description: Number of postings per JobPostingStatus
@@ -2255,6 +2373,7 @@ components:
       type: object
       properties:
         applications: { $ref: '#/components/schemas/ApplicationCounts' }
+        pipeline: { $ref: '#/components/schemas/ApplicationPipeline' }
         needs_count: { type: integer, description: Saved accommodation needs }
         matching_jobs: { type: integer, description: Open postings that meet all saved needs }
         feedback_due:
@@ -2278,6 +2397,7 @@ components:
             verification_rejected_reason: { type: [string, 'null'] }
         postings: { $ref: '#/components/schemas/PostingCounts' }
         applications: { $ref: '#/components/schemas/ApplicationCounts' }
+        pipeline: { $ref: '#/components/schemas/ApplicationPipeline' }
         trust_score: { $ref: '#/components/schemas/TrustScoreSummary' }
     AdminDashboard:
       type: object

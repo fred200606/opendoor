@@ -4,21 +4,31 @@ These are enforced on the server and covered by feature tests.
 
 ## Application status workflow
 
-Stages the candidate sees (Decision 2026-10-22a): **Submitted** (pending) → **Under review** (reviewed) → **Shortlisted** → **Contacted** ("the employer reached out about the next steps"). Contacted replaced "hired" and does everything hired did (feedback window, snapshot, trust score). Closed = rejected ("Not selected") or withdrawn.
+Stages (Decisions 2026-10-22b/c): **Submitted** (pending) → **Under review** (reviewed) → **Shortlisted** → **Contacted** ("the employer reached out about the next steps") → **Hired**. Closed = rejected ("Not selected"), withdrawn, or **Job closed**. The employer may skip stages forward; Contacted is only a stage.
 
 | From | To | Who | Condition |
 |---|---|---|---|
-| (none) | pending | Candidate | profile complete (else 422 `PROFILE_INCOMPLETE`), posting is open + published by a verified company, not past `closes_at`, candidate has not applied before |
-| pending | reviewed | Employer | happens automatically when the employer opens the application |
-| reviewed | shortlisted | Employer | sets `shortlisted_at` |
-| pending / reviewed / shortlisted | withdrawn | Candidate | final |
-| reviewed / shortlisted | rejected | Employer | final |
-| reviewed / shortlisted | contacted | Employer **or** Candidate ("The employer contacted me") | sets `contacted_at` and `contact_confirmed_by`, records the promised accommodations; final |
+| (none) | pending | Candidate | profile complete (else 422 `PROFILE_INCOMPLETE`), a résumé on file (else 422 `RESUME_REQUIRED`), posting is open + published by a verified company, not past `closes_at`, candidate has not applied before |
+| pending | reviewed | Employer | also automatically when the employer opens the application; sets `reviewed_at` |
+| pending / reviewed | shortlisted | Employer | sets `shortlisted_at` |
+| pending / reviewed / shortlisted | contacted | Employer | sets `contacted_at` |
+| reviewed / shortlisted / contacted | rejected | Employer | final; cancels a pending hiring report |
+| pending / reviewed / shortlisted / contacted | withdrawn | Candidate | final; cancels a pending hiring report |
+| any in-progress stage | hired | **both** (hiring report confirmed) | never through `PATCH …/status` (422); see "Hiring confirmation"; final |
 
-- Anything else → 422 `INVALID_STATUS_TRANSITION`. Status never moves backward.
-- Implement in `ApplicationStatus::canTransitionTo(self $to, string $actorRole): bool`.
+- Anything else → 422 `INVALID_STATUS_TRANSITION`. Status never moves backward; a skipped stage keeps no date.
+- Implement in `ApplicationStatus::canTransitionTo(self $to, UserRole $actor): bool` (`isInProgress()` = pending, reviewed, shortlisted, contacted).
 - Every change notifies the other party (M9).
 - Duplicate apply → 409 `ALREADY_APPLIED`; closed posting → 422 `POSTING_CLOSED`.
+- **Job closed** (`job_closed` in the API): an in-progress application whose posting is closed or deleted. Computed, never stored: the stage is kept, nothing is overwritten and a hire can still be reported. Dashboards count it under closed, not under its stage (`pipeline`).
+
+## Hiring confirmation (Decision 2026-10-22b – `HiringReportController`)
+
+- Either party reports the hire with a proposed start date (employer "Report hiring", candidate "Report that I was hired"): `POST /applications/{id}/hiring-reports {start_date}` – from the application date up to 365 days ahead; only while the application is in progress; **one pending report at a time** (409 `HIRING_REPORT_PENDING`).
+- The **other** party answers (`POST …/hiring-reports/{report}/response`; the reporter → 403): **Confirm** → report `confirmed`, application `hired` ("Hired — confirmed"), `hired_at` = now, `hire_start_date` = the report's date, promised accommodations recorded; **Not yet** → stays `pending`, may carry a new `start_date`; **Incorrect** → report `disputed`, stage unchanged (a new report may follow). An answered or cancelled report → 409 `HIRING_REPORT_CLOSED`.
+- Never confirmed automatically. A withdrawal or rejection cancels a pending report (`cancelled`).
+- History: `hiring_reports` + `hiring_report_events` (reported, confirmed, not_yet, disputed, cancelled), separate from the stage; the API shows roles only.
+- Notices (`hiring_report`): a new report → the party that has to answer; each answer → the reporter; each opens the application page. None for a cancellation.
 
 ## Posting lifecycle
 
@@ -39,9 +49,9 @@ Complete = `location_psgc` + at least 3 skills + `education_level` + at least on
 
 ## Feedback and trust score
 
-- Only an application with status `contacted` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the contact date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= contacted_at->timezone('Asia/Manila')->startOfDay()->addDays(30)` – contacted on 1 Oct (any time) → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
-- Reminder (M13): the daily `feedback:remind` (08:00) sends each contacted, unrated candidate one `feedback_reminder` notice (+ email) once the form is open; missed days are caught up; suspended candidates are reminded after reactivation (`applications.feedback_reminded_at`).
-- The form lists the accommodations the posting advertised when the employer reached out (recorded in `application_accommodation` when the status becomes `contacted`); one rating per item, every item must be rated.
+- Only an application with status `hired` (a confirmed hire) can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the confirmed start date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= hire_start_date + 30 days` – start date 1 Oct → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
+- Reminder (M13): the daily `feedback:remind` (08:00) sends each hired, unrated candidate one `feedback_reminder` notice (+ email) once the form is open; missed days are caught up; suspended candidates are reminded after reactivation (`applications.feedback_reminded_at`).
+- The form lists the accommodations the posting advertised when the hire was confirmed (recorded in `application_accommodation` then); one rating per item, every item must be rated.
 - Values: delivered = 1, partial = 0.5, not_delivered = 0.
 - `trust_score = round(sum(values) / count(rated items) * 100)` → a **whole percentage 0–100** (integer, e.g. `86`; PHP `round()` half away from zero) across all non-hidden feedback items for the employer; store on `employers.trust_score` and `feedback_count` (number of non-hidden feedback responses). The API returns an integer, the UI shows `86%`.
 - Recalculate in an observer when feedback is saved or hidden/unhidden.
@@ -64,8 +74,8 @@ Complete = `location_psgc` + at least 3 skills + `education_level` + at least on
 | Candidate profile + needs | – | C, R, U own | R only via applications to own postings | R |
 | Company profile | R public | R public | C, R, U own | R, U verify |
 | Job posting | R open | R open | C, R, U, D own | R all, U approve, D |
-| Application | – | C, R own, U withdraw/confirm contact | R, U status (own postings) | R |
-| Feedback | – | C, R own (once, 30 days after contact) | score only | R, U hide |
+| Application | – | C, R own, U withdraw, report/answer hiring | R, U status, report/answer hiring (own postings) | R |
+| Feedback | – | C, R own (once, 30 days after the start date) | score only | R, U hide |
 | Trust score | R (≥3) | R (≥3) | R own | R all |
 | Categories / accommodation types | R | R | R | C, R, U, D |
 | Reports | – | C | – | R, U |
