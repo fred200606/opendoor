@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 /**
  * M8 dashboards (CandidateDashboard, EmployerDashboard, AdminDashboard in docs/openapi.yaml).
  * Counts are zero-filled for every status and agree with the lists the dashboard links to.
+ * `pipeline` (candidate, employer) is what the stage tiles show (Decision 2026-10-22b).
  */
 class DashboardController extends Controller
 {
@@ -28,8 +29,11 @@ class DashboardController extends Controller
     {
         $profile = $request->user()->candidateProfile;
         if (! $profile) {
+            $none = Application::query()->whereRaw('1 = 0');
+
             return response()->json([
-                'applications' => $this->countByStatus(Application::query()->whereRaw('1 = 0'), ApplicationStatus::class),
+                'applications' => $this->countByStatus($none, ApplicationStatus::class),
+                'pipeline' => $this->pipeline($none),
                 'needs_count' => 0,
                 'matching_jobs' => 0,
                 'feedback_due' => [],
@@ -45,10 +49,10 @@ class DashboardController extends Controller
             ->count();
 
         $feedbackDue = (clone $applications)
-            ->where('status', ApplicationStatus::Contacted)
+            ->where('status', ApplicationStatus::Hired)
             ->whereDoesntHave('feedback')
             ->with('jobPosting.employer')
-            ->orderBy('contacted_at')
+            ->orderBy('hire_start_date')
             ->orderBy('id')
             ->get()
             ->map(fn (Application $application) => [
@@ -61,6 +65,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'applications' => $this->countByStatus($applications, ApplicationStatus::class),
+            'pipeline' => $this->pipeline($applications),
             'needs_count' => $needIds->count(),
             'matching_jobs' => $matchingJobs,
             'feedback_due' => $feedbackDue,
@@ -85,6 +90,7 @@ class DashboardController extends Controller
             ],
             'postings' => $this->countByStatus(JobPosting::query()->where('employer_id', $employer?->id), JobPostingStatus::class),
             'applications' => $this->countByStatus($applications, ApplicationStatus::class),
+            'pipeline' => $this->pipeline($applications),
             'trust_score' => $employer?->trustScoreSummary() ?? ['published' => false, 'score' => null, 'based_on' => 0],
         ]);
     }
@@ -116,6 +122,29 @@ class DashboardController extends Controller
                 ->whereNotNull('trust_score')
                 ->count(),
         ]);
+    }
+
+    /**
+     * The stage tiles. An application in progress whose job closed counts as closed, not under its
+     * stage; hiring_pending (a report waiting for an answer) overlaps the stages; hired counts
+     * confirmed hires only (the only way to become hired).
+     *
+     * @param  Builder<Application>  $applications
+     * @return array<string, int>
+     */
+    private function pipeline(Builder $applications): array
+    {
+        $byStatus = $this->countByStatus((clone $applications)->jobClosed(false), ApplicationStatus::class);
+
+        return [
+            'submitted' => $byStatus['pending'],
+            'under_review' => $byStatus['reviewed'],
+            'shortlisted' => $byStatus['shortlisted'],
+            'contacted' => $byStatus['contacted'],
+            'hiring_pending' => (clone $applications)->whereHas('pendingHiringReport')->count(),
+            'hired' => $byStatus['hired'],
+            'closed' => $byStatus['rejected'] + $byStatus['withdrawn'] + (clone $applications)->jobClosed()->count(),
+        ];
     }
 
     /**

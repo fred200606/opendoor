@@ -2,13 +2,21 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\HiringParty;
 use App\Models\Application;
+use App\Models\HiringReport;
+use App\Models\HiringReportEvent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Application in docs/openapi.yaml. Load jobPosting (with JobPostingController::RELATIONS),
- * feedback (candidates) and, for employers, candidateProfile.user + candidateProfile.accommodations.
+ * Application in docs/openapi.yaml. Load ApplicationController::RELATIONS: jobPosting (with
+ * JobPostingController::RELATIONS), feedback (candidates), hiringReports.events and, for employers,
+ * candidateProfile.user + candidateProfile.accommodations.
+ *
+ * `job_closed`: still in progress while the posting is closed or deleted (the stage is kept).
+ * `hiring_reports`: the hiring confirmation history, oldest first (Decision 2026-10-22b); only the
+ * roles are shown, never who at the company answered.
  *
  * `candidate` only for the employer that owns the posting (RA 10173: needs are shared through the
  * application; the disability type only when the candidate chose to show it).
@@ -35,7 +43,24 @@ class ApplicationResource extends JsonResource
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
             'shortlisted_at' => $this->shortlisted_at?->toIso8601String(),
             'contacted_at' => $this->contacted_at?->toIso8601String(),
-            'contact_confirmed_by' => $this->contact_confirmed_by,
+            'hired_at' => $this->hired_at?->toIso8601String(),
+            'hire_start_date' => $this->hire_start_date?->toDateString(),
+            'job_closed' => $this->isJobClosed(),
+            'hiring_reports' => $this->whenLoaded('hiringReports', fn () => $this->hiringReports->map(fn (HiringReport $report) => [
+                'id' => $report->id,
+                'reported_by' => $report->reported_by,
+                'start_date' => $report->start_date->toDateString(),
+                'status' => $report->status,
+                'can_respond' => $report->isPending() && $report->respondent() === ($forEmployer ? HiringParty::Employer : HiringParty::Candidate),
+                'created_at' => $report->created_at?->toIso8601String(),
+                'responded_at' => $report->responded_at?->toIso8601String(),
+                'events' => $report->events->map(fn (HiringReportEvent $event) => [
+                    'actor_role' => $event->actor_role,
+                    'action' => $event->action,
+                    'start_date' => $event->start_date?->toDateString(),
+                    'created_at' => $event->created_at?->toIso8601String(),
+                ])->all(),
+            ])->all()),
             'feedback_opens_on' => $this->feedbackOpensOn()?->toDateString(),
             // Only the candidate learns whether they rated (feedback is anonymous to employers).
             'feedback_submitted' => $this->when(! $forEmployer, fn () => $this->feedback !== null),

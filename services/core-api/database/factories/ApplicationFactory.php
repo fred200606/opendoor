@@ -3,11 +3,13 @@
 namespace Database\Factories;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\ContactConfirmedBy;
+use App\Enums\HiringParty;
 use App\Models\Application;
 use App\Models\CandidateProfile;
+use App\Models\HiringReport;
 use App\Models\JobPosting;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 
 /**
  * @extends Factory<Application>
@@ -33,12 +35,17 @@ class ApplicationFactory extends Factory
         return $this->state(fn () => ['status' => $status]);
     }
 
-    public function contacted(?string $at = null, ContactConfirmedBy $by = ContactConfirmedBy::Employer): static
+    /**
+     * Hired through a hiring report by $by that the other party confirmed at $at. The start date is
+     * the calendar day of $at (Manila) unless given, so the rating opens 30 days after it.
+     */
+    public function hired(?string $at = null, HiringParty $by = HiringParty::Employer, ?string $startDate = null): static
     {
-        return $this->state(fn () => [
-            'status' => ApplicationStatus::Contacted,
-            'contacted_at' => $at ?? now(),
-            'contact_confirmed_by' => $by,
-        ])->afterCreating(fn (Application $application) => $application->recordContactSnapshot());
+        $confirmedAt = Carbon::parse($at ?? now());
+
+        return $this->state(fn () => ['status' => ApplicationStatus::Reviewed])
+            ->afterCreating(fn (Application $application) => HiringReport::recordConfirmed(
+                $application, $by, $confirmedAt, $startDate ?? $confirmedAt->copy()->timezone('Asia/Manila')->toDateString(),
+            ));
     }
 }

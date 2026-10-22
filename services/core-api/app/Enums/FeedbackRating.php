@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-/** How a contacted candidate rates one advertised accommodation (business-rules.md). */
+/** How a hired candidate rates one advertised accommodation (business-rules.md). */
 enum FeedbackRating: string
 {
     case Delivered = 'delivered';

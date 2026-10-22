@@ -21,6 +21,12 @@ class ApplicationPolicy
         return $this->view($user, $application);
     }
 
+    /** Either party reports a hire or answers the other's report (HiringReportController decides who may answer). */
+    public function reportHiring(User $user, Application $application): bool
+    {
+        return $this->view($user, $application);
+    }
+
     /** Feedback is the candidate's own (anonymous to the employer). */
     public function giveFeedback(User $user, Application $application): bool
     {

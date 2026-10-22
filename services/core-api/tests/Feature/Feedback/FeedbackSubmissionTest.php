@@ -16,7 +16,7 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-/** M7: feedback form and submission – window, once only, only the contacted candidate. */
+/** M7: feedback form and submission – window, once only, only the hired candidate. */
 class FeedbackSubmissionTest extends TestCase
 {
     use RefreshDatabase;
@@ -48,9 +48,9 @@ class FeedbackSubmissionTest extends TestCase
         parent::tearDown();
     }
 
-    private function contacted(string $at = '2026-08-01 10:00:00'): Application
+    private function hired(string $at = '2026-08-01 10:00:00'): Application
     {
-        return Application::factory()->for($this->posting)->for($this->profile)->contacted($at)->create();
+        return Application::factory()->for($this->posting)->for($this->profile)->hired($at)->create();
     }
 
     /** @param  array<int, string>|null  $ratings  accommodation_id => rating */
@@ -65,9 +65,9 @@ class FeedbackSubmissionTest extends TestCase
         ]);
     }
 
-    public function test_the_form_lists_the_accommodations_advertised_at_contact(): void
+    public function test_the_form_lists_the_accommodations_advertised_at_hire(): void
     {
-        $application = $this->contacted();
+        $application = $this->hired();
         Sanctum::actingAs($this->profile->user);
 
         $this->getJson("/api/applications/{$application->id}/feedback-form")
@@ -85,11 +85,13 @@ class FeedbackSubmissionTest extends TestCase
 
     public function test_hiring_records_the_accommodations_so_later_posting_edits_do_not_change_the_form(): void
     {
-        $application = Application::factory()->for($this->posting)->for($this->profile)->status(ApplicationStatus::Reviewed)->create();
+        $application = Application::factory()->for($this->posting)->for($this->profile)->status(ApplicationStatus::Contacted)->create();
         Sanctum::actingAs($this->posting->employer->user);
-        $this->patchJson("/api/applications/{$application->id}/status", ['status' => 'contacted'])->assertOk();
+        $report = $this->postJson("/api/applications/{$application->id}/hiring-reports", ['start_date' => now()->toDateString()])->assertCreated()->json('hiring_reports.0.id');
+        Sanctum::actingAs($this->profile->user);
+        $this->postJson("/api/applications/{$application->id}/hiring-reports/{$report}/response", ['answer' => 'confirm'])->assertOk();
 
-        // The employer drops the interpreter after the contact.
+        // The employer drops the interpreter after the hire.
         $this->posting->accommodations()->sync([$this->remote->id, Accommodation::factory()->create()->id]);
 
         Sanctum::actingAs($this->profile->user);
@@ -99,15 +101,15 @@ class FeedbackSubmissionTest extends TestCase
             ->assertJsonPath('items.*.accommodation_id', [$this->remote->id, $this->interpreter->id]);
     }
 
-    public function test_feedback_opens_on_calendar_day_30_after_the_contact_in_manila(): void
+    public function test_feedback_opens_on_calendar_day_30_after_the_start_date_in_manila(): void
     {
-        // Contacted late on 1 Oct (Manila) → opens 31 Oct 00:00 Manila.
-        $application = $this->contacted('2026-10-01 23:30:00');
+        // Confirmed late on 1 Oct (Manila), start date 1 Oct → opens 31 Oct 00:00 Manila.
+        $application = $this->hired('2026-10-01 23:30:00');
 
         Carbon::setTestNow(Carbon::parse('2026-10-30 23:59:59', 'Asia/Manila'));
         $this->submit($application)->assertUnprocessable()
             ->assertJsonPath('error.code', 'FEEDBACK_NOT_OPEN')
-            ->assertJsonPath('error.message', 'Feedback opens on 2026-10-31, 30 days after the employer contacted you.');
+            ->assertJsonPath('error.message', 'Feedback opens on 2026-10-31, 30 days after your confirmed start date.');
         $this->getJson("/api/applications/{$application->id}/feedback-form")
             ->assertOk()->assertJsonPath('is_open', false)->assertJsonPath('opens_on', '2026-10-31');
 
@@ -115,9 +117,22 @@ class FeedbackSubmissionTest extends TestCase
         $this->submit($application)->assertCreated();
     }
 
-    public function test_the_contacted_candidate_submits_once(): void
+    public function test_a_later_start_date_moves_the_opening_day(): void
     {
-        $application = $this->contacted();
+        // Confirmed on 1 Oct for a first day on 15 Oct → opens 14 Nov.
+        $application = Application::factory()->for($this->posting)->for($this->profile)->hired('2026-10-01 10:00:00', startDate: '2026-10-15')->create();
+
+        Carbon::setTestNow(Carbon::parse('2026-11-13 12:00', 'Asia/Manila'));
+        Sanctum::actingAs($this->profile->user);
+        $this->getJson("/api/applications/{$application->id}/feedback-form")
+            ->assertOk()->assertJsonPath('is_open', false)->assertJsonPath('opens_on', '2026-11-14');
+        Carbon::setTestNow(Carbon::parse('2026-11-14 00:00', 'Asia/Manila'));
+        $this->submit($application)->assertCreated();
+    }
+
+    public function test_the_hired_candidate_submits_once(): void
+    {
+        $application = $this->hired();
 
         $response = $this->submit($application)->assertCreated();
         $feedback = Feedback::sole();
@@ -133,7 +148,7 @@ class FeedbackSubmissionTest extends TestCase
         $this->getJson("/api/applications/{$application->id}/feedback-form")->assertJsonPath('submitted', true);
     }
 
-    public function test_applications_that_were_not_contacted_cannot_be_rated(): void
+    public function test_applications_that_were_not_hired_cannot_be_rated(): void
     {
         $application = Application::factory()->for($this->posting)->for($this->profile)->status(ApplicationStatus::Rejected)->create();
 
@@ -142,9 +157,9 @@ class FeedbackSubmissionTest extends TestCase
             ->assertUnprocessable()->assertJsonPath('error.code', 'FEEDBACK_NOT_OPEN');
     }
 
-    public function test_only_the_contacted_candidate_may_rate(): void
+    public function test_only_the_hired_candidate_may_rate(): void
     {
-        $application = $this->contacted();
+        $application = $this->hired();
 
         $this->submit($application, as: CandidateProfile::factory()->create()->user)->assertForbidden();
         $this->submit($application, as: $this->posting->employer->user)->assertForbidden();
@@ -157,7 +172,7 @@ class FeedbackSubmissionTest extends TestCase
 
     public function test_guests_must_log_in(): void
     {
-        $application = $this->contacted();
+        $application = $this->hired();
 
         $this->postJson("/api/applications/{$application->id}/feedback", ['items' => []])->assertUnauthorized();
         $this->getJson("/api/applications/{$application->id}/feedback-form")->assertUnauthorized();
@@ -165,7 +180,7 @@ class FeedbackSubmissionTest extends TestCase
 
     public function test_every_advertised_accommodation_needs_one_valid_rating(): void
     {
-        $application = $this->contacted();
+        $application = $this->hired();
         $other = Accommodation::factory()->create();
 
         $this->submit($application, [$this->remote->id => 'delivered'])
@@ -173,7 +188,7 @@ class FeedbackSubmissionTest extends TestCase
         $this->submit($application, [$this->remote->id => 'delivered', $this->interpreter->id => 'sometimes'])
             ->assertJsonValidationErrors(['items.1.rating']);
         $this->submit($application, [$this->remote->id => 'delivered', $this->interpreter->id => 'partial', $other->id => 'delivered'])
-            ->assertJsonValidationErrors(['items.2.accommodation_id' => 'This accommodation was not part of the job posting when the employer contacted you.']);
+            ->assertJsonValidationErrors(['items.2.accommodation_id' => 'This accommodation was not part of the job posting when you were hired.']);
 
         Sanctum::actingAs($this->profile->user);
         $this->postJson("/api/applications/{$application->id}/feedback", ['items' => [
@@ -187,7 +202,7 @@ class FeedbackSubmissionTest extends TestCase
 
     public function test_only_the_candidate_learns_whether_they_rated(): void
     {
-        $application = $this->contacted();
+        $application = $this->hired();
         $this->submit($application)->assertCreated();
 
         $this->getJson("/api/applications/{$application->id}")->assertJsonPath('feedback_submitted', true);

@@ -4,7 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Application;
 
-/** M13 in-app notice (and email) to a contacted candidate on the day the accommodation rating opens. Sent by feedback:remind. */
+/** M13 in-app notice (and email) to a hired candidate on the day the accommodation rating opens. Sent by feedback:remind. */
 class FeedbackReminder extends AppNotice
 {
     public function __construct(private readonly Application $application)

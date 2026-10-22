@@ -48,6 +48,12 @@ class CandidateProfileFactory extends Factory
         ]);
     }
 
+    /** Has a résumé on file (needed to apply, Decision 2026-10-22b); the file itself is not stored. */
+    public function withResume(string $path = 'resumes/cv.pdf'): static
+    {
+        return $this->state(fn () => ['resume_path' => $path]);
+    }
+
     /** Attaches the given accommodations as needs after creating the profile. */
     public function needing(Accommodation ...$accommodations): static
     {

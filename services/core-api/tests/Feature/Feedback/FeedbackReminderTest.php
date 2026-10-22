@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
-/** M13: feedback:remind tells each contacted candidate once, on the day the accommodation rating opens. */
+/** M13: feedback:remind tells each hired candidate once, on the day the accommodation rating opens. */
 class FeedbackReminderTest extends TestCase
 {
     use RefreshDatabase;
@@ -42,15 +42,15 @@ class FeedbackReminderTest extends TestCase
         parent::tearDown();
     }
 
-    private function contact(string $at): Application
+    private function hire(string $at): Application
     {
-        return Application::factory()->for($this->posting)->contacted($at)->create();
+        return Application::factory()->for($this->posting)->hired($at)->create();
     }
 
-    public function test_reminds_each_contacted_candidate_once_on_the_day_the_rating_opens(): void
+    public function test_reminds_each_hired_candidate_once_on_the_day_the_rating_opens(): void
     {
-        $opensToday = $this->contact('2026-09-12 23:30:00');
-        $opensTomorrow = $this->contact('2026-09-13 00:10:00');
+        $opensToday = $this->hire('2026-09-12 23:30:00');
+        $opensTomorrow = $this->hire('2026-09-13 00:10:00');
 
         $this->artisan('feedback:remind')->expectsOutput('Sent 1 rating reminder(s).')->assertSuccessful();
 
@@ -74,12 +74,12 @@ class FeedbackReminderTest extends TestCase
         $this->assertSame(1, $opensTomorrow->candidateProfile->user->notifications()->count());
     }
 
-    public function test_rated_uncontacted_and_suspended_candidates_are_not_reminded(): void
+    public function test_rated_unhired_and_suspended_candidates_are_not_reminded(): void
     {
-        $rated = $this->contact('2026-08-01 10:00:00');
+        $rated = $this->hire('2026-08-01 10:00:00');
         Feedback::submit($rated, [$this->posting->accommodations->first()->id => 'delivered']);
         $reviewed = Application::factory()->for($this->posting)->status(ApplicationStatus::Reviewed)->create(['created_at' => '2026-08-01 10:00:00']);
-        $suspended = $this->contact('2026-08-01 10:00:00');
+        $suspended = $this->hire('2026-08-01 10:00:00');
         $suspended->candidateProfile->user->forceFill(['is_active' => false])->save();
 
         $this->artisan('feedback:remind')->expectsOutput('Sent 0 rating reminder(s).')->assertSuccessful();

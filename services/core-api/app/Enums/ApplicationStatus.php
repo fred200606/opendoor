@@ -3,16 +3,16 @@
 namespace App\Enums;
 
 /**
- * Application workflow (business-rules.md, Decision 2026-10-22a). The candidate sees Submitted
- * (pending) → Under review (reviewed) → Shortlisted → Contacted. Status never moves backward;
- * contacted, rejected and withdrawn are final. Contacted replaced "hired": it opens the
- * accommodation rating 30 days later.
+ * Application workflow (business-rules.md, Decision 2026-10-22b). The candidate sees Submitted
+ * (pending) → Under review (reviewed) → Shortlisted → Contacted → Hired. Status never moves
+ * backward; hired, rejected and withdrawn are final. The employer may skip stages forward.
  *
- *   pending → reviewed                          employer (automatically when the employer opens it)
- *   reviewed → shortlisted                      employer
- *   reviewed | shortlisted → contacted          employer, or candidate ("The employer contacted me")
- *   reviewed | shortlisted → rejected           employer
- *   pending | reviewed | shortlisted → withdrawn  candidate
+ *   pending → reviewed                                 employer (automatically when the employer opens it)
+ *   any earlier stage → shortlisted | contacted        employer
+ *   reviewed | shortlisted | contacted → rejected      employer
+ *   pending | reviewed | shortlisted | contacted → withdrawn   candidate
+ *   in progress → hired                                never here: only when the other party confirms
+ *                                                      a hiring report (HiringReportController)
  */
 enum ApplicationStatus: string
 {
@@ -20,24 +20,43 @@ enum ApplicationStatus: string
     case Reviewed = 'reviewed';
     case Shortlisted = 'shortlisted';
     case Contacted = 'contacted';
+    case Hired = 'hired';
     case Rejected = 'rejected';
     case Withdrawn = 'withdrawn';
 
+    /** The stages in order; skipping forward is allowed, going back is not. */
+    private const STAGES = [self::Pending, self::Reviewed, self::Shortlisted, self::Contacted];
+
     public function canTransitionTo(self $to, UserRole $actor): bool
     {
-        return match ([$this, $to]) {
-            [self::Pending, self::Reviewed],
-            [self::Reviewed, self::Shortlisted],
-            [self::Reviewed, self::Rejected], [self::Shortlisted, self::Rejected] => $actor === UserRole::Employer,
-            [self::Pending, self::Withdrawn], [self::Reviewed, self::Withdrawn], [self::Shortlisted, self::Withdrawn] => $actor === UserRole::Candidate,
-            [self::Reviewed, self::Contacted], [self::Shortlisted, self::Contacted] => $actor === UserRole::Employer || $actor === UserRole::Candidate,
-            default => false,
+        if (! $this->isInProgress()) {
+            return false;
+        }
+
+        return match ($to) {
+            self::Reviewed, self::Shortlisted, self::Contacted => $actor === UserRole::Employer
+                && array_search($to, self::STAGES, true) > array_search($this, self::STAGES, true),
+            self::Rejected => $actor === UserRole::Employer && $this !== self::Pending,
+            self::Withdrawn => $actor === UserRole::Candidate,
+            self::Pending, self::Hired => false,
         };
+    }
+
+    /** Still open: a hire can be reported, the candidate can withdraw. */
+    public function isInProgress(): bool
+    {
+        return in_array($this, self::STAGES, true);
     }
 
     public function isFinal(): bool
     {
-        return in_array($this, [self::Contacted, self::Rejected, self::Withdrawn], true);
+        return ! $this->isInProgress();
+    }
+
+    /** @return list<self> */
+    public static function inProgress(): array
+    {
+        return self::STAGES;
     }
 
     /** @return list<string> */

@@ -5,9 +5,15 @@ namespace Database\Seeders;
 use App\Models\Accommodation;
 use App\Models\CandidateProfile;
 use App\Models\User;
+use App\Support\SimplePdf;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
-/** Profiles and accommodation needs for the demo candidates (run after DemoUserSeeder). */
+/**
+ * Profiles, accommodation needs and a one-page résumé for the demo candidates (run after
+ * DemoUserSeeder). Applying needs a résumé (Decision 2026-10-22b); an uploaded one is kept.
+ */
 class DemoCandidateSeeder extends Seeder
 {
     /** @var array<string, array<string, mixed>> keyed by the candidate's email */
@@ -52,6 +58,13 @@ class DemoCandidateSeeder extends Seeder
             $profile->user_id = $user->id;
             $profile->fill(collect($data)->except('needs')->all());
             DemoPlaces::apply($profile);
+            if (! $profile->resume_path || ! Storage::exists($profile->resume_path)) {
+                $profile->resume_path = 'resumes/demo-'.Str::before($email, '@').'.pdf';
+                Storage::put($profile->resume_path, SimplePdf::text([
+                    $user->name, $data['headline'], '', 'Skills: '.implode(', ', $data['skills']), '',
+                    ...explode("\n", $data['experience']),
+                ]));
+            }
             $profile->save();
             $profile->accommodations()->sync(collect($data['needs'])->map(fn ($name) => $accommodations[$name])->all());
         }

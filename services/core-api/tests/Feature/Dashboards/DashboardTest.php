@@ -23,7 +23,9 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const NO_APPLICATIONS = ['pending' => 0, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 0, 'rejected' => 0, 'withdrawn' => 0];
+    private const NO_APPLICATIONS = ['pending' => 0, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 0, 'hired' => 0, 'rejected' => 0, 'withdrawn' => 0];
+
+    private const NO_PIPELINE = ['submitted' => 0, 'under_review' => 0, 'shortlisted' => 0, 'contacted' => 0, 'hiring_pending' => 0, 'hired' => 0, 'closed' => 0];
 
     private const NO_POSTINGS = ['draft' => 0, 'open' => 0, 'closed' => 0];
 
@@ -49,17 +51,22 @@ class DashboardTest extends TestCase
         $mine = Application::factory()->for($profile);
         $mine->create();
         $mine->status(ApplicationStatus::Withdrawn)->create();
-        $recent = $mine->contacted('2026-10-05 15:00:00')->create();
-        $older = $mine->contacted('2026-09-01 10:00:00')->create();
-        $rated = $mine->contacted('2026-08-01 10:00:00')->create();
+        $recent = $mine->hired('2026-10-05 15:00:00')->create();
+        $older = $mine->hired('2026-09-01 10:00:00')->create();
+        $rated = $mine->hired('2026-08-01 10:00:00')->create();
         Feedback::submit($rated, []);
+        $mine->status(ApplicationStatus::Shortlisted)->create();
+        // Contacted, but the job closed since: counted as closed, not as contacted (Decision 2026-10-22b).
+        $mine->for(JobPosting::factory()->closed())->status(ApplicationStatus::Contacted)->create();
+        $this->pendingReport($mine->status(ApplicationStatus::Reviewed)->create());
         Application::factory()->create(); // someone else's
 
         Sanctum::actingAs($profile->user);
         $this->getJson('/api/candidate/dashboard')
             ->assertOk()
             ->assertExactJson([
-                'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 3, 'rejected' => 0, 'withdrawn' => 1],
+                'applications' => ['pending' => 1, 'reviewed' => 1, 'shortlisted' => 1, 'contacted' => 1, 'hired' => 3, 'rejected' => 0, 'withdrawn' => 1],
+                'pipeline' => ['submitted' => 1, 'under_review' => 1, 'shortlisted' => 1, 'contacted' => 0, 'hiring_pending' => 1, 'hired' => 3, 'closed' => 2],
                 'needs_count' => 2,
                 'matching_jobs' => 2,
                 'feedback_due' => [
@@ -88,7 +95,7 @@ class DashboardTest extends TestCase
 
         $this->getJson('/api/candidate/dashboard')
             ->assertOk()
-            ->assertExactJson(['applications' => self::NO_APPLICATIONS, 'needs_count' => 0, 'matching_jobs' => 0, 'feedback_due' => []]);
+            ->assertExactJson(['applications' => self::NO_APPLICATIONS, 'pipeline' => self::NO_PIPELINE, 'needs_count' => 0, 'matching_jobs' => 0, 'feedback_due' => []]);
 
         Sanctum::actingAs(CandidateProfile::factory()->create()->user);
         $this->getJson('/api/candidate/dashboard')->assertJsonPath('needs_count', 0)->assertJsonPath('matching_jobs', 0);
@@ -101,12 +108,13 @@ class DashboardTest extends TestCase
         $own->create();
         $open = $own->open()->create();
         $own->open()->create();
-        $own->closed()->create();
+        $closed = $own->closed()->create();
         $deleted = $own->open()->create();
 
         Application::factory()->for($open)->create();
         Application::factory()->for($open)->status(ApplicationStatus::Reviewed)->create();
-        Application::factory()->for($deleted)->contacted()->create();
+        Application::factory()->for($deleted)->hired()->create();
+        $this->pendingReport(Application::factory()->for($closed)->status(ApplicationStatus::Contacted)->create());
         $deleted->delete();
         Application::factory()->create(); // another employer's posting
 
@@ -117,7 +125,9 @@ class DashboardTest extends TestCase
                 'company' => ['exists' => true, 'verified' => true, 'verification_rejected_reason' => null],
                 'postings' => ['draft' => 1, 'open' => 2, 'closed' => 1],
                 // Applicants include those of the deleted posting (as in the applicants list).
-                'applications' => ['pending' => 1, 'reviewed' => 1, 'shortlisted' => 0, 'contacted' => 1, 'rejected' => 0, 'withdrawn' => 0],
+                'applications' => ['pending' => 1, 'reviewed' => 1, 'shortlisted' => 0, 'contacted' => 1, 'hired' => 1, 'rejected' => 0, 'withdrawn' => 0],
+                // The hire on the deleted posting is final, so it is not "job closed"; the contacted one is.
+                'pipeline' => ['submitted' => 1, 'under_review' => 1, 'shortlisted' => 0, 'contacted' => 0, 'hiring_pending' => 1, 'hired' => 1, 'closed' => 1],
                 'trust_score' => ['published' => true, 'score' => 86, 'based_on' => 5],
             ]);
     }
@@ -131,6 +141,7 @@ class DashboardTest extends TestCase
                 'company' => ['exists' => false, 'verified' => false, 'verification_rejected_reason' => null],
                 'postings' => self::NO_POSTINGS,
                 'applications' => self::NO_APPLICATIONS,
+                'pipeline' => self::NO_PIPELINE,
                 'trust_score' => ['published' => false, 'score' => null, 'based_on' => 0],
             ]);
 
@@ -159,13 +170,13 @@ class DashboardTest extends TestCase
         $profile = CandidateProfile::factory()->create();
         User::factory()->candidate()->suspended()->create();
         Application::factory()->for($open)->for(CandidateProfile::factory())->create();
-        $contacted = Application::factory()->for($open)->for($profile)->contacted(now()->subDays(40)->toDateTimeString())->create();
-        $contactedToo = Application::factory()->for($closed)->for($profile)->contacted(now()->subDays(40)->toDateTimeString())->create();
+        $hired = Application::factory()->for($open)->for($profile)->hired(now()->subDays(40)->toDateTimeString())->create();
+        $hiredToo = Application::factory()->for($closed)->for($profile)->hired(now()->subDays(40)->toDateTimeString())->create();
         Application::factory()->for($deleted)->for($profile)->create();
         $deleted->delete();
 
-        Feedback::submit($contacted, []);
-        Feedback::submit($contactedToo, [])->forceFill(['is_hidden' => true])->save();
+        Feedback::submit($hired, []);
+        Feedback::submit($hiredToo, [])->forceFill(['is_hidden' => true])->save();
 
         $report = ['reporter_id' => $profile->user_id, 'job_posting_id' => $open->id];
         Report::factory()->count(2)->create($report);
@@ -177,7 +188,7 @@ class DashboardTest extends TestCase
             ->assertExactJson([
                 'users' => ['candidate' => 3, 'employer' => 6, 'admin' => 1, 'suspended' => 1],
                 'postings' => ['draft' => 1, 'open' => 1, 'closed' => 1],
-                'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 2, 'rejected' => 0, 'withdrawn' => 0],
+                'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 0, 'hired' => 2, 'rejected' => 0, 'withdrawn' => 0],
                 'verification_queue' => 2,
                 'open_reports' => 2,
                 'feedback' => ['responses' => 2, 'hidden' => 1],
@@ -198,6 +209,15 @@ class DashboardTest extends TestCase
 
         Sanctum::actingAs(User::factory()->admin()->create());
         $this->getJson('/api/candidate/dashboard')->assertForbidden();
+    }
+
+    private function pendingReport(Application $application): void
+    {
+        $application->hiringReports()->forceCreate([
+            'reported_by' => 'employer',
+            'reporter_id' => $application->jobPosting->employer->user_id,
+            'start_date' => '2026-10-20',
+        ]);
     }
 
     public function test_status_lists_cover_every_enum_case(): void

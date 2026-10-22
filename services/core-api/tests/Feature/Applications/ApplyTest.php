@@ -25,7 +25,7 @@ class ApplyTest extends TestCase
         parent::setUp();
 
         $this->candidate = User::factory()->candidate()->create(['name' => 'Maria Santos']);
-        CandidateProfile::factory()->for($this->candidate)->create();
+        CandidateProfile::factory()->for($this->candidate)->withResume()->create();
         $employer = Employer::factory()->verified()->create(['company_name' => 'Bright Path BPO']);
         $this->posting = JobPosting::factory()->open()->create(['employer_id' => $employer->id, 'title' => 'Data Encoder']);
         Sanctum::actingAs($this->candidate);
@@ -43,7 +43,9 @@ class ApplyTest extends TestCase
             ->assertJsonPath('job_posting_id', $this->posting->id)
             ->assertJsonPath('status', 'pending')
             ->assertJsonPath('cover_note', 'I have 3 years of encoding experience.')
-            ->assertJsonPath('contacted_at', null)
+            ->assertJsonPath('hired_at', null)
+            ->assertJsonPath('job_closed', false)
+            ->assertJsonPath('hiring_reports', [])
             ->assertJsonPath('feedback_opens_on', null)
             ->assertJsonPath('job_posting.title', 'Data Encoder')
             ->assertJsonMissingPath('candidate');
@@ -88,6 +90,17 @@ class ApplyTest extends TestCase
         // A brand-new candidate has no profile at all.
         Sanctum::actingAs(User::factory()->candidate()->create());
         $this->apply()->assertUnprocessable()->assertJsonPath('error.code', 'PROFILE_INCOMPLETE');
+    }
+
+    public function test_a_resume_is_required(): void
+    {
+        $this->candidate->candidateProfile->forceFill(['resume_path' => null])->save();
+
+        $this->apply()
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'RESUME_REQUIRED')
+            ->assertJsonPath('error.message', 'Upload your résumé (PDF) before you apply.');
+        $this->assertSame(0, Application::count());
     }
 
     public function test_applying_twice_is_a_conflict(): void

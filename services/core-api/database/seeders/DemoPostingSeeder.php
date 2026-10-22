@@ -106,7 +106,7 @@ class DemoPostingSeeder extends Seeder
                 ],
             ],
             [
-                // Filled and closed: the contacted applicants for DemoFeedbackSeeder (2 responses + one open for Postman T10).
+                // Filled and closed: the hires for DemoFeedbackSeeder (2 responses + one open for Postman T10).
                 'title' => 'Quality Control Assistant',
                 'skills' => ['Quality control', 'Attention to detail', 'Food safety'],
                 'education_level' => 'high_school',

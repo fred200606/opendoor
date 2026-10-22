@@ -8,6 +8,7 @@ use App\Models\Accommodation;
 use App\Models\Application;
 use App\Models\Category;
 use App\Models\Feedback;
+use App\Models\HiringReport;
 use App\Models\User;
 use Database\Seeders\AccommodationSeeder;
 use Database\Seeders\CategorySeeder;
@@ -16,6 +17,7 @@ use Database\Seeders\DemoFeedbackSeeder;
 use Database\Seeders\DemoUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -28,6 +30,7 @@ class SeederTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake();
 
         config(['opendoor.demo_password' => self::DEMO_PASSWORD]);
     }
@@ -39,10 +42,32 @@ class SeederTest extends TestCase
 
         $this->assertSame(count(CategorySeeder::CATEGORIES), Category::count());
         $this->assertSame(18, Accommodation::count()); // 4 + 3 + 5 + 3 + 3 types per data-model.md
-        $formerEmployees = collect(DemoFeedbackSeeder::CONTACTS)->filter(fn ($contact) => str_starts_with($contact['email'], 'former'))->count();
+        $formerEmployees = collect(DemoFeedbackSeeder::HIRES)->filter(fn ($hire) => str_starts_with($hire['email'], 'former'))->count();
         $this->assertSame(count(DemoUserSeeder::ACCOUNTS) + $formerEmployees, User::count());
-        $this->assertSame(count(DemoFeedbackSeeder::CONTACTS), Application::where('status', 'contacted')->count());
+        $this->assertSame(count(DemoFeedbackSeeder::HIRES), Application::where('status', 'hired')->count());
+        // Each hire is a confirmed report by the employer (Decision 2026-10-22b).
+        $this->assertSame(count(DemoFeedbackSeeder::HIRES), HiringReport::where('status', 'confirmed')->where('reported_by', 'employer')->count());
+        $this->assertSame(0, Application::where('status', 'hired')->whereNull('hire_start_date')->count());
         $this->assertSame(5, Feedback::count());
+    }
+
+    public function test_demo_candidates_have_a_resume_so_they_can_apply(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        foreach (['candidate@opendoor.test', 'candidate2@opendoor.test'] as $email) {
+            $profile = User::where('email', $email)->firstOrFail()->candidateProfile;
+            $this->assertSame('resumes/demo-'.strstr($email, '@', true).'.pdf', $profile->resume_path);
+            Storage::assertExists($profile->resume_path);
+            $this->assertStringStartsWith('%PDF-', Storage::get($profile->resume_path));
+        }
+
+        // A résumé the candidate uploaded is kept.
+        $profile = User::where('email', 'candidate@opendoor.test')->firstOrFail()->candidateProfile;
+        Storage::put('resumes/uploaded.pdf', '%PDF-1.4 mine');
+        $profile->forceFill(['resume_path' => 'resumes/uploaded.pdf'])->save();
+        $this->seed(DatabaseSeeder::class);
+        $this->assertSame('resumes/uploaded.pdf', $profile->fresh()->resume_path);
     }
 
     public function test_the_first_demo_employer_has_a_published_trust_score(): void
@@ -53,14 +78,14 @@ class SeederTest extends TestCase
         // (3.5 + 3.5 + 2.5) of 12 rated items = 79.17 %.
         $this->assertSame(['published' => true, 'score' => 79, 'based_on' => 3], $employer->fresh()->trustScoreSummary());
 
-        // employer2@: 2 responses; the open contact of candidate2@ would be the 3rd (Postman T10).
+        // employer2@: 2 responses; the open hire of candidate2@ would be the 3rd (Postman T10).
         $employer2 = User::where('email', 'employer2@opendoor.test')->firstOrFail()->employer;
         $this->assertSame(['published' => false, 'score' => null, 'based_on' => 2], $employer2->fresh()->trustScoreSummary());
         $open = Application::whereHas('candidateProfile.user', fn ($user) => $user->where('email', 'candidate2@opendoor.test'))->sole();
         $this->assertSame($employer2->id, $open->jobPosting->employer_id);
         $this->assertTrue($open->isFeedbackOpen());
         $this->assertFalse($open->feedback()->exists());
-        $this->assertSame(3, $open->accommodationsAtContact()->count());
+        $this->assertSame(3, $open->accommodationsAtHire()->count());
     }
 
     public function test_accommodations_cover_every_group_and_are_active(): void

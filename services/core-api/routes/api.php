@@ -14,6 +14,7 @@ use App\Http\Controllers\Employer\CompanyController;
 use App\Http\Controllers\Employer\PostingController;
 use App\Http\Controllers\EmployerController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\HiringReportController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\NotificationController;
@@ -85,12 +86,15 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('applications', [ApplicationController::class, 'index']);
         Route::get('applications/{application}', [ApplicationController::class, 'show']);
         Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus']);
+        // Hired only by mutual confirmation (Decision 2026-10-22b)
+        Route::post('applications/{application}/hiring-reports', [HiringReportController::class, 'store']);
+        Route::post('applications/{application}/hiring-reports/{hiringReport}/response', [HiringReportController::class, 'respond'])->scopeBindings();
     });
 
     // M10 Reports – a candidate reports a visible posting
     Route::post('job-postings/{jobPosting}/reports', [ReportController::class, 'store'])->middleware('role:candidate');
 
-    // M7 Feedback – only the contacted candidate (ApplicationPolicy::giveFeedback)
+    // M7 Feedback – only the hired candidate (ApplicationPolicy::giveFeedback)
     Route::middleware('role:candidate')->group(function () {
         Route::get('applications/{application}/feedback-form', [FeedbackController::class, 'form']);
         Route::post('applications/{application}/feedback', [FeedbackController::class, 'store']);

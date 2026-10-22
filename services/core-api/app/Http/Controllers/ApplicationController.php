@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\ContactConfirmedBy;
+use App\Enums\HiringParty;
+use App\Enums\HiringReportAction;
+use App\Enums\HiringReportStatus;
 use App\Enums\JobPostingStatus;
 use App\Enums\UserRole;
 use App\Exceptions\ApiException;
@@ -22,12 +24,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-/** M6: apply, list, details and the server-enforced status workflow (ApplicationStatus). */
+/** M6: apply, list, details and the server-enforced status workflow (ApplicationStatus); hiring in HiringReportController. */
 class ApplicationController extends Controller
 {
-    private const RELATIONS = [
+    public const RELATIONS = [
         'jobPosting.employer.user', 'jobPosting.category', 'jobPosting.accommodations',
         'candidateProfile.user', 'candidateProfile.accommodations', 'feedback:id,application_id',
+        'hiringReports.events',
     ];
 
     public function store(Request $request, JobPosting $jobPosting): JsonResponse
@@ -49,6 +52,9 @@ class ApplicationController extends Controller
         $profile = CandidateProfile::for($request->user());
         if (! $profile->isComplete()) {
             throw new ApiException('PROFILE_INCOMPLETE', 'Complete your profile before you apply: where you live, at least 3 skills, your education and your work preferences.', 422);
+        }
+        if (! $profile->resume_path) {
+            throw new ApiException('RESUME_REQUIRED', 'Upload your résumé (PDF) before you apply.', 422);
         }
 
         $application = new Application($data);
@@ -107,7 +113,7 @@ class ApplicationController extends Controller
         Gate::authorize('changeStatus', $application);
 
         $to = ApplicationStatus::from($request->validate([
-            'status' => ['required', Rule::in(['reviewed', 'shortlisted', 'contacted', 'rejected', 'withdrawn'])],
+            'status' => ['required', Rule::in(['reviewed', 'shortlisted', 'contacted', 'hired', 'rejected', 'withdrawn'])],
         ])['status']);
 
         return new ApplicationResource($this->transition($application, $to, $request->user()));
@@ -115,14 +121,21 @@ class ApplicationController extends Controller
 
     /**
      * Applies one workflow step under a row lock (two clicks or both parties at once cannot both
-     * succeed), then notifies the other party.
+     * succeed), then notifies the other party. A withdrawal or rejection cancels a pending hiring report.
      */
     private function transition(Application $application, ApplicationStatus $to, User $actor): Application
     {
         $actorRole = $application->isByCandidate($actor) ? UserRole::Candidate : UserRole::Employer;
 
-        $application = DB::transaction(function () use ($application, $to, $actorRole) {
+        $application = DB::transaction(function () use ($application, $to, $actor, $actorRole) {
             $locked = Application::query()->lockForUpdate()->findOrFail($application->id);
+            if ($to === ApplicationStatus::Hired) {
+                throw new ApiException(
+                    'INVALID_STATUS_TRANSITION',
+                    'An application becomes hired only when both parties confirm a hiring report.',
+                    422,
+                );
+            }
             if (! $locked->status->canTransitionTo($to, $actorRole)) {
                 throw new ApiException(
                     'INVALID_STATUS_TRANSITION',
@@ -132,19 +145,21 @@ class ApplicationController extends Controller
             }
 
             $locked->status = $to;
-            if ($to === ApplicationStatus::Reviewed) {
-                $locked->reviewed_at = now(); // the "Under review" date in the candidate's timeline
-            }
-            if ($to === ApplicationStatus::Shortlisted) {
-                $locked->shortlisted_at = now();
-            }
-            if ($to === ApplicationStatus::Contacted) {
-                $locked->contacted_at = now();
-                $locked->contact_confirmed_by = $actorRole === UserRole::Candidate ? ContactConfirmedBy::Candidate : ContactConfirmedBy::Employer;
-            }
+            // The dates in the candidate's timeline; a skipped stage keeps none.
+            match ($to) {
+                ApplicationStatus::Reviewed => $locked->reviewed_at = now(),
+                ApplicationStatus::Shortlisted => $locked->shortlisted_at = now(),
+                ApplicationStatus::Contacted => $locked->contacted_at = now(),
+                default => null,
+            };
             $locked->save();
-            if ($to === ApplicationStatus::Contacted) {
-                $locked->recordContactSnapshot();
+
+            if ($to === ApplicationStatus::Rejected || $to === ApplicationStatus::Withdrawn) {
+                $report = $locked->pendingHiringReport()->lockForUpdate()->first();
+                if ($report) {
+                    $report->forceFill(['status' => HiringReportStatus::Cancelled, 'responded_at' => now()])->save();
+                    $report->record(HiringReportAction::Cancelled, $actorRole === UserRole::Candidate ? HiringParty::Candidate : HiringParty::Employer, $actor);
+                }
             }
 
             return $locked;

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 /**
- * M7: one anonymous response per contacted application. Employers only ever see the aggregated trust
+ * M7: one anonymous response per hired application. Employers only ever see the aggregated trust
  * score (TrustScoreService); is_hidden is changed only by admin moderation.
  */
 #[ObservedBy(FeedbackObserver::class)]

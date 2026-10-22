@@ -3,12 +3,11 @@
 namespace App\Notifications;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\ContactConfirmedBy;
 use App\Models\Application;
 
 /**
  * M9 in-app notice (and M13 email) for the other party whenever an application is created or
- * changes status. `data.message` is plain language; `data.url` is the in-app page to open
+ * changes status (hires are told by HiringReportUpdate). `data.message` is plain language; `data.url` is the in-app page to open
  * (OpenAPI Notification).
  */
 class ApplicationUpdate extends AppNotice
@@ -28,13 +27,13 @@ class ApplicationUpdate extends AppNotice
         $recipient->notify(new self($application));
     }
 
-    /** The candidate applied, withdrew or confirmed the contact → tell the employer; otherwise the candidate. */
+    /** The candidate applied or withdrew → tell the employer; the employer's steps → the candidate. */
     private static function forEmployer(Application $application): bool
     {
         return match ($application->status) {
             ApplicationStatus::Pending, ApplicationStatus::Withdrawn => true,
-            ApplicationStatus::Contacted => $application->contact_confirmed_by === ContactConfirmedBy::Candidate,
-            ApplicationStatus::Reviewed, ApplicationStatus::Shortlisted, ApplicationStatus::Rejected => false,
+            ApplicationStatus::Reviewed, ApplicationStatus::Shortlisted, ApplicationStatus::Contacted,
+            ApplicationStatus::Rejected, ApplicationStatus::Hired => false,
         };
     }
 
@@ -64,11 +63,10 @@ class ApplicationUpdate extends AppNotice
             ApplicationStatus::Pending => "{$candidate} applied for {$title}.",
             ApplicationStatus::Reviewed => "{$company} is reviewing your application for {$title}.",
             ApplicationStatus::Shortlisted => "Good news: {$company} shortlisted you for {$title}.",
+            ApplicationStatus::Contacted => "{$company} reached out to you about the next steps for {$title}.",
             ApplicationStatus::Rejected => "{$company} decided not to continue with your application for {$title}.",
             ApplicationStatus::Withdrawn => "{$candidate} withdrew the application for {$title}.",
-            ApplicationStatus::Contacted => $application->contact_confirmed_by === ContactConfirmedBy::Candidate
-                ? "{$candidate} confirmed that you contacted them about {$title}."
-                : "{$company} reached out to you about the next steps for {$title}. You can rate the promised accommodations from ".$application->feedbackOpensOn()->format('F j, Y').'.',
+            ApplicationStatus::Hired => "{$company} and you confirmed that you were hired for {$title}.",
         };
 
         return [

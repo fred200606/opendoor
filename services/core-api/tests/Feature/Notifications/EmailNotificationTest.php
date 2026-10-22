@@ -101,7 +101,7 @@ class EmailNotificationTest extends TestCase
     {
         $employer = Employer::factory()->verified()->create(['company_name' => 'Bright Path BPO']);
         $posting = JobPosting::factory()->open()->for($employer)->create(['title' => 'Data Encoder']);
-        $profile = CandidateProfile::factory()->create(['disability_type' => 'Low vision', 'show_disability' => true]);
+        $profile = CandidateProfile::factory()->withResume()->create(['disability_type' => 'Low vision', 'show_disability' => true]);
         $profile->user->update(['name' => 'Maria Santos']);
         $profile->accommodations()->attach(Accommodation::factory()->create(['name' => 'Screen magnifier software']));
         Sanctum::actingAs($profile->user);
