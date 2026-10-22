@@ -119,6 +119,8 @@ describe('PostingFormPage', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(screen.getByRole('combobox', { name: /Skills this job needs/ }), 'encoding{Enter}');
     await user.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('heading', { level: 2, name: 'Step 4 of 6 · Salary and applying' });
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByLabelText('Wheelchair-accessible entrance'));
     await user.type(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/), 'Ramp at gate 2');
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -127,7 +129,7 @@ describe('PostingFormPage', () => {
   test('each step is checked before the next; the review shows everything', async () => {
     const { user, calls } = renderApp('/employer/jobs/new', { as: 'employer', routes });
 
-    await screen.findByRole('heading', { level: 2, name: 'Step 1 of 5 · Job basics' });
+    await screen.findByRole('heading', { level: 2, name: 'Step 1 of 6 · Job basics' });
     await user.click(screen.getByRole('button', { name: 'Next' }));
     const summary = await screen.findByRole('alert');
     expect(summary).toHaveFocus();
@@ -135,7 +137,7 @@ describe('PostingFormPage', () => {
     expect(summary).toHaveTextContent('Choose a work setup.');
 
     await fillRequired(user);
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 5 of 5 · Review and publish' })).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 6 of 6 · Review and publish' })).toHaveFocus();
     const basics = screen.getByRole('region', { name: 'Job basics' });
     expect(basics).toHaveTextContent('Data Encoder');
     expect(basics).toHaveTextContent('Part-time');
@@ -177,8 +179,64 @@ describe('PostingFormPage', () => {
       education_level: null,
       experience_years: null,
       qualifications: null,
+      responsibilities: null,
+      schedule: null,
+      salary_min: null,
+      salary_max: null,
+      salary_period: null,
+      benefits: null,
+      application_requirements: null,
       accommodations: [{ id: 1, note: 'Ramp at gate 2' }],
       submit: true,
+    });
+  });
+
+  test('responsibilities, schedule, salary, benefits and extra requirements are sent; the salary is checked (Decision 2026-10-22e)', async () => {
+    const { user, calls } = renderApp('/employer/jobs/new', {
+      as: 'employer',
+      routes: { ...routes, 'POST /job-postings': () => [201, { ...job, status: 'open' }], 'GET /employer/job-postings': () => [200, paged([])] },
+    });
+
+    await user.type(await screen.findByLabelText(/Job title/), 'Data Encoder');
+    await user.selectOptions(screen.getByLabelText(/Category/), 'Administrative');
+    await user.click(screen.getByLabelText('Full-time'));
+    await user.click(screen.getByLabelText('On-site'));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByLabelText(/Job description/), 'Encode records.');
+    await user.type(screen.getByLabelText(/Main responsibilities/), 'Encode records{Enter}Check records');
+    await user.type(screen.getByLabelText(/Schedule/), 'Monday to Friday');
+    await user.click(screen.getByLabelText('Online interview'));
+    await user.type(screen.getByLabelText(/Workplace address/), '123 Quezon Ave.');
+    await user.type(screen.getByLabelText(/Applications close on/), '2099-11-30');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByRole('combobox', { name: /Skills this job needs/ }), 'encoding{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    await user.type(screen.getByLabelText(/Highest salary/), '15000');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Enter the lowest salary too, or leave both amounts empty.');
+    await user.type(screen.getByLabelText(/Lowest salary/), '20000');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The highest salary cannot be lower than the lowest.');
+    await user.clear(screen.getByLabelText(/Highest salary/));
+    await user.type(screen.getByLabelText(/Highest salary/), '26000');
+    await user.click(screen.getByLabelText('Month'));
+    await user.type(screen.getByLabelText(/Benefits/), 'HMO');
+    await user.type(screen.getByLabelText(/Anything else applicants should send/), 'A portfolio link.');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(screen.getByRole('region', { name: 'Salary and applying' })).toHaveTextContent('₱20,000 to ₱26,000 a month');
+    await user.click(screen.getByRole('button', { name: 'Publish job' }));
+    await screen.findByText('“Data Encoder” is published and open to job seekers.');
+    expect(calls.find((call) => call.key === 'POST /job-postings').data).toMatchObject({
+      responsibilities: 'Encode records\nCheck records',
+      schedule: 'Monday to Friday',
+      salary_min: 20000,
+      salary_max: 26000,
+      salary_period: 'month',
+      benefits: 'HMO',
+      application_requirements: 'A portfolio link.',
     });
   });
 
@@ -193,7 +251,7 @@ describe('PostingFormPage', () => {
 
     // The error sends the employer back to the Accommodations step.
     await user.click(await screen.findByRole('link', { name: /may not be greater than 255/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'Step 4 of 5 · Accommodations' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Step 5 of 6 · Accommodations' })).toBeInTheDocument();
     expect(document.getElementById('accommodations')).toHaveFocus();
     expect(calls.find((call) => call.key === 'POST /job-postings').data.submit).toBe(false);
   });
@@ -219,7 +277,7 @@ describe('PostingFormPage', () => {
 
     expect(await screen.findByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/employer/jobs');
     expect(screen.queryByRole('button', { name: 'Save as draft' })).not.toBeInTheDocument();
-    for (let step = 0; step < 4; step += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
+    for (let step = 0; step < 5; step += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('button', { name: 'Publish changes' })).toBeInTheDocument();
   });
 
@@ -257,6 +315,9 @@ describe('PostingFormPage', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('list', { name: /Skills this job needs/ })).toHaveTextContent('Data entry');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByLabelText(/Lowest salary/)).toHaveValue(18000);
+    expect(screen.getByLabelText('Month')).toBeChecked();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByLabelText('Wheelchair-accessible entrance')).toBeChecked();
     expect(screen.getByLabelText(/Details for “Wheelchair-accessible entrance”/)).toHaveValue('Ramp at main entrance');

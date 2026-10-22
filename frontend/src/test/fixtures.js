@@ -37,6 +37,12 @@ export const job = {
   education_level: 'senior_high',
   experience_years: 1,
   qualifications: null,
+  // Job details (Decision 2026-10-22e).
+  responsibilities: 'Encode customer records\nCheck records for errors',
+  salary: { min: 18000, max: 22000, period: 'month', currency: 'PHP' },
+  benefits: 'HMO from the first month\n13th-month pay',
+  schedule: 'Monday to Friday, 9:00 AM to 5:00 PM',
+  application_requirements: 'A short writing sample.',
   employer: { id: 7, company_name: 'Bayanihan Tech Solutions', verified: true },
   category: { id: 1, name: 'Administrative' },
   address: '123 Quezon Ave.',

@@ -31,8 +31,7 @@ describe('JobSearchPage', () => {
     });
 
     expect(await screen.findByRole('button', { name: 'Recommended for me' })).toHaveAttribute('aria-pressed', 'true');
-    await screen.findByText('Good match, 74%');
-    expect(screen.getByText('1 of 2 skills · In your city, about 2.4 km away · Meets 1 of your 2 needs')).toBeInTheDocument();
+    await screen.findByText('Match: 74%');
 
     // Each chip opens its panel; Escape closes it and puts focus back on the chip.
     const categoryChip = screen.getByRole('button', { name: 'Category' });
@@ -73,6 +72,45 @@ describe('JobSearchPage', () => {
     expect(screen.getByRole('link', { name: 'Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
     // Filters change only the query string: focus stays where the user is typing.
     expect(screen.getByRole('searchbox', { name: 'Search jobs' })).toHaveFocus();
+  });
+
+  test('a card puts the work first: salary, place, summary, skills, qualifications, match, then accommodations (Decision 2026-10-22e)', async () => {
+    const card = { ...job, skills: ['Microsoft Excel', 'Typing', 'Data entry', 'Filing', 'Email'] };
+    const { user } = renderApp('/candidate/jobs', {
+      as: 'candidate',
+      routes: { ...masterData, 'GET /job-postings': () => [200, paged([card, { ...job, id: 43, title: 'Packer', salary: null, accommodations: [], match: null }], { match_mode: true })] },
+    });
+
+    const [first, second] = await screen.findAllByRole('article');
+    expect(within(first).getByRole('heading', { level: 3, name: 'Data Encoder' })).toBeInTheDocument();
+    expect(first).toHaveTextContent('Salary: ₱18,000 to ₱22,000 a month');
+    expect(first).toHaveTextContent('Quezon City · , On-site · , Full-time');
+    expect(first).toHaveTextContent('Encode records. Work with the admin team.');
+    // Up to 3 skills, the candidate's matched one first, then a link to all of them.
+    expect(within(first).getAllByRole('listitem').slice(0, 3).map((item) => item.textContent)).toEqual(['Data entry (you have it)', 'Microsoft Excel', 'Typing']);
+    expect(within(first).getByRole('link', { name: '+2 more: view all skills for Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42#skills');
+    expect(first).toHaveTextContent('Qualifications:Senior high school or higher, at least 1 year of experience');
+
+    const why = within(first).getByRole('button', { name: 'Why this match?' });
+    expect(why).toHaveAttribute('aria-expanded', 'false');
+    await user.click(why);
+    expect(why).toHaveAttribute('aria-expanded', 'true');
+    expect(first).toHaveTextContent('Partly fits: You have 1 of the 2 required skills');
+    expect(first).toHaveTextContent('Does not fit: Less experience than the job asks for');
+    expect(within(first).getByRole('link', { name: 'See the full match for Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42#match');
+
+    // Accommodations: one smaller row with a link, no tags and no "Show more".
+    expect(first).toHaveTextContent('2 workplace accommodations, offers 1 of your 2 needs');
+    expect(within(first).getByRole('link', { name: 'View accommodations for Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42#accommodations');
+    expect(within(first).queryByText('Wheelchair-accessible entrance')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Show more/ })).not.toBeInTheDocument();
+    expect(first).toHaveTextContent('Apply by November 30, 2026');
+    expect(within(first).getByRole('link', { name: 'View job: Data Encoder' })).toHaveAttribute('href', '/candidate/jobs/42');
+    expect(within(first).getByRole('button', { name: 'Save Data Encoder' })).toBeInTheDocument();
+
+    expect(second).toHaveTextContent('Salary not disclosed');
+    expect(second).toHaveTextContent('No workplace accommodations listed');
+    expect(within(second).queryByRole('button', { name: 'Why this match?' })).not.toBeInTheDocument();
   });
 
   test('candidates can save or unsave a job from its result card; guests see no Save', async () => {
@@ -143,10 +181,11 @@ describe('JobDetailsPage', () => {
     expect(screen.getByText('86%')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'How trust scores work' })).toHaveAttribute('href', '/trust-scores');
 
-    const requirements = screen.getByRole('heading', { level: 2, name: 'Skills and qualifications' }).closest('section');
-    expect(within(requirements).getByRole('list', { name: 'Skills this job needs' })).toHaveTextContent('Data entryMicrosoft Excel');
-    expect(within(requirements).getByText('Senior high school')).toBeInTheDocument();
-    expect(within(requirements).getByText('1 year')).toBeInTheDocument();
+    const skills = screen.getByRole('region', { name: 'Required skills' });
+    expect(within(skills).getByRole('list', { name: 'Skills this job needs' })).toHaveTextContent('Data entry (in your profile)Microsoft Excel');
+    const qualifications = screen.getByRole('region', { name: 'Qualifications' });
+    expect(within(qualifications).getByText('Senior high school')).toBeInTheDocument();
+    expect(within(qualifications).getByText('1 year')).toBeInTheDocument();
 
     // The snapshot is closed at first and is only requested when opened.
     expect(calls.some((call) => call.key === 'GET /insights/job-postings/42')).toBe(false);
@@ -154,6 +193,59 @@ describe('JobDetailsPage', () => {
     const snapshotSection = screen.getByRole('region', { name: 'Workplace Accessibility Snapshot' });
     expect(await within(snapshotSection).findByText(/Quezon Ave. MRT Station – 220 m away, wheelchair accessible/)).toBeInTheDocument();
     expect(within(snapshotSection).getByText(/Unnamed place – 1.5 km away, partly wheelchair accessible/)).toBeInTheDocument();
+  });
+
+  test('the page is in sections with a contents list; salary, benefits, schedule and requirements (Decision 2026-10-22e)', async () => {
+    renderApp('/candidate/jobs/42', { as: 'candidate', routes });
+
+    await screen.findByRole('heading', { level: 1, name: 'Data Encoder' });
+    const sections = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+    expect(sections).toEqual([
+      'On this page',
+      'Job overview',
+      'How this job fits you',
+      'Responsibilities',
+      'Required skills',
+      'Qualifications',
+      'Salary and benefits',
+      'Location, schedule and work setup',
+      'Workplace accommodations',
+      'Workplace Accessibility Snapshot',
+      'About the employer',
+      'Application requirements',
+      'Apply for this job',
+    ]);
+    const contents = screen.getByRole('navigation', { name: 'On this page' });
+    expect(within(contents).getByRole('link', { name: 'Workplace accommodations' })).toHaveAttribute('href', '#accommodations');
+
+    expect(screen.getByRole('region', { name: 'Job overview' })).toHaveTextContent('Salary₱18,000 to ₱22,000 a month');
+    expect(within(screen.getByRole('region', { name: 'Responsibilities' })).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'Encode customer records',
+      'Check records for errors',
+    ]);
+    const salary = screen.getByRole('region', { name: 'Salary and benefits' });
+    expect(within(salary).getByRole('list', { name: 'Benefits' })).toHaveTextContent('HMO from the first month13th-month pay');
+    const place = screen.getByRole('region', { name: 'Location, schedule and work setup' });
+    expect(place).toHaveTextContent('Workplace address123 Quezon Ave., Quezon City, NCR');
+    expect(place).toHaveTextContent('ScheduleMonday to Friday, 9:00 AM to 5:00 PM');
+    const requirements = screen.getByRole('region', { name: 'Application requirements' });
+    expect(requirements).toHaveTextContent('Your résumé (PDF)');
+    expect(requirements).toHaveTextContent('A short writing sample.');
+    expect(requirements).toHaveTextContent('Online interview.');
+    expect(within(screen.getByRole('region', { name: 'About the employer' })).getByRole('link', { name: 'Bayanihan Tech Solutions' })).toHaveAttribute('href', '/employers/7');
+  });
+
+  test('a card link opens the job at its accommodations; an undisclosed salary says so', async () => {
+    renderApp('/candidate/jobs/42#accommodations', {
+      as: 'candidate',
+      routes: { ...routes, 'GET /job-postings/42': () => [200, { ...job, salary: null, benefits: null, responsibilities: null }] },
+    });
+
+    const accommodations = await screen.findByRole('region', { name: 'Workplace accommodations' });
+    await waitFor(() => expect(accommodations).toHaveFocus());
+    expect(screen.getByRole('region', { name: 'Salary and benefits' })).toHaveTextContent('Salary not disclosed');
+    expect(screen.getByText('The employer did not list any benefits.')).toBeInTheDocument();
+    expect(screen.getByText(/did not list the responsibilities separately/)).toBeInTheDocument();
   });
 
   test('snapshot explains failed sources in words', async () => {

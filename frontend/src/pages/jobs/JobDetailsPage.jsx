@@ -1,4 +1,4 @@
-import { Accessibility, Briefcase, Building2, Calendar, Check, Clock, Flag, Laptop, MapPin, MessageSquare, ShieldCheck, Users } from 'lucide-react';
+import { Accessibility, Banknote, Briefcase, Building2, Calendar, Check, Clock, Flag, Laptop, MapPin, MessageSquare, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { applyToJob } from '../../api/applications.js';
@@ -21,6 +21,7 @@ import TrustScoreCard from '../../components/TrustScoreCard.jsx';
 import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { companyInitials, formatDate } from '../../lib/format.js';
+import { cityOf, lines, salaryText, yearsText } from '../../lib/jobs.js';
 import MascotMessage from '../../components/mascot/MascotMessage.jsx';
 import { ACCOMMODATION_GROUPS, EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS } from '../../lib/labels.js';
 
@@ -49,46 +50,35 @@ export default function JobDetailsPage() {
 
 function JobDetails({ job }) {
   const { user } = useAuth();
-  const { state, pathname } = useLocation();
+  const { state, pathname, hash } = useLocation();
   const isCandidate = user?.role === 'candidate';
   const readRef = useRef(null);
   const back = isBackLink(state?.back) ? state.back : { to: isCandidate ? '/candidate/jobs' : '/jobs', label: 'Back to job results' };
-  const trustScore = <TrustScoreCard trustScore={job.trust_score} explain />;
+  const hasMatch = isCandidate && job.match?.score !== null && job.match?.score !== undefined;
+  const canApply = !user || isCandidate;
 
-  const facts = [
-    { icon: Building2, label: 'Work setup', value: WORK_SETUPS[job.work_setup] },
-    { icon: Clock, label: 'Employment type', value: EMPLOYMENT_TYPES[job.employment_type] },
-    { icon: MapPin, label: 'Location', value: [job.address, job.location?.label].filter(Boolean).join(', ') },
-    { icon: MessageSquare, label: 'Interview', value: INTERVIEW_FORMATS[job.interview_format] },
-    { icon: Calendar, label: 'Apply by', value: formatDate(job.closes_at) },
-    { icon: Briefcase, label: 'Category', value: job.category?.name },
-  ];
-  const details = (
-    <section key="details" className={CARD} aria-labelledby="job-details-title">
-      <h2 id="job-details-title" className={CARD_TITLE}>
-        Job details
-      </h2>
-      <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
-        {facts.map((fact) => (
-          <div key={fact.label} className="grid grid-cols-[1.25rem_1fr] content-start gap-x-2">
-            <fact.icon className="mt-0.5 size-5 text-accent" aria-hidden="true" focusable="false" />
-            <dt className="font-bold">{fact.label}</dt>
-            <dd className="col-start-2">{fact.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-  const about = (
-    <section key="about" className={CARD} aria-labelledby="job-about-title">
-      <h2 id="job-about-title" className={CARD_TITLE}>
-        About the job
-      </h2>
-      <div className="mt-3 whitespace-pre-line">{job.description}</div>
-    </section>
-  );
-  const accommodations = <OfferedAccommodations key="accommodations" items={job.accommodations ?? []} />;
-  const requirements = <Requirements key="requirements" job={job} />;
+  // A card's "View accommodations", "+N more" or "See the full match" opens the job at that part:
+  // scroll to it and start reading there (this runs after Page has focused the heading).
+  useEffect(() => {
+    const target = hash && document.getElementById(hash.slice(1));
+    if (!target) return;
+    target.scrollIntoView?.({ block: 'start' });
+    target.focus({ preventScroll: true });
+  }, [hash]);
+
+  const contents = [
+    ['overview', 'Job overview'],
+    hasMatch && ['match', 'How this job fits you'],
+    ['responsibilities', 'Responsibilities'],
+    ['skills', 'Required skills'],
+    ['qualifications', 'Qualifications'],
+    ['salary', 'Salary and benefits'],
+    ['location', 'Location, schedule and work setup'],
+    ['accommodations', 'Workplace accommodations'],
+    ['employer', 'About the employer'],
+    ['requirements', 'Application requirements'],
+    canApply && ['apply', 'Apply'],
+  ].filter(Boolean);
 
   return (
     <Page
@@ -96,92 +86,191 @@ function JobDetails({ job }) {
       back={back}
       actions={<ReadAloud targetRef={readRef} title={[job.title, job.employer?.company_name].filter(Boolean).join('. ')} label="Read this job aloud" />}
     >
-      <div ref={readRef} className="od mt-6 grid gap-6">
-        <EmployerSummary job={job} backTo={{ to: pathname, label: `Back to ${job.title}` }} />
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="grid min-w-0 gap-6">
-            {isCandidate && <MatchDetails job={job} />}
-            {/* Job seekers see the accommodations first (Figma 5:1901); everyone else starts with the details. */}
-            {isCandidate ? [accommodations, requirements, details, about] : [details, requirements, about, accommodations]}
-            <AccessibilitySnapshot jobId={job.id} />
-          </div>
-          <div className="grid gap-6 lg:sticky lg:top-4">
-            {!isCandidate && trustScore}
-            <JobActions job={job} />
-            {isCandidate && trustScore}
-          </div>
+      <div ref={readRef} className="od mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid min-w-0 gap-6">
+          <nav aria-label="On this page" className={`${CARD} py-4 sm:py-4`} data-read-aloud="skip">
+            <h2 className="font-bold">On this page</h2>
+            <ul className="mt-1 flex flex-wrap gap-x-5 gap-y-0">
+              {contents.map(([id, label]) => (
+                <li key={id}>
+                  <a href={`#${id}`} className="inline-flex min-h-11 items-center text-primary underline underline-offset-4 hover:no-underline">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <Overview job={job} />
+          {hasMatch && (
+            <div id="match" tabIndex={-1} className="scroll-mt-4 outline-none">
+              <MatchDetails job={job} />
+            </div>
+          )}
+          <Responsibilities job={job} />
+          <Skills job={job} />
+          <Qualifications job={job} />
+          <SalaryAndBenefits job={job} />
+          <Workplace job={job} />
+          <OfferedAccommodations items={job.accommodations ?? []} />
+          <AccessibilitySnapshot jobId={job.id} />
+          <AboutEmployer job={job} backTo={{ to: pathname, label: `Back to ${job.title}` }} />
+          <ApplicationRequirements job={job} />
+        </div>
+        <div className="grid gap-6 lg:sticky lg:top-4">
+          <JobActions job={job} />
         </div>
       </div>
     </Page>
   );
 }
 
-
-/** The employer at the top of the job (IPT): initials, name and badge, the facts and the trust score. */
-function EmployerSummary({ job, backTo }) {
-  const trust = job.trust_score;
+/** A titled card that a link can open at (`#id`): it takes focus, so reading starts there. */
+function Section({ id, title, className = '', children }) {
   return (
-    <section aria-label="Employer" className={`${CARD} flex gap-4`}>
-      <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-xl font-semibold text-accent">
-        {companyInitials(job.employer?.company_name)}
-      </span>
-      <div className="min-w-0">
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <Link to={`/employers/${job.employer?.id}`} state={{ back: backTo }} className="font-display text-lg font-semibold text-primary underline underline-offset-4 hover:no-underline">
-            {job.employer?.company_name}
-          </Link>
-          <VerifiedBadge verified={job.employer?.verified} />
-          {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
-        </p>
-        <p className="mt-2 text-muted">
-          {[job.location?.label ?? job.address, WORK_SETUPS[job.work_setup], EMPLOYMENT_TYPES[job.employment_type]].filter(Boolean).join(' · ')}
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-subtle px-3 py-1 text-sm text-muted">
-          <ShieldCheck className="size-4" aria-hidden="true" focusable="false" />
-          {trust?.published ? `Trust score: ${trust.score}% (${trust.based_on} ratings)` : 'Trust score: not rated yet'}
-        </p>
-      </div>
+    <section id={id} tabIndex={-1} aria-labelledby={`${id}-title`} className={`${CARD} scroll-mt-4 focus-visible:outline-3 focus-visible:outline-focus ${className}`}>
+      <h2 id={`${id}-title`} className={CARD_TITLE}>
+        {title}
+      </h2>
+      {children}
     </section>
   );
 }
 
-/** A back link handed over by the page that linked here (search, saved jobs, employer page). */
-function isBackLink(back) {
-  return typeof back?.to === 'string' && back.to.startsWith('/') && typeof back.label === 'string';
+/** Label + value pairs with an icon each. */
+function Facts({ items }) {
+  return (
+    <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+      {items.map((fact) => (
+        <div key={fact.label} className="grid grid-cols-[1.25rem_1fr] content-start gap-x-2">
+          <fact.icon className="mt-0.5 size-5 text-accent" aria-hidden="true" focusable="false" />
+          <dt className="font-bold">{fact.label}</dt>
+          <dd className="col-start-2">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
-/** Skills and qualifications the employer asks for (decision 2026-10-21). */
-function Requirements({ job }) {
-  const skills = job.skills ?? [];
-  const years = job.experience_years;
-
+/** A list of the employer's lines, or a sentence when there are none. */
+function Lines({ text, label, empty }) {
+  const items = lines(text);
+  if (items.length === 0) return <p className="mt-3 text-muted">{empty}</p>;
   return (
-    <section className={CARD}>
-      <h2 className={CARD_TITLE}>Skills and qualifications</h2>
+    <ul className="mt-3 grid list-disc gap-1.5 pl-6" aria-label={label}>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
+/** The employer, the salary and the key facts at a glance, then the employer's overview text. */
+function Overview({ job }) {
+  return (
+    <Section id="overview" title="Job overview">
+      <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span aria-hidden="true" className="grid size-10 place-items-center rounded-md border border-border bg-primary-soft font-display font-semibold text-accent">
+          {companyInitials(job.employer?.company_name)}
+        </span>
+        <span className="font-display text-lg font-semibold">{job.employer?.company_name}</span>
+        <VerifiedBadge verified={job.employer?.verified} />
+        {job.status !== 'open' && <StatusBadge kind="posting" status={job.status} />}
+      </p>
+      <Facts
+        items={[
+          { icon: Banknote, label: 'Salary', value: salaryText(job.salary) },
+          { icon: MapPin, label: 'Location', value: cityOf(job) },
+          { icon: Building2, label: 'Work setup', value: WORK_SETUPS[job.work_setup] },
+          { icon: Clock, label: 'Employment type', value: EMPLOYMENT_TYPES[job.employment_type] },
+          { icon: Calendar, label: 'Apply by', value: formatDate(job.closes_at) },
+          { icon: Briefcase, label: 'Category', value: job.category?.name },
+        ]}
+      />
+      <h3 className="mt-5 font-bold">About the job</h3>
+      <div className="mt-1 whitespace-pre-line">{job.description}</div>
+    </Section>
+  );
+}
+
+function Responsibilities({ job }) {
+  return (
+    <Section id="responsibilities" title="Responsibilities">
+      <Lines text={job.responsibilities} label="Main responsibilities" empty="The employer did not list the responsibilities separately. See the job overview." />
+    </Section>
+  );
+}
+
+/** Every required skill; a candidate's matched ones are ticked. */
+function Skills({ job }) {
+  const skills = job.skills ?? [];
+  const have = new Set(job.match?.skills?.matched ?? []);
+  return (
+    <Section id="skills" title="Required skills">
       {skills.length === 0 ? (
-        <p>The employer did not list any skills.</p>
+        <p className="mt-3">The employer did not list any skills.</p>
       ) : (
-        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Skills this job needs">
-          {skills.map((skill) => (
-            <li key={skill} className="tag">
-              {skill}
-            </li>
-          ))}
-        </ul>
+        <>
+          {job.match?.skills && <p className="mt-2 text-muted">Ticked skills are in your profile.</p>}
+          <ul className="mt-3 flex flex-wrap gap-2" aria-label="Skills this job needs">
+            {skills.map((skill) => (
+              <li key={skill} className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 ${have.has(skill) ? 'border-success bg-success-soft' : 'border-border bg-subtle'}`}>
+                {have.has(skill) && <Check className="size-4 text-success" aria-hidden="true" focusable="false" />}
+                {skill}
+                {have.has(skill) && <span className="sr-only"> (in your profile)</span>}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
+    </Section>
+  );
+}
+
+/** Minimum education and experience and the employer's other requirements (decision 2026-10-21). */
+function Qualifications({ job }) {
+  const years = job.experience_years;
+  return (
+    <Section id="qualifications" title="Qualifications">
       <dl className="details-list mt-4 mb-0">
         <dt>Minimum education</dt>
         <dd>{EDUCATION_LEVELS[job.education_level] ?? 'No minimum'}</dd>
         <dt>Minimum experience</dt>
-        <dd>{years ? `${years} ${years === 1 ? 'year' : 'years'}` : 'None needed'}</dd>
+        <dd>{years ? yearsText(years) : 'None needed'}</dd>
         {job.qualifications && (
           <>
             <dt>Other qualifications</dt>
-            <dd className="prose">{job.qualifications}</dd>
+            <dd className="prose whitespace-pre-line">{job.qualifications}</dd>
           </>
         )}
       </dl>
-    </section>
+    </Section>
+  );
+}
+
+function SalaryAndBenefits({ job }) {
+  return (
+    <Section id="salary" title="Salary and benefits">
+      <p className={`mt-3 font-display text-xl font-bold ${job.salary ? '' : 'text-muted'}`}>{salaryText(job.salary)}</p>
+      {!job.salary && <p className="mt-1 text-muted">You can ask about the salary when the employer contacts you.</p>}
+      <h3 className="mt-4 font-bold">Benefits</h3>
+      <Lines text={job.benefits} label="Benefits" empty="The employer did not list any benefits." />
+    </Section>
+  );
+}
+
+/** Where and when the work happens: the full address (cards show only the city). */
+function Workplace({ job }) {
+  return (
+    <Section id="location" title="Location, schedule and work setup">
+      <Facts
+        items={[
+          { icon: MapPin, label: 'Workplace address', value: [job.address, job.location?.label].filter(Boolean).join(', ') },
+          { icon: Building2, label: 'Work setup', value: WORK_SETUPS[job.work_setup] },
+          { icon: Clock, label: 'Employment type', value: EMPLOYMENT_TYPES[job.employment_type] },
+          { icon: Calendar, label: 'Schedule', value: job.schedule || 'Not given' },
+        ]}
+      />
+    </Section>
   );
 }
 
@@ -193,10 +282,7 @@ function OfferedAccommodations({ items }) {
   const ungrouped = items.filter((item) => !ACCOMMODATION_GROUPS[item.group]);
 
   return (
-    <section className={`${CARD} border-l-4 border-l-primary`} aria-labelledby="job-accommodations-title">
-      <h2 id="job-accommodations-title" className={CARD_TITLE}>
-        Accommodations offered
-      </h2>
+    <Section id="accommodations" title="Workplace accommodations" className="border-l-4 border-l-primary">
       {items.length === 0 ? (
         <p className="mt-3">The employer did not list any accommodations.</p>
       ) : (
@@ -221,8 +307,53 @@ function OfferedAccommodations({ items }) {
           );
         })
       )}
-    </section>
+    </Section>
   );
+}
+
+/** The employer's verification and trust score, with a link to its page and other jobs. */
+function AboutEmployer({ job, backTo }) {
+  const verified = job.employer?.verified;
+  return (
+    <Section id="employer" title="About the employer">
+      <p className="mt-3">
+        <Link to={`/employers/${job.employer?.id}`} state={{ back: backTo }} className="font-display text-lg font-semibold text-primary underline underline-offset-4 hover:no-underline">
+          {job.employer?.company_name}
+        </Link>
+      </p>
+      <p className="mt-1 text-muted">
+        {verified ? 'OpenDoor checked this company against the business registry.' : 'OpenDoor has not verified this company yet.'} Its page shows what it does and its other open jobs.
+      </p>
+      <div className="mt-4">
+        <TrustScoreCard trustScore={job.trust_score} headingLevel={3} explain />
+      </div>
+    </Section>
+  );
+}
+
+/** What applying takes: OpenDoor's own requirements, the employer's, the interview and the deadline. */
+function ApplicationRequirements({ job }) {
+  const extra = lines(job.application_requirements);
+  return (
+    <Section id="requirements" title="Application requirements">
+      <ul className="mt-3 grid list-disc gap-1.5 pl-6">
+        <li>Your résumé (PDF). You can add it when you apply.</li>
+        <li>A complete OpenDoor profile: where you live, at least 3 skills, your education and your work preferences.</li>
+        {extra.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+        <li>
+          {INTERVIEW_FORMATS[job.interview_format] ?? 'Interview'}. You can ask for interview accommodations in your application.
+        </li>
+        <li>Apply by {formatDate(job.closes_at)}.</li>
+      </ul>
+    </Section>
+  );
+}
+
+/** A back link handed over by the page that linked here (search, saved jobs, employer page). */
+function isBackLink(back) {
+  return typeof back?.to === 'string' && back.to.startsWith('/') && typeof back.label === 'string';
 }
 
 function JobActions({ job }) {
@@ -237,7 +368,7 @@ function JobActions({ job }) {
 
   if (!user) {
     return (
-      <section className="card job-actions" aria-labelledby="apply-title" data-read-aloud="skip">
+      <section id="apply" tabIndex={-1} className="card job-actions scroll-mt-4" aria-labelledby="apply-title" data-read-aloud="skip">
         <h2 id="apply-title">Interested?</h2>
         <p className="job-actions__lead">Log in to apply, or create an account. It takes about 2 minutes.</p>
         <Link to="/login" state={{ from: { pathname: `/candidate/jobs/${job.id}` } }} className="button button--block">
@@ -262,7 +393,7 @@ function JobActions({ job }) {
           </MascotMessage>
         </div>
       )}
-      <section className="card job-actions" aria-labelledby="apply-title">
+      <section id="apply" tabIndex={-1} className="card job-actions scroll-mt-4" aria-labelledby="apply-title">
         <h2 id="apply-title">{mine ? 'Your application' : 'Apply for this job'}</h2>
         {mine ? (
           <>

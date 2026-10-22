@@ -18,6 +18,7 @@ import { useApiForm } from '../../hooks/useApiForm.js';
 import { useAsync } from '../../hooks/useAsync.js';
 import { formatDate, todayInManila } from '../../lib/format.js';
 import { EDUCATION_LEVELS, EMPLOYMENT_TYPES, INTERVIEW_FORMATS, WORK_SETUPS, toOptions } from '../../lib/labels.js';
+import { SALARY_PERIOD_OPTIONS, salaryText } from '../../lib/jobs.js';
 import { collapseItemErrors } from '../../lib/skills.js';
 
 const MAX_JOB_SKILLS = 20;
@@ -38,6 +39,13 @@ const FIELDS = {
       'education_level',
       'experience_years',
       'qualifications',
+      'responsibilities',
+      'schedule',
+      'salary_min',
+      'salary_max',
+      'salary_period',
+      'benefits',
+      'application_requirements',
       'accommodations',
     ].map(
       (name) => [name, { id: name }],
@@ -51,18 +59,28 @@ const FIELDS = {
 // verified company's job goes live when it is published; there is no approval step.
 const STEPS = [
   { title: 'Job basics', intro: 'Your job goes live as soon as you publish it.', fields: ['title', 'category_id', 'employment_type', 'work_setup'] },
-  { title: 'Description and place', intro: 'Describe the work and where it happens.', fields: ['description', 'interview_format', 'address', 'location_psgc', 'closes_at'] },
+  {
+    title: 'Description and place',
+    intro: 'Describe the work, when and where it happens.',
+    fields: ['description', 'responsibilities', 'schedule', 'interview_format', 'address', 'location_psgc', 'closes_at'],
+  },
   {
     title: 'Skills and qualifications',
     intro: 'What the person needs to do the job. We use it to recommend the job to the right people.',
     fields: ['skills', 'education_level', 'experience_years', 'qualifications'],
+  },
+  {
+    title: 'Salary and applying',
+    intro: 'Job seekers look at the pay first. Everything on this step is optional.',
+    fields: ['salary_min', 'salary_max', 'salary_period', 'benefits', 'application_requirements'],
   },
   { title: 'Accommodations', intro: 'Tell people what support you offer.', fields: ['accommodations'] },
   { title: 'Review and publish', intro: 'Check everything, then publish the job.', fields: [] },
 ];
 const REVIEW = STEPS.length - 1;
 const SKILLS_STEP = 2;
-const ACCOMMODATIONS_STEP = 3;
+const SALARY_STEP = 3;
+const ACCOMMODATIONS_STEP = 4;
 
 /** The step that shows a field (accommodations.0.note → Accommodations); others stay on Review. */
 function stepOf(field) {
@@ -89,6 +107,12 @@ function checkStep(index, values) {
     else if (values.closes_at < todayInManila()) errors.closes_at = ['The closing date cannot be in the past.'];
   }
   if (index === SKILLS_STEP && values.skills.length === 0) errors.skills = ['List at least one skill this job needs.'];
+  if (index === SALARY_STEP) {
+    const [min, max] = [values.salary_min, values.salary_max].map((value) => (value === '' ? null : Number(value)));
+    if (min === null && max !== null) errors.salary_min = ['Enter the lowest salary too, or leave both amounts empty.'];
+    else if (min !== null && min < 1) errors.salary_min = ['Enter an amount of at least ₱1.'];
+    if (min !== null && max !== null && max < min) errors.salary_max = ['The highest salary cannot be lower than the lowest.'];
+  }
   return errors;
 }
 
@@ -138,6 +162,13 @@ function PostingForm({ categories, groups, skillOptions, job, verified }) {
     education_level: job?.education_level ?? '',
     experience_years: job?.experience_years ?? '',
     qualifications: job?.qualifications ?? '',
+    responsibilities: job?.responsibilities ?? '',
+    schedule: job?.schedule ?? '',
+    salary_min: job?.salary?.min ?? '',
+    salary_max: job?.salary?.max ?? '',
+    salary_period: job?.salary?.period ?? 'month',
+    benefits: job?.benefits ?? '',
+    application_requirements: job?.application_requirements ?? '',
     accommodationIds: (job?.accommodations ?? []).map((item) => item.id),
     notes: Object.fromEntries((job?.accommodations ?? []).map((item) => [item.id, item.note ?? ''])),
   });
@@ -193,6 +224,13 @@ function PostingForm({ categories, groups, skillOptions, job, verified }) {
         education_level: current.education_level || null,
         experience_years: current.experience_years === '' ? null : Number(current.experience_years),
         qualifications: current.qualifications.trim() || null,
+        responsibilities: current.responsibilities.trim() || null,
+        schedule: current.schedule.trim() || null,
+        salary_min: current.salary_min === '' ? null : Number(current.salary_min),
+        salary_max: current.salary_max === '' ? null : Number(current.salary_max),
+        salary_period: current.salary_min === '' ? null : current.salary_period,
+        benefits: current.benefits.trim() || null,
+        application_requirements: current.application_requirements.trim() || null,
         accommodations: current.accommodationIds.map((accommodationId) => ({ id: accommodationId, note: current.notes[accommodationId]?.trim() || null })),
         submit,
       };
@@ -316,7 +354,29 @@ function PostingForm({ categories, groups, skillOptions, job, verified }) {
 
           {step === 1 && (
             <>
-              <TextArea label="Job description" voice required hint="Duties, qualifications and working hours." error={stepErrors.description} {...form.bind('description')} />
+              <TextArea
+                label="Job description"
+                voice
+                required
+                hint="A short overview of the job. Job cards show its first two lines."
+                error={stepErrors.description}
+                {...form.bind('description')}
+              />
+              <TextArea
+                label="Main responsibilities"
+                voice
+                hint="Optional. One per line, for example: Encode customer records."
+                maxLength={4000}
+                error={stepErrors.responsibilities}
+                {...form.bind('responsibilities')}
+              />
+              <TextField
+                label="Schedule"
+                maxLength={255}
+                hint="Optional. Days and hours, for example: Monday to Friday, 9:00 AM to 5:00 PM."
+                error={stepErrors.schedule}
+                {...form.bind('schedule')}
+              />
               <RadioGroup
                 legend="Interview format"
                 name="interview_format"
@@ -386,6 +446,56 @@ function PostingForm({ categories, groups, skillOptions, job, verified }) {
                 maxLength={2000}
                 error={stepErrors.qualifications}
                 {...form.bind('qualifications')}
+              />
+            </>
+          )}
+
+          {step === SALARY_STEP && (
+            <>
+              <TextField
+                label="Lowest salary in pesos"
+                name="salary_min"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                className="field--short"
+                hint="Optional. Leave both amounts empty to keep the salary private: job cards then say “Salary not disclosed”."
+                error={stepErrors.salary_min}
+                {...form.bind('salary_min')}
+              />
+              <TextField
+                label="Highest salary in pesos"
+                name="salary_max"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                className="field--short"
+                hint="Optional. Leave it empty for a fixed amount."
+                error={stepErrors.salary_max}
+                {...form.bind('salary_max')}
+              />
+              <RadioGroup
+                legend="Salary paid per"
+                name="salary_period"
+                className="radio-group--inline"
+                options={toOptions(SALARY_PERIOD_OPTIONS)}
+                value={values.salary_period}
+                onChange={(value) => form.setValue('salary_period', value)}
+                error={stepErrors.salary_period}
+              />
+              <TextArea
+                label="Benefits"
+                hint="Optional. One per line, for example: HMO from the first month."
+                maxLength={2000}
+                error={stepErrors.benefits}
+                {...form.bind('benefits')}
+              />
+              <TextArea
+                label="Anything else applicants should send"
+                hint="Optional. OpenDoor already asks for a résumé and a complete profile. For example: a portfolio link in the cover note."
+                maxLength={2000}
+                error={stepErrors.application_requirements}
+                {...form.bind('application_requirements')}
               />
             </>
           )}
@@ -474,6 +584,10 @@ function Review({ values, categories, groups, onChange }) {
         <dl className="details-list">
           <dt>Description</dt>
           <dd className="prose">{values.description}</dd>
+          <dt>Main responsibilities</dt>
+          <dd className="prose">{values.responsibilities.trim() || 'None listed.'}</dd>
+          <dt>Schedule</dt>
+          <dd>{values.schedule.trim() || 'Not given.'}</dd>
           <dt>Interview</dt>
           <dd>{INTERVIEW_FORMATS[values.interview_format]}</dd>
           <dt>Workplace address</dt>
@@ -504,6 +618,21 @@ function Review({ values, categories, groups, onChange }) {
               <dd className="prose">{values.qualifications.trim()}</dd>
             </>
           )}
+        </dl>
+      </section>
+
+      <section className="card review-card" aria-labelledby="review-salary">
+        <div className="review-card__header">
+          <h3 id="review-salary">Salary and applying</h3>
+          {changeButton(SALARY_STEP, 'salary and applying')}
+        </div>
+        <dl className="details-list">
+          <dt>Salary</dt>
+          <dd>{salaryText(values.salary_min === '' ? null : { min: Number(values.salary_min), max: values.salary_max === '' ? null : Number(values.salary_max), period: values.salary_period })}</dd>
+          <dt>Benefits</dt>
+          <dd className="prose">{values.benefits.trim() || 'None listed.'}</dd>
+          <dt>Also asked of applicants</dt>
+          <dd className="prose">{values.application_requirements.trim() || 'Nothing beyond the résumé and profile.'}</dd>
         </dl>
       </section>
 

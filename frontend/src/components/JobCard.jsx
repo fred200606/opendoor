@@ -1,27 +1,23 @@
-import { ShieldCheck } from 'lucide-react';
+import { Accessibility, Check, ChevronDown, MapPin, Minus, ShieldCheck, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { companyInitials, formatDate, todayInManila } from '../lib/format.js';
+import { cardSkills, cityOf, qualificationSummary, salaryText } from '../lib/jobs.js';
+import { companyInitials, formatDate, plural, todayInManila } from '../lib/format.js';
 import { EMPLOYMENT_TYPES, WORK_SETUPS } from '../lib/labels.js';
-import MatchBadge from './MatchBadge.jsx';
-import { VerifiedBadge } from './StatusBadge.jsx';
+import { MATCH_LABELS, MATCH_TONES, matchParts } from '../lib/match.js';
+import { BadgeIcon, VerifiedBadge } from './StatusBadge.jsx';
 
-const SHOWN_TAGS = 3;
 const DAY = 86_400_000;
+const PART_ICONS = { yes: Check, partly: Minus, no: X };
+const PART_WORDS = { yes: 'Fits', partly: 'Partly fits', no: 'Does not fit' };
+// Controls inside the card sit above the stretched title link.
+const ABOVE = 'relative z-10';
+const TEXT_LINK = `${ABOVE} font-bold text-primary underline underline-offset-4 hover:no-underline`;
 
 /** Whole days from date `a` to date `b` (YYYY-MM-DD, Manila calendar). */
 function daysBetween(a, b) {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / DAY);
 }
-
-/** "New" (posted in the last 3 days) and "Closing soon" (closes within 7 days). */
-function labelsOf(job, today) {
-  const labels = [];
-  if (job.created_at && daysBetween(job.created_at.slice(0, 10), today) <= 3) labels.push('New');
-  if (job.closes_at && daysBetween(today, job.closes_at) <= 7) labels.push('Closing soon');
-  return labels;
-}
-
 
 /** Joins short facts with a visible middle dot that screen readers hear as a comma. */
 function DotList({ items }) {
@@ -67,29 +63,83 @@ function TrustCorner({ trustScore }) {
   );
 }
 
+/** "Match: 74%" with its label and a "Why this match?" disclosure listing each part (candidates). */
+function CardMatch({ match, to, state, title }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  if (!match || match.score === null || match.score === undefined) return null;
+  const tone = MATCH_TONES[match.label] ?? 'neutral';
+
+  return (
+    <div className="mt-4 rounded-md bg-subtle px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className={`badge badge--${tone}`}>
+          <BadgeIcon tone={tone} />
+          Match: {match.score}%
+        </span>
+        <span className="font-bold">{MATCH_LABELS[match.label]}</span>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen(!open)}
+          className={`${ABOVE} -my-2 inline-flex min-h-11 items-center gap-1 font-bold text-primary underline underline-offset-4 hover:no-underline`}
+        >
+          Why this match?
+          <ChevronDown className={`size-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} aria-hidden="true" focusable="false" />
+        </button>
+      </div>
+      <div id={panelId} hidden={!open}>
+        <ul className="mt-2 grid gap-1 text-sm">
+          {matchParts(match).map((part) => {
+            const Icon = PART_ICONS[part.result];
+            return (
+              <li key={part.text} className="grid grid-cols-[1rem_1fr] items-start gap-x-2">
+                <Icon className={`mt-0.5 size-4 ${part.result === 'yes' ? 'text-success' : 'text-muted'}`} aria-hidden="true" focusable="false" />
+                <span>
+                  <span className="sr-only">{PART_WORDS[part.result]}: </span>
+                  {part.text}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-2 text-sm">
+          <Link to={`${to}#match`} state={state} className={TEXT_LINK}>
+            See the full match <span className="sr-only">for {title}</span>
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /**
- * One job in a list, in the IPT look (Francis Ruzgal's opendoor-ipt, decision 2026-10-21b): the
- * employer's initials, the "New" and "Closing soon" labels, the title as heading and link (it
- * stretches over the card, so the whole card opens the job with one tab stop), the employer and
- * its badge, a line of facts, the trust score in the corner, the match (candidates) and the
- * accommodations as tags with "Show more". `to` is the details link; `state` goes with it.
- * `children` (Save or Remove) sit at the right, above the stretched link.
+ * One job in a list (Decision 2026-10-22e: what a candidate needs to judge the work comes first).
+ * In order: the title (heading and link; it stretches over the card, so the whole card opens the
+ * job), the employer and its badge, the salary, city · work setup · employment type, a two-line
+ * summary, up to 3 required skills, the key qualifications, the match with "Why this match?"
+ * (candidates), a smaller accommodation row that links to the job's accommodations, and the
+ * apply-by date with "View job". The trust score sits in the corner (IPT look, decision 2026-10-21b).
+ * `to` is the details link; `state` goes with it. `children` (Save or Remove) sit next to "View job".
  */
 export default function JobCard({ job, to, state, headingLevel = 2, children }) {
   const Heading = `h${headingLevel}`;
-  const accommodations = job.accommodations ?? [];
-  const [allShown, setAllShown] = useState(false);
-  const tagsId = useId();
-  const more = accommodations.length - SHOWN_TAGS;
-  const tags = allShown ? accommodations : accommodations.slice(0, SHOWN_TAGS);
-  const facts = [WORK_SETUPS[job.work_setup], EMPLOYMENT_TYPES[job.employment_type], job.location?.label ?? job.address].filter(Boolean);
-  const labels = labelsOf(job, todayInManila());
+  const today = todayInManila();
+  const isNew = job.created_at && daysBetween(job.created_at.slice(0, 10), today) <= 3;
+  const closingSoon = job.closes_at && daysBetween(today, job.closes_at) <= 7;
+  const facts = [cityOf(job), WORK_SETUPS[job.work_setup], EMPLOYMENT_TYPES[job.employment_type]].filter(Boolean);
+  const skills = cardSkills(job);
+  const qualifications = qualificationSummary(job);
+  const accommodations = job.accommodations?.length ?? 0;
+  const match = job.match;
+  const needs = match?.total > 0 ? (match.met === match.total ? `offers all ${match.total} of your needs` : `offers ${match.met} of your ${match.total} needs`) : null;
 
   return (
-    <article className="od job-card group/card relative flex gap-4 rounded-lg border-2 border-border bg-surface p-5 transition-colors duration-200 ease-soft hover:bg-subtle has-[a:focus-visible]:outline-3 has-[a:focus-visible]:outline-focus sm:p-6">
+    <article className="od job-card group/card relative flex gap-4 rounded-lg border-2 border-border bg-surface p-5 transition-colors duration-200 ease-soft hover:bg-subtle has-[.job-card-link:focus-visible]:outline-3 has-[.job-card-link:focus-visible]:outline-focus sm:p-6">
       <span
         aria-hidden="true"
-        className="grid size-12 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-base font-semibold text-accent"
+        className="hidden size-12 shrink-0 place-items-center rounded-md border border-border bg-primary-soft font-display text-base font-semibold text-accent sm:grid"
       >
         {companyInitials(job.employer?.company_name)}
       </span>
@@ -97,20 +147,12 @@ export default function JobCard({ job, to, state, headingLevel = 2, children }) 
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            {labels.length > 0 && (
-              <ul aria-label="Labels" className="mb-1 flex flex-wrap gap-2">
-                {labels.map((label) => (
-                  <li key={label} className={`rounded-md px-2 py-0.5 text-xs font-bold ${label === 'New' ? 'bg-yellow text-text' : 'bg-warning-soft text-warning'}`}>
-                    {label}
-                  </li>
-                ))}
-              </ul>
-            )}
+            {isNew && <p className="mb-1 inline-block rounded-md bg-yellow px-2 py-0.5 text-xs font-bold text-text">New</p>}
             <Heading className="font-display text-lg font-semibold">
               <Link
                 to={to}
                 state={state}
-                className="inline-flex min-h-11 items-center text-primary no-underline underline-offset-4 outline-none after:absolute after:inset-0 after:content-[''] group-hover/card:text-primary-hover group-hover/card:underline"
+                className="job-card-link inline-flex min-h-11 items-center text-primary no-underline underline-offset-4 outline-none after:absolute after:inset-0 after:content-[''] group-hover/card:text-primary-hover group-hover/card:underline"
               >
                 {job.title}
               </Link>
@@ -118,49 +160,89 @@ export default function JobCard({ job, to, state, headingLevel = 2, children }) 
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {job.employer?.company_name} <VerifiedBadge verified={job.employer?.verified} />
             </p>
-            {facts.length > 0 && (
-              <p className="mt-1 text-sm text-muted">
-                <DotList items={facts} />
-              </p>
-            )}
           </div>
           <TrustCorner trustScore={job.trust_score} />
         </div>
 
-        <MatchBadge match={job.match} />
-
-        {accommodations.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">No accommodations listed.</p>
-        ) : (
-          <ul id={tagsId} aria-label="Accommodations offered" className="mt-3 flex flex-wrap gap-2">
-            {tags.map((item) => (
-              <li key={item.id} className="inline-flex items-center rounded-full bg-primary-soft px-3 py-1 text-sm text-accent">
-                {item.name}
-              </li>
-            ))}
-            {more > 0 && (
-              <li>
-                <button
-                  type="button"
-                  aria-expanded={allShown}
-                  aria-controls={tagsId}
-                  onClick={() => setAllShown(!allShown)}
-                  className="group relative z-10 -my-1.5 inline-flex min-h-11 items-center"
-                >
-                  {/* A 44 px target around a tag-sized pill. */}
-                  <span className="rounded-full border border-primary px-3 py-1 text-sm font-bold text-primary transition-colors duration-200 ease-soft group-hover:bg-primary-soft">
-                    {allShown ? 'Show less' : 'Show more'}{' '}
-                    <span className="sr-only">{allShown ? 'accommodations' : `accommodations, ${more} more`}</span>
-                  </span>
-                </button>
-              </li>
-            )}
-          </ul>
+        <p className={`mt-3 font-display text-lg font-bold ${job.salary ? 'text-text' : 'text-muted'}`}>
+          <span className="sr-only">Salary: </span>
+          {salaryText(job.salary)}
+        </p>
+        {facts.length > 0 && (
+          <p className="mt-1 flex items-start gap-1.5 text-muted">
+            <MapPin className="mt-1 size-4 shrink-0" aria-hidden="true" focusable="false" />
+            <span>
+              <DotList items={facts} />
+            </span>
+          </p>
         )}
+        {job.description && <p className="mt-3 line-clamp-2">{job.description}</p>}
 
-        {job.closes_at && <p className="mt-3 text-sm text-muted">Apply by {formatDate(job.closes_at)}</p>}
+        <dl className="mt-3 grid gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <dt className="font-bold">Required skills:</dt>
+            {skills.shown.length === 0 ? (
+              <dd className="text-muted">None listed</dd>
+            ) : (
+              <dd>
+                <ul className="flex flex-wrap items-center gap-2">
+                  {skills.shown.map((skill) => (
+                    <li key={skill.name} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 ${skill.have ? 'border-success bg-success-soft' : 'border-border bg-subtle'}`}>
+                      {skill.have && <Check className="size-3.5 text-success" aria-hidden="true" focusable="false" />}
+                      {skill.name}
+                      {skill.have && <span className="sr-only"> (you have it)</span>}
+                    </li>
+                  ))}
+                  {skills.more > 0 && (
+                    <li>
+                      <Link to={`${to}#skills`} state={state} className={`${TEXT_LINK} inline-flex min-h-11 items-center`}>
+                        +{skills.more} more<span className="sr-only">: view all skills for {job.title}</span>
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </dd>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-x-2">
+            <dt className="font-bold">Qualifications:</dt>
+            <dd className="min-w-0 flex-1 truncate">{qualifications ?? 'No minimum education or experience'}</dd>
+          </div>
+        </dl>
+
+        <CardMatch match={match} to={to} state={state} title={job.title} />
+
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+          <Accessibility className="size-4 shrink-0" aria-hidden="true" focusable="false" />
+          {accommodations === 0 ? (
+            'No workplace accommodations listed'
+          ) : (
+            <>
+              <span>
+                {plural(accommodations, 'workplace accommodation')}
+                {needs && `, ${needs}`}
+              </span>
+              <span aria-hidden="true">·</span>
+              <Link to={`${to}#accommodations`} state={state} className={`${ABOVE} inline-flex min-h-11 items-center text-primary underline underline-offset-4 hover:no-underline`}>
+                View accommodations <span className="sr-only">for {job.title}</span>
+              </Link>
+            </>
+          )}
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            {job.closes_at && <span>Apply by {formatDate(job.closes_at)}</span>}
+            {closingSoon && <span className="rounded-md bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">Closing soon</span>}
+          </p>
+          <div className={`${ABOVE} flex flex-wrap items-center gap-2`}>
+            {children}
+            <Link to={to} state={state} className="button button--small">
+              View job<span className="sr-only">: {job.title}</span>
+            </Link>
+          </div>
+        </div>
       </div>
-      {children && <div className="relative z-10 shrink-0 self-start">{children}</div>}
     </article>
   );
 }
