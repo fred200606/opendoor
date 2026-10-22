@@ -5,7 +5,7 @@ description: Development guide for OpenDoor, the PWD job-matching platform built
 
 # OpenDoor development guide
 
-OpenDoor lets persons with disabilities (PWDs) find jobs by the workplace **accommodations** they need, and lets hired PWDs verify, accommodation by accommodation, whether the employer delivered. The same system is submitted for two courses:
+OpenDoor lets persons with disabilities (PWDs) find jobs by the workplace **accommodations** they need, and lets PWDs an employer contacted verify, accommodation by accommodation, whether the employer delivered. The same system is submitted for two courses:
 
 - **IPT** – requires a React frontend, a Laravel REST API and a MySQL database with full CRUD, role-based auth, search, filtering and status workflow.
 - **SIA 1** – additionally requires an API gateway, service-to-service calls, external REST APIs, a mashup, a SOAP/XML legacy component, Postman + JMeter testing, CI/CD and cloud deployment.

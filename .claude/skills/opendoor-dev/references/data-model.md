@@ -17,8 +17,8 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 | skills | id, name string(50) unique, aliases json null, timestamps | shared skills list (`SkillSeeder`); public `GET /skills` |
 | job_posting_accommodation | job_posting_id, accommodation_id, note string null | composite PK |
 | candidate_accommodation | candidate_profile_id, accommodation_id | composite PK |
-| applications | id, job_posting_id, candidate_profile_id, status enum(pending, reviewed, hired, rejected, withdrawn), cover_note null, interview_request null, hired_at null, hire_confirmed_by enum(employer, candidate) null, feedback_reminded_at timestamp null (M13 reminder sent), timestamps | unique(job_posting_id, candidate_profile_id); never hard-deleted |
-| application_accommodation | application_id, accommodation_id | composite PK; the posting's accommodations recorded when the application becomes hired = the items the candidate rates |
+| applications | id, job_posting_id, candidate_profile_id, status enum(pending, reviewed, shortlisted, contacted, rejected, withdrawn), cover_note null, interview_request null, reviewed_at null, shortlisted_at null, contacted_at null, contact_confirmed_by enum(employer, candidate) null, feedback_reminded_at timestamp null (M13 reminder sent), timestamps | unique(job_posting_id, candidate_profile_id); never hard-deleted |
+| application_accommodation | application_id, accommodation_id | composite PK; the posting's accommodations recorded when the application becomes contacted = the items the candidate rates |
 | feedback | id, application_id unique, comments null, is_hidden bool default false, timestamps | anonymous to employers |
 | feedback_items | id, feedback_id, accommodation_id, rating enum(delivered, partial, not_delivered) | unique(feedback_id, accommodation_id) |
 | reports | id, reporter_id FK users, job_posting_id FK (cascade), reason text, status enum(open, dismissed, actioned) default open, note text null, resolved_by FK users null, resolved_at null, timestamps; index (status, created_at), (job_posting_id, reporter_id) | admin fields set only on resolve (forceFill) |
@@ -28,7 +28,7 @@ Accommodations live in one lookup table and are linked to postings, candidate ne
 
 **Model naming:** use `JobPosting` / `job_postings` (Laravel already uses `jobs` for queues). `ApplicationStatus` is a PHP backed enum cast on `Application`.
 
-**Relationships:** User hasOne CandidateProfile | Employer; Employer hasMany JobPostings, RegistryChecks; JobPosting belongsToMany Accommodation (withPivot note); CandidateProfile belongsToMany Accommodation; JobPosting hasMany Applications; Application belongsToMany Accommodation (accommodationsAtHire) and hasOne Feedback; Feedback hasMany FeedbackItems.
+**Relationships:** User hasOne CandidateProfile | Employer; Employer hasMany JobPostings, RegistryChecks; JobPosting belongsToMany Accommodation (withPivot note); CandidateProfile belongsToMany Accommodation; JobPosting hasMany Applications; Application belongsToMany Accommodation (accommodationsAtContact) and hasOne Feedback; Feedback hasMany FeedbackItems.
 
 ## Insights Service – MySQL `insights_cache`
 
@@ -53,4 +53,4 @@ All enum values are also listed in SIA doc Appendix F and `docs/openapi.yaml` �
   - work_arrangement: Remote work; Hybrid work; Flexible hours; Part-time schedule; Modified duties
   - assistive_technology: Screen reader software provided; Adjustable workstation; Assistive listening devices
   - support: Job coach or onboarding buddy; Service animal allowed; Transportation assistance
-- One admin, demo candidate and employer accounts (passwords from `DEMO_PASSWORD`, never hard-coded), demo postings with real Metro Manila addresses, and enough hired applications + feedback for at least one employer to have a published trust score (≥3 responses).
+- One admin, demo candidate and employer accounts (passwords from `DEMO_PASSWORD`, never hard-coded), demo postings with real Metro Manila addresses, and enough contacted applications + feedback for at least one employer to have a published trust score (≥3 responses).

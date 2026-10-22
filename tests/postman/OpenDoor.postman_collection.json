@@ -6145,12 +6145,12 @@
                   "",
                   "pm.test('matches the Application shape', () => {",
                   "  const a = pm.response.json();",
-                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
+                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'shortlisted_at', 'contacted_at', 'contact_confirmed_by', 'feedback_opens_on', 'created_at');",
                   "});",
                   "const a = pm.response.json();",
-                  "pm.test('pending, not hired, no candidate block for the candidate', () => {",
+                  "pm.test('pending, not contacted, no candidate block for the candidate', () => {",
                   "  pm.expect(a.status).to.eql('pending');",
-                  "  pm.expect(a.hired_at).to.eql(null);",
+                  "  pm.expect(a.contacted_at).to.eql(null);",
                   "  pm.expect(a).to.not.have.property('candidate');",
                   "});",
                   "pm.collectionVariables.set('applicationId', a.id);"
@@ -6381,7 +6381,7 @@
           ]
         },
         {
-          "name": "T06 Employer hires without reviewing → 422 INVALID_STATUS_TRANSITION",
+          "name": "T06 Employer contacts without reviewing → 422 INVALID_STATUS_TRANSITION",
           "request": {
             "method": "PATCH",
             "auth": {
@@ -6415,10 +6415,10 @@
                 "status"
               ]
             },
-            "description": "pending → hired skips the review step. (Opening the application as the employer moves it to reviewed.)",
+            "description": "pending → contacted skips the review step. (Opening the application as the employer moves it to reviewed.)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"hired\"\n}",
+              "raw": "{\n  \"status\": \"contacted\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6576,7 +6576,7 @@
                   "",
                   "pm.test('matches the Application shape', () => {",
                   "  const a = pm.response.json();",
-                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'hired_at', 'hire_confirmed_by', 'feedback_opens_on', 'created_at');",
+                  "  pm.expect(a).to.include.keys('id', 'job_posting_id', 'job_posting', 'status', 'cover_note', 'interview_request', 'reviewed_at', 'shortlisted_at', 'contacted_at', 'contact_confirmed_by', 'feedback_opens_on', 'created_at');",
                   "});",
                   "const a = pm.response.json();",
                   "pm.test('opening marks it reviewed', () => pm.expect(a.status).to.eql('reviewed'));",
@@ -6642,7 +6642,7 @@
           ]
         },
         {
-          "name": "Employer hires → hired_at and feedback date",
+          "name": "Employer shortlists the candidate → shortlisted_at",
           "request": {
             "method": "PATCH",
             "auth": {
@@ -6678,7 +6678,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"hired\"\n}",
+              "raw": "{\n  \"status\": \"shortlisted\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6694,11 +6694,70 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const a = pm.response.json();",
-                  "pm.test('hired by the employer', () => { pm.expect(a.status).to.eql('hired'); pm.expect(a.hire_confirmed_by).to.eql('employer'); pm.expect(a.hired_at).to.be.a('string'); });",
-                  "pm.test('feedback opens 30 days after the hire (Manila)', () => {",
+                  "pm.test('shortlisted, not contacted yet', () => { pm.expect(a.status).to.eql('shortlisted'); pm.expect(a.shortlisted_at).to.be.a('string'); pm.expect(a.contacted_at).to.eql(null); pm.expect(a.feedback_opens_on).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Employer marks the candidate contacted → contacted_at and feedback date",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"contacted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const a = pm.response.json();",
+                  "pm.test('contacted by the employer', () => { pm.expect(a.status).to.eql('contacted'); pm.expect(a.contact_confirmed_by).to.eql('employer'); pm.expect(a.contacted_at).to.be.a('string'); });",
+                  "pm.test('feedback opens 30 days after the contact (Manila)', () => {",
                   "  const opens = new Date(a.feedback_opens_on + 'T00:00:00+08:00');",
-                  "  const hiredManila = new Date(new Date(a.hired_at).getTime() + 8 * 3600000).toISOString().slice(0, 10);",
-                  "  pm.expect((opens - new Date(hiredManila + 'T00:00:00+08:00')) / 86400000).to.eql(30);",
+                  "  const contactedManila = new Date(new Date(a.contacted_at).getTime() + 8 * 3600000).toISOString().slice(0, 10);",
+                  "  pm.expect((opens - new Date(contactedManila + 'T00:00:00+08:00')) / 86400000).to.eql(30);",
                   "});"
                 ]
               }
@@ -6706,7 +6765,7 @@
           ]
         },
         {
-          "name": "Hired is final → reject is refused (422)",
+          "name": "Contacted is final → reject is refused (422)",
           "request": {
             "method": "PATCH",
             "auth": {
@@ -6767,7 +6826,7 @@
           ]
         },
         {
-          "name": "Candidate sees the hire in My applications",
+          "name": "Candidate sees the contacted application in My applications",
           "request": {
             "method": "GET",
             "auth": {
@@ -6787,7 +6846,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications?status=hired",
+              "raw": "{{baseUrl}}/applications?status=contacted",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -6797,7 +6856,7 @@
               "query": [
                 {
                   "key": "status",
-                  "value": "hired"
+                  "value": "contacted"
                 }
               ]
             }
@@ -6809,7 +6868,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('the hired application is listed', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.include(pm.collectionVariables.get('applicationId')));"
+                  "pm.test('the contacted application is listed', () => pm.expect(pm.response.json().data.map((a) => a.id)).to.include(pm.collectionVariables.get('applicationId')));"
                 ]
               }
             }
@@ -7014,7 +7073,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('still hired', () => pm.expect(pm.response.json().status).to.eql('hired'));"
+                  "pm.test('still contacted', () => pm.expect(pm.response.json().status).to.eql('contacted'));"
                 ]
               }
             }
@@ -7024,7 +7083,7 @@
     },
     {
       "name": "06 Feedback & Trust Score",
-      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded hire of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the fresh hire from folder 05.",
+      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded contacted application of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the application contacted in folder 05.",
       "item": [
         {
           "name": "Log in the second demo candidate → candidate2Token",
@@ -7114,7 +7173,7 @@
           ]
         },
         {
-          "name": "Candidate finds the hire whose feedback window is open",
+          "name": "Candidate finds the contacted application whose feedback window is open",
           "request": {
             "method": "GET",
             "auth": {
@@ -7134,7 +7193,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications?status=hired",
+              "raw": "{{baseUrl}}/applications?status=contacted",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -7144,7 +7203,7 @@
               "query": [
                 {
                   "key": "status",
-                  "value": "hired"
+                  "value": "contacted"
                 }
               ]
             }
@@ -7157,12 +7216,12 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);",
-                  "const hire = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
-                  "pm.test('a hired application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(hire).to.be.an('object'));",
-                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(hire.feedback_submitted).to.be.a('boolean'));",
-                  "pm.collectionVariables.set('feedbackApplicationId', hire.id);",
-                  "pm.collectionVariables.set('feedbackEmployerId', hire.job_posting.employer.id);",
-                  "pm.collectionVariables.set('feedbackGiven', String(hire.feedback_submitted));"
+                  "const contacted = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
+                  "pm.test('a contacted application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(contacted).to.be.an('object'));",
+                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(contacted.feedback_submitted).to.be.a('boolean'));",
+                  "pm.collectionVariables.set('feedbackApplicationId', contacted.id);",
+                  "pm.collectionVariables.set('feedbackEmployerId', contacted.job_posting.employer.id);",
+                  "pm.collectionVariables.set('feedbackGiven', String(contacted.feedback_submitted));"
                 ]
               }
             }
@@ -7218,7 +7277,7 @@
           ]
         },
         {
-          "name": "Feedback form lists the accommodations at hire",
+          "name": "Feedback form lists the accommodations promised at contact",
           "request": {
             "method": "GET",
             "auth": {
@@ -7318,7 +7377,7 @@
           ]
         },
         {
-          "name": "Another candidate cannot rate the hire → 403",
+          "name": "Another candidate cannot rate this application → 403",
           "request": {
             "method": "POST",
             "auth": {
@@ -7507,7 +7566,7 @@
           ]
         },
         {
-          "name": "T10 Hired candidate rates after 30 days → 201 (3rd response)",
+          "name": "T10 Contacted candidate rates after 30 days → 201 (3rd response)",
           "request": {
             "method": "POST",
             "auth": {
@@ -7799,7 +7858,7 @@
           ]
         },
         {
-          "name": "T11 Feedback before 30 days after hire → 422 FEEDBACK_NOT_OPEN",
+          "name": "T11 Feedback before 30 days after the contact → 422 FEEDBACK_NOT_OPEN",
           "request": {
             "method": "POST",
             "auth": {
@@ -7833,7 +7892,7 @@
                 "feedback"
               ]
             },
-            "description": "The application was hired today in folder 05; the form opens on calendar day 30 (Asia/Manila).",
+            "description": "The application was contacted today in folder 05; the form opens on calendar day 30 (Asia/Manila).",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"items\": [\n    {\n      \"accommodation_id\": 1,\n      \"rating\": \"delivered\"\n    }\n  ]\n}",
@@ -7861,7 +7920,7 @@
           ]
         },
         {
-          "name": "The fresh hire's form is not open yet and shows the date",
+          "name": "The fresh contact's form is not open yet and shows the date",
           "request": {
             "method": "GET",
             "auth": {

@@ -2551,7 +2551,7 @@
     },
     {
       "name": "06 Feedback & Trust Score",
-      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded hire of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the fresh hire from folder 05.",
+      "description": "M7: the feedback window, once-only rule, who may rate, and the trust score threshold. T10 uses the seeded contacted application of candidate2@ at employer2@ (2 earlier responses, window open), so the run gives the 3rd response: 201 on a fresh seed, 409 FEEDBACK_EXISTS on later runs (the score checks still apply). T11 uses the application contacted in folder 05.",
       "item": [
         {
           "name": "Log in the second demo candidate → candidate2Token",
@@ -2641,7 +2641,7 @@
           ]
         },
         {
-          "name": "Candidate finds the hire whose feedback window is open",
+          "name": "Candidate finds the contacted application whose feedback window is open",
           "request": {
             "method": "GET",
             "auth": {
@@ -2661,7 +2661,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications?status=hired",
+              "raw": "{{baseUrl}}/applications?status=contacted",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -2671,7 +2671,7 @@
               "query": [
                 {
                   "key": "status",
-                  "value": "hired"
+                  "value": "contacted"
                 }
               ]
             }
@@ -2684,12 +2684,12 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);",
-                  "const hire = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
-                  "pm.test('a hired application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(hire).to.be.an('object'));",
-                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(hire.feedback_submitted).to.be.a('boolean'));",
-                  "pm.collectionVariables.set('feedbackApplicationId', hire.id);",
-                  "pm.collectionVariables.set('feedbackEmployerId', hire.job_posting.employer.id);",
-                  "pm.collectionVariables.set('feedbackGiven', String(hire.feedback_submitted));"
+                  "const contacted = pm.response.json().data.find((a) => a.feedback_opens_on && a.feedback_opens_on <= today);",
+                  "pm.test('a contacted application with an open window exists (DemoFeedbackSeeder)', () => pm.expect(contacted).to.be.an('object'));",
+                  "pm.test('feedback_submitted is shown to the candidate', () => pm.expect(contacted.feedback_submitted).to.be.a('boolean'));",
+                  "pm.collectionVariables.set('feedbackApplicationId', contacted.id);",
+                  "pm.collectionVariables.set('feedbackEmployerId', contacted.job_posting.employer.id);",
+                  "pm.collectionVariables.set('feedbackGiven', String(contacted.feedback_submitted));"
                 ]
               }
             }
@@ -2745,7 +2745,7 @@
           ]
         },
         {
-          "name": "Feedback form lists the accommodations at hire",
+          "name": "Feedback form lists the accommodations promised at contact",
           "request": {
             "method": "GET",
             "auth": {
@@ -2845,7 +2845,7 @@
           ]
         },
         {
-          "name": "Another candidate cannot rate the hire → 403",
+          "name": "Another candidate cannot rate this application → 403",
           "request": {
             "method": "POST",
             "auth": {

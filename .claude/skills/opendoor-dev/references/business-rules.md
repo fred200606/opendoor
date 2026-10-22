@@ -4,13 +4,16 @@ These are enforced on the server and covered by feature tests.
 
 ## Application status workflow
 
+Stages the candidate sees (Decision 2026-10-22a): **Submitted** (pending) → **Under review** (reviewed) → **Shortlisted** → **Contacted** ("the employer reached out about the next steps"). Contacted replaced "hired" and does everything hired did (feedback window, snapshot, trust score). Closed = rejected ("Not selected") or withdrawn.
+
 | From | To | Who | Condition |
 |---|---|---|---|
 | (none) | pending | Candidate | profile complete (else 422 `PROFILE_INCOMPLETE`), posting is open + published by a verified company, not past `closes_at`, candidate has not applied before |
 | pending | reviewed | Employer | happens automatically when the employer opens the application |
-| pending / reviewed | withdrawn | Candidate | final |
-| reviewed | rejected | Employer | final |
-| reviewed | hired | Employer **or** Candidate ("I was hired") | sets `hired_at` and `hire_confirmed_by`; final |
+| reviewed | shortlisted | Employer | sets `shortlisted_at` |
+| pending / reviewed / shortlisted | withdrawn | Candidate | final |
+| reviewed / shortlisted | rejected | Employer | final |
+| reviewed / shortlisted | contacted | Employer **or** Candidate ("The employer contacted me") | sets `contacted_at` and `contact_confirmed_by`, records the promised accommodations; final |
 
 - Anything else → 422 `INVALID_STATUS_TRANSITION`. Status never moves backward.
 - Implement in `ApplicationStatus::canTransitionTo(self $to, string $actorRole): bool`.
@@ -36,9 +39,9 @@ Complete = `location_psgc` + at least 3 skills + `education_level` + at least on
 
 ## Feedback and trust score
 
-- Only an application with status `hired` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the hire date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= hired_at->timezone('Asia/Manila')->startOfDay()->addDays(30)` – hired on 1 Oct (any time) → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
-- Reminder (M13): the daily `feedback:remind` (08:00) sends each hired, unrated candidate one `feedback_reminder` notice (+ email) once the form is open; missed days are caught up; suspended candidates are reminded after reactivation (`applications.feedback_reminded_at`).
-- The form lists the accommodations the posting advertised at the time of hire (recorded in `application_accommodation` when the status becomes `hired`); one rating per item, every item must be rated.
+- Only an application with status `contacted` can submit feedback, once (409 `FEEDBACK_EXISTS`), and only from **calendar day 30 after the contact date** (422 `FEEDBACK_NOT_OPEN`): `today('Asia/Manila') >= contacted_at->timezone('Asia/Manila')->startOfDay()->addDays(30)` – contacted on 1 Oct (any time) → opens 31 Oct 00:00 Manila time. `APP_TIMEZONE=Asia/Manila`.
+- Reminder (M13): the daily `feedback:remind` (08:00) sends each contacted, unrated candidate one `feedback_reminder` notice (+ email) once the form is open; missed days are caught up; suspended candidates are reminded after reactivation (`applications.feedback_reminded_at`).
+- The form lists the accommodations the posting advertised when the employer reached out (recorded in `application_accommodation` when the status becomes `contacted`); one rating per item, every item must be rated.
 - Values: delivered = 1, partial = 0.5, not_delivered = 0.
 - `trust_score = round(sum(values) / count(rated items) * 100)` → a **whole percentage 0–100** (integer, e.g. `86`; PHP `round()` half away from zero) across all non-hidden feedback items for the employer; store on `employers.trust_score` and `feedback_count` (number of non-hidden feedback responses). The API returns an integer, the UI shows `86%`.
 - Recalculate in an observer when feedback is saved or hidden/unhidden.
@@ -61,8 +64,8 @@ Complete = `location_psgc` + at least 3 skills + `education_level` + at least on
 | Candidate profile + needs | – | C, R, U own | R only via applications to own postings | R |
 | Company profile | R public | R public | C, R, U own | R, U verify |
 | Job posting | R open | R open | C, R, U, D own | R all, U approve, D |
-| Application | – | C, R own, U withdraw/confirm hire | R, U status (own postings) | R |
-| Feedback | – | C, R own (once, after hire) | score only | R, U hide |
+| Application | – | C, R own, U withdraw/confirm contact | R, U status (own postings) | R |
+| Feedback | – | C, R own (once, 30 days after contact) | score only | R, U hide |
 | Trust score | R (≥3) | R (≥3) | R own | R all |
 | Categories / accommodation types | R | R | R | C, R, U, D |
 | Reports | – | C | – | R, U |

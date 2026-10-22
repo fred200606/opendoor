@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: OpenDoor API
   version: 0.1.0-draft
-  summary: PWD job matching by workplace accommodations, with post-hire verification.
+  summary: PWD job matching by workplace accommodations, with verification after the employer reaches out.
   description: |
     Public API exposed by the OpenDoor API Gateway. The React client only calls these paths.
     The gateway routes `/api/insights/*` to the Insights Service and every other `/api/*` path to the Core Service.
@@ -895,9 +895,12 @@ paths:
       tags: [M6 Applications]
       summary: Change application status (see the status workflow)
       description: |
-        Allowed: pending→reviewed (employer), pending/reviewed→withdrawn (candidate),
-        reviewed→rejected (employer), reviewed→hired (employer or candidate). Anything else → 422 INVALID_STATUS_TRANSITION.
-        hired sets `hired_at` and `hire_confirmed_by`. Every change notifies the other party.
+        Stages the candidate sees (Decision 2026-10-22a): Submitted (pending) → Under review (reviewed) →
+        Shortlisted → Contacted. Allowed: pending→reviewed (employer), reviewed→shortlisted (employer),
+        reviewed/shortlisted→contacted (employer or candidate), reviewed/shortlisted→rejected (employer),
+        pending/reviewed/shortlisted→withdrawn (candidate). Anything else → 422 INVALID_STATUS_TRANSITION.
+        shortlisted sets `shortlisted_at`; contacted (replaces "hired") sets `contacted_at` and
+        `contact_confirmed_by` and opens the accommodation rating 30 days later. Every change notifies the other party.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       requestBody:
         required: true
@@ -907,7 +910,7 @@ paths:
               type: object
               required: [status]
               properties:
-                status: { type: string, enum: [reviewed, hired, rejected, withdrawn] }
+                status: { type: string, enum: [reviewed, shortlisted, contacted, rejected, withdrawn] }
       responses:
         '200':
           description: Updated
@@ -921,11 +924,11 @@ paths:
   /applications/{id}/feedback-form:
     get:
       tags: [M7 Feedback and trust score]
-      summary: Accommodations to rate (those advertised at the time of hire)
+      summary: Accommodations to rate (those advertised when the employer reached out)
       description: >-
-        Only the candidate of a hired application. The items are the accommodations the posting
-        advertised when the application became hired (recorded at hire; later posting edits do not
-        change them), sorted by name. An application that is not hired → 422 FEEDBACK_NOT_OPEN.
+        Only the candidate of a contacted application. The items are the accommodations the posting
+        advertised when the application became contacted (recorded then; later posting edits do not
+        change them), sorted by name. An application that is not contacted → 422 FEEDBACK_NOT_OPEN.
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses:
         '200':
@@ -935,9 +938,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  opens_on: { type: string, format: date, description: Calendar day 30 after the hire date (Asia/Manila) }
+                  opens_on: { type: string, format: date, description: Calendar day 30 after the contact date (Asia/Manila) }
                   is_open: { type: boolean }
-                  submitted: { type: boolean, description: The candidate has already rated this hire }
+                  submitted: { type: boolean, description: The candidate has already rated this job }
                   items:
                     type: array
                     items:
@@ -951,9 +954,9 @@ paths:
   /applications/{id}/feedback:
     post:
       tags: [M7 Feedback and trust score]
-      summary: Submit feedback once, from calendar day 30 after hire (Asia/Manila)
+      summary: Submit feedback once, from calendar day 30 after the contact (Asia/Manila)
       description: >-
-        Only the candidate of a hired application. Not hired or before `opens_on` → 422
+        Only the candidate of a contacted application. Not contacted or before `opens_on` → 422
         FEEDBACK_NOT_OPEN; a second response → 409 FEEDBACK_EXISTS. Every item of the feedback form
         needs exactly one rating (`errors.items` when one is missing; an accommodation that is not on
         the form → `errors["items.N.accommodation_id"]`). Recomputes the employer's trust score.
@@ -1016,7 +1019,7 @@ paths:
       summary: Candidate summary (applications by status, matches, pending feedback)
       description: |
         Counts are zero-filled for every status. `matching_jobs` = visible postings offering every saved need (0 without needs).
-        `feedback_due` = hired applications not rated yet, earliest hire first (also those whose window is not open yet).
+        `feedback_due` = contacted applications not rated yet, earliest contact first (also those whose window is not open yet).
       responses:
         '200':
           description: Summary
@@ -1725,8 +1728,11 @@ components:
       type: string
       enum: [elementary, high_school, senior_high, vocational, college, postgraduate]
       description: In order; a level meets every requirement at or below it.
-    ApplicationStatus: { type: string, enum: [pending, reviewed, hired, rejected, withdrawn] }
-    HireConfirmedBy: { type: string, enum: [employer, candidate] }
+    ApplicationStatus:
+      type: string
+      enum: [pending, reviewed, shortlisted, contacted, rejected, withdrawn]
+      description: Shown to candidates as Submitted, Under review, Shortlisted, Contacted, Not selected, Withdrawn (Decision 2026-10-22a)
+    ContactConfirmedBy: { type: string, enum: [employer, candidate] }
     FeedbackRating:
       type: string
       enum: [delivered, partial, not_delivered]
@@ -2135,13 +2141,14 @@ components:
         cover_note: { type: [string, 'null'] }
         interview_request: { type: [string, 'null'] }
         reviewed_at: { type: [string, 'null'], format: date-time, description: 'When the employer first reviewed it (set by pending → reviewed); null before, and for applications reviewed before 2026-10-13 that have moved on' }
-        hired_at: { type: [string, 'null'], format: date-time }
-        hire_confirmed_by:
+        shortlisted_at: { type: [string, 'null'], format: date-time, description: When the employer shortlisted it }
+        contacted_at: { type: [string, 'null'], format: date-time, description: When the employer reached out (or the candidate confirmed it) }
+        contact_confirmed_by:
           oneOf:
-            - $ref: '#/components/schemas/HireConfirmedBy'
+            - $ref: '#/components/schemas/ContactConfirmedBy'
             - type: 'null'
-        feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after hired_at (Asia/Manila); null until hired' }
-        feedback_submitted: { type: boolean, description: 'Only for the candidate (feedback is anonymous to employers): the candidate has rated this hire' }
+        feedback_opens_on: { type: [string, 'null'], format: date, description: 'Calendar day 30 after contacted_at (Asia/Manila); null until contacted' }
+        feedback_submitted: { type: boolean, description: 'Only for the candidate (feedback is anonymous to employers): the candidate has rated this job' }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -2157,7 +2164,7 @@ components:
             application_received (to the employer), application_status_changed (to the party that did not act),
             employer_verification (admin approved/rejected the company; data.verified),
             posting_review (admin removed a posting, with the reason; data.job_posting_id, data.removed true – no approvals since Decision 2026-10-21),
-            feedback_reminder (to a hired candidate on the day the feedback form opens; data.application_id).
+            feedback_reminder (to a contacted candidate on the day the feedback form opens; data.application_id).
             Each one is also emailed when the user's email_notifications is on.
           example: application_status_changed
         data:
@@ -2233,7 +2240,8 @@ components:
       properties:
         pending: { type: integer }
         reviewed: { type: integer }
-        hired: { type: integer }
+        shortlisted: { type: integer }
+        contacted: { type: integer }
         rejected: { type: integer }
         withdrawn: { type: integer }
     PostingCounts:
