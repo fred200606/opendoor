@@ -325,24 +325,37 @@ describe('AdminMasterDataPage', () => {
 });
 
 describe('AdminDashboardPage', () => {
-  test('work queues link to their lists; every group shows its counts', async () => {
-    renderApp('/admin/dashboard', {
-      as: 'admin',
-      routes: {
-        'GET /admin/dashboard': () => [
-          200,
-          {
-            verification_queue: 1,
-            open_reports: 2,
-            users: { candidate: 14, employer: 5, admin: 1, suspended: 0 },
-            postings: { draft: 1, open: 3, closed: 1 },
-            applications: { pending: 1, reviewed: 1, shortlisted: 0, contacted: 0, hired: 6, rejected: 0, withdrawn: 0 },
-            feedback: { responses: 9, hidden: 0 },
-            published_trust_scores: 2,
-          },
+  const weeks = Array.from({ length: 12 }, (_, index) => ({
+    week_start: new Date(Date.UTC(2026, 7, 3 + index * 7)).toISOString().slice(0, 10),
+    applications: index + 1,
+    hires: index === 11 ? 2 : 0,
+    new_accounts: 1,
+  }));
+  const dashboard = {
+    verification_queue: 1,
+    open_reports: 2,
+    users: { candidate: 14, employer: 5, admin: 1, suspended: 0 },
+    postings: { draft: 1, open: 3, closed: 1 },
+    applications: { pending: 1, reviewed: 1, shortlisted: 0, contacted: 0, hired: 6, rejected: 0, withdrawn: 0 },
+    feedback: { responses: 9, hidden: 0 },
+    published_trust_scores: 2,
+    analytics: {
+      weeks,
+      funnel: { submitted: 20, reviewed: 15, shortlisted: 8, contacted: 6, hired: 5 },
+      needs: {
+        job_seekers: 10,
+        open_jobs: 4,
+        top: [
+          { accommodation_id: 1, name: 'Wheelchair-accessible entrance', job_seekers: 6, open_jobs: 1 },
+          { accommodation_id: 5, name: 'Sign language interpreter', job_seekers: 3, open_jobs: 0 },
         ],
       },
-    });
+      delivery: { delivered: 6, partial: 3, not_delivered: 1 },
+    },
+  };
+
+  test('work queues link to their lists; every group shows its counts', async () => {
+    renderApp('/admin/dashboard', { as: 'admin', routes: { 'GET /admin/dashboard': () => [200, dashboard] } });
 
     expect(await screen.findByRole('link', { name: 'Open queue Employers to verify (1)' })).toHaveAttribute('href', '/admin/employers');
     expect(screen.queryByText('Postings to approve')).not.toBeInTheDocument();
@@ -353,5 +366,63 @@ describe('AdminDashboardPage', () => {
       '0Hidden responses',
       '2Published trust scores',
     ]);
+  });
+
+  test('charts print their numbers and each has a table view (Decision 2026-10-22d)', async () => {
+    const { user } = renderApp('/admin/dashboard', { as: 'admin', routes: { 'GET /admin/dashboard': () => [200, dashboard] } });
+
+    const activity = await screen.findByRole('figure', { name: 'Activity, last 12 weeks' });
+    expect(activity).toHaveTextContent('78 applications, 2 confirmed hires and 12 new accounts.');
+    const slider = within(activity).getByRole('slider');
+    expect(slider).toHaveAttribute('aria-valuetext', 'Week of October 19, 2026. Use the arrow keys to read each week.');
+    slider.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(slider).toHaveAttribute('aria-valuetext', 'Week of October 12, 2026: Applications 11, Confirmed hires 0');
+
+    await user.click(within(activity).getByRole('button', { name: 'Show as a table' }));
+    const table = within(activity).getByRole('table', { name: /Activity per week/ });
+    expect(within(table).getAllByRole('row')).toHaveLength(13);
+    expect([...within(table).getAllByRole('row')[12].children].map((cell) => cell.textContent)).toEqual(['October 19, 2026', '12', '2', '1']);
+    expect(within(activity).getByRole('button', { name: 'Hide the table' })).toHaveAttribute('aria-expanded', 'true');
+
+    const funnel = screen.getByRole('figure', { name: 'How far applications get' });
+    expect([...funnel.querySelectorAll('.bar-row__value')].map((value) => value.textContent)).toEqual(['20 · 100%', '15 · 75%', '8 · 40%', '6 · 30%', '5 · 25%']);
+
+    const delivery = screen.getByRole('figure', { name: 'Were the promised accommodations delivered?' });
+    expect(delivery.querySelector('.chart-hero')).toHaveTextContent('60%');
+    expect(delivery).toHaveTextContent('Partly delivered: 30% (3)');
+    expect(delivery).toHaveTextContent('Not delivered: 10% (1)');
+
+    const needs = screen.getByRole('figure', { name: 'Most needed accommodations' });
+    const first = within(needs).getAllByRole('listitem').find((item) => item.textContent.startsWith('Wheelchair-accessible entrance'));
+    expect(first).toHaveTextContent('Job seekers who need it: 60% (6)');
+    expect(first).toHaveTextContent('Open jobs that offer it: 25% (1)');
+  });
+
+  test('an empty platform explains each chart instead of drawing it', async () => {
+    renderApp('/admin/dashboard', {
+      as: 'admin',
+      routes: {
+        'GET /admin/dashboard': () => [
+          200,
+          {
+            ...dashboard,
+            analytics: {
+              weeks: weeks.map((week) => ({ ...week, applications: 0, hires: 0, new_accounts: 0 })),
+              funnel: { submitted: 0, reviewed: 0, shortlisted: 0, contacted: 0, hired: 0 },
+              needs: { job_seekers: 0, open_jobs: 0, top: [] },
+              delivery: { delivered: 0, partial: 0, not_delivered: 0 },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(await screen.findByText('No applications or hires in the last 12 weeks yet.')).toBeInTheDocument();
+    expect(screen.getByText('No applications yet.')).toBeInTheDocument();
+    expect(screen.getByText('No ratings yet. Hired employees can rate 30 days after their start date.')).toBeInTheDocument();
+    expect(screen.getByText('No job seeker has saved an accommodation need yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show as a table' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
   });
 });

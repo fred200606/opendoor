@@ -31,6 +31,11 @@ export function formatDistance(metres) {
   return metres < 1000 ? `${Math.round(metres)} m away` : `${Math.round(metres / 100) / 10} km away`;
 }
 
+/** A share as a whole percentage: (3, 5) → '60%'; no base → '–'. */
+export function percent(part, whole) {
+  return whole > 0 ? `${Math.round((part / whole) * 100)}%` : '–';
+}
+
 export function plural(count, one, many = `${one}s`) {
   return `${count} ${count === 1 ? one : many}`;
 }
