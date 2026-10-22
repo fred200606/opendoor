@@ -13,6 +13,7 @@ use App\Models\JobPosting;
 use App\Models\Report;
 use App\Models\User;
 use App\Services\AdminAnalytics;
+use App\Services\EmployerDashboard;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -93,6 +94,8 @@ class DashboardController extends Controller
             'applications' => $this->countByStatus($applications, ApplicationStatus::class),
             'pipeline' => $this->pipeline($applications),
             'trust_score' => $employer?->trustScoreSummary() ?? ['published' => false, 'score' => null, 'based_on' => 0],
+            // Needs attention, recent activity and the weekly chart (Decision 2026-10-22f).
+            ...(new EmployerDashboard($employer))->summary(),
         ]);
     }
 

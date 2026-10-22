@@ -48,24 +48,38 @@ class AdminAnalytics
      */
     private function weeks(): array
     {
-        $first = CarbonImmutable::now('Asia/Manila')->startOfWeek(CarbonImmutable::MONDAY)->subWeeks(self::WEEKS - 1);
-        $since = $first->timezone(config('app.timezone'));
+        $since = self::firstWeek()->timezone(config('app.timezone'));
+
+        return self::perWeek([
+            'applications' => $this->applications()->where('created_at', '>=', $since)->pluck('created_at'),
+            'hires' => $this->applications()->where('status', ApplicationStatus::Hired)->where('hired_at', '>=', $since)->pluck('hired_at'),
+            'new_accounts' => User::query()->whereIn('role', [UserRole::Candidate, UserRole::Employer])->where('created_at', '>=', $since)->pluck('created_at'),
+        ]);
+    }
+
+    /** Monday 00:00 (Manila) of the first of the last 12 weeks. */
+    public static function firstWeek(): CarbonImmutable
+    {
+        return CarbonImmutable::now('Asia/Manila')->startOfWeek(CarbonImmutable::MONDAY)->subWeeks(self::WEEKS - 1);
+    }
+
+    /**
+     * Timestamps per series → one row per Manila week since firstWeek(), the current one last:
+     * ['week_start' => 'Y-m-d', <series> => count, ...]. Shared with the employer dashboard.
+     *
+     * @param  array<string, iterable<mixed>>  $series
+     * @return list<array<string, int|string>>
+     */
+    public static function perWeek(array $series): array
+    {
+        $first = self::firstWeek();
         $weekOf = fn ($at) => CarbonImmutable::parse($at)->timezone('Asia/Manila')->startOfWeek(CarbonImmutable::MONDAY)->toDateString();
+        $counts = array_map(fn ($dates) => collect($dates)->countBy($weekOf), $series);
 
-        $count = fn ($dates) => collect($dates)->countBy($weekOf);
-        $applications = $count($this->applications()->where('created_at', '>=', $since)->pluck('created_at'));
-        $hires = $count($this->applications()->where('status', ApplicationStatus::Hired)->where('hired_at', '>=', $since)->pluck('hired_at'));
-        $accounts = $count(User::query()->whereIn('role', [UserRole::Candidate, UserRole::Employer])->where('created_at', '>=', $since)->pluck('created_at'));
-
-        return collect(range(0, self::WEEKS - 1))->map(function (int $offset) use ($first, $applications, $hires, $accounts) {
+        return collect(range(0, self::WEEKS - 1))->map(function (int $offset) use ($first, $counts) {
             $week = $first->addWeeks($offset)->toDateString();
 
-            return [
-                'week_start' => $week,
-                'applications' => (int) ($applications[$week] ?? 0),
-                'hires' => (int) ($hires[$week] ?? 0),
-                'new_accounts' => (int) ($accounts[$week] ?? 0),
-            ];
+            return ['week_start' => $week, ...array_map(fn ($perWeek) => (int) ($perWeek[$week] ?? 0), $counts)];
         })->all();
     }
 

@@ -30,6 +30,8 @@ class DashboardTest extends TestCase
 
     private const NO_POSTINGS = ['draft' => 0, 'open' => 0, 'closed' => 0];
 
+    private const EMPLOYER_EXTRAS = ['attention', 'recent_activity', 'weeks'];
+
     protected function tearDown(): void
     {
         Carbon::setTestNow();
@@ -120,9 +122,9 @@ class DashboardTest extends TestCase
         Application::factory()->create(); // another employer's posting
 
         Sanctum::actingAs($employer->user);
-        $this->getJson('/api/employer/dashboard')
-            ->assertOk()
-            ->assertExactJson([
+        // attention, recent_activity and weeks: EmployerDashboardTest.
+        $this->assertSame(
+            [
                 'company' => ['exists' => true, 'verified' => true, 'verification_rejected_reason' => null],
                 'postings' => ['draft' => 1, 'open' => 2, 'closed' => 1],
                 // Applicants include those of the deleted posting (as in the applicants list).
@@ -130,21 +132,26 @@ class DashboardTest extends TestCase
                 // The hire on the deleted posting is final, so it is not "job closed"; the contacted one is.
                 'pipeline' => ['submitted' => 1, 'under_review' => 1, 'shortlisted' => 0, 'contacted' => 0, 'hiring_pending' => 1, 'hired' => 1, 'closed' => 1],
                 'trust_score' => ['published' => true, 'score' => 86, 'based_on' => 5],
-            ]);
+            ],
+            Arr::except($this->getJson('/api/employer/dashboard')->assertOk()->json(), self::EMPLOYER_EXTRAS),
+        );
     }
 
     public function test_employer_without_company_or_with_a_rejected_one(): void
     {
         Sanctum::actingAs(User::factory()->employer()->create());
-        $this->getJson('/api/employer/dashboard')
-            ->assertOk()
-            ->assertExactJson([
+        $response = $this->getJson('/api/employer/dashboard')->assertOk();
+        $this->assertSame(
+            [
                 'company' => ['exists' => false, 'verified' => false, 'verification_rejected_reason' => null],
                 'postings' => self::NO_POSTINGS,
                 'applications' => self::NO_APPLICATIONS,
                 'pipeline' => self::NO_PIPELINE,
                 'trust_score' => ['published' => false, 'score' => null, 'based_on' => 0],
-            ]);
+            ],
+            Arr::except($response->json(), self::EMPLOYER_EXTRAS),
+        );
+        $response->assertJsonPath('attention', ['new_applications' => [], 'hiring_reports' => []])->assertJsonPath('recent_activity', [])->assertJsonCount(12, 'weeks');
 
         $rejected = Employer::factory()->rejected('Number not found.')->withTrustScore(90, 2)->create();
         Sanctum::actingAs($rejected->user);
