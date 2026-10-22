@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\HireConfirmedBy;
+use App\Enums\ContactConfirmedBy;
 use App\Models\Application;
 
 /**
@@ -28,13 +28,13 @@ class ApplicationUpdate extends AppNotice
         $recipient->notify(new self($application));
     }
 
-    /** The candidate applied, withdrew or confirmed the hire → tell the employer; otherwise the candidate. */
+    /** The candidate applied, withdrew or confirmed the contact → tell the employer; otherwise the candidate. */
     private static function forEmployer(Application $application): bool
     {
         return match ($application->status) {
             ApplicationStatus::Pending, ApplicationStatus::Withdrawn => true,
-            ApplicationStatus::Hired => $application->hire_confirmed_by === HireConfirmedBy::Candidate,
-            ApplicationStatus::Reviewed, ApplicationStatus::Rejected => false,
+            ApplicationStatus::Contacted => $application->contact_confirmed_by === ContactConfirmedBy::Candidate,
+            ApplicationStatus::Reviewed, ApplicationStatus::Shortlisted, ApplicationStatus::Rejected => false,
         };
     }
 
@@ -63,11 +63,12 @@ class ApplicationUpdate extends AppNotice
         $message = match ($application->status) {
             ApplicationStatus::Pending => "{$candidate} applied for {$title}.",
             ApplicationStatus::Reviewed => "{$company} is reviewing your application for {$title}.",
+            ApplicationStatus::Shortlisted => "Good news: {$company} shortlisted you for {$title}.",
             ApplicationStatus::Rejected => "{$company} decided not to continue with your application for {$title}.",
             ApplicationStatus::Withdrawn => "{$candidate} withdrew the application for {$title}.",
-            ApplicationStatus::Hired => $application->hire_confirmed_by === HireConfirmedBy::Candidate
-                ? "{$candidate} confirmed being hired for {$title}."
-                : "Congratulations! {$company} marked you as hired for {$title}. You can rate the promised accommodations from ".$application->feedbackOpensOn()->format('F j, Y').'.',
+            ApplicationStatus::Contacted => $application->contact_confirmed_by === ContactConfirmedBy::Candidate
+                ? "{$candidate} confirmed that you contacted them about {$title}."
+                : "{$company} reached out to you about the next steps for {$title}. You can rate the promised accommodations from ".$application->feedbackOpensOn()->format('F j, Y').'.',
         };
 
         return [

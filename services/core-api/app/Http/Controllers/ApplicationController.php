@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\HireConfirmedBy;
+use App\Enums\ContactConfirmedBy;
 use App\Enums\JobPostingStatus;
 use App\Enums\UserRole;
 use App\Exceptions\ApiException;
@@ -107,7 +107,7 @@ class ApplicationController extends Controller
         Gate::authorize('changeStatus', $application);
 
         $to = ApplicationStatus::from($request->validate([
-            'status' => ['required', Rule::in(['reviewed', 'hired', 'rejected', 'withdrawn'])],
+            'status' => ['required', Rule::in(['reviewed', 'shortlisted', 'contacted', 'rejected', 'withdrawn'])],
         ])['status']);
 
         return new ApplicationResource($this->transition($application, $to, $request->user()));
@@ -133,15 +133,18 @@ class ApplicationController extends Controller
 
             $locked->status = $to;
             if ($to === ApplicationStatus::Reviewed) {
-                $locked->reviewed_at = now(); // the "Reviewed" date in the candidate's timeline
+                $locked->reviewed_at = now(); // the "Under review" date in the candidate's timeline
             }
-            if ($to === ApplicationStatus::Hired) {
-                $locked->hired_at = now();
-                $locked->hire_confirmed_by = $actorRole === UserRole::Candidate ? HireConfirmedBy::Candidate : HireConfirmedBy::Employer;
+            if ($to === ApplicationStatus::Shortlisted) {
+                $locked->shortlisted_at = now();
+            }
+            if ($to === ApplicationStatus::Contacted) {
+                $locked->contacted_at = now();
+                $locked->contact_confirmed_by = $actorRole === UserRole::Candidate ? ContactConfirmedBy::Candidate : ContactConfirmedBy::Employer;
             }
             $locked->save();
-            if ($to === ApplicationStatus::Hired) {
-                $locked->recordHireSnapshot();
+            if ($to === ApplicationStatus::Contacted) {
+                $locked->recordContactSnapshot();
             }
 
             return $locked;

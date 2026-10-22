@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\HireConfirmedBy;
+use App\Enums\ContactConfirmedBy;
 use App\Models\Application;
 use App\Models\CandidateProfile;
 use App\Models\JobPosting;
@@ -33,12 +33,12 @@ class ApplicationFactory extends Factory
         return $this->state(fn () => ['status' => $status]);
     }
 
-    public function hired(?string $at = null, HireConfirmedBy $by = HireConfirmedBy::Employer): static
+    public function contacted(?string $at = null, ContactConfirmedBy $by = ContactConfirmedBy::Employer): static
     {
         return $this->state(fn () => [
-            'status' => ApplicationStatus::Hired,
-            'hired_at' => $at ?? now(),
-            'hire_confirmed_by' => $by,
-        ])->afterCreating(fn (Application $application) => $application->recordHireSnapshot());
+            'status' => ApplicationStatus::Contacted,
+            'contacted_at' => $at ?? now(),
+            'contact_confirmed_by' => $by,
+        ])->afterCreating(fn (Application $application) => $application->recordContactSnapshot());
     }
 }

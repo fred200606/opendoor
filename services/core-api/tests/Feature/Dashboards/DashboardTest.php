@@ -23,7 +23,7 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const NO_APPLICATIONS = ['pending' => 0, 'reviewed' => 0, 'hired' => 0, 'rejected' => 0, 'withdrawn' => 0];
+    private const NO_APPLICATIONS = ['pending' => 0, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 0, 'rejected' => 0, 'withdrawn' => 0];
 
     private const NO_POSTINGS = ['draft' => 0, 'open' => 0, 'closed' => 0];
 
@@ -49,9 +49,9 @@ class DashboardTest extends TestCase
         $mine = Application::factory()->for($profile);
         $mine->create();
         $mine->status(ApplicationStatus::Withdrawn)->create();
-        $recent = $mine->hired('2026-10-05 15:00:00')->create();
-        $older = $mine->hired('2026-09-01 10:00:00')->create();
-        $rated = $mine->hired('2026-08-01 10:00:00')->create();
+        $recent = $mine->contacted('2026-10-05 15:00:00')->create();
+        $older = $mine->contacted('2026-09-01 10:00:00')->create();
+        $rated = $mine->contacted('2026-08-01 10:00:00')->create();
         Feedback::submit($rated, []);
         Application::factory()->create(); // someone else's
 
@@ -59,7 +59,7 @@ class DashboardTest extends TestCase
         $this->getJson('/api/candidate/dashboard')
             ->assertOk()
             ->assertExactJson([
-                'applications' => ['pending' => 1, 'reviewed' => 0, 'hired' => 3, 'rejected' => 0, 'withdrawn' => 1],
+                'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 3, 'rejected' => 0, 'withdrawn' => 1],
                 'needs_count' => 2,
                 'matching_jobs' => 2,
                 'feedback_due' => [
@@ -106,7 +106,7 @@ class DashboardTest extends TestCase
 
         Application::factory()->for($open)->create();
         Application::factory()->for($open)->status(ApplicationStatus::Reviewed)->create();
-        Application::factory()->for($deleted)->hired()->create();
+        Application::factory()->for($deleted)->contacted()->create();
         $deleted->delete();
         Application::factory()->create(); // another employer's posting
 
@@ -117,7 +117,7 @@ class DashboardTest extends TestCase
                 'company' => ['exists' => true, 'verified' => true, 'verification_rejected_reason' => null],
                 'postings' => ['draft' => 1, 'open' => 2, 'closed' => 1],
                 // Applicants include those of the deleted posting (as in the applicants list).
-                'applications' => ['pending' => 1, 'reviewed' => 1, 'hired' => 1, 'rejected' => 0, 'withdrawn' => 0],
+                'applications' => ['pending' => 1, 'reviewed' => 1, 'shortlisted' => 0, 'contacted' => 1, 'rejected' => 0, 'withdrawn' => 0],
                 'trust_score' => ['published' => true, 'score' => 86, 'based_on' => 5],
             ]);
     }
@@ -159,13 +159,13 @@ class DashboardTest extends TestCase
         $profile = CandidateProfile::factory()->create();
         User::factory()->candidate()->suspended()->create();
         Application::factory()->for($open)->for(CandidateProfile::factory())->create();
-        $hired = Application::factory()->for($open)->for($profile)->hired(now()->subDays(40)->toDateTimeString())->create();
-        $hiredToo = Application::factory()->for($closed)->for($profile)->hired(now()->subDays(40)->toDateTimeString())->create();
+        $contacted = Application::factory()->for($open)->for($profile)->contacted(now()->subDays(40)->toDateTimeString())->create();
+        $contactedToo = Application::factory()->for($closed)->for($profile)->contacted(now()->subDays(40)->toDateTimeString())->create();
         Application::factory()->for($deleted)->for($profile)->create();
         $deleted->delete();
 
-        Feedback::submit($hired, []);
-        Feedback::submit($hiredToo, [])->forceFill(['is_hidden' => true])->save();
+        Feedback::submit($contacted, []);
+        Feedback::submit($contactedToo, [])->forceFill(['is_hidden' => true])->save();
 
         $report = ['reporter_id' => $profile->user_id, 'job_posting_id' => $open->id];
         Report::factory()->count(2)->create($report);
@@ -177,7 +177,7 @@ class DashboardTest extends TestCase
             ->assertExactJson([
                 'users' => ['candidate' => 3, 'employer' => 6, 'admin' => 1, 'suspended' => 1],
                 'postings' => ['draft' => 1, 'open' => 1, 'closed' => 1],
-                'applications' => ['pending' => 1, 'reviewed' => 0, 'hired' => 2, 'rejected' => 0, 'withdrawn' => 0],
+                'applications' => ['pending' => 1, 'reviewed' => 0, 'shortlisted' => 0, 'contacted' => 2, 'rejected' => 0, 'withdrawn' => 0],
                 'verification_queue' => 2,
                 'open_reports' => 2,
                 'feedback' => ['responses' => 2, 'hidden' => 1],

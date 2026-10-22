@@ -39,7 +39,7 @@ class FeedbackModerationTest extends TestCase
     private function respond(string $interpreter, string $ramp, ?JobPosting $posting = null, ?string $comments = null): Feedback
     {
         $posting ??= $this->posting;
-        $application = Application::factory()->for($posting)->hired(now()->subDays(40)->toDateTimeString())->create();
+        $application = Application::factory()->for($posting)->contacted(now()->subDays(40)->toDateTimeString())->create();
 
         return Feedback::submit($application, [$this->interpreter->id => $interpreter, $this->ramp->id => $ramp], $comments);
     }

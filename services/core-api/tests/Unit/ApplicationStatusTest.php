@@ -15,7 +15,11 @@ class ApplicationStatusTest extends TestCase
         'pending→withdrawn' => ['candidate'],
         'reviewed→withdrawn' => ['candidate'],
         'reviewed→rejected' => ['employer'],
-        'reviewed→hired' => ['employer', 'candidate'],
+        'reviewed→shortlisted' => ['employer'],
+        'reviewed→contacted' => ['employer', 'candidate'],
+        'shortlisted→withdrawn' => ['candidate'],
+        'shortlisted→rejected' => ['employer'],
+        'shortlisted→contacted' => ['employer', 'candidate'],
     ];
 
     /** @return iterable<string, array{ApplicationStatus, ApplicationStatus, UserRole, bool}> */
@@ -37,10 +41,10 @@ class ApplicationStatusTest extends TestCase
         $this->assertSame($allowed, $from->canTransitionTo($to, $actor));
     }
 
-    public function test_hired_rejected_and_withdrawn_are_final(): void
+    public function test_contacted_rejected_and_withdrawn_are_final(): void
     {
         $final = array_filter(ApplicationStatus::cases(), fn (ApplicationStatus $status) => $status->isFinal());
 
-        $this->assertEqualsCanonicalizing([ApplicationStatus::Hired, ApplicationStatus::Rejected, ApplicationStatus::Withdrawn], array_values($final));
+        $this->assertEqualsCanonicalizing([ApplicationStatus::Contacted, ApplicationStatus::Rejected, ApplicationStatus::Withdrawn], array_values($final));
     }
 }

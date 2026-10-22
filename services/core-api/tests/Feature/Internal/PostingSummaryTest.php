@@ -71,7 +71,7 @@ class PostingSummaryTest extends TestCase
     public function test_a_published_score_comes_with_its_breakdown(): void
     {
         foreach (['delivered', 'delivered', 'partial'] as $rating) {
-            $application = Application::factory()->for($this->posting)->hired(now()->subDays(40)->toDateTimeString())->create();
+            $application = Application::factory()->for($this->posting)->contacted(now()->subDays(40)->toDateTimeString())->create();
             Feedback::submit($application, [$this->ramp->id => 'delivered', $this->interpreter->id => $rating]);
         }
 

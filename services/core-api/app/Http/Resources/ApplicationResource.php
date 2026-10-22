@@ -33,8 +33,9 @@ class ApplicationResource extends JsonResource
             'cover_note' => $this->cover_note,
             'interview_request' => $this->interview_request,
             'reviewed_at' => $this->reviewed_at?->toIso8601String(),
-            'hired_at' => $this->hired_at?->toIso8601String(),
-            'hire_confirmed_by' => $this->hire_confirmed_by,
+            'shortlisted_at' => $this->shortlisted_at?->toIso8601String(),
+            'contacted_at' => $this->contacted_at?->toIso8601String(),
+            'contact_confirmed_by' => $this->contact_confirmed_by,
             'feedback_opens_on' => $this->feedbackOpensOn()?->toDateString(),
             // Only the candidate learns whether they rated (feedback is anonymous to employers).
             'feedback_submitted' => $this->when(! $forEmployer, fn () => $this->feedback !== null),

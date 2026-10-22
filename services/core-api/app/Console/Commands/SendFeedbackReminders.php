@@ -13,12 +13,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * M13: tells each hired, unrated candidate once that the feedback form is open (calendar day 30
- * after the hire, Manila). Missed days are caught up; suspended candidates are reminded after
+ * M13: tells each contacted, unrated candidate once that the feedback form is open (calendar day 30
+ * after the contact, Manila). Missed days are caught up; suspended candidates are reminded after
  * reactivation. Emails go out when the command ends (AppNotice). Runs daily.
  */
 #[Signature('feedback:remind')]
-#[Description('Remind hired candidates that they can now rate the promised accommodations')]
+#[Description('Remind contacted candidates that they can now rate the promised accommodations')]
 class SendFeedbackReminders extends Command
 {
     public function handle(): int
@@ -26,11 +26,11 @@ class SendFeedbackReminders extends Command
         $sent = 0;
 
         Application::query()
-            ->where('status', ApplicationStatus::Hired)
+            ->where('status', ApplicationStatus::Contacted)
             ->whereNull('feedback_reminded_at')
             ->whereDoesntHave('feedback')
-            // Every open form has a hire at least 29 days ago; isFeedbackOpen() checks the exact day.
-            ->where('hired_at', '<=', now()->subDays(Application::FEEDBACK_AFTER_DAYS - 1))
+            // Every open form has a contact at least 29 days ago; isFeedbackOpen() checks the exact day.
+            ->where('contacted_at', '<=', now()->subDays(Application::FEEDBACK_AFTER_DAYS - 1))
             ->whereHas('candidateProfile.user', fn (Builder $user) => $user->where('is_active', true))
             ->with(['jobPosting.employer', 'candidateProfile.user'])
             ->chunkById(100, function (Collection $applications) use (&$sent) {

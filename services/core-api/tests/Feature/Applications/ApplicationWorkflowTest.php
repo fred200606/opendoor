@@ -61,8 +61,12 @@ class ApplicationWorkflowTest extends TestCase
         yield 'candidate withdraws a pending one' => ['pending', 'withdrawn', 'candidate', 'employer'];
         yield 'candidate withdraws a reviewed one' => ['reviewed', 'withdrawn', 'candidate', 'employer'];
         yield 'employer rejects' => ['reviewed', 'rejected', 'employer', 'candidate'];
-        yield 'employer hires' => ['reviewed', 'hired', 'employer', 'candidate'];
-        yield 'candidate confirms the hire' => ['reviewed', 'hired', 'candidate', 'employer'];
+        yield 'employer shortlists' => ['reviewed', 'shortlisted', 'employer', 'candidate'];
+        yield 'employer contacts a reviewed one' => ['reviewed', 'contacted', 'employer', 'candidate'];
+        yield 'employer contacts a shortlisted one' => ['shortlisted', 'contacted', 'employer', 'candidate'];
+        yield 'candidate confirms the contact' => ['shortlisted', 'contacted', 'candidate', 'employer'];
+        yield 'employer rejects a shortlisted one' => ['shortlisted', 'rejected', 'employer', 'candidate'];
+        yield 'candidate withdraws a shortlisted one' => ['shortlisted', 'withdrawn', 'candidate', 'employer'];
     }
 
     #[DataProvider('allowedTransitions')]
@@ -84,12 +88,16 @@ class ApplicationWorkflowTest extends TestCase
     /** @return iterable<string, array{string, string, string}> [from, to, actor] */
     public static function refusedTransitions(): iterable
     {
-        yield 'hire without review' => ['pending', 'hired', 'employer'];
+        yield 'contact without review' => ['pending', 'contacted', 'employer'];
+        yield 'shortlist without review' => ['pending', 'shortlisted', 'employer'];
+        yield 'candidate shortlists' => ['reviewed', 'shortlisted', 'candidate'];
+        yield 'shortlisted → reviewed' => ['shortlisted', 'reviewed', 'employer'];
+        yield 'contacted → shortlisted' => ['contacted', 'shortlisted', 'employer'];
         yield 'reject without review' => ['pending', 'rejected', 'employer'];
-        yield 'rejected → hired' => ['rejected', 'hired', 'employer'];
-        yield 'hired → rejected' => ['hired', 'rejected', 'employer'];
+        yield 'rejected → contacted' => ['rejected', 'contacted', 'employer'];
+        yield 'contacted → rejected' => ['contacted', 'rejected', 'employer'];
         yield 'withdrawn → reviewed' => ['withdrawn', 'reviewed', 'employer'];
-        yield 'hired → withdrawn' => ['hired', 'withdrawn', 'candidate'];
+        yield 'contacted → withdrawn' => ['contacted', 'withdrawn', 'candidate'];
         yield 'reviewed → reviewed' => ['reviewed', 'reviewed', 'employer'];
         yield 'candidate rejects' => ['reviewed', 'rejected', 'candidate'];
         yield 'candidate marks reviewed' => ['pending', 'reviewed', 'candidate'];
@@ -122,19 +130,19 @@ class ApplicationWorkflowTest extends TestCase
         // 1 Oct 23:30 Manila → feedback opens on 31 Oct (calendar day 30, Asia/Manila).
         Carbon::setTestNow(Carbon::parse('2026-10-01 23:30', 'Asia/Manila'));
         $byEmployer = $this->application(ApplicationStatus::Reviewed);
-        $this->changeStatus($this->employerUser, $byEmployer, 'hired')
+        $this->changeStatus($this->employerUser, $byEmployer, 'contacted')
             ->assertOk()
-            ->assertJsonPath('hire_confirmed_by', 'employer')
+            ->assertJsonPath('contact_confirmed_by', 'employer')
             ->assertJsonPath('feedback_opens_on', '2026-10-31');
-        $this->assertSame('2026-10-01 23:30:00', $byEmployer->fresh()->hired_at->timezone('Asia/Manila')->toDateTimeString());
+        $this->assertSame('2026-10-01 23:30:00', $byEmployer->fresh()->contacted_at->timezone('Asia/Manila')->toDateTimeString());
         $this->assertStringContainsString('October 31, 2026', $this->candidateUser->notifications()->sole()->data['message']);
 
         // 16:00 UTC is already 2 Oct 00:00 in Manila → 1 Nov.
         Carbon::setTestNow(Carbon::parse('2026-10-01 16:00', 'UTC'));
         $other = Application::factory()->for(JobPosting::factory()->open())->for($this->profile)->status(ApplicationStatus::Reviewed)->create();
-        $this->changeStatus($this->candidateUser, $other, 'hired')
+        $this->changeStatus($this->candidateUser, $other, 'contacted')
             ->assertOk()
-            ->assertJsonPath('hire_confirmed_by', 'candidate')
+            ->assertJsonPath('contact_confirmed_by', 'candidate')
             ->assertJsonPath('feedback_opens_on', '2026-11-01');
     }
 
@@ -158,6 +166,21 @@ class ApplicationWorkflowTest extends TestCase
 
         $this->assertSame(1, $this->candidateUser->notifications()->count());
         $this->assertSame('Bright Path BPO is reviewing your application for Data Encoder.', $this->candidateUser->notifications()->sole()->data['message']);
+    }
+
+    public function test_shortlisting_records_the_date_and_tells_the_candidate(): void
+    {
+        $application = $this->application(ApplicationStatus::Reviewed);
+        $this->freezeSecond();
+
+        $this->changeStatus($this->employerUser, $application, 'shortlisted')
+            ->assertOk()
+            ->assertJsonPath('status', 'shortlisted')
+            ->assertJsonPath('shortlisted_at', now()->toIso8601String())
+            ->assertJsonPath('contacted_at', null)
+            ->assertJsonPath('feedback_opens_on', null);
+
+        $this->assertSame('Good news: Bright Path BPO shortlisted you for Data Encoder.', $this->candidateUser->notifications()->sole()->data['message']);
     }
 
     public function test_only_the_two_parties_see_or_change_an_application(): void
@@ -199,15 +222,15 @@ class ApplicationWorkflowTest extends TestCase
     public function test_lists_show_only_own_applications_with_filters(): void
     {
         $mine = $this->application();
-        $hired = Application::factory()->for(JobPosting::factory()->open()->create(['employer_id' => $this->posting->employer_id]))->for($this->profile)->hired()->create();
+        $contacted = Application::factory()->for(JobPosting::factory()->open()->create(['employer_id' => $this->posting->employer_id]))->for($this->profile)->contacted()->create();
         $otherCandidate = Application::factory()->for($this->posting)->for(CandidateProfile::factory())->create();
         $elsewhere = Application::factory()->create();
 
         Sanctum::actingAs($this->candidateUser);
         $response = $this->getJson('/api/applications')->assertOk()->assertJsonPath('meta.total', 2);
-        $this->assertEqualsCanonicalizing([$mine->id, $hired->id], array_column($response->json('data'), 'id'));
+        $this->assertEqualsCanonicalizing([$mine->id, $contacted->id], array_column($response->json('data'), 'id'));
         $response->assertJsonMissingPath('data.0.candidate');
-        $this->getJson('/api/applications?status=hired')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $hired->id);
+        $this->getJson('/api/applications?status=contacted')->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $contacted->id);
 
         Sanctum::actingAs($this->employerUser);
         $response = $this->getJson('/api/applications')->assertOk()->assertJsonPath('meta.total', 3);

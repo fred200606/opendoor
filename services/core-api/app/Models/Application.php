@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ApplicationStatus;
-use App\Enums\HireConfirmedBy;
+use App\Enums\ContactConfirmedBy;
 use Carbon\CarbonImmutable;
 use Database\Factories\ApplicationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * M6: a candidate's application to a posting. status, reviewed_at, hired_at and hire_confirmed_by
+ * M6: a candidate's application to a posting. status, reviewed_at, shortlisted_at, contacted_at and contact_confirmed_by
  * are not fillable: they change only through the status workflow (ApplicationStatus::canTransitionTo).
  */
 #[Fillable(['cover_note', 'interview_request'])]
@@ -23,7 +23,7 @@ class Application extends Model
     /** @use HasFactory<ApplicationFactory> */
     use HasFactory;
 
-    /** Feedback opens on calendar day 30 after the hire date (business-rules.md). */
+    /** Feedback opens on calendar day 30 after the contact date (business-rules.md). */
     public const FEEDBACK_AFTER_DAYS = 30;
 
     /** @var array<string, mixed> */
@@ -38,9 +38,10 @@ class Application extends Model
     {
         return [
             'status' => ApplicationStatus::class,
-            'hire_confirmed_by' => HireConfirmedBy::class,
+            'contact_confirmed_by' => ContactConfirmedBy::class,
             'reviewed_at' => 'datetime',
-            'hired_at' => 'datetime',
+            'shortlisted_at' => 'datetime',
+            'contacted_at' => 'datetime',
             'feedback_reminded_at' => 'datetime',
         ];
     }
@@ -62,12 +63,12 @@ class Application extends Model
     }
 
     /**
-     * The accommodations the posting advertised when this application became hired – the items
-     * the candidate rates (M7). Recorded by recordHireSnapshot().
+     * The accommodations the posting advertised when this application became contacted – the items
+     * the candidate rates (M7). Recorded by recordContactSnapshot().
      *
      * @return BelongsToMany<Accommodation, $this>
      */
-    public function accommodationsAtHire(): BelongsToMany
+    public function accommodationsAtContact(): BelongsToMany
     {
         return $this->belongsToMany(Accommodation::class, 'application_accommodation');
     }
@@ -78,20 +79,20 @@ class Application extends Model
         return $this->hasOne(Feedback::class);
     }
 
-    /** Copies the posting's current accommodations; call when the application becomes hired. */
-    public function recordHireSnapshot(): void
+    /** Copies the posting's current accommodations; call when the application becomes contacted. */
+    public function recordContactSnapshot(): void
     {
-        $this->accommodationsAtHire()->sync(
+        $this->accommodationsAtContact()->sync(
             $this->jobPosting->accommodations()->pluck('accommodations.id'),
         );
     }
 
-    /** Hired and on or after calendar day 30 after the hire (Manila). */
+    /** Contacted and on or after calendar day 30 after the contact (Manila). */
     public function isFeedbackOpen(): bool
     {
         $opensOn = $this->feedbackOpensOn();
 
-        return $this->status === ApplicationStatus::Hired && $opensOn !== null && ! now()->lessThan($opensOn);
+        return $this->status === ApplicationStatus::Contacted && $opensOn !== null && ! now()->lessThan($opensOn);
     }
 
     public function isByCandidate(?User $user): bool
@@ -104,11 +105,11 @@ class Application extends Model
         return $this->jobPosting?->isOwnedBy($user) ?? false;
     }
 
-    /** Hired on 1 Oct (any time, Manila) → feedback opens 31 Oct. Null until hired. */
+    /** Contacted on 1 Oct (any time, Manila) → feedback opens 31 Oct. Null until contacted. */
     public function feedbackOpensOn(): ?CarbonImmutable
     {
-        return $this->hired_at
-            ? CarbonImmutable::parse($this->hired_at)->timezone('Asia/Manila')->startOfDay()->addDays(self::FEEDBACK_AFTER_DAYS)
+        return $this->contacted_at
+            ? CarbonImmutable::parse($this->contacted_at)->timezone('Asia/Manila')->startOfDay()->addDays(self::FEEDBACK_AFTER_DAYS)
             : null;
     }
 }

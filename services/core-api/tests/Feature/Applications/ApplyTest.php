@@ -43,7 +43,7 @@ class ApplyTest extends TestCase
             ->assertJsonPath('job_posting_id', $this->posting->id)
             ->assertJsonPath('status', 'pending')
             ->assertJsonPath('cover_note', 'I have 3 years of encoding experience.')
-            ->assertJsonPath('hired_at', null)
+            ->assertJsonPath('contacted_at', null)
             ->assertJsonPath('feedback_opens_on', null)
             ->assertJsonPath('job_posting.title', 'Data Encoder')
             ->assertJsonMissingPath('candidate');

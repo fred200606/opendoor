@@ -45,10 +45,10 @@ class DashboardController extends Controller
             ->count();
 
         $feedbackDue = (clone $applications)
-            ->where('status', ApplicationStatus::Hired)
+            ->where('status', ApplicationStatus::Contacted)
             ->whereDoesntHave('feedback')
             ->with('jobPosting.employer')
-            ->orderBy('hired_at')
+            ->orderBy('contacted_at')
             ->orderBy('id')
             ->get()
             ->map(fn (Application $application) => [

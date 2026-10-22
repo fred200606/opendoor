@@ -90,7 +90,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // M10 Reports – a candidate reports a visible posting
     Route::post('job-postings/{jobPosting}/reports', [ReportController::class, 'store'])->middleware('role:candidate');
 
-    // M7 Feedback – only the hired candidate (ApplicationPolicy::giveFeedback)
+    // M7 Feedback – only the contacted candidate (ApplicationPolicy::giveFeedback)
     Route::middleware('role:candidate')->group(function () {
         Route::get('applications/{application}/feedback-form', [FeedbackController::class, 'form']);
         Route::post('applications/{application}/feedback', [FeedbackController::class, 'store']);

@@ -15,21 +15,21 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * M7: the hired candidate rates each accommodation the posting advertised at the time of hire –
- * once, from calendar day 30 after the hire (Asia/Manila). Never log the request body (RA 10173).
+ * M7: the contacted candidate rates each accommodation the posting advertised when the employer
+ * reached out – once, from calendar day 30 after the contact (Asia/Manila). Never log the request body (RA 10173).
  */
 class FeedbackController extends Controller
 {
     public function form(Application $application): JsonResponse
     {
         Gate::authorize('giveFeedback', $application);
-        $this->ensureHired($application);
+        $this->ensureContacted($application);
 
         return response()->json([
             'opens_on' => $application->feedbackOpensOn()->toDateString(),
             'is_open' => $application->isFeedbackOpen(),
             'submitted' => $application->feedback()->exists(),
-            'items' => $application->accommodationsAtHire()->orderBy('accommodations.name')->get()
+            'items' => $application->accommodationsAtContact()->orderBy('accommodations.name')->get()
                 ->map(fn ($accommodation) => ['accommodation_id' => $accommodation->id, 'name' => $accommodation->name])
                 ->all(),
         ]);
@@ -38,11 +38,11 @@ class FeedbackController extends Controller
     public function store(Request $request, Application $application): JsonResponse
     {
         Gate::authorize('giveFeedback', $application);
-        $this->ensureHired($application);
+        $this->ensureContacted($application);
         if (! $application->isFeedbackOpen()) {
             throw new ApiException(
                 'FEEDBACK_NOT_OPEN',
-                'Feedback opens on '.$application->feedbackOpensOn()->toDateString().', 30 days after the hire date.',
+                'Feedback opens on '.$application->feedbackOpensOn()->toDateString().', 30 days after the employer contacted you.',
                 422,
             );
         }
@@ -50,14 +50,14 @@ class FeedbackController extends Controller
             $this->alreadySubmitted();
         }
 
-        $rateable = $application->accommodationsAtHire()->pluck('accommodations.id')->all();
+        $rateable = $application->accommodationsAtContact()->pluck('accommodations.id')->all();
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.accommodation_id' => ['required', 'integer', 'distinct', Rule::in($rateable)],
             'items.*.rating' => ['required', Rule::enum(FeedbackRating::class)],
             'comments' => ['nullable', 'string', 'max:2000'],
         ], [
-            'items.*.accommodation_id.in' => 'This accommodation was not part of the job posting when you were hired.',
+            'items.*.accommodation_id.in' => 'This accommodation was not part of the job posting when the employer contacted you.',
         ]);
 
         $ratings = collect($data['items'])->pluck('rating', 'accommodation_id')->all();
@@ -78,10 +78,10 @@ class FeedbackController extends Controller
         ], 201);
     }
 
-    private function ensureHired(Application $application): void
+    private function ensureContacted(Application $application): void
     {
-        if ($application->status !== ApplicationStatus::Hired) {
-            throw new ApiException('FEEDBACK_NOT_OPEN', 'Only hired applications can be rated.', 422);
+        if ($application->status !== ApplicationStatus::Contacted) {
+            throw new ApiException('FEEDBACK_NOT_OPEN', 'Only contacted applications can be rated.', 422);
         }
     }
 

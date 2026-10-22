@@ -37,7 +37,7 @@ class TrustScoreTest extends TestCase
     /** @param  array<int, string>  $ratings  accommodation_id => rating */
     private function respond(array $ratings, ?JobPosting $posting = null): Feedback
     {
-        $application = Application::factory()->for($posting ?? $this->posting)->hired(now()->subDays(40)->toDateTimeString())->create();
+        $application = Application::factory()->for($posting ?? $this->posting)->contacted(now()->subDays(40)->toDateTimeString())->create();
 
         return Feedback::submit($application, $ratings);
     }
