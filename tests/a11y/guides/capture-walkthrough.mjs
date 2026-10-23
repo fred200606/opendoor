@@ -279,10 +279,14 @@ const candidateId = await userId('candidate@opendoor.test');
 const profileId = (await core.query('SELECT id FROM candidate_profiles WHERE user_id = ?', [candidateId]))[0][0].id;
 const dataEncoderId = (await core.query("SELECT id FROM job_postings WHERE title = 'Data Encoder' AND deleted_at IS NULL"))[0][0].id;
 const employer2 = (await core.query("SELECT id, company_name, business_reg_no, registry_type FROM employers WHERE company_name = 'Kalinga Foods Inc.'"))[0][0];
-const packingId = (await core.query("SELECT id FROM job_postings WHERE title = 'Packing Line Staff'"))[0][0].id;
+const START_DATE = new Date(Date.now() + 8 * 3600_000 + 7 * 86400_000).toISOString().slice(0, 10); // a week from today (Manila)
 
 const latestApplication = () =>
-  query(core, 'SELECT id, job_posting_id, candidate_profile_id, status, reviewed_at, hired_at, hire_confirmed_by, created_at FROM applications WHERE candidate_profile_id = ? AND job_posting_id = ?', [profileId, dataEncoderId]);
+  query(core, 'SELECT id, job_posting_id, candidate_profile_id, status, reviewed_at, hired_at, hire_start_date, created_at FROM applications WHERE candidate_profile_id = ? AND job_posting_id = ?', [profileId, dataEncoderId]);
+const hiringRows = async (applicationId) => ({
+  reports: await query(core, 'SELECT id, application_id, reported_by, start_date, status, responded_at FROM hiring_reports WHERE application_id = ? ORDER BY id', [applicationId]),
+  events: await query(core, 'SELECT e.id, e.hiring_report_id, e.actor_role, e.action, e.start_date, e.created_at FROM hiring_report_events e JOIN hiring_reports r ON r.id = e.hiring_report_id WHERE r.application_id = ? ORDER BY e.id', [applicationId]),
+});
 const latestNotices = (n = 2) =>
   query(core, `SELECT notifiable_id AS user_id, type, JSON_UNQUOTE(JSON_EXTRACT(data, '$.message')) AS message, created_at FROM notifications ORDER BY created_at DESC LIMIT ${n}`);
 
@@ -310,16 +314,20 @@ try {
 
   await step(
     candidate,
-    { id: 'search', title: 'Find jobs that match my needs', role: 'Candidate' },
+    { id: 'search', title: 'Find the jobs recommended for me (match score)', role: 'Candidate' },
     {
-      before: () =>
-        query(core, 'SELECT a.id, a.name FROM candidate_accommodation ca JOIN accommodations a ON a.id = ca.accommodation_id WHERE ca.candidate_profile_id = ? ORDER BY a.id', [profileId]),
+      before: async () => ({
+        profile: await query(core, 'SELECT id, skills, education_level, experience_years, preferred_work_setups, preferred_employment_types, location_label FROM candidate_profiles WHERE id = ?', [profileId]),
+        needs: await query(core, 'SELECT a.id, a.name FROM candidate_accommodation ca JOIN accommodations a ON a.id = ca.accommodation_id WHERE ca.candidate_profile_id = ? ORDER BY a.id', [profileId]),
+      }),
       act: async (page) => {
         await page.goto(`${APP_URL}/candidate/jobs`, { waitUntil: 'networkidle' });
         await settle(page);
-        const match = page.getByLabel('Matches my needs');
-        if (!(await match.isChecked())) await match.check();
+        const recommended = page.getByRole('button', { name: 'Recommended for me' });
+        if ((await recommended.getAttribute('aria-pressed')) !== 'true') await recommended.click();
         await settle(page);
+        await page.getByRole('button', { name: /Why this match\?/ }).first().click();
+        await page.waitForTimeout(300);
         return [await screenshot(page, 'search-match')];
       },
     },
@@ -393,27 +401,59 @@ try {
   );
   await step(
     employer,
-    { id: 'hire', title: 'Mark the applicant as hired', role: 'Employer' },
+    { id: 'report', title: 'Report the hire with a start date', role: 'Employer' },
+    {
+      before: () => hiringRows(applicationId),
+      act: async (page) => {
+        const hiring = page.locator('section.hiring-card');
+        await hiring.getByRole('button', { name: 'Report hiring' }).click();
+        await page.locator('dialog[open]').waitFor();
+        await page.locator('dialog[open]').getByLabel(/^Start date/).fill(START_DATE);
+        await page.waitForTimeout(200);
+        const dialog = await screenshot(page, 'report-dialog');
+        await page.locator('dialog[open]').getByRole('button', { name: 'Send report' }).click();
+        await hiring.getByText('Reported. We asked the applicant to confirm it.').waitFor();
+        await page.waitForTimeout(300);
+        await hiring.scrollIntoViewIfNeeded();
+        return [dialog, await screenshot(page, 'report-done')];
+      },
+      after: async () => ({ application: await latestApplication(), ...(await hiringRows(applicationId)), notifications: await latestNotices(1) }),
+    },
+  );
+  await employer.context().close();
+
+  // 7: the candidate confirms the hire
+  const candidateAgain = await newPage();
+  await logIn(candidateAgain, 'candidate@opendoor.test');
+  await step(
+    candidateAgain,
+    { id: 'confirm', title: 'Confirm the hire (the 30 days start counting from the start date)', role: 'Candidate' },
     {
       before: latestApplication,
       act: async (page) => {
-        await page.getByRole('button', { name: 'Mark as hired' }).click();
+        await page.goto(`${APP_URL}/candidate/applications/${applicationId}`, { waitUntil: 'networkidle' });
+        await settle(page);
+        const hiring = page.locator('section.hiring-card');
+        await hiring.scrollIntoViewIfNeeded();
+        const question = await screenshot(page, 'confirm-question');
+        await hiring.getByRole('button', { name: 'Confirm' }).click();
         await page.locator('dialog[open]').waitFor();
         await page.waitForTimeout(200);
-        const dialog = await screenshot(page, 'hire-confirm');
-        await page.locator('dialog[open]').getByRole('button', { name: 'Mark as hired' }).click();
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(500);
-        return [dialog, await screenshot(page, 'hire-done')];
+        await page.locator('dialog[open]').getByRole('button', { name: 'Confirm' }).click();
+        await hiring.getByText('The hire is confirmed.').waitFor();
+        await page.waitForTimeout(300);
+        await page.locator('section[aria-labelledby="feedback-title"]').scrollIntoViewIfNeeded();
+        return [question, await screenshot(page, 'confirm-done')];
       },
       after: async () => ({
         application: await latestApplication(),
+        ...(await hiringRows(applicationId)),
         accommodations: await query(core, 'SELECT application_id, accommodation_id FROM application_accommodation WHERE application_id = ?', [applicationId]),
         notifications: await latestNotices(1),
       }),
     },
   );
-  await employer.context().close();
+  await candidateAgain.context().close();
 
   // 6–8: the admin
   const admin = await newPage();
@@ -456,31 +496,11 @@ try {
         await page.waitForTimeout(500);
         return [await screenshot(page, 'verify-done')];
       },
-      after: async () => ({ employer: await employerRow(), notifications: await latestNotices(1) }),
-    },
-  );
-
-  const postingRow = () => query(core, 'SELECT id, title, status, is_approved, updated_at FROM job_postings WHERE id = ?', [packingId]);
-  await step(
-    admin,
-    { id: 'approve', title: 'Approve a job posting', role: 'Admin' },
-    {
-      before: postingRow,
-      act: async (page) => {
-        await page.goto(`${APP_URL}/admin/job-postings`, { waitUntil: 'networkidle' });
-        await settle(page);
-        const queue = await screenshot(page, 'approve-queue');
-        await page.getByRole('button', { name: 'Approve Packing Line Staff', exact: true }).click();
-        const dialog = page.locator('dialog[open]');
-        if (await dialog.isVisible().catch(() => false)) {
-          await page.waitForTimeout(200);
-          await dialog.getByRole('button', { name: /Approve/ }).click();
-        }
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(500);
-        return [queue, await screenshot(page, 'approve-done')];
-      },
-      after: async () => ({ posting: await postingRow(), notifications: await latestNotices(1) }),
+      after: async () => ({
+        employer: await employerRow(),
+        postings: await query(core, 'SELECT id, title, status, is_approved FROM job_postings WHERE employer_id = ? AND deleted_at IS NULL ORDER BY id', [employer2.id]),
+        notifications: await latestNotices(1),
+      }),
     },
   );
   await admin.context().close();

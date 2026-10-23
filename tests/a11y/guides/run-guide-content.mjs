@@ -27,23 +27,23 @@ export const services = [
 
 // [email, name, role, use it to show …]
 export const accounts = [
-  ['admin@opendoor.test', 'OpenDoor Admin', 'Admin', 'Employer verification with the SOAP registry, posting approval, users, reports, feedback moderation, master data, analytics'],
-  ['candidate@opendoor.test', 'Maria Santos', 'Candidate', 'Search with "Matches my needs", job details + Accessibility Snapshot, apply, saved jobs, applications'],
-  ['candidate2@opendoor.test', 'Juan Dela Cruz', 'Candidate', 'A hired candidate: the accommodation feedback form (trust score input)'],
-  ['employer@opendoor.test', 'Ana Reyes', 'Employer (Bayanihan Tech Solutions, verified)', 'Postings, applicants, status changes (reviewed → hired), published trust score'],
-  ['employer2@opendoor.test', 'Ramon Villanueva', 'Employer (Kalinga Foods Inc., waiting for verification on a fresh seed)', 'An employer the admin still has to verify; a posting waiting for approval'],
+  ['admin@opendoor.test', 'OpenDoor Admin', 'Admin', 'Employer verification with the SOAP registry, removing postings, users, reports, feedback moderation, master data, dashboard charts'],
+  ['candidate@opendoor.test', 'Maria Santos', 'Candidate (complete profile, 3 needs, résumé on file)', '"Recommended for me" with the match score, job details + Accessibility Snapshot, apply, confirming a hire, saved jobs, applications'],
+  ['candidate2@opendoor.test', 'Juan Dela Cruz', 'Candidate (hired 45 days ago at Kalinga Foods)', 'The open accommodation rating form – the 3rd response publishes Kalinga Foods’ trust score'],
+  ['employer@opendoor.test', 'Ana Reyes', 'Employer (Bayanihan Tech Solutions, verified)', 'Dashboard, postings, applicants, stages (Under review → Shortlisted → Contacted), reporting a hire, published trust score (79 %)'],
+  ['employer2@opendoor.test', 'Ramon Villanueva', 'Employer (Kalinga Foods Inc., waiting for verification on a fresh seed)', 'An employer the admin still has to verify – it can publish its draft job (Packing Line Staff) only once it is verified'],
 ];
 
 // The ~10-minute presentation. [minutes, who, what to do, what to say]
 export const demoScript = [
   ['0:00', 'Guest', 'Open the home page, then <b>Find jobs</b>. Point at the utility bar (text size, high contrast, quiet mode).', 'OpenDoor matches persons with disabilities to jobs by the accommodations a workplace gives, not by disability type.'],
-  ['1:00', 'Candidate', 'Log in as <code>candidate@</code>. Dashboard → <b>Find jobs</b>, tick <b>Matches my needs</b>.', 'The candidate saved her needs once; Core ranks every open posting by how many of them it meets.'],
+  ['1:00', 'Candidate', 'Log in as <code>candidate@</code>. Dashboard → <b>Find jobs</b> (<b>Recommended for me</b> is on) → open <b>Why this match?</b> on the first card.', 'Maria’s profile (place, skills, education, preferences) and her needs give every open job a match score from 0 to 100; the parts explain it.'],
   ['2:30', 'Candidate', 'Open <b>Data Encoder</b> → <b>Show Workplace Accessibility Snapshot</b>.', 'This is the mashup: the Insights Service combines Core’s posting, PSGC place names, Nominatim coordinates and OpenStreetMap places from Overpass. If a source is down the page still works.'],
-  ['3:30', 'Candidate', 'Write a cover note and an interview request → <b>Send application</b>.', 'One request through the gateway; Core stores the application and notifies the employer.'],
-  ['4:30', 'Employer', 'Log out, log in as <code>employer@</code>. Dashboard → the posting → <b>Applicants</b> → open Maria’s application → <b>Mark as hired</b>.', 'Opening the application marks it reviewed; hiring records the promised accommodations that Maria will rate after 30 days.'],
-  ['6:00', 'Admin', 'Log in as <code>admin@</code>. <b>Employers</b> → Kalinga Foods Inc. → <b>Check with the business registry</b> → <b>Approve</b>.', 'Core calls the legacy SOAP registry (WS-Security) and stores its answer. The admin decides; the registry only advises.'],
-  ['7:30', 'Admin', '<b>Postings</b> → <b>Approve</b> Packing Line Staff.', 'Only approved postings are visible to candidates.'],
-  ['8:00', 'Anyone', 'Open the employer’s public page (trust score card) and <b>How trust scores work</b>.', 'Hired employees rate each promised accommodation anonymously; the score shows after 3 responses.'],
+  ['3:30', 'Candidate', 'Write a cover note and an interview request → <b>Send application</b>.', 'One request through the gateway; Core checks the profile and the résumé, stores the application and notifies the employer.'],
+  ['4:30', 'Employer', 'Log out, log in as <code>employer@</code>. Dashboard → <b>Needs attention</b> → open Maria’s application → <b>Report hiring</b> with a start date.', 'Opening the application marks it Under review. A hire is never one-sided: the employer reports it, Maria has to confirm it.'],
+  ['5:30', 'Candidate', 'Log in as <code>candidate@</code> → <b>Notifications</b> → the report → <b>Confirm</b>.', 'Now the application is Hired. 30 days after the start date Maria can rate each promised accommodation – that builds the trust score.'],
+  ['6:30', 'Admin', 'Log in as <code>admin@</code>. <b>Employers</b> → Kalinga Foods Inc. → <b>Check with the business registry</b> → <b>Approve</b>.', 'Core calls the legacy SOAP registry (WS-Security) and stores its answer. The admin decides; the registry only advises. Only a verified company can publish jobs – there is no posting approval queue.'],
+  ['7:30', 'Anyone', 'Open the employer’s public page (trust score card) and <b>How trust scores work</b>; as admin, show the dashboard charts.', 'Hired employees rate each promised accommodation anonymously; the score shows after 3 responses.'],
   ['8:30', 'Presenter', 'Show DevTools → Network on one click (request, <code>X-Request-ID</code>), and the gateway terminal line with the same id.', 'Every request goes through the gateway; the id follows it through every service and the error envelope.'],
   ['9:30', 'Presenter', 'Run <code>python tests/validate/validate_opendoor.py</code> (or show the CI run on GitHub).', '14 checks: every service is up, the gateway routes correctly and Insights reaches Core with its service key.'],
 ];
@@ -63,14 +63,15 @@ export const steps = {
     db: 'A new token row for the candidate (user 2). The table holds only a hash of the token – the plain token is shown to the browser once.',
   },
   search: {
-    click: 'Open <b>Find jobs</b> and tick <b>Matches my needs</b>.',
+    click: 'Open <b>Find jobs</b> (<b>Recommended for me</b> is on for candidates) and open <b>Why this match?</b> on the first card.',
     key: [['GET', /^\/api\/job-postings\?/]],
     inside: [
-      '<code>GET /api/job-postings?match=1&amp;sort=best</code> – Core reads the candidate’s saved needs and ranks the open, approved postings by how many of them each one offers – full matches first, then newest.',
-      'Each posting comes back with <code>match: { met, total, missing }</code>; the disability type is never used for matching (RA 10173).',
+      '<code>GET /api/job-postings?match=1&amp;sort=best</code> – Core’s <code>MatchingService</code> scores every open posting of a verified company for this candidate: skills 40, location 20, qualifications 15, work preferences 10 and accommodation needs 15 points. A part without data is left out and the rest re-weighted, so the score stays 0–100.',
+      'Each posting comes back with <code>match: { score, label, met, total, missing, skills, location, education, experience, preferences }</code> – the parts are what <b>Why this match?</b> lists. The disability type is never used (RA 10173).',
+      'Work setup and distance filters (10–100 km between city centres) narrow the list first; the city centres come from the Insights Service when a location is saved.',
       'With <code>npm run dev</code> React’s StrictMode loads each page twice, so DevTools shows every call two times. The built app (Vercel, and these captures) calls once.',
     ],
-    db: 'Nothing changes – this is a read. The rows below are the candidate’s needs that the match uses (<code>candidate_accommodation</code>).',
+    db: 'Nothing changes – this is a read. The rows below are what the score uses: the candidate’s profile (skills, education, preferences, place) and needs (<code>candidate_accommodation</code>).',
   },
   snapshot: {
     click: 'Open <b>Data Encoder</b> and press <b>Show Workplace Accessibility Snapshot</b>.',
@@ -87,28 +88,39 @@ export const steps = {
     click: 'Fill <b>Cover note</b> and <b>Interview accommodation request</b>, then press <b>Send application</b>.',
     key: [['POST', /^\/api\/job-postings\/\d+\/applications$/]],
     inside: [
-      'Core checks the role (candidate), that the posting is open and not past its closing date, and that the candidate has not applied already (409 <code>ALREADY_APPLIED</code>).',
+      'Core checks the role (candidate), that the profile is complete (422 <code>PROFILE_INCOMPLETE</code>) and a résumé is on file (422 <code>RESUME_REQUIRED</code> – the form offers an upload when there is none), that the posting is open and not past its closing date, and that the candidate has not applied already (409 <code>ALREADY_APPLIED</code>).',
       'It stores the application with status <code>pending</code> and notifies the employer (in-app notice, plus an email when the employer has email notifications on).',
     ],
     db: 'A new <code>applications</code> row (status <code>pending</code>) and an <code>application_received</code> notification for the employer’s account.',
   },
   review: {
-    click: 'As the employer, open the application (Dashboard → posting → <b>Applicants</b> → the applicant).',
+    click: 'As the employer, open the application (Dashboard → <b>Needs attention</b> or the posting’s applicants → the applicant).',
     key: [['GET', /^\/api\/applications\/\d+$/]],
     inside: [
       'Core’s policy allows the employer to see only applications to their own postings (others get 403). Only through this application does the employer see the candidate’s needs.',
-      'The first time the employer opens a <code>pending</code> application Core sets it to <code>reviewed</code> and tells the candidate.',
+      'The first time the employer opens a <code>pending</code> application Core sets it to <code>reviewed</code> (Under review) and tells the candidate. From here the employer can Shortlist, Mark as contacted or say Not selected – stages only move forward.',
     ],
     db: 'Status <code>pending → reviewed</code>, <code>reviewed_at</code> filled, and a notification for the candidate.',
   },
-  hire: {
-    click: 'Press <b>Mark as hired</b> and confirm in the dialog.',
-    key: [['PATCH', /^\/api\/applications\/\d+\/status$/]],
+  report: {
+    click: 'In <b>Hiring confirmation</b> press <b>Report hiring</b>, enter the first working day and press <b>Send report</b>.',
+    key: [['POST', /^\/api\/applications\/\d+\/hiring-reports$/]],
     inside: [
-      '<code>PATCH /api/applications/{id}/status</code> with <code>{"status":"hired"}</code>. Core checks the allowed status workflow (hired and not selected are final).',
-      'Core records which accommodations the posting promised (<code>application_accommodation</code>). After 30 days the candidate rates each one – that feedback builds the employer’s trust score.',
+      '<code>POST /api/applications/{id}/hiring-reports</code> with <code>{"start_date": …}</code>. A hire is never set directly – <code>PATCH …/status</code> with <code>hired</code> is refused (422).',
+      'Core checks that the employer owns the posting, that the application is still in progress and that no other report waits for an answer (409 <code>HIRING_REPORT_PENDING</code>). The date may be from the application date up to 365 days ahead.',
+      'Nothing about the application changes yet: the report waits for the candidate, who gets a <code>hiring_report</code> notice. A candidate can also report first; then the employer answers.',
     ],
-    db: 'Status <code>reviewed → hired</code>, <code>hired_at</code> and <code>hire_confirmed_by</code> filled, the promised accommodations saved, and a notification for the candidate.',
+    db: 'A <code>hiring_reports</code> row (<code>pending</code>) with a <code>reported</code> event, and a notification for the candidate. The application keeps its stage.',
+  },
+  confirm: {
+    click: 'As the candidate, open the application (or the notice), press <b>Confirm</b> and confirm in the dialog.',
+    key: [['POST', /^\/api\/applications\/\d+\/hiring-reports\/\d+\/response$/]],
+    inside: [
+      '<code>POST /api/applications/{id}/hiring-reports/{report}/response</code> with <code>{"answer":"confirm"}</code>. Only the other party may answer (the reporter gets 403); the other answers are <b>Not yet</b> (optionally a new start date) and <b>Incorrect</b>.',
+      'Under a row lock Core sets the application to <code>hired</code>, <code>hired_at</code> (now) and <code>hire_start_date</code> (the report’s date), and records which accommodations the posting promised (<code>application_accommodation</code>).',
+      'The rating opens on calendar day 30 after the start date (Asia/Manila) – the page shows that date, and a daily 08:00 job reminds the candidate once it opens. The ratings build the employer’s trust score, published from 3 responses.',
+    ],
+    db: 'Status → <code>hired</code>, <code>hired_at</code> and <code>hire_start_date</code> filled, the report <code>confirmed</code> with a <code>confirmed</code> event, the promised accommodations saved, and a notification for the employer.',
   },
   registry: {
     click: 'As the admin, open <b>Employers</b> → <b>Kalinga Foods Inc.</b> → <b>Check with the business registry</b>.',
@@ -123,28 +135,22 @@ export const steps = {
   verify: {
     click: 'Press <b>Approve</b>.',
     key: [['PATCH', /^\/api\/admin\/employers\/\d+\/verify$/]],
-    inside: ['Same endpoint with <code>{"action":"approve"}</code>. The employer becomes verified (badge on postings and the public page) and is notified.'],
-    db: '<code>employers.verified_at</code> filled, and an <code>employer_verification</code> notification for the employer.',
-  },
-  approve: {
-    click: 'Open <b>Postings</b> (waiting for approval) and press <b>Approve</b> next to Packing Line Staff.',
-    key: [['PATCH', /^\/api\/admin\/job-postings\/\d+\/approve$/]],
     inside: [
-      '<code>PATCH /api/admin/job-postings/{id}/approve</code> with <code>{"action":"approve"}</code>. The page then reloads the queue.',
-      'From now on the posting is in search results and can receive applications.',
+      'Same endpoint with <code>{"action":"approve"}</code>. The employer becomes verified (badge on postings and the public page) and is notified.',
+      'There is no separate posting approval: only a verified company can publish, and its postings are visible as soon as they are published (an unverified company’s stay hidden). So from this moment Kalinga Foods can publish its draft <i>Packing Line Staff</i> (shown below) – before, <b>Publish</b> was refused. Administrators can still remove an inappropriate posting with a reason.',
     ],
-    db: 'Status <code>pending_approval → open</code>, <code>is_approved</code> 0 → 1, and a <code>posting_review</code> notification for the employer.',
+    db: '<code>employers.verified_at</code> filled, and an <code>employer_verification</code> notification for the employer. Its postings do not change: the draft waits for the employer to publish it, the closed one stays closed.',
   },
 };
 
 // [tool, folder, command, what it checks]
 export const tests = [
-  ['PHPUnit (Core)', '<code>services/core-api</code>', '<code>php artisan test</code>', 'Auth, roles and policies, every module’s endpoints, status workflow, matching, trust score, SOAP client (faults, timeouts), error envelope'],
+  ['PHPUnit (Core)', '<code>services/core-api</code>', '<code>php artisan test</code>', 'Auth, roles and policies, every module’s endpoints, stages and hiring confirmation, match score, trust score, SOAP client (faults, timeouts), error envelope'],
   ['Jest (gateway)', '<code>gateway</code>', '<code>npm test</code>', 'Routing, CORS, rate limit, request IDs, timeouts and the error envelope when a service is down'],
   ['Jest (Insights)', '<code>services/insights-service</code>', '<code>npm test</code>', 'Snapshot building, caching, budgets and fallbacks when PSGC, Nominatim or Overpass fail'],
   ['Registry runner', '<code>services/business-registry-soap</code>', '<code>php tests/run.php</code>', 'Lookups, name matching, WS-Security and SOAP faults, plus a smoke test on its own port'],
   ['Vitest (React)', '<code>frontend</code>', '<code>npm test</code> (and <code>npm run lint</code>)', 'Pages and components: forms, validation messages, role menus, accessibility behaviour'],
-  ['Postman / Newman', 'repo root', '<code>npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json --env-var "demoPassword=…"</code>', 'The SIA test plan (T01–T16) end to end through the gateway: 199 requests, every response checked for status, body, <code>X-Request-ID</code> and time'],
+  ['Postman / Newman', 'repo root', '<code>npx newman run tests/postman/OpenDoor.postman_collection.json -e tests/postman/local.postman_environment.json --env-var "demoPassword=…"</code>', 'The SIA test plan (T01–T16) end to end through the gateway: 217 requests, every response checked for status, body, <code>X-Request-ID</code> and time'],
   ['JMeter', '<code>tests/jmeter</code>', '<code>jmeter -n -t opendoor-matching.jmx -Jhost=&lt;gateway host&gt; -l results.jtl -e -o report/run</code>', 'Load (50 users) and stress (100/200 users) on the matching search; needs test data from <code>php artisan load-test:data</code>'],
   ['axe-core / Lighthouse', '<code>tests/a11y</code>', '<code>npm run axe</code> with <code>APP_URL</code> (built app, <code>npm run preview</code> on 4173), <code>API_URL</code>, <code>DEMO_PASSWORD</code>', 'WCAG 2.1 A/AA rules on the main pages of every role'],
   ['Validation script', 'repo root', '<code>python tests/validate/validate_opendoor.py</code>', '14 quick checks of a running stack (section 7)'],
@@ -153,16 +159,16 @@ export const tests = [
 
 // Last results per tool (local runs on the date given, or the reference runs in the SIA doc).
 export const testResults = {
-  'PHPUnit (Core)': '372 tests, 1,776 assertions passed (Oct 19, 2026)',
-  'Jest (gateway)': '24 passed (Oct 19, 2026)',
-  'Jest (Insights)': '135 passed (Oct 19, 2026)',
-  'Registry runner': '39/39 checks passed (Oct 19, 2026)',
-  'Vitest (React)': '165 passed (Oct 19, 2026)',
-  'Postman / Newman': 'CI: 193 requests / 933 assertions / 0 failures (collection before onboarding); production smoke 73 / 389 / 0 (Oct 16, 2026)',
+  'PHPUnit (Core)': '506 tests, 2,247 assertions passed – on SQLite and again on MySQL 8 (Oct 23, 2026)',
+  'Jest (gateway)': '24 passed (Oct 23, 2026)',
+  'Jest (Insights)': '141 passed (Oct 23, 2026)',
+  'Registry runner': '39/39 checks passed (Oct 23, 2026)',
+  'Vitest (React)': '197 passed (Oct 23, 2026)',
+  'Postman / Newman': 'Local, fresh test database: 216 requests / 1,065 assertions / 1 failed – a timing check while both public Overpass servers were down – and T13 15 / 87 / 0 (Oct 23, 2026); production smoke 73 / 389 / 0 (Oct 16, 2026)',
   'JMeter': 'Production, 50 users: P95 204 ms, 0 % errors (Oct 16, 2026) – SIA doc 7.3',
-  'axe-core / Lighthouse': 'axe: 0 violations on 33 pages (CI); Lighthouse 100 on 6 guest pages',
-  'Validation script': '14/14 local (Oct 19, 2026)',
-  'GitHub Actions CI': 'All 7 jobs green (run 38493807232)',
+  'axe-core / Lighthouse': 'axe: 0 violations on 33 pages (Oct 23, 2026); Lighthouse 100 on 6 guest pages (Oct 11, before the redesign)',
+  'Validation script': '14/14 local (Oct 23, 2026)',
+  'GitHub Actions CI': 'All 7 jobs green (run 38493807232, Oct 14 – before the Oct 21–23 changes, which are not pushed yet)',
 };
 
 // [check, proves]
@@ -189,5 +195,8 @@ export const troubleshooting = [
   ['In <code>npm run dev</code> only: the snapshot of a place that is not cached yet shows "not available" after ~20 s', 'React development mode sends the request twice; Chrome waits for the first identical request, so the second one runs out of time when Overpass is slow', 'Open the page again once the first answer is cached, or present from the built app (Vercel or <code>npm run build</code> + <code>npm run preview</code>).'],
   ['Forgot-password email never arrives (local)', 'Reset emails are queued; locally mail goes to the log', 'Run <code>php artisan queue:work database --stop-when-empty</code> in <code>services/core-api</code>; the link is in <code>storage/logs/laravel.log</code>.'],
   ['Production is slow on the first request', 'Railway services were idle', 'Open <code>/api/health</code> on the gateway a few minutes before presenting.'],
-  ['Newman: a few requests over 1000 ms locally', '<code>php artisan serve</code> handles one request at a time', 'Run again; production and CI are the reference for timing.'],
+  ['Newman: a few requests over 1000 ms locally', '<code>php artisan serve</code> handles one request at a time; or the public Overpass servers are slow, so the second snapshot waits for the first', 'Run again; production and CI (mock external APIs) are the reference for timing.'],
+  ['The first request to Core takes several seconds after starting it', 'PHP loads and compiles the framework on the first request', 'Open <code>http://127.0.0.1:8001/up</code> once before testing or presenting.'],
+  ['"Complete your profile before you apply" or "Add your résumé"', 'Applying needs a complete profile (place, 3 skills, education, work preferences) and a résumé', 'Use the demo candidates (complete, with a résumé) or finish <b>Profile</b> first; the Apply form offers a résumé upload.'],
+  ['A new employer’s job does not appear in search', 'Only verified companies can publish; an unverified company’s postings stay hidden', 'Verify the company as admin (<b>Employers</b> → <b>Check with the business registry</b> → <b>Approve</b>).'],
 ];

@@ -58,19 +58,19 @@ const shot = (file, caption) => `<figure class="shot"><img src="walkthrough/shot
 const shotCaptions = {
   'login-form': 'The login form, filled in',
   'login-dashboard': 'After Log in: the candidate dashboard',
-  'search-match': 'Find jobs with “Matches my needs” ticked',
+  'search-match': 'Find jobs, “Recommended for me”, with “Why this match?” open',
   'job-details': 'Job details',
   'job-snapshot': 'The Workplace Accessibility Snapshot opened',
   'apply-form': 'The application form, filled in',
   'apply-done': 'After Send application',
   'review-application': 'The employer’s view of the application',
-  'hire-confirm': 'The confirmation dialog',
-  'hire-done': 'After Mark as hired',
+  'report-dialog': 'Report hiring: the start date',
+  'report-done': 'Reported – waiting for the candidate',
+  'confirm-question': 'The candidate is asked: Confirm, Not yet or Incorrect',
+  'confirm-done': 'After Confirm: Hired, with the date the rating opens',
   'registry-before': 'The employer waiting for verification',
   'registry-result': 'The registry result after the check',
   'verify-done': 'After Approve',
-  'approve-queue': 'Postings waiting for approval',
-  'approve-done': 'After Approve',
 };
 
 function keyCalls(step, text) {
@@ -192,7 +192,7 @@ const about = `<section class="chapter" id="about">
     '<b>Not covered:</b> installing PHP, Node.js, MySQL, the packages, the <code>.env</code> files and the databases. Those steps are in the repository <code>README.md</code>; this guide assumes they are done.',
     '<b>Sections 3–5</b> are for running and presenting. <b>Section 6</b> follows nine clicks through the whole system with the real requests, responses, log lines and database rows, captured from the running system.',
     '<b>Secrets:</b> passwords, tokens, the service key and the SOAP credentials are never printed. Where one appears it is replaced by <code>•••••• (hidden)</code>.',
-    `<b>Production:</b> React on Vercel (<a href="${C.production.app}">${C.production.app}</a>); gateway, services and MySQL on Railway (Singapore). Only the gateway is public.`,
+    `<b>Production:</b> React on Vercel (<a href="${C.production.app}">${C.production.app}</a>); gateway, services and MySQL on Railway (Singapore). Only the gateway is public. <b>Until the next deployment production runs the release of October 16, 2026</b> – without the match score, the new stages and the hiring confirmation shown in this guide – so present the local system.`,
   ])}
 </section>`;
 
@@ -288,15 +288,16 @@ const demo = `<section class="chapter" id="demo">
   ${list([
     'Production: open <code>/api/health</code> and every open job page once (wakes Railway, fills the snapshot cache).',
     'Local: start everything (section 3) and run the validation script.',
-    'Production: as the admin, check that an employer and a posting are still waiting for approval (<b>Employers</b> / <b>Postings</b>). If earlier tests already approved Kalinga Foods or Packing Line Staff, use any waiting one, or register a new employer and submit a posting before the presentation.',
-    'The demo changes data (an application, a hire, an approval). On production these stay; locally re-seed with <code>php artisan migrate:fresh --seed</code> to start again (deletes all local data).',
+    'Production: as the admin, check that an employer is still waiting for verification (<b>Employers</b>). If earlier tests already verified Kalinga Foods, use any waiting one, or register a new employer with a company before the presentation.',
+    'Maria may apply to each job only once: if she already applied to Data Encoder (an earlier demo or test), use another job, or re-seed locally.',
+    'The demo changes data (an application, a hire report and its confirmation, a verification). On production these stay; locally re-seed with <code>php artisan migrate:fresh --seed</code> to start again (deletes all local data).',
     'Keep a browser with DevTools open (F12 → <b>Network</b>, filter <b>Fetch/XHR</b>) and the gateway terminal visible.',
   ])}
 </section>`;
 
 const walkIntro = `<section class="chapter" id="walkthrough">
   <h1><span class="no">6</span>UI ↔ backend walkthrough</h1>
-  <p class="lead">Nine clicks from the demo, each with the screen, the HTTP call the page made, the log lines in the service terminals and the database rows before and after.</p>
+  <p class="lead">Nine steps from the demo, each with the screen, the HTTP call the page made, the log lines in the service terminals and the database rows before and after.</p>
   <h2>How to show this live</h2>
   ${list([
     '<b>Browser – DevTools:</b> F12 → <b>Network</b> → filter <b>Fetch/XHR</b>. Click a request: <b>Headers</b> (method, URL, status, <code>X-Request-ID</code>, <code>Authorization</code>), <b>Payload</b> (the JSON sent) and <b>Response</b> (the JSON returned). The <code>OPTIONS</code> requests are CORS preflights answered by the gateway.',
