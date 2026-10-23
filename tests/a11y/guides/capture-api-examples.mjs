@@ -2,7 +2,7 @@
 // running local stack: successes, every common error, CORS, the rate limit, the gateway with a
 // service down (a second gateway on a spare port, so the running one is not touched), SOAP
 // messages and faults. Run after capture-walkthrough.mjs on the same freshly seeded test database
-// (some examples need its state: the candidate has applied to and been hired for Data Encoder).
+// (some examples need its state: the candidate has applied to Data Encoder and confirmed the hire).
 //   DEMO_PASSWORD=… node guides/capture-api-examples.mjs
 // Output: tests/a11y/results/guides/api-examples.json (git-ignored). Secrets are hidden as in the
 // walkthrough capture.
@@ -119,7 +119,7 @@ const t = {
   admin: await login('admin@opendoor.test'),
 };
 await call('me', 'The signed-in user', { path: '/api/me', token: t.candidate });
-await call('search', 'Search with "Matches my needs"', { path: '/api/job-postings?match=1&sort=best', token: t.candidate });
+await call('search', 'Search ranked by match score ("Recommended for me")', { path: '/api/job-postings?match=1&sort=best', token: t.candidate });
 const postings = (await (await fetch(`${GATEWAY}/api/job-postings`)).json()).data;
 const byTitle = (title) => postings.find((posting) => posting.title === title);
 const support = byTitle('Customer Support Associate (Chat)');
@@ -130,6 +130,13 @@ await call('apply', 'Apply', {
   token: t.candidate,
   body: { cover_note: 'I answer customer chats quickly and clearly.', interview_request: 'Online interview with captions, please.' },
 });
+const supportApplication = (await (await fetch(`${GATEWAY}/api/applications`, { headers: { Accept: 'application/json', Authorization: `Bearer ${t.candidate}` } })).json()).data.find(
+  (application) => application.job_posting?.id === support.id,
+);
+const startDate = new Date(Date.now() + 8 * 3600_000 + 7 * 86400_000).toISOString().slice(0, 10);
+await call('e422-hired', '422 – hired cannot be set directly', { method: 'PATCH', path: `/api/applications/${supportApplication.id}/status`, token: t.employer, body: { status: 'hired' } });
+await call('report', 'The employer reports the hire', { method: 'POST', path: `/api/applications/${supportApplication.id}/hiring-reports`, token: t.employer, body: { start_date: startDate } });
+await call('e409-report', '409 – a report is already waiting', { method: 'POST', path: `/api/applications/${supportApplication.id}/hiring-reports`, token: t.candidate, body: { start_date: startDate } });
 await call('trust-score', 'Trust score of an employer', { path: `/api/employers/${support.employer.id}/trust-score` });
 await call('snapshot', 'Workplace Accessibility Snapshot (mashup)', { path: `/api/insights/job-postings/${support.id}` });
 await call('regions', 'PSGC regions (location picker)', { path: '/api/insights/locations/regions' });
