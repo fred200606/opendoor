@@ -11,5 +11,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
     env: { VITE_API_URL: 'http://gateway.test/api' },
+    // The long form and filter tests click through many steps; 5 s was not enough on a busy machine.
+    testTimeout: 15_000,
   },
 });
