@@ -96,7 +96,7 @@ zone(ax, 0.20, 0.04, 0.58, 0.64, "Railway project (cloud)  —  only the gateway
 box(ax, 0.39, 0.52, 0.37, 0.10, "API Gateway  (Node.js 22 + Express)\nrouting · CORS · rate limit · X-Request-ID · timeouts · error envelope", C["gw"], 8.3, True)
 arrow(ax, (0.30, 0.76), (0.44, 0.62), "HTTPS  REST/JSON\nBearer token", off=(-0.04, 0.0))
 box(ax, 0.215, 0.27, 0.105, 0.15, "Business\nRegistry\nService\n(legacy SOAP)\nPHP SoapServer", C["legacy"], 7.8, True)
-box(ax, 0.40, 0.25, 0.17, 0.19, "Core Service\nLaravel 13 + Sanctum\nAuth · Profiles · Postings\nMatching · Applications\nFeedback · Trust score\nModeration · Master data", C["svc"], 7.8, True)
+box(ax, 0.40, 0.25, 0.17, 0.19, "Core Service\nLaravel 13 + Sanctum\nAuth · Profiles · Postings\nMatch score · Applications\nHiring confirmation\nFeedback · Trust score\nModeration · Master data", C["svc"], 7.4, True)
 box(ax, 0.63, 0.28, 0.13, 0.14, "Accessibility\nInsights Service\n(Node.js + Express)\nmashup", C["svc"], 7.8, True)
 box(ax, 0.215, 0.07, 0.105, 0.10, "SQLite\nregistry.db", C["db"], 8)
 box(ax, 0.40, 0.07, 0.17, 0.10, "MySQL 8\nopendoor_core", C["db"], 8.5)
@@ -104,7 +104,7 @@ box(ax, 0.63, 0.07, 0.13, 0.10, "MySQL 8\ninsights_cache", C["db"], 8.5)
 arrow(ax, (0.485, 0.52), (0.485, 0.44), "/api/*", off=(0.025, 0))
 arrow(ax, (0.695, 0.52), (0.695, 0.42), "/api/insights/*", off=(0.0, 0.0))
 arrow(ax, (0.40, 0.345), (0.32, 0.345), "SOAP 1.1\nXML", off=(0.0, 0.04))
-arrow(ax, (0.63, 0.35), (0.57, 0.35), "REST\nservice key", off=(0.0, 0.045))
+arrow(ax, (0.63, 0.35), (0.57, 0.35), "REST\nservice key\nsummary,\nplaces", both=True, fs=6.8, off=(0.0, 0.06))
 arrow(ax, (0.2675, 0.27), (0.2675, 0.17), "PDO", off=(0.02, 0))
 arrow(ax, (0.485, 0.25), (0.485, 0.17), "Eloquent", off=(0.035, 0))
 arrow(ax, (0.695, 0.28), (0.695, 0.17), "cache", off=(0.025, 0))
@@ -140,8 +140,11 @@ def sequence(name, title, parts, msgs, w=11, h=7.0):
     for i, (a, b, text, kind) in enumerate(msgs, 1):
         if a == b:
             x = xs[a]
-            ax.text(x + 0.008, y, f"{i}. {text}", fontsize=7.4, va="center", ha="left",
-                    bbox=dict(fc="#FFFDE7", ec="#BDBDBD", lw=0.6, pad=2))
+            label = f"{i}. {text}"
+            # A note that would run off the right edge goes on the left of the lifeline instead.
+            right = x + 0.008 + len(label) * 0.0056 * 11 / w < 0.99
+            ax.text(x + 0.008 if right else x - 0.008, y, label, fontsize=7.4, va="center",
+                    ha="left" if right else "right", bbox=dict(fc="#FFFDE7", ec="#BDBDBD", lw=0.6, pad=2))
         else:
             ls = "--" if kind == "r" else "-"
             col = "#C0392B" if kind == "e" else "#333333"
@@ -158,10 +161,10 @@ sequence("fig3_sequence_match_apply.png",
          [("Candidate\n(React SPA)", "client"), ("API Gateway", "gw"), ("Core Service\n(Laravel)", "svc"),
           ("Insights Service", "svc"), ("Nominatim /\nOverpass", "ext")],
          [
-             (0, 1, "GET /api/job-postings/42?match=1  (Bearer token)", "c"),
+             (0, 1, "GET /api/job-postings/42  (Bearer token)", "c"),
              (1, 2, "forward + X-Request-ID", "c"),
-             (2, 2, "Sanctum auth, Policy, count needs met", "c"),
-             (2, 1, "200 posting + match {met:4,total:5,missing} + trust_score", "r"),
+             (2, 2, "Sanctum auth, Policy; match score: skills, location, qualifications, preferences, needs", "c"),
+             (2, 1, "200 posting + match {score:74, label, met:4, total:5, missing} + trust_score", "r"),
              (1, 0, "200 JSON", "r"),
              (0, 1, "GET /api/insights/job-postings/42", "c"),
              (1, 3, "forward + X-Request-ID", "c"),
@@ -174,8 +177,8 @@ sequence("fig3_sequence_match_apply.png",
              (1, 0, "200 JSON (rendered on job details)", "r"),
              (0, 1, "POST /api/job-postings/42/applications {cover_note, interview_request}", "c"),
              (1, 2, "forward", "c"),
-             (2, 2, "validate, unique check, status=pending, notify employer", "c"),
-             (2, 1, "201 application  |  409 ALREADY_APPLIED  |  422 POSTING_CLOSED", "r"),
+             (2, 2, "profile complete + résumé on file, unique check, status=pending, notify employer", "c"),
+             (2, 1, "201 application  |  409 ALREADY_APPLIED  |  422 PROFILE_INCOMPLETE / RESUME_REQUIRED / POSTING_CLOSED", "r"),
              (1, 0, "201 / 4xx error envelope", "r"),
          ], h=7.6)
 
@@ -198,6 +201,29 @@ sequence("fig4_sequence_verify.png",
              (2, 4, "set verified_at, notify employer", "c"),
              (2, 0, "200 Verified badge active   |   SOAP Fault / timeout -> 502 REGISTRY_UNAVAILABLE", "e"),
          ], h=6.2)
+
+sequence("fig7_sequence_hire_feedback.png",
+         "Verification: a hire is confirmed by both sides, and from day 30 the ratings update the trust score",
+         [("Candidate\n(React SPA)", "client"), ("Employer\n(React SPA)", "client"), ("API Gateway", "gw"),
+          ("Core Service\n(Laravel)", "svc"), ("MySQL\nopendoor_core", "db")],
+         [
+             (1, 2, "POST /api/applications/318/hiring-reports {start_date:'2026-10-30'}", "c"),
+             (2, 3, "forward + X-Request-ID", "c"),
+             (3, 3, "Policy: employer of the posting; stage in progress; no open report", "c"),
+             (3, 4, "hiring_report (pending) + event 'reported'; notice to the candidate", "c"),
+             (3, 1, "201 application (report waiting for the candidate)", "r"),
+             (0, 2, "POST …/hiring-reports/12/response {answer:'confirm'}", "c"),
+             (2, 3, "forward + X-Request-ID", "c"),
+             (3, 3, "only the other party; row lock; status=hired, hired_at, hire_start_date", "c"),
+             (3, 4, "save; record the posting's accommodations for the rating form", "c"),
+             (3, 0, "200 application {status:'hired', feedback_opens_on:'2026-11-29'}", "r"),
+             (3, 3, "day 30 after the start date, 08:00: feedback:remind -> feedback_reminder notice", "c"),
+             (0, 2, "POST /api/applications/318/feedback {items:[{accommodation_id, rating}]}", "c"),
+             (2, 3, "forward + X-Request-ID", "c"),
+             (3, 3, "hired? day >= start + 30 (else 422 FEEDBACK_NOT_OPEN)? once (else 409)?", "c"),
+             (3, 4, "feedback + items; observer recalculates trust_score, feedback_count", "c"),
+             (3, 0, "201 {items_rated}  –  score published from 3 responses", "r"),
+         ], h=8.2)
 
 # ---------------- deployment ----------------
 fig, ax = canvas(11, 6.4)
@@ -241,7 +267,7 @@ save(fig, "fig5_deployment.png")
 
 # ---------------- ERD: Core Service (opendoor_core) ----------------
 # Tables and keys as in services/core-api/database/migrations. Pivot tables have a lighter title bar.
-fig, ax = canvas(8.5, 10)
+fig, ax = canvas(8.5, 11)
 ax.text(0.5, 0.985, "Core Service data model (MySQL opendoor_core)", ha="center", va="top",
         fontsize=12, fontweight="bold", color=GOLD)
 COLS, BW, LINE, HEAD = [0.02, 0.27, 0.52, 0.77], 0.21, 0.0128, 0.021
@@ -279,71 +305,94 @@ def rel(points, a, b):
                 ha="center", va="center", fontsize=7.5, fontweight="bold", color="#333333")
 
 
-table("notifications", 0, 0.93, ["id PK (UUIDv7)", "type", "notifiable_id FK (+ type)", "data (message, url, ids)", "read_at, created_at"])
-table("users", 1, 0.93, ["id PK", "name", "email (unique)", "password (bcrypt)", "role", "is_active", "consented_at",
+table("notifications", 0, 0.95, ["id PK (UUIDv7)", "type", "notifiable_id FK (+ type)", "data (message, url, ids)", "read_at, created_at"])
+table("users", 1, 0.95, ["id PK", "name", "email (unique)", "password (bcrypt)", "role", "is_active", "consented_at",
                          "display_prefs (JSON)", "email_notifications",
                          "onboarding_tour_done", "onboarding_checklist_hidden"])
-table("employers", 2, 0.93, ["id PK", "user_id FK (unique)", "company_name", "business_reg_no, registry_type",
+table("employers", 2, 0.95, ["id PK", "user_id FK (unique)", "company_name", "business_reg_no, registry_type",
                              "industry, address", "location_psgc, location_label", "description, logo_path",
                              "verified_at", "verification_rejected_reason", "trust_score, feedback_count"])
-table("registry_checks", 3, 0.93, ["id PK", "employer_id FK", "checked_by FK → users", "business_reg_no, registry_type",
+table("registry_checks", 3, 0.95, ["id PK", "employer_id FK", "checked_by FK → users", "business_reg_no, registry_type",
                                    "status", "registered_name", "name_match_score", "raw_response (XML)", "checked_at"])
-table("candidate_profiles", 0, 0.72, ["id PK", "user_id FK (unique)", "headline, skills (JSON)", "experience",
-                                      "location_psgc, location_label", "disability_type (optional)", "show_disability",
-                                      "resume_path"])
-table("saved_jobs", 1, 0.72, ["candidate_profile_id PK FK", "job_posting_id PK FK"], pivot=True)
-table("job_postings", 2, 0.72, ["id PK", "employer_id FK", "category_id FK", "title, description", "address",
-                                "location_psgc, location_label", "employment_type, work_setup", "interview_format",
-                                "status, is_approved", "closes_at", "rejection_reason", "deleted_at (soft delete)"])
-table("categories", 3, 0.72, ["id PK", "name"])
-table("candidate_accommodation", 0, 0.47, ["candidate_profile_id PK FK", "accommodation_id PK FK"], pivot=True)
-table("applications", 1, 0.47, ["id PK", "job_posting_id FK", "candidate_profile_id FK", "UNIQUE (posting, candidate)",
-                                "status", "cover_note, interview_request", "reviewed_at, hired_at", "hire_confirmed_by",
-                                "feedback_reminded_at"])
-table("reports", 2, 0.47, ["id PK", "reporter_id FK → users", "job_posting_id FK", "reason", "status, note",
+table("candidate_profiles", 0, 0.75, ["id PK", "user_id FK (unique)", "headline, skills (JSON names)",
+                                      "experience, experience_years", "education_level",
+                                      "preferred_work_setups (JSON)", "preferred_employment_types (JSON)",
+                                      "location_psgc, location_label", "location_lat/lon, province_psgc",
+                                      "disability_type, show_disability", "resume_path"])
+table("saved_jobs", 1, 0.75, ["candidate_profile_id PK FK", "job_posting_id PK FK"], pivot=True)
+table("job_postings", 2, 0.75, ["id PK", "employer_id FK", "category_id FK", "title, description", "responsibilities",
+                                "skills (JSON names), qualifications", "education_level, experience_years",
+                                "salary_min/max, salary_period", "benefits, schedule", "application_requirements",
+                                "address, location_psgc/label", "location_lat/lon, province_psgc",
+                                "employment_type, work_setup", "interview_format, closes_at", "status, is_approved",
+                                "rejection_reason, deleted_at"])
+table("categories", 3, 0.75, ["id PK", "name"])
+table("skills", 3, 0.67, ["id PK", "name (unique)", "aliases (JSON)"])
+table("job_posting_accommodation", 3, 0.575, ["job_posting_id PK FK", "accommodation_id PK FK", "note"], pivot=True)
+table("candidate_accommodation", 0, 0.555, ["candidate_profile_id PK FK", "accommodation_id PK FK"], pivot=True)
+table("applications", 1, 0.665, ["id PK", "job_posting_id FK", "candidate_profile_id FK", "UNIQUE (posting, candidate)",
+                                 "status", "cover_note, interview_request", "reviewed_at, shortlisted_at",
+                                 "contacted_at, hired_at", "hire_start_date", "feedback_reminded_at"])
+table("hiring_reports", 1, 0.485, ["id PK", "application_id FK", "reported_by", "reporter_id FK → users", "start_date",
+                                   "status", "responded_at"])
+table("hiring_report_events", 1, 0.345, ["id PK", "hiring_report_id FK", "actor_role", "actor_id FK → users", "action",
+                                         "start_date", "created_at"])
+table("reports", 2, 0.49, ["id PK", "reporter_id FK → users", "job_posting_id FK", "reason", "status, note",
                            "resolved_by FK → users", "resolved_at"])
-table("job_posting_accommodation", 3, 0.47, ["job_posting_id PK FK", "accommodation_id PK FK", "note"], pivot=True)
-table("accommodations", 0, 0.28, ["id PK", "name", "group", "description", "is_retired"])
-table("application_accommodation", 1, 0.28, ["application_id PK FK", "accommodation_id PK FK"], pivot=True)
-table("feedback", 2, 0.28, ["id PK", "application_id FK (unique)", "comments", "is_hidden"])
-table("feedback_items", 3, 0.28, ["id PK", "feedback_id FK", "accommodation_id FK", "rating"])
+table("accommodations", 0, 0.475, ["id PK", "name", "group", "description", "is_retired"])
+table("application_accommodation", 0, 0.35, ["application_id PK FK", "accommodation_id PK FK"], pivot=True)
+table("feedback", 2, 0.345, ["id PK", "application_id FK (unique)", "comments", "is_hidden"])
+table("feedback_items", 3, 0.345, ["id PK", "feedback_id FK", "accommodation_id FK", "rating"])
 
+
+def hline(a, b, y, a_side="right", b_side="left"):
+    """Horizontal relationship between two tables at height y (both must span y)."""
+    xa = T[a][0] + (T[a][2] if a_side == "right" else 0)
+    xb = T[b][0] + (T[b][2] if b_side == "right" else 0)
+    return [(xa, y), (xb, y)]
+
+
+GAP12 = (COLS[1] + BW + COLS[2]) / 2  # between columns 1 and 2
+GAP01 = (COLS[0] + BW + COLS[1]) / 2  # between columns 0 and 1
 # users
-rel([side("users", "left", 0.25), side("notifications", "right", 0.25)], "1", "N")
-rel([side("users", "right", 0.2), (COLS[2], side("users", "right", 0.2)[1])], "1", "1")
+rel(hline("users", "notifications", 0.905, "left", "right"), "1", "N")
+rel(hline("users", "employers", 0.915), "1", "1")
 rel([side("users", "bottom", 0.15), side("candidate_profiles", "top", 0.8)], "1", "1")
-rel([side("users", "top", 0.6), (side("users", "top", 0.6)[0], 0.952), (side("registry_checks", "top", 0.5)[0], 0.952),
+rel([side("users", "top", 0.6), (side("users", "top", 0.6)[0], 0.968), (side("registry_checks", "top", 0.5)[0], 0.968),
      side("registry_checks", "top", 0.5)], "1", "N")
-users_bottom = side("users", "bottom", 0.9)
-rel([users_bottom, (users_bottom[0], 0.745), (0.50, 0.745), (0.50, side("reports", "left", 0.3)[1]),
-     side("reports", "left", 0.3)], "1", "N")
 # employers, postings
 rel([side("employers", "right", 0.3), side("registry_checks", "left", 0.3)], "1", "N")
 rel([side("employers", "bottom", 0.5), side("job_postings", "top", 0.5)], "1", "N")
-rel([side("categories", "left", 0.5), (COLS[2] + BW, side("categories", "left", 0.5)[1])], "1", "N")
+rel(hline("categories", "job_postings", 0.722, "left", "right"), "1", "N")
+rel(hline("job_postings", "saved_jobs", 0.722, "left", "right"), "1", "N")
+rel(hline("job_postings", "applications", 0.60, "left", "right"), "1", "N")
 rel([side("job_postings", "bottom", 0.5), side("reports", "top", 0.5)], "1", "N")
-rel([side("job_postings", "bottom", 0.9), side("job_posting_accommodation", "top", 0.3)], "1", "N")
-rel([side("job_postings", "left", 0.15), (COLS[1] + BW, side("job_postings", "left", 0.15)[1])], "1", "N")
-rel([side("job_postings", "bottom", 0.08), side("applications", "top", 0.9)], "1", "N")
+rel(hline("job_postings", "job_posting_accommodation", 0.555), "1", "N")
 # candidates
-rel([side("candidate_profiles", "right", 0.15), (COLS[1], side("candidate_profiles", "right", 0.15)[1])], "1", "N")
+rel(hline("candidate_profiles", "saved_jobs", 0.722), "1", "N")
+rel(hline("candidate_profiles", "applications", 0.62), "1", "N")
 rel([side("candidate_profiles", "bottom", 0.5), side("candidate_accommodation", "top", 0.5)], "1", "N")
-rel([side("candidate_profiles", "bottom", 0.92), side("applications", "top", 0.1)], "1", "N")
-# applications, feedback
-rel([side("applications", "bottom", 0.5), side("application_accommodation", "top", 0.5)], "1", "N")
-rel([side("applications", "bottom", 0.92), side("feedback", "top", 0.1)], "1", "1")
-rel([side("feedback", "right", 0.4), side("feedback_items", "left", 0.4)], "1", "N")
+# applications, hiring reports, feedback
+rel([side("applications", "bottom", 0.5), side("hiring_reports", "top", 0.5)], "1", "N")
+rel([side("hiring_reports", "bottom", 0.5), side("hiring_report_events", "top", 0.5)], "1", "N")
+app_left = (COLS[1], 0.52)
+rel([app_left, (GAP01, 0.52), (GAP01, 0.322), (COLS[0] + BW, 0.322)], "1", "N")
+app_right = (COLS[1] + BW, 0.525)
+rel([app_right, (GAP12, 0.525), (GAP12, 0.305), (COLS[2], 0.305)], "1", "1")
+rel(hline("feedback", "feedback_items", 0.305), "1", "N")
 # accommodations
 rel([side("accommodations", "top", 0.5), side("candidate_accommodation", "bottom", 0.5)], "1", "N")
-rel([side("accommodations", "right", 0.3), (COLS[1], side("accommodations", "right", 0.3)[1])], "1", "N")
-acc_bottom = side("accommodations", "bottom", 0.35)
-jpa_left = side("job_posting_accommodation", "left", 0.6)
-rel([acc_bottom, (acc_bottom[0], 0.15), (0.75, 0.15), (0.75, jpa_left[1]), jpa_left], "1", "N")
-acc_bottom2 = side("accommodations", "bottom", 0.7)
-rel([acc_bottom2, (acc_bottom2[0], 0.165), (side("feedback_items", "bottom", 0.5)[0], 0.165),
-     side("feedback_items", "bottom", 0.5)], "1", "N")
-ax.text(0.5, 0.11, "PK primary key · FK foreign key · 1 / N cardinality at each end · grey title = pivot table\n"
+rel([side("accommodations", "bottom", 0.5), side("application_accommodation", "top", 0.5)], "1", "N")
+acc_left_a = (COLS[0], 0.395)
+fi_bottom = side("feedback_items", "bottom", 0.4)
+rel([acc_left_a, (0.010, 0.395), (0.010, 0.205), (fi_bottom[0], 0.205), fi_bottom], "1", "N")
+acc_left_b = (COLS[0], 0.44)
+jpa_right = (COLS[3] + BW, 0.53)
+rel([acc_left_b, (0.003, 0.44), (0.003, 0.19), (0.993, 0.19), (0.993, 0.53), jpa_right], "1", "N")
+ax.text(0.5, 0.135, "PK primary key · FK foreign key · 1 / N cardinality at each end · grey title = pivot table · "
+        "skills are stored by name (JSON), so the skills table has no foreign keys\n"
+        "Lines for the FKs marked \"→ users\" (reporters and actors) are left out for readability. "
         "Not shown: Laravel tables personal_access_tokens, password_reset_tokens, jobs / failed_jobs, cache, sessions",
-        ha="center", va="center", fontsize=7.5, color="#555555")
+        ha="center", va="center", fontsize=7, color="#555555")
 save(fig, "fig6_erd.png", tight=True)
 print("done")

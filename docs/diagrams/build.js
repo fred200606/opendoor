@@ -532,7 +532,7 @@ C.push(P("A second transformation happens inside the Core Service: the **matchin
 C.push(H1("5. Integration Flow"));
 C.push(H2("5.1 Core Transaction Sequence"));
 C.push(...fig("fig3_sequence_match_apply.png", 2200, 1520, "Sequence – a candidate opens a matched job, receives the Accessibility Snapshot and applies"));
-C.push(...fig("fig7_sequence_hire_feedback.png", 2200, 1640, "Sequence – the employer reports a hire, the candidate confirms it, and from day 30 after the start date the candidate's ratings update the trust score"));
+C.push(...fig("fig7_sequence_hire_feedback.png", 2200, 1639, "Sequence – the employer reports a hire, the candidate confirms it, and from day 30 after the start date the candidate's ratings update the trust score"));
 C.push(...fig("fig4_sequence_verify.png", 2200, 1240, "Sequence – an administrator verifies an employer through the legacy SOAP Business Registry"));
 C.push(H2("5.2 Service-to-Service Integrations"));
 C.push(...table(["Source", "Destination", "Trigger / Endpoint", "Data Exchanged", "Expected Result"], [
@@ -1126,7 +1126,7 @@ C.push(...table(["Table", "Key Fields", "Expiry / Notes"], [
   ["registrations (registry.db)", "registration_number (PK), registry_type, registered_name, status, date_registered", "Simulated DTI/SEC records seeded by `seed.php`: the two demo employers and three other businesses (ACTIVE), two EXPIRED and two CANCELLED samples"],
 ], [2300, 4900, 2880], { size: 16 }));
 C.push(P("**Entity-relationship diagram** of the Core Service database, drawn from the Laravel migrations in `services/core-api/database/migrations` (Laravel's own token, queue, cache and session tables are left out). Further screens of every role are in the separate UI reference (`docs/ui-reference/OpenDoor-UI-Reference.pdf`)."));
-C.push(...fig("fig6_erd.png", 1700, 1840, "Entity-relationship diagram of the Core Service database (MySQL opendoor_core)"));
+C.push(...fig("fig6_erd.png", 1700, 1964, "Entity-relationship diagram of the Core Service database (MySQL opendoor_core)"));
 
 // =====================================================================
 const doc = new Document({
