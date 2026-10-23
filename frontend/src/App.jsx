@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import GuestRoute from './auth/GuestRoute.jsx';
 import ProtectedRoute from './auth/ProtectedRoute.jsx';
@@ -8,30 +9,6 @@ import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import HomePage from './pages/HomePage.jsx';
-import CandidateApplicationPage from './pages/candidate/CandidateApplicationPage.jsx';
-import CandidateDashboardPage from './pages/candidate/CandidateDashboardPage.jsx';
-import CandidateProfilePage from './pages/candidate/CandidateProfilePage.jsx';
-import CandidateSetupPage from './pages/candidate/CandidateSetupPage.jsx';
-import FeedbackPage from './pages/candidate/FeedbackPage.jsx';
-import MyApplicationsPage from './pages/candidate/MyApplicationsPage.jsx';
-import SavedJobsPage from './pages/candidate/SavedJobsPage.jsx';
-import AccountPage from './pages/account/AccountPage.jsx';
-import NotificationsPage from './pages/account/NotificationsPage.jsx';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
-import AdminEmployerPage from './pages/admin/AdminEmployerPage.jsx';
-import AdminEmployersPage from './pages/admin/AdminEmployersPage.jsx';
-import AdminFeedbackPage from './pages/admin/AdminFeedbackPage.jsx';
-import AdminMasterDataPage from './pages/admin/AdminMasterDataPage.jsx';
-import AdminPostingsPage from './pages/admin/AdminPostingsPage.jsx';
-import AdminReportsPage from './pages/admin/AdminReportsPage.jsx';
-import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
-import ApplicantsPage from './pages/employer/ApplicantsPage.jsx';
-import CompanyProfilePage from './pages/employer/CompanyProfilePage.jsx';
-import EmployerApplicationPage from './pages/employer/EmployerApplicationPage.jsx';
-import EmployerDashboardPage from './pages/employer/EmployerDashboardPage.jsx';
-import EmployerTrustScorePage from './pages/employer/EmployerTrustScorePage.jsx';
-import PostingFormPage from './pages/employer/PostingFormPage.jsx';
-import PostingsPage from './pages/employer/PostingsPage.jsx';
 import EmployerPublicPage from './pages/jobs/EmployerPublicPage.jsx';
 import JobDetailsPage from './pages/jobs/JobDetailsPage.jsx';
 import JobSearchPage from './pages/jobs/JobSearchPage.jsx';
@@ -39,6 +16,32 @@ import AccessibilityPage from './pages/info/AccessibilityPage.jsx';
 import PrivacyPage from './pages/info/PrivacyPage.jsx';
 import TrustScoresPage from './pages/info/TrustScoresPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+
+// The signed-in portals load on demand (smaller first download); public and log-in pages stay in the main bundle.
+const CandidateApplicationPage = lazy(() => import('./pages/candidate/CandidateApplicationPage.jsx'));
+const CandidateDashboardPage = lazy(() => import('./pages/candidate/CandidateDashboardPage.jsx'));
+const CandidateProfilePage = lazy(() => import('./pages/candidate/CandidateProfilePage.jsx'));
+const CandidateSetupPage = lazy(() => import('./pages/candidate/CandidateSetupPage.jsx'));
+const FeedbackPage = lazy(() => import('./pages/candidate/FeedbackPage.jsx'));
+const MyApplicationsPage = lazy(() => import('./pages/candidate/MyApplicationsPage.jsx'));
+const SavedJobsPage = lazy(() => import('./pages/candidate/SavedJobsPage.jsx'));
+const AccountPage = lazy(() => import('./pages/account/AccountPage.jsx'));
+const NotificationsPage = lazy(() => import('./pages/account/NotificationsPage.jsx'));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage.jsx'));
+const AdminEmployerPage = lazy(() => import('./pages/admin/AdminEmployerPage.jsx'));
+const AdminEmployersPage = lazy(() => import('./pages/admin/AdminEmployersPage.jsx'));
+const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage.jsx'));
+const AdminMasterDataPage = lazy(() => import('./pages/admin/AdminMasterDataPage.jsx'));
+const AdminPostingsPage = lazy(() => import('./pages/admin/AdminPostingsPage.jsx'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage.jsx'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
+const ApplicantsPage = lazy(() => import('./pages/employer/ApplicantsPage.jsx'));
+const CompanyProfilePage = lazy(() => import('./pages/employer/CompanyProfilePage.jsx'));
+const EmployerApplicationPage = lazy(() => import('./pages/employer/EmployerApplicationPage.jsx'));
+const EmployerDashboardPage = lazy(() => import('./pages/employer/EmployerDashboardPage.jsx'));
+const EmployerTrustScorePage = lazy(() => import('./pages/employer/EmployerTrustScorePage.jsx'));
+const PostingFormPage = lazy(() => import('./pages/employer/PostingFormPage.jsx'));
+const PostingsPage = lazy(() => import('./pages/employer/PostingsPage.jsx'));
 
 export default function App() {
   return (

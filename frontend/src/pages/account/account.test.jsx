@@ -93,7 +93,9 @@ describe('AccountPage', () => {
     expect(calls.find((call) => call.key === 'PUT /me/email-notifications').data).toEqual({ enabled: false });
 
     await user.click(screen.getByRole('link', { name: /^Notifications/ }));
-    await user.click(await screen.findByRole('button', { name: 'Account' }));
+    // The portal pages load on demand; a page takes focus when it appears, which closes an open menu.
+    await screen.findByRole('heading', { level: 1, name: 'Notifications' });
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('link', { name: 'Account' }));
     await user.click(await screen.findByRole('tab', { name: 'Email notifications' }));
     expect(screen.getByRole('checkbox', { name: 'Send me an email for each notification' })).not.toBeChecked();

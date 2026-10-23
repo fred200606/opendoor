@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useFocusRescue } from '../hooks/useFocusRescue.js';
+import Loading from './Loading.jsx';
 import SiteFooter from './SiteFooter.jsx';
 import SiteHeader from './SiteHeader.jsx';
 import TourProvider from './tour/TourProvider.jsx';
@@ -17,7 +19,9 @@ export default function AppLayout() {
         <SiteHeader />
 
         <main id="main" tabIndex={-1} data-tour="page" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-6">
-          <Outlet />
+          <Suspense fallback={<Loading label="Loading the page" />}>
+            <Outlet />
+          </Suspense>
         </main>
 
         <SiteFooter />
