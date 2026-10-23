@@ -74,6 +74,17 @@ async function stage(t) {
   const webDevApplication = mine.find((application) => application.job_posting?.id === webDev.id);
   // An employer opening a pending application marks it reviewed (and notifies the candidate).
   if (webDevApplication.status === 'pending') await api(`/applications/${webDevApplication.id}`, { token: t.employer });
+  // The support application: shortlisted, then the employer reports the hire (waits for the job seeker).
+  let supportApplication = mine.find((application) => application.job_posting?.id === support.id);
+  if (supportApplication.status === 'pending') {
+    await api(`/applications/${supportApplication.id}`, { token: t.employer });
+    await api(`/applications/${supportApplication.id}/status`, { token: t.employer, method: 'PATCH', body: { status: 'shortlisted' } });
+  }
+  supportApplication = await api(`/applications/${supportApplication.id}`, { token: t.employer });
+  if (!(supportApplication.hiring_reports ?? []).some((report) => report.status === 'pending')) {
+    const start = new Date(Date.now() + 8 * 36e5 + 14 * 864e5).toISOString().slice(0, 10);
+    await api(`/applications/${supportApplication.id}/hiring-reports`, { token: t.employer, method: 'POST', body: { start_date: start } });
+  }
 
   for (const job of [dataEncoder, support]) await api(`/candidate/saved-jobs/${job.id}`, { token: t.candidate, method: 'POST' });
 
@@ -93,7 +104,16 @@ async function stage(t) {
       method: 'POST',
       body: {
         title: 'Accounting Clerk',
-        description: 'Prepare invoices, record payments and reconcile accounts. Monday to Friday, 8:00 to 17:00.',
+        description: 'Prepare invoices, record payments and reconcile accounts.',
+        responsibilities: 'Prepare and send invoices\nRecord payments\nReconcile accounts every month',
+        schedule: 'Monday to Friday, 8:00 AM to 5:00 PM',
+        skills: ['Bookkeeping', 'Microsoft Excel', 'Attention to detail'],
+        education_level: 'college',
+        experience_years: 1,
+        salary_min: 22000,
+        salary_max: 26000,
+        salary_period: 'month',
+        benefits: 'HMO from the first month\nPaid training',
         category_id: dataEncoder.category?.id,
         address: '5th Floor, Bayanihan Tower, Scout Tobias St.',
         location_psgc: '1381300000',
@@ -118,7 +138,17 @@ async function stage(t) {
   const unratedHire = hires.find((application) => !application.feedback_submitted) ?? hires[0];
   const employerId = dataEncoder.employer.id;
 
-  return { dataEncoder, support, webDev, webDevApplication, draft, toVerify, unratedHire, employerId };
+  return { dataEncoder, support, webDev, webDevApplication, supportApplication, draft, toVerify, unratedHire, employerId };
+}
+
+/** A brand-new job seeker (for the setup page); the welcome tour is marked done so it does not cover the page. */
+async function newJobSeeker() {
+  const email = 'new-jobseeker@opendoor.test';
+  const token = await login(email).catch(async () =>
+    (await api('/register', { method: 'POST', body: { name: 'Rosa Example', email, password: PASSWORD, password_confirmation: PASSWORD, role: 'candidate', consent: true } })).token,
+  );
+  await api('/me/onboarding', { token, method: 'PATCH', body: { tour_done: true } });
+  return token;
 }
 
 // ---------------------------------------------------------------- browser helpers
@@ -225,11 +255,12 @@ const t = {
 };
 console.log('Staging demo data…');
 const ids = await stage(t);
+t.newJobSeeker = await newJobSeeker();
 
 browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' });
 try {
   console.log('Public screens');
-  await shot('guest-home', null, '/', { crops: [['utility-bar', '.utility-bar'], ['footer', '.site-footer']] });
+  await shot('guest-home', null, '/', { display: { bar: 'pinned' }, crops: [['utility-bar', '.od-utility'], ['footer', 'footer']] });
   await shot('guest-jobs', null, '/jobs', { crops: [['job-card', '.job-card']] });
   await shot('guest-job', null, `/jobs/${ids.dataEncoder.id}`, {
     // The snapshot is a closed card; open it so the page shows what it holds.
@@ -301,7 +332,8 @@ try {
   await shot('guest-trust-scores', null, '/trust-scores');
 
   console.log('Job seeker screens');
-  await shot('cand-dashboard', t.candidate, '/candidate/dashboard', { crops: [['stat-cards', '.stats'], ['header', '.site-header']] });
+  await shot('cand-dashboard', t.candidate, '/candidate/dashboard', { crops: [['header', 'header']] });
+  await shot('cand-setup', t.newJobSeeker, '/candidate/setup');
   await shot('cand-profile', t.candidate, '/candidate/profile', { crops: [['accommodation-group', '.accommodation-picker__group'], ['tabs', '.tabs__list']] });
   await shot('cand-profile-about', t.candidate, '/candidate/profile?tab=about');
   await shot('cand-profile-resume', t.candidate, '/candidate/profile?tab=resume', { mode: 'viewport' });
@@ -315,6 +347,7 @@ try {
     mode: 'viewport',
     before: openDialog('Withdraw application'),
   });
+  await shot('cand-application-hiring', t.candidate, `/candidate/applications/${ids.supportApplication.id}`);
   await shot('cand-saved', t.candidate, '/candidate/saved-jobs');
   await shot('cand-notifications', t.candidate, '/notifications');
   await shot('cand-account', t.candidate, '/account');
@@ -326,7 +359,7 @@ try {
   await shot('cand2-saved-empty', t.candidate2, '/candidate/saved-jobs', { mode: 'viewport' });
 
   console.log('Employer screens');
-  await shot('emp-dashboard', t.employer, '/employer/dashboard');
+  await shot('emp-dashboard', t.employer, '/employer/dashboard', { crops: [['stat-cards', '.stats']] });
   await shot('emp-company', t.employer, '/employer/company', { crops: [['alert-success', '.alert--success']] });
   await shot('emp-postings', t.employer, '/employer/jobs');
   await shot('emp-postings-delete', t.employer, '/employer/jobs', {
@@ -338,11 +371,11 @@ try {
     },
   });
   await shot('emp-posting-new', t.employer, '/employer/jobs/new');
-  // Steps 2–4 through the draft, which has every field filled (Next checks each step).
+  // Steps 2–6 through the draft, which has every field filled (Next checks each step).
   const draftSteps = (count) => async (page) => {
     for (let step = 2; step <= count; step++) {
       await page.getByRole('button', { name: 'Next' }).click();
-      await page.getByRole('heading', { name: new RegExp(`Step ${step} of 4`) }).waitFor();
+      await page.getByRole('heading', { name: new RegExp(`Step ${step} of 6`) }).waitFor();
     }
     if (count === 2) {
       // Show the Region → Province → City selects instead of the saved place.
@@ -354,10 +387,13 @@ try {
   };
   await shot('emp-posting-step2', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(2) });
   await shot('emp-posting-step3', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(3) });
-  await shot('emp-posting-review', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(4) });
+  await shot('emp-posting-step4', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(4) });
+  await shot('emp-posting-step5', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(5) });
+  await shot('emp-posting-review', t.employer, `/employer/jobs/${ids.draft.id}/edit`, { before: draftSteps(6) });
   await shot('emp-posting-edit', t.employer, `/employer/jobs/${ids.dataEncoder.id}/edit`);
   await shot('emp-applicants', t.employer, `/employer/jobs/${ids.webDev.id}/applicants`);
   await shot('emp-application', t.employer, `/employer/applications/${ids.webDevApplication.id}`);
+  await shot('emp-application-hiring', t.employer, `/employer/applications/${ids.supportApplication.id}`);
   await shot('emp-trust', t.employer, '/employer/trust-score');
   await shot('emp-notifications', t.employer, '/notifications');
   await shot('emp2-dashboard', t.employer2, '/employer/dashboard');
@@ -368,7 +404,7 @@ try {
   await shot('admin-employers', t.admin, '/admin/employers');
   await shot('admin-employer', t.admin, `/admin/employers/${ids.toVerify.id}`);
   await shot('admin-postings', t.admin, '/admin/job-postings');
-  await shot('admin-postings-reject', t.admin, '/admin/job-postings', { mode: 'viewport', before: openDialog(/^Do not approve/) });
+  await shot('admin-postings-remove', t.admin, '/admin/job-postings', { mode: 'viewport', before: openDialog(/^Remove /) });
   await shot('admin-users', t.admin, '/admin/users');
   await shot('admin-reports', t.admin, '/admin/reports');
   await shot('admin-feedback', t.admin, '/admin/feedback');
@@ -384,8 +420,10 @@ try {
     viewport: PHONE,
     scale: 2,
     before: async (page) => {
-      await page.getByRole('button', { name: /^Menu/ }).click();
-      await page.locator('.menu-panel').waitFor();
+      const menu = page.getByRole('button', { name: /^Menu/ });
+      await menu.click();
+      await page.locator(`[id="${await menu.getAttribute('aria-controls')}"]`).waitFor();
+      await page.waitForTimeout(500); // let the panel finish fading in
     },
   });
   await shot('state-high-contrast', null, '/jobs', { mode: 'viewport', display: { textSize: '150', contrast: 'high', motion: 'reduce' } });

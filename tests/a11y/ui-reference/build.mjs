@@ -191,7 +191,7 @@ const planned = `
 const foundations = `
 <section class="chapter" id="foundations">
   <h1><span class="no">${N.foundations}</span>Design foundations</h1>
-  <p class="lead">Current values from <code>frontend/src/index.css</code>. Contrast ratios are against white. A new visual design may change them, but must keep the contrast levels.</p>
+  <p class="lead">Current values from <code>frontend/src/styles/tokens.css</code>. Contrast ratios are against white. A new visual design may change them, but must keep the contrast levels.</p>
   <h2>Colour tokens</h2>
   <table class="grid tokens">
     <thead><tr><th></th><th>Token</th><th>Value</th><th>Use</th></tr></thead>
@@ -250,7 +250,7 @@ const appendices = `
 </section>
 <section class="chapter" id="appendix-d">
   <h1><span class="no">D</span>Accessibility rules to keep</h1>
-  <p class="lead">OpenDoor targets WCAG 2.1 AA (audit October 11, 2026: axe found 0 violations on 33 pages; Lighthouse 100 on the public pages). Any new UI must keep these behaviours.</p>
+  <p class="lead">OpenDoor targets WCAG 2.1 AA (latest axe run October 23, 2026: 0 violations on 33 pages of every role; Lighthouse 100 on the public pages, October 11). Any new UI must keep these behaviours.</p>
   ${list(C.accessibilityRules)}
 </section>
 <section class="chapter" id="appendix-e">
