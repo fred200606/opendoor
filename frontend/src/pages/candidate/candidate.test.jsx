@@ -641,7 +641,10 @@ describe('CandidateDashboardPage and SavedJobsPage', () => {
     const needs = screen.getByRole('region', { name: 'Your needs' });
     expect(await within(needs).findByText('Accessible restroom')).toBeInTheDocument();
     expect(within(needs).getByRole('link', { name: 'Change your needs' })).toHaveAttribute('href', '/candidate/profile');
-    expect(screen.getByRole('region', { name: 'Ratings to give' })).toHaveTextContent('Nothing to rate yet.');
+    // The rating opens 30 days after the confirmed start date (Decision 2026-10-22b), not after "contacted".
+    expect(screen.getByRole('region', { name: 'Ratings to give' })).toHaveTextContent(
+      'Nothing to rate yet. Once a hire is confirmed, you can rate the accommodations 30 days after your start date.',
+    );
   });
 
   test('saved job can be removed', async () => {

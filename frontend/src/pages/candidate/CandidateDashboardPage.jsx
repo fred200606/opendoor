@@ -219,7 +219,7 @@ function RatingsToGive({ due }) {
       <div className="dashboard-side__cards">
         {later.length === 0 ? (
           <div className="card">
-            <p className="muted">Nothing to rate yet. You can rate the accommodations 30 days after an employer contacts you.</p>
+            <p className="muted">Nothing to rate yet. Once a hire is confirmed, you can rate the accommodations 30 days after your start date.</p>
           </div>
         ) : (
           later.map((item) => (
