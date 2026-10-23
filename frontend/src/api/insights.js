@@ -3,8 +3,8 @@ import { api } from './client.js';
 // Insights Service (through the gateway at /api/insights/*)
 
 /** Workplace Accessibility Snapshot – 200 even when some sources fail (see `sources`). */
-export async function getSnapshot(jobId) {
-  const { data } = await api.get(`/insights/job-postings/${jobId}`);
+export async function getSnapshot(jobId, signal) {
+  const { data } = await api.get(`/insights/job-postings/${jobId}`, { signal });
   return data;
 }
 

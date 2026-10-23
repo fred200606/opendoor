@@ -44,7 +44,7 @@ export function toApiError(error) {
 
   if (!response) {
     return new ApiError({
-      code: error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NETWORK_ERROR',
+      code: error.code === 'ERR_CANCELED' ? 'CANCELED' : error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NETWORK_ERROR',
       message: 'We could not reach OpenDoor. Check your internet connection and try again.',
     });
   }

@@ -21,6 +21,17 @@ describe('api client', () => {
     expect(calls[0].config.headers.Authorization).toBeUndefined();
   });
 
+  test('a cancelled request becomes an ApiError with code CANCELED, not a network error', async () => {
+    fakeApi({ 'GET /insights/job-postings/1': () => [200, {}] });
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await api.get('/insights/job-postings/1', { signal: controller.signal }).catch((e) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.code).toBe('CANCELED');
+  });
+
   test('turns the error envelope into an ApiError with the request id', async () => {
     fakeApi({
       'POST /job-postings/1/applications': () => [

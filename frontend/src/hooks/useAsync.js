@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Loads data whenever `deps` change. `load` returns a promise.
+ * Loads data whenever `deps` change. `load(signal)` returns a promise; it may pass the
+ * AbortSignal on to the request, which is aborted when the deps change or the component goes
+ * away (in development StrictMode runs every effect twice: without the abort, Chrome holds the
+ * second identical GET until the first one ends – too long for a slow snapshot).
  * Returns { data, error, loading, reload, setData }. While reloading, the previous data stays
  * available (no layout jump when paging); responses for outdated deps are ignored.
  */
@@ -12,11 +15,13 @@ export function useAsync(load, deps) {
 
   useEffect(() => {
     let active = true;
-    load()
+    const controller = new AbortController();
+    load(controller.signal)
       .then((data) => active && setResult({ key, data, error: null }))
       .catch((error) => active && setResult({ key, data: undefined, error }));
     return () => {
       active = false;
+      controller.abort();
     };
     // `load` is a new function every render; `key` (from deps) decides when to reload.
     // oxlint-disable-next-line react-hooks/exhaustive-deps

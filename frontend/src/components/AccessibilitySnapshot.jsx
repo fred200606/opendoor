@@ -66,7 +66,7 @@ export default function AccessibilitySnapshot({ jobId }) {
 }
 
 function SnapshotContent({ jobId }) {
-  const state = useAsync(() => getSnapshot(jobId), [jobId]);
+  const state = useAsync((signal) => getSnapshot(jobId, signal), [jobId]);
 
   return (
     <>
