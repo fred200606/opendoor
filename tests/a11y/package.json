@@ -8,7 +8,8 @@
     "ui-reference": "node ui-reference/capture.mjs && node ui-reference/build.mjs",
     "run-guide": "node guides/capture-walkthrough.mjs && node guides/build-run-guide.mjs",
     "api-guide": "node guides/capture-api-examples.mjs && node guides/build-api-guide.mjs",
-    "trust-guide": "node guides/capture-trust-score.mjs && node guides/build-trust-score-guide.mjs"
+    "trust-guide": "node guides/capture-trust-score.mjs && node guides/build-trust-score-guide.mjs",
+    "sia-screens": "node sia-screens.mjs"
   },
   "engines": {
     "node": ">=22.15"
