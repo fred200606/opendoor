@@ -307,7 +307,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 - ~~2026-10-21: Vitest long form/filter tests passed the 5 s timeout on a busy machine~~ – fixed 2026-10-23: `testTimeout: 15_000` in `frontend/vite.config.js` (3 tests had timed out at 5.0–5.2 s; 197/197 after).
 
-- 2026-10-21 (pre-merge audit): gateway `npm audit --omit=dev` – 3 high advisories, one root cause: `braces` (GHSA-vfj7-8cjw-p6xm, stack exhaustion from deeply nested brace **patterns**) via `micromatch` ← `http-proxy-middleware`. Our patterns are fixed route config, not user input, so low practical risk; npm's "fix" downgrades http-proxy-middleware to 0.2.0 (breaking) – wait for an upstream release instead. Core: CVE-2026-108082 fixed (entry below).
+- ~~2026-10-21 (pre-merge audit): gateway `npm audit --omit=dev` – 3 high advisories, one root cause: `braces` (GHSA-vfj7-8cjw-p6xm, stack exhaustion from deeply nested brace **patterns**) via `micromatch` ← `http-proxy-middleware`. Our patterns are fixed route config, not user input, so low practical risk; npm's "fix" downgrades http-proxy-middleware to 0.2.0 (breaking) – wait for an upstream release instead. Core: CVE-2026-108082 fixed (entry below).~~ (no longer reported 2026-10-25)
 
 - ~~2026-10-21 (11.7 visual check, local dev DB `opendoor_core` only): visual-employer@'s company "Visual Check Trading" is now **verified** (registry check NOT_FOUND, approved by visual-admin@), its job **541 "Visual Check Store Assistant" is open** (shows on Home/Find jobs locally) and visual-candidate@ has **application 34** (reviewed). Delete/close them before any local demo.~~ – gone since the reseed of 2026-10-24 (checked 2026-10-25: no visual-* users or jobs).
 
@@ -332,9 +332,11 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - CI T13 step does not reach the `unavailable` path (found 2026-10-14): after restarting Insights with `INSIGHTS_CACHE_USER=` and an unreachable Overpass, every snapshot in the T13 run still reports `psgc/nominatim/overpass: cached` (runs 38476924985 and earlier), so the test passes on "not ok" without showing `unavailable` + `nearby_accessible: null`. That path is covered by the Insights Jest tests and the 2026-10-07 local Newman run. Check why the restarted container still has a cache (compose override / in-memory cache) when CI is touched next.
 - Header at 320 px **and** 200 % text at the same time (stricter than WCAG 1.4.4/1.4.10, which pass): the logo text and the avatar stick out ~25 px (found 2026-10-15 in the onboarding check, not caused by it). Optional fix: smaller logo text in `.site-nav--compact` at large text sizes.
 - UI reference PDF: no screenshots of the onboarding states yet (texts are in `content.mjs`); `capture.mjs` needs a step that registers a fresh account at the next rebuild.
-- Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware). Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
+- ~~Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware).~~ (no longer reported 2026-10-25) Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 
 ## Session log (newest first)
+
+- 2026-10-25 – Security re-check (user asked "no vulnerabilities at all?"): `composer audit` clean, frontend + a11y npm clean; gateway body-parser (high) + ip-address (moderate) and Insights body-parser (high) – indirect, not reachable in practice – fixed with `npm audit fix` (lockfiles only), gateway 24/24 + Insights 141/141 + lint; braces advisory no longer reported; gitleaks 313 commits no leaks; SIA 10.1 row 3 updated. Push (deploys gateway + Insights) waits for the user.
 
 - 2026-10-25 – Private Run guide copy rebuilt with the new demo passwords; stale dev-DB Known issues closed (reseeded 24 Oct); production snapshot caches warmed. Left for the user/team: Brevo test email, NVDA, SUS, section 11, student numbers/roles.
 
