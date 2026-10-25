@@ -75,6 +75,7 @@ export const whatsNew = [
   ['Oct 22', 'Admin charts', 'Activity per week, how far applications get, whether promised accommodations were delivered, most needed accommodations next to the jobs that offer them – each chart with "Show as a table".'],
   ['Oct 22', 'Job cards and job details', 'Cards lead with the salary, place, work setup, skills and qualifications; the job page has "On this page" and sections for responsibilities, skills, qualifications, salary and benefits, schedule, accommodations and application requirements.'],
   ['Oct 23', 'Employer dashboard', 'Tiles (open jobs, new applications, pending hire confirmations, confirmed hires), postings by status, "Needs attention", application overview, trust score, a 12-week chart and recent activity.'],
+  ['Oct 25', 'Dashboard layout', 'Employer dashboard: both card rows share one 3:2 split – postings beside "Needs attention" and the trust score, the 12-week chart beside a compact application overview – so the columns and card bottoms line up. Number tiles go two a row on phones (employer and admin).'],
 ];
 
 export const tokens = [
@@ -377,9 +378,9 @@ export const sections = [
           'Not verified: "Your business registration is waiting for verification. You can prepare jobs as drafts and publish them once an administrator has verified your company." (or the reason it was not approved) with "View company profile"',
           'Tiles: Open jobs, New applications, Pending hire confirmations, Confirmed hires',
           '"Your job postings" with tabs Open / Draft / Closed and their counts: table Job title (with setup · type) · Applicants · Deadline · "Manage"; "View all"',
-          '"Needs attention": new applications per job with "Review applicants", hiring reports by candidates with "Review confirmation", or "You’re all caught up."',
-          '"Application overview" (each stage with its count and a bar, "Show as a table") next to the "Accommodation trust score" card with "See each accommodation"',
-          'Chart "Applications, last 12 weeks" (applications and confirmed hires) and "Recent activity" (latest 8: applications received, hiring reports and answers – names only)',
+          'Beside the postings (below them on a phone): "Needs attention" – new applications per job with "Review applicants", hiring reports by candidates with "Review confirmation", or "You’re all caught up." – and under it the "Accommodation trust score" card with "See each accommodation"',
+          'Chart "Applications, last 12 weeks" (applications and confirmed hires) next to "Application overview" (each stage with its count and a bar beside the label, "Show as a table"); both rows share one 3:2 column split',
+          '"Recent activity" (latest 8: applications received, hiring reports and answers – names only)',
         ],
         actions: ['Post a job, open postings, applicants, an application or the trust score'], states: ['"No activity yet. New applications and hiring reports show up here."', 'The "Get started" list (first-time users) sits above the tiles until every step is done'], api: ['GET /employer/dashboard (<code>attention</code>, <code>recent_activity</code>, <code>weeks</code>)', 'GET /employer/job-postings?status=', 'PATCH /me/onboarding {checklist_hidden}'],
       },
