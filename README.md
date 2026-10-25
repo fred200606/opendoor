@@ -4,6 +4,36 @@ OpenDoor helps persons with disabilities (PWDs) find jobs by the **workplace acc
 
 Final project for **SIA 1** (Systems Integration and Architecture) and **IPT**. The approved design is in [`docs/OpenDoor_SIA1_Final_Project_Documentation.docx`](docs/OpenDoor_SIA1_Final_Project_Documentation.docx).
 
+**Live:** https://opendoor-rust.vercel.app (API gateway: https://gateway-production-4e58.up.railway.app/api/health)
+
+## Functional modules
+
+All 13 modules of the OpenDoor Modules and Features Specification are built. Roles: **C** candidate (job seeker), **E** employer, **A** administrator, **P** public.
+
+| Module | Who | What it covers |
+|---|---|---|
+| **M1 Accounts and authentication** | P, all | Sign up as a job seeker or employer (name, email, password of at least 8 characters, data-privacy consent; administrators cannot sign up), log in and out with a Sanctum API token, current user, change password, forgot/reset password by email (60-minute link, signs out everywhere). Login and reset are limited to 5 tries a minute; suspended accounts cannot log in. |
+| **M2 Candidate profile** | C | Required profile (skills from the shared list, education, years of experience, preferred work setup and type of work, city from the PSGC picker), accommodation needs, PDF résumé (max 5 MB, opened through a signed 30-minute link) with skill suggestions read from it. Matching uses needs, never the disability itself (RA 10173). |
+| **M3 Company profile and verification** | E, A, P | Company profile with logo, registration type and number and PSGC location; public employer page. Administrators check the company against the Business Registry (legacy SOAP service) and approve or reject it – only a verified company can publish jobs. |
+| **M4 Job postings** | E, A | Create, edit, close, reopen and delete postings: required skills, qualifications, salary range, responsibilities, benefits, schedule, application requirements, work setup, location and the **workplace accommodations offered**. Drafts for unverified companies; verified companies publish at once; postings close on their deadline. Administrators can remove any posting with a reason. |
+| **M5 Job search and matching** | P, C | Live search with filters (category, accommodations, work setup, distance) and sorting. For job seekers: a 0–100 **match score** (skills 40, location 20, qualifications 15, preferences 10, accommodation needs 15) with "Why this match?" and a "Recommended for me" view. |
+| **M6 Applications and hiring** | C, E | Apply with a résumé, cover note and interview accommodation request. Stages Submitted → Under review → Shortlisted → Contacted → Hired, plus Not selected, Withdrawn and Job closed. **Hired only by mutual confirmation:** either side reports the hire with a start date and the other side confirms. |
+| **M7 Accommodation feedback and trust score** | C, P | From day 30 after the confirmed start date the hired job seeker rates each promised accommodation (delivered / partly / not delivered), anonymously and once. The employer's **trust score** is published after 3 responses, with a per-accommodation breakdown. |
+| **M8 Dashboards** | C, E, A | A dashboard per role: applications by stage, pending hire confirmations, items that need attention, recent activity, 12-week charts; administrator analytics (funnel, top needs vs offered accommodations, delivery). Every chart can be shown as a table. |
+| **M9 Notifications** | C, E | In-app notices for new applications, application stages, hiring reports, verification results, rating reminders and removed postings; mark one or all as read. Emails are sent through Brevo in production. |
+| **M10 Moderation** | A, C | Suspend and reactivate accounts, review job reports from job seekers, remove postings, hide inappropriate feedback. |
+| **M11 Master data** | A, P | Job categories, accommodation types (retired instead of deleted when in use) and the shared skills list with aliases. |
+| **M12 Saved jobs** | C | Bookmark jobs and see them on one page. |
+| **M13 Account settings** | all | Display settings saved with the account (text size, high contrast, reduced motion), notification emails on or off, rating reminder email. |
+
+Beyond the modules: the **Workplace Accessibility Snapshot** on every job page (Insights mashup of PSGC, Nominatim and OpenStreetMap/Overpass data with the employer's promises and the trust score), Read aloud and Voice input, and onboarding for new users (a guided welcome tour and a "Get started" checklist).
+
+### Accounts and security
+
+- **No email verification at sign-up:** a new account can log in right away. Email ownership is proven only when a password reset link is used. Employers are checked separately – a company cannot publish jobs until an administrator has verified it against the Business Registry.
+- Passwords are hashed (bcrypt); API tokens are Laravel Sanctum bearer tokens. Each role reaches only its own portal, and every request is authorized again on the server (role middleware and Laravel policies).
+- Only the gateway is public: CORS for the frontend's origin only, a rate limit per client, request IDs, and one JSON error format with no stack traces.
+
 ## Architecture
 
 ```
@@ -24,7 +54,7 @@ React SPA (Vercel) ──HTTPS──▶ API Gateway (Node/Express, :8080) ─┬
 
 ## Requirements
 
-PHP 8.3+ with Composer, Node.js 22, MySQL 8. Docker is **not** needed for local development (it is only used by CI and the Railway images).
+PHP 8.4 with Composer, Node.js 22, MySQL 8. Docker is **not** needed for local development (it is only used by CI and the Railway images).
 
 ## Local setup
 
@@ -86,10 +116,17 @@ run; nothing has to be configured in GitHub.
 
 ## Deployment
 
-- Frontend: Vercel (`frontend/`)
-- Gateway, services, MySQL: Railway (only the gateway is public)
+| Part | Where | URL |
+|---|---|---|
+| React client | Vercel (`frontend/`) | https://opendoor-rust.vercel.app |
+| API gateway (the only public backend) | Railway, Singapore | https://gateway-production-4e58.up.railway.app/api |
+| Core Service + scheduler, Insights Service, Business Registry, MySQL 8 | Railway private network | – |
 
-Production URLs and demo accounts: _to be added after deployment_.
+Pushing to `main` deploys automatically: Vercel builds the frontend, and Railway rebuilds only the services whose folder changed (Core runs `php artisan migrate --force` before it starts). Secrets exist only as Railway variables. They were all rotated on 25 October 2026 after Railway's security incident.
+
+**Demo accounts** (seeded; ask the team for the password – it is not kept in the repository): `admin@opendoor.test`, `candidate@opendoor.test`, `candidate2@opendoor.test` (a confirmed hire whose rating form is open), `employer@opendoor.test`, `employer2@opendoor.test` (two of the three ratings needed for a trust score).
+
+**Production smoke test** (read-only): `node tests/postman/build-smoke.mjs`, then run `OpenDoor.smoke.postman_collection.json` with `production.postman_environment.json` – see [`tests/postman/README.md`](tests/postman/README.md). Last run on 25 October 2026: 80 requests, 435 assertions, 0 failed.
 
 ## Development workflow
 
