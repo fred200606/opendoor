@@ -6,12 +6,13 @@ import { ChartLegend } from './ChartCard.jsx';
  * value is printed). Bars are at most 16 px thick with a 4 px rounded end and grow from one
  * baseline. With several `series` each row gets a bar per series (2 px apart) and a legend.
  * `rows` = [{ label, bars: [{ value (0–1 share of the track), text, detail? }] }].
+ * `inline` puts each label beside its bar once the chart is wide enough (stacked when narrow).
  */
-export default function BarRows({ rows, series }) {
+export default function BarRows({ rows, series, inline = false }) {
   return (
-    <>
+    <div className="bar-rows-box">
       {series.length > 1 && <ChartLegend items={series} />}
-      <ul className="bar-rows">
+      <ul className={inline ? 'bar-rows bar-rows--inline' : 'bar-rows'}>
         {rows.map((row) => (
           <li key={row.label}>
             <div className="bar-row__label">{row.label}</div>
@@ -34,7 +35,7 @@ export default function BarRows({ rows, series }) {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 }
 

@@ -2647,6 +2647,13 @@ input[type='file']::file-selector-button {
   grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
 }
 
+/* Phones: two tiles a row where the labels still fit; at 320 px or larger text it falls back to one. */
+@media (max-width: 40rem) {
+  .stats--fit .stats__list {
+    grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+  }
+}
+
 .admin-dashboard .stats h2 {
   margin-bottom: 1rem;
 }

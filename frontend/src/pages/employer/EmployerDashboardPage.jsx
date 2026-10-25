@@ -24,6 +24,7 @@ import { EMPLOYMENT_TYPES, WORK_SETUPS } from '../../lib/labels.js';
 // IPT look (decision 2026-10-21b): white cards on the canvas.
 const CARD = 'od min-w-0 rounded-lg border-2 border-border bg-surface p-5 sm:p-6';
 const CARD_TITLE = 'font-display text-xl font-bold';
+const TWO_COLUMNS = 'grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]';
 const SHOWN_POSTINGS = 5;
 const POSTING_TABS = [
   ['open', 'Open'],
@@ -41,8 +42,8 @@ const WEEK_SERIES = [
 
 /**
  * GET /employer/dashboard – shape documented in docs/openapi.yaml (EmployerDashboard). Layout from
- * the user's reference (Decision 2026-10-22f): tiles → job postings | needs attention →
- * application overview | trust score → applications per week → recent activity.
+ * the user’s reference (Decision 2026-10-22f), rearranged 2026-10-25: tiles → job postings |
+ * needs attention + trust score → applications per week | application overview → recent activity.
  */
 export default function EmployerDashboardPage() {
   const { user } = useAuth();
@@ -105,29 +106,32 @@ export default function EmployerDashboardPage() {
                 ]}
               />
 
-              <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+              {/* Both rows share one 3:2 split and stretch their cards, so edges and bottoms line up. */}
+              <div className={TWO_COLUMNS}>
                 <YourPostings counts={dashboard.postings ?? {}} />
-                <NeedsAttention attention={dashboard.attention ?? {}} />
+                <div className="flex min-w-0 flex-col gap-6">
+                  <NeedsAttention attention={dashboard.attention ?? {}} />
+                  <section className={`${CARD} flex-1`} aria-labelledby="trust-title">
+                    <h2 id="trust-title" className={CARD_TITLE}>
+                      Accommodation trust score
+                    </h2>
+                    <div className="mt-4">
+                      <TrustScoreCard
+                        trustScore={dashboard.trust_score}
+                        showTitle={false}
+                        explain
+                        link={{ to: '/employer/trust-score', label: 'See each accommodation' }}
+                      />
+                    </div>
+                  </section>
+                </div>
               </div>
 
-              <div className="grid items-start gap-6 lg:grid-cols-2">
+              <div className={dashboard.weeks ? TWO_COLUMNS : 'grid'}>
+                {dashboard.weeks && <WeeklyApplications weeks={dashboard.weeks} />}
                 <ApplicationOverview pipeline={pipeline} applications={dashboard.applications ?? {}} />
-                <section className={CARD} aria-labelledby="trust-title">
-                  <h2 id="trust-title" className={CARD_TITLE}>
-                    Accommodation trust score
-                  </h2>
-                  <div className="mt-4">
-                    <TrustScoreCard
-                      trustScore={dashboard.trust_score}
-                      showTitle={false}
-                      explain
-                      link={{ to: '/employer/trust-score', label: 'See each accommodation' }}
-                    />
-                  </div>
-                </section>
               </div>
 
-              {dashboard.weeks && <WeeklyApplications weeks={dashboard.weeks} />}
               <RecentActivity items={dashboard.recent_activity ?? []} />
             </div>
           );
@@ -325,6 +329,7 @@ function ApplicationOverview({ pipeline, applications }) {
       table={{ caption: 'Applications by stage', columns: ['Stage', 'Applications', 'Share'], rows: stages.map(([label, count]) => [label, count, percent(count, total)]) }}
     >
       <BarRows
+        inline
         series={[{ label: 'Applications', color: 'var(--viz-series-1)' }]}
         rows={stages.map(([label, count]) => ({ label, bars: [{ value: total ? count / total : 0, text: String(count), detail: `· ${percent(count, total)}` }] }))}
       />

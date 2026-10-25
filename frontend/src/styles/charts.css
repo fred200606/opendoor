@@ -171,6 +171,10 @@
 
 /* ---------- Horizontal bars (funnel, needs) */
 
+.bar-rows-box {
+  container-type: inline-size;
+}
+
 .bar-rows {
   display: grid;
   gap: 0.875rem;
@@ -216,6 +220,24 @@
 
 .bar-row__value span {
   color: var(--od-text-muted);
+}
+
+/* `inline`: label beside the bar once the chart has room; below that the label stays above it. */
+@container (min-width: 22rem) {
+  .bar-rows--inline {
+    gap: 0.5rem;
+  }
+
+  .bar-rows--inline > li {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .bar-rows--inline .bar-row__label {
+    margin-bottom: 0;
+  }
 }
 
 /* ---------- 100% stacked bar (delivery) */
