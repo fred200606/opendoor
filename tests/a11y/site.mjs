@@ -121,11 +121,23 @@ export async function contextFor(browser, tokens, role, { viewport, display } = 
   return context;
 }
 
-/** Opens the page and waits until the app has rendered it (its h1) and the network is quiet. */
+/**
+ * Opens the page and waits until the app has rendered it (its h1), the network is quiet and the
+ * entrance animations have ended – axe measures contrast on half-faded text otherwise (the Home
+ * hero failed color-contrast on the slower CI runner, 2026-10-25). Endless ones are skipped.
+ */
 export async function open(context, path) {
   const page = await context.newPage();
   await page.goto(`${APP_URL}${path}`, { waitUntil: 'networkidle' });
   await page.locator('h1').first().waitFor();
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
   return page;
 }
 
