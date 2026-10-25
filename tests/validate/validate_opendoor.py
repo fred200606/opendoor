@@ -74,7 +74,7 @@ def check(name, direct=False):
             detail = fn()
             print(f"[PASS] {name}")
             if detail:
-                print(f"       {detail}")
+                print(f" {detail}")
             results.append(True)
         except Exception as error:  # one broken service must not stop the other checks
             reason = error.reason if isinstance(error, urllib.error.URLError) else error

@@ -18,6 +18,8 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-25 – Demo rating account (user asked for a candidate "ready to give his rates"): **no new account** – the seeded `candidate2@` is it (production checked: application 6, Kalinga Foods, start 2026-08-31, form open since 2026-09-30, not submitted, 3 items; employer2 has 2 responses, so this rating publishes the score – T10). The rating can be given once, so no rehearsal with it. If a practice account is wanted later: `candidate3@` rating Bayanihan Tech (score already published), in the seeder (production + local).
+
 - 2026-10-24 – Work while the user is away (user answered 4 questions, "continue developing what needs to be done"): **no push, no deploy** (waits for the user: Railway incident → rotate secrets first). **Reseed the local dev DB** `opendoor_core` (`migrate:fresh --seed` with the DEMO_PASSWORD from the local `.env`) for a clean demo state. Order: (1) the two guide PDFs for Phases 10–16 (Decision 2026-10-19 rules: test DB, no passwords, demo script, commit only), (2) UI reference PDF rebuild, (3) small known-issue fixes with tests, (4) refresh the trust score guide. At the end leave all five services **running on the dev DB**.
 
 - 2026-10-23b – SIA doc update for Phases 10–16 (user: "update the SIA documents"; asked twice): 7.1/7.2 report **today's local run** (Newman 216 requests / 1064 of 1065 assertions – the 1 failure explained as the public Overpass outage – + T13 15/87/0, suites green; no push). 9.1 screenshots **recaptured locally** on a freshly seeded `opendoor_core_test` (production still runs the Oct 16 code). Credit Francis Ruzgal for the IPT look and mascot.
