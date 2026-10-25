@@ -126,7 +126,7 @@ C.push(...table(["Field", "Information"], [
   ["Application Platform", "Web (responsive single-page application usable on desktop and on 360 px phone screens)"],
   ["Repository", "https://github.com/fred200606/opendoor (private)"],
   ["Deployment / Access URL", "Frontend: https://opendoor-rust.vercel.app  ·  API Gateway: https://gateway-production-4e58.up.railway.app/api"],
-  ["Version", "1.2 – release of 25 October 2026 deployed (requirements, application stages, hiring confirmation, job details and dashboards added after the first release); production secrets rotated"],
+  ["Version", "1.2 – release of 25 October 2026 deployed (requirements, application stages, hiring confirmation, job details and dashboards added after the first release); production secrets rotated; employer dashboard layout aligned (same day)"],
   ["Date", "October 25, 2026"],
 ], [2600, 7480], { kv: true }));
 
