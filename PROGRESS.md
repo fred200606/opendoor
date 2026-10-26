@@ -342,6 +342,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-26 – `start_opendoor.py` reworked (user): runs all 5 services inside the current (VS Code) terminal, prefixed coloured output, link table for every port (start + once up), Ctrl+C kills all process trees; tested start/stop locally.
 - 2026-10-26 – `start_opendoor.py` (user): opens one PowerShell window per service (registry, Core, Insights, gateway, frontend; `--tabs` for Windows Terminal), skips ports already in use, waits for the ports, opens the frontend. README links it.
 - 2026-10-26 – Accessibility statement page (user): "Known limits" section and the "Our last full check …" paragraph under "How we check" removed; UI reference description updated (34 pages). Info tests green. Not deployed.
 - 2026-10-26 – SIA Google Doc: all 25 images centred. 9.1 screenshots: frame tables now full width without borders, image centred with a 1 pt black paragraph frame sized to it (API cannot centre a table); my paragraph frames removed from the 5 figures the user had given real image borders (no double frame).
