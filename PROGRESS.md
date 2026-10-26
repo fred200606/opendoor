@@ -18,6 +18,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-26 – NVDA in the SIA doc (user, from the IPT IMRAD paper): cite the team's nine NVDA recordings of 19 Oct 2026 as evidence from the **IPT version** (opendoor-ipt, same design, separate codebase – its N09/N10 screens do not exist here), **no individual names** (author "OpenDoor project team"); say a run on this deployment is still to do. Same wording in `docs/accessibility/wcag-audit.md`.
 - 2026-10-25 – Employer dashboard layout fix (user: "fix the layout of employer dashboard"; replaces the row order of 2026-10-22f): both card rows use one 3:2 split with stretched cards so edges and bottoms line up – job postings | Needs attention + trust score stacked; Applications, last 12 weeks | Application overview (BarRows `inline`: label beside the bar when the chart is ≥ 22rem wide, stacked below that). `stats--fit` tiles go two a row on phones (≤ 40rem, 9.5rem min, so 320 px and larger text fall back to one) – admin dashboard too.
 - 2026-10-25 – Demo rating account (user asked for a candidate "ready to give his rates"): **no new account** – the seeded `candidate2@` is it (production checked: application 6, Kalinga Foods, start 2026-08-31, form open since 2026-09-30, not submitted, 3 items; employer2 has 2 responses, so this rating publishes the score – T10). The rating can be given once, so no rehearsal with it. If a practice account is wanted later: `candidate3@` rating Bayanihan Tech (score already published), in the seeder (production + local).
 
@@ -339,6 +340,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 - ~~Gateway `npm audit`: 3 "high" (braces ← micromatch ← http-proxy-middleware).~~ (no longer reported 2026-10-25) Not reachable: only our own `pathFilter` functions are used, no globs from requests. npm's "fix" is a downgrade to HPM 0.2.0 – ignore; re-check when HPM updates micromatch.
 
 ## Session log (newest first)
+
+- 2026-10-26 – SIA doc: Objective 6 NVDA placeholder filled from the IPT paper's recordings (labelled as the IPT version, no names), lesson text + 2 references (NV Access, team recordings); wcag-audit.md matches. Word: 67 pages, no blank pages. SUS placeholder still open.
 
 - 2026-10-25 – Pushed `main` (layout fix + earlier commits, deploys). Docs (user: "update the documents as well"): SIA 9.1 employer-dashboard screen + version line (Word: 66 p.), UI reference text + "Oct 25" change entry, PDF rebuilt (133 p.) – captured on a fresh `opendoor_core_test` with a separate test stack (Core 8011, Insights 8012, gateway 8090, Vite 5183, throwaway DEMO_PASSWORD, mail to log), stopped afterwards; the dev stack was left alone.
 

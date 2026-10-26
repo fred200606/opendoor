@@ -28,7 +28,7 @@ The first candidate's own application page was skipped (the demo candidate had n
 | Automated rules (cross-check) | Lighthouse 12.6.1, accessibility category | The 6 guest pages (Lighthouse cannot sign in). |
 | Scripted checks | `tests/a11y/wcag-checks.mjs` (Playwright) | What axe cannot decide on its own – see the table in section 3. |
 | Code review | Reading the React components and shared form, dialog and status code | Error handling, status messages, time limits, grouping, images, contrast tokens. |
-| Screen reader | NVDA + Chrome (by a teammate) | **Not done yet** – section 7. |
+| Screen reader | NVDA + Chrome (by a teammate) | **Partly** – the team's nine NVDA recordings of 19 Oct 2026 cover the IPT version (same design, separate codebase; see section 7). A run on this deployment is still to do. |
 
 Rerun (stack running, frontend served on port 4173, gateway allowing that origin):
 
@@ -112,6 +112,8 @@ Two optional ways to use the pages, beyond what WCAG 2.1 AA requires. Both use o
 Checked with unit tests (mocked speech APIs) and live in Chrome: both pages read in the right order; the voice-input notice, the "microphone blocked" message and the return of focus; axe 0 on the job search page (also with the notice open), job details and application pages. The recheck of all pages is in section 3 (final run).
 
 ## 7. NVDA test script (for a teammate)
+
+**Evidence so far (IPT version, 2026-10-19):** nine task recordings by the project team (NVDA 2026.2, Chrome, Windows 11; 13 min 48 s) on the IPT build of OpenDoor, which shares this client's design but is separate code. Passed: labelled login fields, password show/hide state, error summary for a malformed email, the six-step welcome tour, saving accommodation needs, filter states with the announced result count, applying and tracking the application. Not verified: focus return from dialogs, reading the trust score text and table headers. The steps below still need a run on this deployment.
 
 **Set-up:** Windows, NVDA (latest), Chrome. Use the demo accounts (`candidate@opendoor.test`, `employer@opendoor.test`, `admin@opendoor.test`; the password is in the team's notes, not in the repo). Turn the monitor off or look away for the main tasks – use only the keyboard and speech.
 
