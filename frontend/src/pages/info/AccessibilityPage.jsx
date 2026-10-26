@@ -37,20 +37,6 @@ export default function AccessibilityPage() {
         <li>Scripted checks for keyboard focus, page titles, announcements, text spacing and zoom.</li>
         <li>A review of the code for forms, dialogs, tables and status messages.</li>
       </ul>
-      <p>
-        Our last full check (October 14, 2026, after the new design) found two layout problems on the job search page (at 200 %
-        text and on very narrow screens); both are fixed.
-      </p>
-
-      <h2>Known limits</h2>
-      <ul>
-        <li>A full test with the NVDA screen reader is still to be done.</li>
-        <li>The places near a job come from OpenStreetMap, where wheelchair information may be missing or out of date.</li>
-        <li>
-          Voice input needs a browser with a speech service, such as Chrome or Edge. Others (for example Firefox and Brave) do
-          not show the Speak button; some show it until the first try, then explain and hide it.
-        </li>
-      </ul>
     </Page>
   );
 }

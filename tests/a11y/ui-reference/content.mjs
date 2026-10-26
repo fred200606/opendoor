@@ -254,8 +254,8 @@ export const sections = [
       },
       {
         id: 'accessibility-statement', title: 'Accessibility statement', shots: [['guest-accessibility']],
-        route: '/accessibility', who: 'Everyone (footer link)', purpose: 'States the WCAG 2.1 AA goal, the ways to adjust OpenDoor, how it is checked and the known limits.',
-        parts: ['"Ways to adjust OpenDoor" – the display-bar settings, Read aloud and voice input', '"How we check" – automated axe checks of 33 pages, scripted checks, code review', '"Known limits" – NVDA screen-reader test still to do, OpenStreetMap data may be incomplete, voice input not in every browser'],
+        route: '/accessibility', who: 'Everyone (footer link)', purpose: 'States the WCAG 2.1 AA goal, the ways to adjust OpenDoor and how it is checked.',
+        parts: ['"Ways to adjust OpenDoor" – the display-bar settings, Read aloud and voice input', '"How we check" – automated axe checks of 34 pages, scripted checks, code review'],
         actions: [], states: [], api: [],
       },
       {
