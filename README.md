@@ -84,6 +84,8 @@ cd gateway && npm ci && npm run dev
 cd frontend && npm ci && npm run dev
 ```
 
+After the first setup, `python start_opendoor.py` starts steps 3–6 in five terminals (`--tabs` for one Windows Terminal window) and opens the client.
+
 Forgot-password emails are queued (`PASSWORD_RESET_QUEUE=database`, so the response time reveals no account): run `php artisan queue:work database --stop-when-empty` in `services/core-api` to send them, or set `PASSWORD_RESET_QUEUE=sync` in the local `.env`. With the `log` mailer the email (and its link) is written to `storage/logs/laravel.log`.
 
 Shared values that must match:
