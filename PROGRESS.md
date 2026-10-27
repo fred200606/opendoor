@@ -18,6 +18,7 @@
 
 ## Decisions (final – do not re-ask)
 
+- 2026-10-27 – `.claude/` (project skills) taken out of the repo for the submission only (strict folder structure); files stay local, backup in `C:\dev\claude-backup`. Restore after submission (see Known issues).
 - 2026-10-26 – SIA doc in Google Docs (user shared https://docs.google.com/document/d/1Kf4KC6C_dwzKKew2dpXfT8u5q2DBcS_2mPWi0Vsc12I/edit?tab=t.j0kzdygoe292, asked to edit it directly): the Google Doc is now the team's working copy and is **ahead of** the .docx/`build.js` – it holds team edits that `build.js` lacks (student numbers/roles of Crisologo and Su, section 11 roles, repository "(public)", four references removed: React Router, Ruzgal opendoor-ipt, Vercel, Vitest) plus the layout polish (real lists, left-aligned table cells with repeating header rows, APA hanging-indent references with links, black 1 pt frames on images). A `node build.js` rebuild would lose all of this – edit the Google Doc instead, or carry these into `build.js` first.
 - 2026-10-26 – NVDA in the SIA doc (user, from the IPT IMRAD paper): cite the team's nine NVDA recordings of 19 Oct 2026 as evidence from the **IPT version** (opendoor-ipt, same design, separate codebase – its N09/N10 screens do not exist here), **no individual names** (author "OpenDoor project team"); say a run on this deployment is still to do. Same wording in `docs/accessibility/wcag-audit.md`.
 - 2026-10-25 – Employer dashboard layout fix (user: "fix the layout of employer dashboard"; replaces the row order of 2026-10-22f): both card rows use one 3:2 split with stretched cards so edges and bottoms line up – job postings | Needs attention + trust score stacked; Applications, last 12 weeks | Application overview (BarRows `inline`: label beside the bar when the chart is ≥ 22rem wide, stacked below that). `stats--fit` tiles go two a row on phones (≤ 40rem, 9.5rem min, so 320 px and larger text fall back to one) – admin dashboard too.
@@ -302,6 +303,8 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Known issues / TODO later
 
+- 2026-10-27: after the submission, put `.claude/` back in the repo: `git add .claude`, commit, push. Until then it is untracked – do not run `git clean` or check out old commits (that could delete the local folder); backup in `C:\dev\claude-backup`.
+
 - ~~2026-10-25: SIA doc 9.1 employer-dashboard screenshot, the UI reference and the guide PDFs still show the employer dashboard before the 2026-10-25 layout fix~~ – done 2026-10-25: SIA 9.1 screen + UI reference (133 p.) recaptured on a fresh `opendoor_core_test`; the Run & Demo guide has no employer-dashboard screen and the trust score guide only crops the trust card (content unchanged), so both stay.
 
 - 2026-10-23: public Overpass servers time out (`overpass-api.de` ECONNABORTED, fallback `overpass.private.coffee` no answer). Snapshots degrade as designed (200, `overpass: stale/unavailable`), but the local Newman "Snapshot again … within 1000 ms" check fails while both are down (the 2nd request waits on the still-running fetch). CI is unaffected (mock-external). Recheck before the presentation; warm the snapshot caches. 2026-10-25: production snapshots of the 3 open jobs warmed (job 3 cached, jobs 1–2 stale copy; Overpass answered in ~32 s, over the 25 s timeout).
@@ -342,6 +345,7 @@ Mark `[x]` when done **and committed**. Put the commit hash after the item if us
 
 ## Session log (newest first)
 
+- 2026-10-27 – `.claude/` untracked for the submission (`git rm -r --cached`), backed up to `C:\dev\claude-backup`; restore after submission.
 - 2026-10-26 – `start_opendoor.py` reworked (user): runs all 5 services inside the current (VS Code) terminal, prefixed coloured output, link table for every port (start + once up), Ctrl+C kills all process trees; tested start/stop locally.
 - 2026-10-26 – `start_opendoor.py` (user): opens one PowerShell window per service (registry, Core, Insights, gateway, frontend; `--tabs` for Windows Terminal), skips ports already in use, waits for the ports, opens the frontend. README links it.
 - 2026-10-26 – Accessibility statement page (user): "Known limits" section and the "Our last full check …" paragraph under "How we check" removed; UI reference description updated (34 pages). Info tests green. Not deployed.
